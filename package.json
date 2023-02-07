@@ -1,0 +1,74 @@
+{
+  "name": "bikg_app",
+  "description": "App template for full-stack datavisyn apps.",
+  "version": "0.0.1-SNAPSHOT",
+  "author": {
+    "name": "datavisyn GmbH",
+    "email": "contact@datavisyn.io",
+    "url": "https://www.datavisyn.io"
+  },
+  "license": "BSD-3-Clause",
+  "homepage": "https://www.datavisyn.io",
+  "bugs": {
+    "url": "https://github.com/datavisyn/bikg_app/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:datavisyn/bikg_app.git"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "src",
+    "dist",
+    "cypress"
+  ],
+  "engines": {
+    "npm": ">=8",
+    "node": ">=16"
+  },
+  "scripts": {
+    "all": "yarn run lint:fix && yarn run test && yarn run build && yarn run dist",
+    "build": "yarn run clean && yarn run compile && yarn run copy",
+    "clean": "visyn_scripts clean build dist lib",
+    "compile:watch": "visyn_scripts compile --watch",
+    "compile": "visyn_scripts compile",
+    "copy": "visyn_scripts copy",
+    "cy:open": "cypress open",
+    "cy:run": "cypress run --e2e && cypress run --component",
+    "delete-dependencies": "visyn_scripts clean node_modules",
+    "dist": "mkdir lib && cd dist && tar cvzf ../lib/bikg_app.tar.gz *",
+    "docs": "visyn_scripts docs",
+    "lint:fix": "visyn_scripts lint --fix",
+    "lint": "visyn_scripts lint",
+    "prepack": "yarn run build",
+    "predist": "yarn run lint && yarn run test && yarn run build",
+    "start": "visyn_scripts start --env workspace_mode=single",
+    "test": "visyn_scripts test",
+    "webpack:dev": "visyn_scripts build --mode development --env workspace_mode=single",
+    "webpack:prod": "visyn_scripts build --mode production --env workspace_mode=single"
+  },
+  "dependencies": {
+    "tdp_core": "git+ssh://git@github.com:datavisyn/tdp_core#develop",
+    "visyn_scripts": "git+ssh://git@github.com/datavisyn/visyn_scripts#develop"
+  },
+  "devDependencies": {
+    "cypress": "^12.0.1"
+  },
+  "resolutions": {
+    "@types/react": "^16.9.23",
+    "@types/react-dom": "^16.9.5",
+    "react": "^16.13.0",
+    "react-dom": "^16.13.0"
+  },
+  "visyn": {
+    "entries": {
+      "app": {
+        "js": "src/index.initialize.tsx",
+        "template": "src/index.template.ejs",
+        "html": "index.html"
+      }
+    }
+  },
+  "packageManager": "yarn@3.2.2"
+}

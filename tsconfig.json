@@ -1,0 +1,11 @@
+{
+  "extends": "visyn_scripts/config/tsconfig.template.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "tsd.d.ts"
+  ]
+}

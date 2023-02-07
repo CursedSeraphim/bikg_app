@@ -1,0 +1,41 @@
+# general things to ignore
+/.tscache
+/.eslintcache
+/.idea
+/bundles/
+/build/
+/dist/
+/dist_python/
+/lib/
+*.egg-info/
+*.egg
+*.py[cod]
+__pycache__/
+*.so
+*~
+*.log
+*.pot
+*.pyc
+*.swp
+*.lock
+# due to using tox and pytest
+.tox
+.cache
+node_modules/
+/src/**/*.js
+/tests/**/*.js
+/src/**/*.map
+/tests/**/*.map 
+*.css
+
+# yarn
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# env
+/.venv*/
