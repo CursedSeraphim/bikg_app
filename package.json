@@ -10,11 +10,11 @@
   "license": "BSD-3-Clause",
   "homepage": "https://www.datavisyn.io",
   "bugs": {
-    "url": "https://github.com/datavisyn/bikg_app/issues"
+    "url": "https://github.com/cursedseraphim/bikg_app/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:datavisyn/bikg_app.git"
+    "url": "git@github.com:cursedseraphim/bikg_app.git"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
