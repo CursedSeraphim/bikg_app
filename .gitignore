@@ -40,3 +40,7 @@ node_modules/
 # env
 /.venv*/
 /pip*/
+
+# data
+/bikg_app/csv*/
+/bikg_app/rdf*/
