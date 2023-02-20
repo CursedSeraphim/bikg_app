@@ -1,8 +1,8 @@
 import * as ReactDOM from 'react-dom';
 import * as React from 'react';
-import { MantineProvider, Navbar } from '@mantine/core';
+import { MantineProvider, Navbar, Title } from '@mantine/core';
 import { Provider } from 'react-redux';
-import { VisynApp, VisynAppProvider } from 'visyn_core/app';
+import { VisynApp, VisynAppProvider, VisynHeader } from 'visyn_core/app';
 import { App } from './App';
 import store from './components/Store/Store';
 
@@ -18,13 +18,23 @@ ReactDOM.render(
                 Navbar
               </Navbar>
             }
+            header={
+              <VisynHeader
+                components={{
+                  title: (
+                    <Title order={3} weight={100} color="white">
+                      BI KG App
+                    </Title>
+                  ),
+                }}
+              />
+            }
             appShellProps={{
               styles: (theme) => ({
                 main: { backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0] },
               }),
             }}
           >
-            {/* Hello app_template! */}
             <App />
           </VisynApp>
         </VisynAppProvider>
