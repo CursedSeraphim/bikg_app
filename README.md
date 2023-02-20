@@ -40,7 +40,7 @@ For generating a production build of the application (i.e. for deployment to Git
 
 ## Backend
 
-The backend is a FastAPI server managed via [tdp_core](https://github.com/datavisyn/tdp_core). All relevant scripts can be found in the Makefile.
+The backend is a FastAPI server managed via [visyn_core](https://github.com/datavisyn/visyn_core). All relevant scripts can be found in the Makefile.
 
 ### Installation
 

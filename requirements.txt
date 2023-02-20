@@ -1,1 +1,1 @@
-tdp_core@git+https://github.com/datavisyn/tdp_core.git@upgrade_rdkit#egg=tdp_core
+visyn_core@git+https://github.com/datavisyn/visyn_core.git@develop#egg=visyn_core
