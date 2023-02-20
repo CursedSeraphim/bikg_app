@@ -3,7 +3,7 @@ import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 // import { RdfState, setRdfData, selectRdfData } from './components/Store/RdfSlice';
 import { loadCSV, selectNodes } from './components/Store/CSVSlice';
-import ThreeCanvas from './components/WebGLView/ThreeCanvas';
+import ThreeCanvas from './components/WebGLView/ThreeCanvasScatter';
 
 async function fetchRdfFile(file_path) {
   const endpoint = `http://localhost:9000/rdf/file/${file_path}`;
