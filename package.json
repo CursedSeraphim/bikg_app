@@ -59,6 +59,7 @@
     "rdflib": "^2.2.26",
     "react-redux": "^8.0.5",
     "redux": "^4.2.1",
+    "three": "^0.149.0",
     "visyn_core": "git+ssh://git@github.com:datavisyn/visyn_core#develop",
     "visyn_scripts": "git+ssh://git@github.com/datavisyn/visyn_scripts#develop"
   },
