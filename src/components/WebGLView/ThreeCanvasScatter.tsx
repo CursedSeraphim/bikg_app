@@ -2,9 +2,10 @@ import React, { useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import * as THREE from 'three';
 import { selectNodes } from '../Store/CSVSlice';
+import { selectEdges } from '../Store/CSVTrajectorySlice';
 
 /**
- * to-do - do this the first time the data is loaded and store the result in the store
+ * TODO - do this the first time the data is loaded and store the result in the store
  *
  * */
 function getMinMaxPositions(data) {
@@ -34,6 +35,28 @@ function getMinMaxPositions(data) {
   };
 }
 
+/**
+ *
+ * @param data contains x1, y1, x2, y2
+ * @param min contains min.x and min.y
+ * @param max contains max.x and max.y
+ * @returns the normalized positions
+ */
+function normalizedEdgePositions(data, min, max) {
+  const normalizedPositions = [];
+
+  data.forEach(({ x1, y1, x2, y2 }) => {
+    const nx1 = ((x1 - min.x) / (max.x - min.x)) * 2 - 1;
+    const ny1 = ((y1 - min.y) / (max.y - min.y)) * 2 - 1;
+    const nx2 = ((x2 - min.x) / (max.x - min.x)) * 2 - 1;
+    const ny2 = ((y2 - min.y) / (max.y - min.y)) * 2 - 1;
+    normalizedPositions.push(nx1, ny1, 1);
+    normalizedPositions.push(nx2, ny2, 1);
+  });
+
+  return normalizedPositions;
+}
+
 function normalizePositions(data, min, max) {
   const normalizedPositions = [];
 
@@ -48,10 +71,11 @@ function normalizePositions(data, min, max) {
 
 function ThreeCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const data = useSelector(selectNodes);
+  const nodes = useSelector(selectNodes);
+  const edges = useSelector(selectEdges);
 
   useEffect(() => {
-    if (!canvasRef.current || !data) {
+    if (!canvasRef.current || !nodes) {
       return;
     }
 
@@ -63,19 +87,12 @@ function ThreeCanvas() {
     renderer.setClearColor(0xffffff, 0); // second param is opacity, 0 => transparent
 
     // Normalize the positions
-    const { min, max } = getMinMaxPositions(data);
-    const normalizedPositions = normalizePositions(data, min, max);
+    const { min, max } = getMinMaxPositions(nodes);
+    const normalizedPositions = normalizePositions(nodes, min, max);
 
+    // Create the points
     const geometry = new THREE.BufferGeometry();
-    const material = new THREE.PointsMaterial({ size: 3, color: 0xaaaaaa, sizeAttenuation: false });
-
-    // // Assuming `data` is an array of objects with `x`, `y`, and `z` properties.
-    // console.log('data:', data);
-    // const positions = [];
-    // data.forEach(({ id, x, y }) => {
-    //   console.log('pushing vertex');
-    //   positions.push(x, y, 1);
-    // });
+    const material = new THREE.PointsMaterial({ size: 3, color: 0x999999, sizeAttenuation: false });
 
     const positionAttribute = new THREE.Float32BufferAttribute(normalizedPositions, 3);
     geometry.setAttribute('position', positionAttribute);
@@ -83,13 +100,28 @@ function ThreeCanvas() {
     const points = new THREE.Points(geometry, material);
     scene.add(points);
 
+    // Create the edges
+    const edgeGeometry = new THREE.BufferGeometry();
+    const edgeMaterial = new THREE.LineBasicMaterial({ color: 0xdddddd });
+
+    if (edges && edges.length > 0 && edges !== undefined && edges !== null) {
+      // use the same min and max for the edges
+      const edgePositions = normalizedEdgePositions(edges, min, max);
+      const edgePositionAttribute = new THREE.Float32BufferAttribute(edgePositions, 3);
+      edgeGeometry.setAttribute('position', edgePositionAttribute);
+
+      const edgeLineSegments = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+      scene.add(edgeLineSegments);
+    }
+
+    // Create the cube
     const cubeGeometry = new THREE.BoxGeometry();
     cubeGeometry.translate(1, 0, 1);
-    const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x89cff0 });
     const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
     scene.add(cube);
 
-    camera.position.z = 10;
+    camera.position.z = 2.5;
 
     function animate() {
       requestAnimationFrame(animate);
@@ -98,7 +130,7 @@ function ThreeCanvas() {
       renderer.render(scene, camera);
     }
     animate();
-  }, [canvasRef, data]);
+  }, [canvasRef, nodes, edges]);
 
   return <canvas ref={canvasRef} />;
 }

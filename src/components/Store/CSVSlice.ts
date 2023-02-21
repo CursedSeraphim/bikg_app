@@ -23,7 +23,7 @@ const CSVSlice = createSlice({
     addNode: (state, action: PayloadAction<Node>) => {
       state.nodes.push(action.payload);
     },
-    loadCSV: (state, action) => {
+    loadNodes: (state, action) => {
       // only if not undefined
       if (action.payload !== undefined) {
         // action.payload comes as a json string
@@ -44,6 +44,6 @@ export const selectNodes = (state: { csv: CSVSliceState }) => {
 };
 // export const selectNodes = (state: { csv: CSVSliceState }) => {state.csv.nodes};
 
-export const { addNode, loadCSV } = CSVSlice.actions;
+export const { addNode, loadNodes } = CSVSlice.actions;
 
 export default CSVSlice.reducer;

@@ -23,7 +23,7 @@ ReactDOM.render(
                 components={{
                   title: (
                     <Title order={3} weight={100} color="white">
-                      BI KG App
+                      Boehringer Ingelheim Knowledge Graphs
                     </Title>
                   ),
                 }}

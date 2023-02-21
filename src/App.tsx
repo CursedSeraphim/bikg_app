@@ -2,7 +2,8 @@ import { AppShell, Header, Navbar } from '@mantine/core';
 import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 // import { RdfState, setRdfData, selectRdfData } from './components/Store/RdfSlice';
-import { loadCSV, selectNodes } from './components/Store/CSVSlice';
+import { loadNodes, selectNodes } from './components/Store/CSVSlice';
+import { loadEdges, selectEdges } from './components/Store/CSVTrajectorySlice';
 import ThreeCanvas from './components/WebGLView/ThreeCanvasScatter';
 
 async function fetchRdfFile(file_path) {
@@ -23,11 +24,20 @@ export function App() {
   const dispatch = useDispatch();
   // const rdfFileData = useSelector(selectRdfData);
   const nodes = useSelector(selectNodes);
+  const edges = useSelector(selectEdges);
 
   React.useEffect(() => {
     fetchCSVFile('force_directed_node_positions.csv')
       .then((data) => {
-        dispatch(loadCSV(data));
+        dispatch(loadNodes(data));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch CSV file', error);
+      });
+
+    fetchCSVFile('force_directed_edge_vectors.csv')
+      .then((data) => {
+        dispatch(loadEdges(data));
       })
       .catch((error) => {
         console.error('Failed to fetch CSV file', error);
@@ -47,6 +57,7 @@ export function App() {
   return (
     <div>
       nodes: {JSON.stringify(nodes.length)}
+      {/* edges: {JSON.stringify(edges.length)} */}
       <ThreeCanvas />
     </div>
   );
