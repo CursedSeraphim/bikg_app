@@ -4,6 +4,91 @@ import * as THREE from 'three';
 import { selectNodes } from '../Store/CSVSlice';
 import { selectEdges } from '../Store/CSVTrajectorySlice';
 
+// Reasonable defaults
+const PIXEL_STEP = 10;
+const LINE_HEIGHT = 40;
+const PAGE_HEIGHT = 800;
+
+function normalizeWheel(/* object */ event) /* object */ {
+  let sX = 0;
+  let sY = 0; // spinX, spinY
+  let pX = 0;
+  let pY = 0; // pixelX, pixelY
+
+  // Legacy
+  if ('detail' in event) {
+    sY = event.detail;
+  }
+  if ('wheelDelta' in event) {
+    sY = -event.wheelDelta / 120;
+  }
+  if ('wheelDeltaY' in event) {
+    sY = -event.wheelDeltaY / 120;
+  }
+  if ('wheelDeltaX' in event) {
+    sX = -event.wheelDeltaX / 120;
+  }
+
+  // side scrolling on FF with DOMMouseScroll
+  if ('axis' in event && event.axis === event.HORIZONTAL_AXIS) {
+    sX = sY;
+    sY = 0;
+  }
+
+  pX = sX * PIXEL_STEP;
+  pY = sY * PIXEL_STEP;
+
+  if ('deltaY' in event) {
+    pY = event.deltaY;
+  }
+  if ('deltaX' in event) {
+    pX = event.deltaX;
+  }
+
+  if ((pX || pY) && event.deltaMode) {
+    if (event.deltaMode == 1) {
+      // delta in LINE units
+      pX *= LINE_HEIGHT;
+      pY *= LINE_HEIGHT;
+    } else {
+      // delta in PAGE units
+      pX *= PAGE_HEIGHT;
+      pY *= PAGE_HEIGHT;
+    }
+  }
+
+  // Fall-back if spin cannot be determined
+  if (pX && !sX) {
+    sX = pX < 1 ? -1 : 1;
+  }
+  if (pY && !sY) {
+    sY = pY < 1 ? -1 : 1;
+  }
+
+  return { spinX: sX, spinY: sY, pixelX: pX, pixelY: pY };
+}
+
+function mousewheel(event) {
+  trackBallControls.noZoom = true;
+  event.preventDefault();
+  const factor = 50;
+  const mX = (event.clientX / jQuery(container).width()) * 2 - 1;
+  const mY = -(event.clientY / jQuery(container).height()) * 2 + 1;
+  const vector = new THREE.Vector3(mX, mY, 0.5);
+  // console.log(vector);
+  vector.unproject(camera);
+  vector.sub(camera.position);
+  if (event.deltaY < 0) {
+    camera.position.addVectors(camera.position, vector.setLength(factor));
+    trackBallControls.target.addVectors(trackBallControls.target, vector.setLength(factor));
+    camera.updateProjectionMatrix();
+  } else {
+    camera.position.subVectors(camera.position, vector.setLength(factor));
+    trackBallControls.target.subVectors(trackBallControls.target, vector.setLength(factor));
+    camera.updateProjectionMatrix();
+  }
+}
+
 /**
  * TODO - do this the first time the data is loaded and store the result in the store
  *
@@ -120,6 +205,13 @@ function ThreeCanvas() {
     const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x89cff0 });
     const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
     scene.add(cube);
+
+    if (canvasRef.current) {
+      canvasRef.current.addEventListener('wheel', (event) => {
+        event.preventDefault();
+        camera.position.z += event.deltaY / 500;
+      });
+    }
 
     camera.position.z = 2.5;
 
