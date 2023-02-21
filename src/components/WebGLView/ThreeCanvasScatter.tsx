@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { selectNodes } from '../Store/CSVSlice';
 import { selectEdges } from '../Store/CSVTrajectorySlice';
 
-// Reasonable defaults
+// Reasmouable defaults
 const PIXEL_STEP = 10;
 const LINE_HEIGHT = 40;
 const PAGE_HEIGHT = 800;
@@ -46,7 +46,7 @@ function normalizeWheel(/* object */ event) /* object */ {
   }
 
   if ((pX || pY) && event.deltaMode) {
-    if (event.deltaMode == 1) {
+    if (event.deltaMode === 1) {
       // delta in LINE units
       pX *= LINE_HEIGHT;
       pY *= LINE_HEIGHT;
@@ -66,27 +66,6 @@ function normalizeWheel(/* object */ event) /* object */ {
   }
 
   return { spinX: sX, spinY: sY, pixelX: pX, pixelY: pY };
-}
-
-function mousewheel(event) {
-  trackBallControls.noZoom = true;
-  event.preventDefault();
-  const factor = 50;
-  const mX = (event.clientX / jQuery(container).width()) * 2 - 1;
-  const mY = -(event.clientY / jQuery(container).height()) * 2 + 1;
-  const vector = new THREE.Vector3(mX, mY, 0.5);
-  // console.log(vector);
-  vector.unproject(camera);
-  vector.sub(camera.position);
-  if (event.deltaY < 0) {
-    camera.position.addVectors(camera.position, vector.setLength(factor));
-    trackBallControls.target.addVectors(trackBallControls.target, vector.setLength(factor));
-    camera.updateProjectionMatrix();
-  } else {
-    camera.position.subVectors(camera.position, vector.setLength(factor));
-    trackBallControls.target.subVectors(trackBallControls.target, vector.setLength(factor));
-    camera.updateProjectionMatrix();
-  }
 }
 
 /**
