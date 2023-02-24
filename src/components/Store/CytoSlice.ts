@@ -51,7 +51,6 @@ const CytoSlice = createSlice({
         // state.data.edges = data.edges;
         const data = JSON.parse(action.payload);
         state.nodes = data.data.nodes;
-        console.log('state.nodes', state.nodes)
         state.edges = data.data.edges;
       }
     },
