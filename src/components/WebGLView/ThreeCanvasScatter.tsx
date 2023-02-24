@@ -1,8 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import * as THREE from 'three';
-import { selectNodes } from '../Store/CSVSlice';
-import { selectEdges } from '../Store/CSVTrajectorySlice';
+import { selectNodes } from '../Store/NodeSlice';
+import { selectEdges } from '../Store/EdgeSlice';
 
 // Reasmouable defaults
 const PIXEL_STEP = 10;
@@ -67,6 +67,55 @@ function normalizeWheel(/* object */ event) /* object */ {
 
   return { spinX: sX, spinY: sY, pixelX: pX, pixelY: pY };
 }
+
+// function onClick(event: MouseEvent, canvasRef, raycaster, camera, scene) {
+//   const canvas = canvasRef.current;
+//   const rect = canvas?.getBoundingClientRect();
+//   if (!canvas || !rect) return;
+
+//   const mouse = new THREE.Vector2();
+//   mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+//   mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+//   raycaster.setFromCamera(mouse, camera);
+
+//   const intersects = raycaster.intersectObjects(scene.children, true);
+
+//   if (intersects.length > 0) {
+//     // The first intersection is the closest
+//     const intersect = intersects[0];
+//     const { object } = intersect;
+
+//     // Change the attribute of the object here
+//     // For example, change the size:
+//     object.size = 1;
+//   }
+// }
+
+// function onMouseMove(event: MouseEvent, canvasRef, raycaster, camera, scene) {
+//   const canvas = canvasRef.current;
+//   const rect = canvas?.getBoundingClientRect();
+//   if (!canvas || !rect) return;
+
+//   const mouse = new THREE.Vector2();
+//   mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+//   mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+//   raycaster.setFromCamera(mouse, camera);
+
+//   const intersects = raycaster.intersectObjects(scene.children, true);
+
+//   if (intersects.length > 0) {
+//     // The first intersection is the closest
+//     const intersect = intersects[0];
+//     const { object } = intersect;
+
+//     // Change the attribute of the object here
+//     // For example, change the color:
+//     const material = object.material as THREE.MeshBasicMaterial;
+//     material.color.set(0xff0000);
+//   }
+// }
 
 /**
  * TODO - do this the first time the data is loaded and store the result in the store
@@ -135,8 +184,10 @@ function normalizePositions(data, min, max) {
 
 function ThreeCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const raycaster = new THREE.Raycaster();
   const nodes = useSelector(selectNodes);
   const edges = useSelector(selectEdges);
+  const cameraZ = 2.5;
 
   useEffect(() => {
     if (!canvasRef.current || !nodes) {
@@ -146,7 +197,7 @@ function ThreeCanvas() {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-    const renderer = new THREE.WebGLRenderer({ canvas: canvasRef.current, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ canvas: canvasRef.current, alpha: true, powerPreference: 'high-performance' });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0xffffff, 0); // second param is opacity, 0 => transparent
 
@@ -156,7 +207,7 @@ function ThreeCanvas() {
 
     // Create the points
     const geometry = new THREE.BufferGeometry();
-    const material = new THREE.PointsMaterial({ size: 3, color: 0x999999, sizeAttenuation: false });
+    const material = new THREE.PointsMaterial({ size: 10, color: 0x999999, sizeAttenuation: false });
 
     const positionAttribute = new THREE.Float32BufferAttribute(normalizedPositions, 3);
     geometry.setAttribute('position', positionAttribute);
@@ -166,7 +217,7 @@ function ThreeCanvas() {
 
     // Create the edges
     const edgeGeometry = new THREE.BufferGeometry();
-    const edgeMaterial = new THREE.LineBasicMaterial({ color: 0xdddddd });
+    const edgeMaterial = new THREE.LineBasicMaterial({ color: 0xdddddd, linewidth: 1 });
 
     if (edges && edges.length > 0 && edges !== undefined && edges !== null) {
       // use the same min and max for the edges
@@ -178,30 +229,76 @@ function ThreeCanvas() {
       scene.add(edgeLineSegments);
     }
 
-    // Create the cube
-    const cubeGeometry = new THREE.BoxGeometry();
-    cubeGeometry.translate(1, 0, 1);
-    const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x89cff0 });
-    const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-    scene.add(cube);
+    // // Create the cube
+    // const cubeGeometry = new THREE.BoxGeometry();
+    // cubeGeometry.translate(1, 0, 1);
+    // const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x89cff0 });
+    // const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+    // scene.add(cube);
 
-    if (canvasRef.current) {
-      canvasRef.current.addEventListener('wheel', (event) => {
-        event.preventDefault();
-        camera.position.z += event.deltaY / 500;
-      });
-    }
+    camera.position.z = cameraZ;
 
-    camera.position.z = 2.5;
+    // mousewheel listener
+    canvasRef.current?.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      camera.position.z += event.deltaY / 500;
+    });
+
+    // mouse click listener
+    canvasRef.current?.addEventListener('click', (event) => {
+      // calculate mouse position in normalized device coordinates
+      const rect = canvasRef.current.getBoundingClientRect();
+      const mouse = new THREE.Vector2();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      // update the picking ray with the camera and mouse position
+      raycaster.setFromCamera(mouse, camera);
+      raycaster.params.Far = 1000;
+      raycaster.params.firstHitOnly = true;
+
+      // calculate objects intersecting the picking ray
+      const intersects = raycaster.intersectObjects(scene.children, true);
+      const intersectsArray = [];
+
+      if (intersects.length > 0) {
+        intersectsArray.push(intersects[0]);
+      }
+      console.log('intersectsArray', intersectsArray);
+
+      for (let i = 0; i < intersectsArray.length; i++) {
+        intersectsArray[i].object.material.color.set(0xff0000);
+      }
+
+      // if (intersects.length > 0) {
+      //   // the first intersected object is the closest one to the camera
+      //   const selectedObject = intersects[0].object;
+      //   console.log('Selected object:', selectedObject);
+      //   // do something with the selected object
+      // }
+
+      // calculate intersection point with a plane at z=0
+      const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      const point = new THREE.Vector3();
+      raycaster.ray.intersectPlane(plane, point);
+
+      // render a large point at the mouse position
+      const mouseMaterial = new THREE.PointsMaterial({ size: 10, color: 0x000000, sizeAttenuation: false });
+      const mouseGeometry = new THREE.BufferGeometry();
+      const mousePositionAttribute = new THREE.Float32BufferAttribute([point.x, point.y, point.z], 3);
+      mouseGeometry.setAttribute('position', mousePositionAttribute);
+      const mousePoint = new THREE.Points(mouseGeometry, mouseMaterial);
+      scene.add(mousePoint);
+    });
 
     function animate() {
       requestAnimationFrame(animate);
-      cube.rotation.x += 0.01;
-      cube.rotation.y += 0.01;
+      // cube.rotation.x += 0.01;
+      // cube.rotation.y += 0.01;
       renderer.render(scene, camera);
     }
     animate();
-  }, [canvasRef, nodes, edges]);
+  }, [canvasRef, nodes, edges, cameraZ]);
 
   return <canvas ref={canvasRef} />;
 }

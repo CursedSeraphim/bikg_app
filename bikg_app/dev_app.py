@@ -4,11 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # import requests
 
 from tdp_core.server.visyn_server import create_visyn_server
-from routers.rdf_reader import router as rdf_router
-
-# from rdflib import Graph
-
-# file_path = "rdf/omics_model.ttl"
+from routers.routes import router as rdf_router
 
 # This app is either started via the uvicorn runner in __main__.py,
 # or as module to execute commands via `python -m <app>.dev_app db-migration exec ...`

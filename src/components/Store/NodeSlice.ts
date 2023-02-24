@@ -1,10 +1,15 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import * as d3 from 'd3';
 
+const DEFAULT_NODE_SIZE = 3;
+const DEFAULT_NODE_COLOR = 0x999999;
+
 interface Node {
   id: string;
   x: number;
   y: number;
+  size: number;
+  color: number; // in hex
 }
 
 interface CSVSliceState {
@@ -28,9 +33,9 @@ const CSVSlice = createSlice({
       if (action.payload !== undefined) {
         // action.payload comes as a json string
         const parsed = JSON.parse(action.payload);
-        const data = parsed.data
+        const { data } = parsed;
         for (let i = 0; i < data.length; i++) {
-          const node = { id: data[i].node, x: data[i].x, y: data[i].y };
+          const node = { id: data[i].node, x: data[i].x, y: data[i].y, size: DEFAULT_NODE_SIZE, color: DEFAULT_NODE_COLOR };
           state.nodes.push(node);
         }
       }

@@ -44,3 +44,4 @@ node_modules/
 # data
 /bikg_app/csv*/
 /bikg_app/rdf*/
+/bikg_app/json*/

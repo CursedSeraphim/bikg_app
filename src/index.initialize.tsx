@@ -15,7 +15,8 @@ ReactDOM.render(
             loginMenu={null}
             navbar={
               <Navbar width={{ base: 300 }} height="100%" p="xs">
-                Navbar
+                Navbar <br />
+                To be filled with settings, potentially an ontology tree view browser, etc
               </Navbar>
             }
             header={
