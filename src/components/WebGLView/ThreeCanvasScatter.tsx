@@ -182,7 +182,7 @@ function normalizePositions(data, min, max) {
   return normalizedPositions;
 }
 
-function ThreeCanvas() {
+function WebGLView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const raycaster = new THREE.Raycaster();
   const nodes = useSelector(selectNodes);
@@ -194,12 +194,21 @@ function ThreeCanvas() {
       return;
     }
 
+    const canvas = canvasRef.current;
+
+    // create a container element around the canvas and set its overflow property to hidden
+    const container = canvas.parentElement;
+    container.style.overflow = 'hidden';
+
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-    const renderer = new THREE.WebGLRenderer({ canvas: canvasRef.current, alpha: true, powerPreference: 'high-performance' });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0xffffff, 0); // second param is opacity, 0 => transparent
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(container.offsetWidth, container.offsetHeight);
+    renderer.setClearColor(0xf2f2f2);
+    // const renderer = new THREE.WebGLRenderer({ canvas: canvasRef.current, alpha: true, powerPreference: 'high-performance' });
+    // renderer.setSize(window.innerWidth, window.innerHeight);
+    // renderer.setClearColor(0xffffff, 0); // second param is opacity, 0 => transparent
 
     // Normalize the positions
     const { min, max } = getMinMaxPositions(nodes);
@@ -303,4 +312,4 @@ function ThreeCanvas() {
   return <canvas ref={canvasRef} />;
 }
 
-export default ThreeCanvas;
+export default WebGLView;

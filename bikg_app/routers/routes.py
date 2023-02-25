@@ -6,6 +6,7 @@ import os
 
 router = APIRouter()
 
+# TODO consider removing this route
 @router.get("/csv/file/{file_path}")
 async def read_csv_file(file_path: str):
     file_path = os.path.join("bikg_app/csv", file_path)
@@ -13,7 +14,6 @@ async def read_csv_file(file_path: str):
     df = pd.read_csv(file_path)
     return {"data": df.to_dict(orient="records")}
 
-# TODO make sure all relevant rdf data is read when the backend server starts rather than when the frontend requests it
 @router.get("/file/{file_path}")
 async def read_file(file_path: str):
     file_path = os.path.join("bikg_app/json", file_path)

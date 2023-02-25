@@ -6,7 +6,8 @@ import cytoscape from 'cytoscape';
 import { loadNodes, selectNodes } from './components/Store/NodeSlice';
 import { loadEdges, selectEdges } from './components/Store/EdgeSlice';
 import { loadCytoData, selectCytoData } from './components/Store/CytoSlice';
-import ThreeCanvas from './components/WebGLView/ThreeCanvasScatter';
+import MyChart from './components/Vega/vegaspec';
+import WebGLView from './components/WebGLView/ThreeCanvasScatter';
 import './styles.css';
 
 async function fetchRdfFile(file_path) {
@@ -39,21 +40,21 @@ export function App() {
   const [cy, setCy] = React.useState(null);
 
   React.useEffect(() => {
-    // fetchCSVFile('force_directed_node_positions.csv')
-    //   .then((data) => {
-    //     dispatch(loadNodes(data));
-    //   })
-    //   .catch((error) => {
-    //     console.error('Failed to fetch CSV file', error);
-    //   });
+    fetchCSVFile('force_directed_node_positions.csv')
+      .then((data) => {
+        dispatch(loadNodes(data));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch CSV file', error);
+      });
 
-    // fetchCSVFile('force_directed_edge_vectors.csv')
-    //   .then((data) => {
-    //     dispatch(loadEdges(data));
-    //   })
-    //   .catch((error) => {
-    //     console.error('Failed to fetch CSV file', error);
-    //   });
+    fetchCSVFile('force_directed_edge_vectors.csv')
+      .then((data) => {
+        dispatch(loadEdges(data));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch CSV file', error);
+      });
 
     fetchCyFromRDFFile('omics_model_cytoscape.json')
       .then((data) => {
@@ -71,6 +72,7 @@ export function App() {
       cy.elements().remove();
       // create a deep copy of the cytoData
       cy.add(newCytoData);
+      cy.fit();
       // cy.layout({ name: 'grid', rows: 1 }).run();
     } else {
       const newCy = cytoscape({
@@ -111,8 +113,19 @@ export function App() {
   }, [cytoData]);
 
   return (
-    <div>
-      <div id="cy" />
+    <div className="grid-container">
+      <div className="grid-item">
+        <div id="cy" />
+      </div>
+      <div className="grid-item">
+        <div className="webgl-view">
+          <WebGLView />
+        </div>
+      </div>
+      <div className="grid-item">
+        <MyChart />
+      </div>
+      <div className="grid-item">View 4</div>
     </div>
   );
 }

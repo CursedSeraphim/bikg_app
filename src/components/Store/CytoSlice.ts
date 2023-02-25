@@ -1,7 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import * as d3 from 'd3';
-
-// TODO add x y coordinates to nodes
 interface Node {
   data: {
     id: string;
@@ -46,9 +44,6 @@ const CytoSlice = createSlice({
     },
     loadCytoData: (state, action) => {
       if (action.payload !== undefined) {
-        // const data = JSON.parse(action.payload);
-        // state.data.nodes = data.nodes;
-        // state.data.edges = data.edges;
         const data = JSON.parse(action.payload);
         state.nodes = data.data.nodes;
         state.edges = data.data.edges;

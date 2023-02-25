@@ -59,8 +59,12 @@
     "rdf-js": "^4.0.2",
     "rdflib": "^2.2.26",
     "react-redux": "^8.0.5",
+    "react-vega-lite": "^6.1.0",
     "redux": "^4.2.1",
     "three": "^0.149.0",
+    "vega": "^5.22.1",
+    "vega-embed": "^6.21.3",
+    "vega-lite": "^5.6.1",
     "visyn_core": "git+ssh://git@github.com:datavisyn/visyn_core#develop",
     "visyn_scripts": "git+ssh://git@github.com/datavisyn/visyn_scripts#develop"
   },
