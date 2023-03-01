@@ -3,12 +3,15 @@ import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 // import { RdfState, setRdfData, selectRdfData } from './components/Store/RdfSlice';
 import cytoscape from 'cytoscape';
+import cytoscapeLasso from 'cytoscape-lasso';
 import { loadNodes, selectNodes } from './components/Store/NodeSlice';
 import { loadEdges, selectEdges } from './components/Store/EdgeSlice';
 import { loadCytoData, selectCytoData } from './components/Store/CytoSlice';
 import MyChart from './components/Vega/vegaspec';
 import WebGLView from './components/WebGLView/ThreeCanvasScatter';
 import './styles.css';
+
+cytoscape.use(cytoscapeLasso);
 
 async function fetchRdfFile(file_path) {
   const endpoint = `http://localhost:9000/rdf/file/${file_path}`;
@@ -73,7 +76,20 @@ export function App() {
       // create a deep copy of the cytoData
       cy.add(newCytoData);
       cy.fit();
+      cy.lassoSelectionEnabled(true);
       // cy.layout({ name: 'grid', rows: 1 }).run();
+      cy.on('boxend', (event) => {
+        // get the selected nodes
+        const selectedNodes = cy.nodes(':selected');
+
+        // get the data of the selected nodes
+        const selectedData = selectedNodes.map((node) => {
+          return node.data();
+        });
+
+        // log the selected data to the console
+        console.log(selectedData);
+      });
     } else {
       const newCy = cytoscape({
         container: document.getElementById('cy'), // container to render in
@@ -109,7 +125,6 @@ export function App() {
       });
       setCy(newCy);
     }
-    // TODO fix the infinite loop of redux state updates
   }, [cytoData]);
 
   return (
