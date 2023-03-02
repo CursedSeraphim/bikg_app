@@ -109,8 +109,6 @@ export function App() {
       'http://data.boehringer.com/uuid/PrimaryCellSpecimen/b82418e0-6a8d-45aa-b209-75805f860706',
     ])
       .then((data) => {
-        console.log('client running fetchJSONGivenNodes');
-        console.log('received:', data);
         setSpec(JSON.parse(data));
       })
       .catch((error) => {
@@ -137,8 +135,23 @@ export function App() {
           return node.data();
         });
 
+        // selectedData is of the shape [{'id': 'node1', 'label': 'Node 1'}, ...]
+        // create a node list of ids
+        const nodeList = selectedData.map((node) => {
+          return node.id;
+        });
+
+        // fetch the JSON for the Vega spec
+        fetchJSONGivenNodes('ex51_violations_metadata.csv', nodeList)
+          .then((data) => {
+            setSpec(JSON.parse(data));
+          })
+          .catch((error) => {
+            console.error('Failed to fetch RDF file', error);
+          });
+
         // log the selected data to the console
-        console.log(selectedData);
+        // console.log(selectedData);
       });
     } else {
       const newCy = cytoscape({

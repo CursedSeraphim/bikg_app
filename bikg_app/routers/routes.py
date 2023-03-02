@@ -47,9 +47,13 @@ async def get_filtered_csv(file_path: str, data: dict):
         json spec for a vegalite chart, containing occurrences of a categorical variable among the filtered nodes
     """
     file_path = os.path.join("bikg_app/csv", file_path)
+
+    # if file does not exist return empty vega json spec
+    if not os.path.exists(file_path):
+        print('file does not exist:', file_path)
+        return {"data": []}
+
     nodeList = data['nodes']
-    print('file_path received', file_path)
-    print('nodes received', nodeList)
 
     # read the csv file into a pandas dataframe
     df = pd.read_csv(file_path)
@@ -72,14 +76,29 @@ async def get_filtered_csv(file_path: str, data: dict):
         results['values'].append(value)
         results['counts'].append(count)
 
-    # create a json spec for a vegalite chart using the results
-    chart_spec = {
-        'mark': 'bar',
-        'encoding': {
-            'x': {'field': 'values', 'type': 'nominal'},
-            'y': {'field': 'counts', 'type': 'quantitative'}
-        },
-        'data': {'values': [{'values': results['counts'], 'values_2': results['values']}]},
-    }
+    # results is now of the shape {'values': ['http://data.boehringer.com/ontology/omics/TranscriptOmicsSample', 'http://data.boehringer.com/ontology/omics/Donor', 'http://data.boehringer.com/ontology/omics/PrimaryCellSpecimen'], 'counts': [2, 1, 1]}
 
+    # create a json spec for a vegalite chart using the results. the chart should be a horizontal bar chart with a bar for each unique value, and the height of the bar should be proportional to the count of the value
+    # first create a dataframe from the dictionary of results
+    df_results = pd.DataFrame.from_dict(results)
+
+    # create the Vega Lite spec
+    chart_spec = {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "data": {"values": df_results.to_dict("records")},
+        "mark": "bar",
+        "encoding": {
+            "y": {
+                "field": "values",
+                "type": "nominal",
+                "sort": {"op": "sum", "field": "counts", "order": "descending"}
+            },
+            "x": {
+                "field": "counts",
+                "type": "quantitative",
+                "axis": {"title": "Count"}
+            }
+        }
+    }
+    
     return chart_spec
