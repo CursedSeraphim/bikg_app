@@ -4,10 +4,11 @@ import { useDispatch, useSelector } from 'react-redux';
 // import { RdfState, setRdfData, selectRdfData } from './components/Store/RdfSlice';
 import cytoscape from 'cytoscape';
 import cytoscapeLasso from 'cytoscape-lasso';
+import { TopLevelSpec } from 'vega-lite';
 import { loadNodes, selectNodes } from './components/Store/NodeSlice';
 import { loadEdges, selectEdges } from './components/Store/EdgeSlice';
 import { loadCytoData, selectCytoData } from './components/Store/CytoSlice';
-import MyChart from './components/Vega/vegaspec';
+import Vega from './components/Vega/vegaspecprop';
 import WebGLView from './components/WebGLView/ThreeCanvasScatter';
 import './styles.css';
 
@@ -34,13 +35,48 @@ async function fetchCyFromRDFFile(file_path) {
   return data;
 }
 
+async function fetchJSONGivenNodes(file_path, nodeList) {
+  const endpoint = `http://localhost:9000/VegaRequest/${file_path}`;
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ nodes: nodeList }),
+  });
+  const data = await response.text();
+  return data;
+}
+
 export function App() {
   const dispatch = useDispatch();
   // const nodes = useSelector(selectNodes);
   // const edges = useSelector(selectEdges);
   const cytoData = useSelector(selectCytoData);
-
   const [cy, setCy] = React.useState(null);
+  const [spec, setSpec] = React.useState(null); // Add a new state for the Vega spec
+
+  // const spec = {
+  //   data: { url: 'https://vega.github.io/vega-lite/examples/data/cars.json' },
+  //   layer: [
+  //     {
+  //       mark: 'bar',
+  //       encoding: {
+  //         x: { field: 'Horsepower', type: 'quantitative' },
+  //         y: { field: 'Origin', type: 'nominal' },
+  //         color: { value: 'green' },
+  //       },
+  //     },
+  //     {
+  //       mark: 'bar',
+  //       encoding: {
+  //         x: { field: 'Acceleration', type: 'quantitative' },
+  //         y: { field: 'Origin', type: 'nominal' },
+  //         color: { value: 'grey' },
+  //       },
+  //     },
+  //   ],
+  // } as TopLevelSpec;
 
   React.useEffect(() => {
     fetchCSVFile('force_directed_node_positions.csv')
@@ -59,9 +95,23 @@ export function App() {
         console.error('Failed to fetch CSV file', error);
       });
 
-    fetchCyFromRDFFile('omics_model_cytoscape.json')
+    fetchCyFromRDFFile('ex51_cytoscape.json')
       .then((data) => {
         dispatch(loadCytoData(data));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch RDF file', error);
+      });
+
+    fetchJSONGivenNodes('ex51_violations_metadata.csv', [
+      'http://data.boehringer.com/uuid/Donor/dc6bc9d3-b32e-4c64-abb9-4c59f90a3ff5',
+      'http://data.boehringer.com/uuid/TranscriptOmicsSample/sample-EX51-EX51_1630',
+      'http://data.boehringer.com/uuid/PrimaryCellSpecimen/b82418e0-6a8d-45aa-b209-75805f860706',
+    ])
+      .then((data) => {
+        console.log('client running fetchJSONGivenNodes');
+        console.log('received:', data);
+        setSpec(JSON.parse(data));
       })
       .catch((error) => {
         console.error('Failed to fetch RDF file', error);
@@ -138,7 +188,10 @@ export function App() {
         </div>
       </div>
       <div className="grid-item">
-        <MyChart />
+        {/* if not spec just write "vega spec loading..." */}
+        {!spec && <div>vega spec loading...</div>}
+        {/* if spec do the following */}
+        {spec && <Vega spec={spec} />}
       </div>
       <div className="grid-item">View 4</div>
     </div>

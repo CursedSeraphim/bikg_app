@@ -4,16 +4,30 @@ import embed from 'vega-embed';
 import { TopLevelSpec } from 'vega-lite';
 
 function MyChart() {
+  // http://data.boehringer.com/ontology/omics/hasCellType
+  // http://www.w3.org/1999/02/22-rdf-syntax-ns#type
   useEffect(() => {
     // Define your Vega-Lite specification
     const spec: TopLevelSpec = {
       data: { url: 'https://vega.github.io/vega-lite/examples/data/cars.json' },
-      mark: { type: 'point' },
-      encoding: {
-        x: { field: 'Horsepower', type: 'quantitative' },
-        y: { field: 'Miles_per_Gallon', type: 'quantitative' },
-        color: { field: 'Origin', type: 'nominal' },
-      },
+      layer: [
+        {
+          mark: 'bar',
+          encoding: {
+            x: { field: 'Horsepower', type: 'quantitative' },
+            y: { field: 'Origin', type: 'nominal' },
+            color: { value: 'blue' },
+          },
+        },
+        {
+          mark: 'bar',
+          encoding: {
+            x: { field: 'Acceleration', type: 'quantitative' },
+            y: { field: 'Origin', type: 'nominal' },
+            color: { value: 'grey' },
+          },
+        },
+      ],
     };
 
     // Compile the specification to a Vega specification
