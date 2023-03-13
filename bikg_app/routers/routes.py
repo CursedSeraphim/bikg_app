@@ -1,25 +1,71 @@
 from fastapi import APIRouter
-from rdflib import Graph
+from rdflib import Graph, Namespace
 import pandas as pd
 import numpy as np
 import json
 import os
+import time
 
 router = APIRouter()
 
 # TODO consider removing this route
-@router.get("/csv/file/{file_path}")
+@router.get("/file/csv/{file_path}")
 async def read_csv_file(file_path: str):
     file_path = os.path.join("bikg_app/csv", file_path)
-    print('csv being fetched', file_path)
+
+    # check whether file path exists
+    if not os.path.exists(file_path):
+        print('file does not exist:', file_path)
+        return {"data": []}
+
     df = pd.read_csv(file_path)
+    # print(df.head(5))
+    # convert problematic float values to strings
+    # df = df.applymap(lambda x: str(x) if isinstance(x, np.floating) and np.isnan(x) else x)
+    # replace nan values
+    df = df.replace(np.nan, 'nan', regex=True)
     return {"data": df.to_dict(orient="records")}
 
+RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
 
-@router.get("/file/{file_path}")
+@router.get("/file/ontology")
+async def read_ontology():
+    file_path = os.path.join("bikg_app/rdf", "omics_model.ttl")
+    
+    # check whether file path exists
+    if not os.path.exists(file_path):
+        print('file does not exist:', file_path)
+        return {"data": []}
+    
+    
+    # if bikg_app/json/ontology.json doesn't exist, create it
+    if not os.path.exists('bikg_app/json/ontology.json'):
+        # create an RDF graph and parse the ontology file
+        g = Graph()
+        g.parse(file_path, format='ttl')
+
+        # filter the graph to include only relations with rdfs:subClassOf
+        filtered_triples = [(s, p, o) for s, p, o in g.triples((None, RDFS.subClassOf, None))]
+
+        # create a dictionary with the filtered graph and save it as json
+        filtered_dict = {"data": []}
+        for s, p, o in filtered_triples:
+            filtered_dict["data"].append({
+                "subject": str(s),
+                "predicate": str(p),
+                "object": str(o)
+            })
+        with open('bikg_app/json/ontology.json', "w") as f:
+            json.dump(filtered_dict, f)
+
+    # return the filtered ontology
+    with open('bikg_app/json/ontology.json', "r") as f:
+        return json.load(f)
+    
+
+@router.get("/file/json/{file_path}")
 async def read_file(file_path: str):
     file_path = os.path.join("bikg_app/json", file_path)
-    print('file being fetched', file_path)
     
     # check whether file path exists
     if not os.path.exists(file_path):
@@ -97,8 +143,12 @@ async def get_filtered_csv(file_path: str, data: dict):
                 "field": "counts",
                 "type": "quantitative",
                 "axis": {"title": "Count"}
-            }
+            },
+            "tooltip": [
+                {"field": "values", "type": "nominal"},
+                {"field": "counts", "type": "quantitative"}
+            ]
         }
     }
-    
+    end_time = time.time()
     return chart_spec

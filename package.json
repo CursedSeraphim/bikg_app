@@ -60,6 +60,7 @@
     "rdf-js": "^4.0.2",
     "rdflib": "^2.2.26",
     "react-redux": "^8.0.5",
+    "react-treebeard": "^3.2.4",
     "react-vega-lite": "^6.1.0",
     "redux": "^4.2.1",
     "three": "^0.149.0",
