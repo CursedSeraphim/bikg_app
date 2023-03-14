@@ -1,31 +1,58 @@
-import { createSlice, createSelector } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
+import * as N3 from 'n3';
+import { NamedNode } from 'n3';
+import type { Store } from 'n3';
+import type { Reducer } from 'redux';
 
-// write a state for a string object
 export interface RdfState {
-  data: string;
+  rdfString: string;
+  rdfGraph?: Store;
 }
 
-// set the initial state
 const initialState: RdfState = {
-  data: '',
+  rdfString: '',
+  rdfGraph: null,
 };
 
-// create a slice
 const rdfSlice = createSlice({
   name: 'rdf',
   initialState,
   reducers: {
-    setRdfData: (state, action) => {
-      state.data = action.payload;
+    setRdfString: (state, action) => {
+      state.rdfString = action.payload;
+    },
+    setTtlData: (state, action) => {
+      const { payload } = action;
+
+      // Create a new RDF graph
+      const store = new N3.Store();
+
+      // Parse the Turtle string into an RDF graph
+      const parser = new N3.Parser({ format: 'text/turtle' });
+
+      // Parse the Turtle string into an RDF graph
+      parser.parse(payload, (error, quad) => { // TODO change something with this such that the parsed store gets saved in the state
+        // Add the quad to the graph
+        if (error) {
+          console.error(error);
+        } else if (quad) {
+          store.addQuad(quad);
+        } else {
+          // end of input
+          console.log(`Parsed ${store.size} triples.`);
+        }
+      });
+
+      // log number of triples in the graph
+      console.log(`Parsed ${store.size} triples.`);
+
+      return state;
     },
   },
 });
 
-// export the state
-export const selectRdfData = (state: { rdf: RdfState }) => state.rdf.data;
+export const selectRdfData = (state: { rdf: RdfState }) => state.rdf.rdfString;
 
-// export the reducer
 export default rdfSlice.reducer;
 
-// export the actions
-export const { setRdfData } = rdfSlice.actions;
+export const { setRdfString, setTtlData } = rdfSlice.actions;
