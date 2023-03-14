@@ -4,14 +4,50 @@ import { NamedNode } from 'n3';
 import type { Store } from 'n3';
 import type { Reducer } from 'redux';
 
+export const selectSubClassOfTuples = (state: { rdf: RdfState }) => {
+  const { rdfString } = state.rdf;
+  const store: Store = new N3.Store();
+  const parser: N3.Parser = new N3.Parser();
+  parser.parse(rdfString, (error, quad, _prefixes) => {
+    if (quad) {
+      store.addQuad(quad);
+    } else {
+      console.log('Finished parsing!');
+      console.log('store before filtering', store);
+      const subClassOfPredicate = new NamedNode('http://www.w3.org/2000/01/rdf-schema#subClassOf');
+      const subClassOfTuples = store.getQuads(null, subClassOfPredicate, null);
+      console.log('store after filtering', subClassOfTuples);
+      return subClassOfTuples;
+    }
+  });
+};
+
+export const selectSubClassOrObjectPropertyTuples = (state: { rdf: RdfState }) => {
+  const { rdfString } = state.rdf;
+  const store: Store = new N3.Store();
+  const parser: N3.Parser = new N3.Parser();
+  parser.parse(rdfString, (error, quad, _prefixes) => {
+    if (quad) {
+      store.addQuad(quad);
+    } else {
+      console.log('Finished parsing!');
+      console.log('store before filtering', store);
+      const subClassOfPredicate = new NamedNode('http://www.w3.org/2000/01/rdf-schema#subClassOf');
+      const objectPropertyPredicate = new NamedNode('http://www.w3.org/2002/07/owl#ObjectProperty');
+      const subClassOrObjectPropertyTuples = store.getQuads(null, subClassOfPredicate, null).concat(store.getQuads(null, null, objectPropertyPredicate));
+      console.log('store after filtering', subClassOrObjectPropertyTuples);
+      return subClassOrObjectPropertyTuples;
+    }
+  });
+  return [];
+};
+
 export interface RdfState {
   rdfString: string;
-  rdfGraph?: Store;
 }
 
 const initialState: RdfState = {
   rdfString: '',
-  rdfGraph: null,
 };
 
 const rdfSlice = createSlice({
@@ -21,33 +57,6 @@ const rdfSlice = createSlice({
     setRdfString: (state, action) => {
       state.rdfString = action.payload;
     },
-    setTtlData: (state, action) => {
-      const { payload } = action;
-
-      // Create a new RDF graph
-      const store = new N3.Store();
-
-      // Parse the Turtle string into an RDF graph
-      const parser = new N3.Parser({ format: 'text/turtle' });
-
-      // Parse the Turtle string into an RDF graph
-      parser.parse(payload, (error, quad) => { // TODO change something with this such that the parsed store gets saved in the state
-        // Add the quad to the graph
-        if (error) {
-          console.error(error);
-        } else if (quad) {
-          store.addQuad(quad);
-        } else {
-          // end of input
-          console.log(`Parsed ${store.size} triples.`);
-        }
-      });
-
-      // log number of triples in the graph
-      console.log(`Parsed ${store.size} triples.`);
-
-      return state;
-    },
   },
 });
 
@@ -55,4 +64,4 @@ export const selectRdfData = (state: { rdf: RdfState }) => state.rdf.rdfString;
 
 export default rdfSlice.reducer;
 
-export const { setRdfString, setTtlData } = rdfSlice.actions;
+export const { setRdfString } = rdfSlice.actions;

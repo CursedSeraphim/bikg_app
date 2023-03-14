@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import cytoscape from 'cytoscape';
 import cytoscapeLasso from 'cytoscape-lasso';
 import { TopLevelSpec } from 'vega-lite';
-import { RdfState, setRdfString, selectRdfData, setTtlData } from './components/Store/RdfSlice';
+import { RdfState, setRdfString, selectRdfData, selectSubClassOfTuples, selectSubClassOrObjectPropertyTuples } from './components/Store/RdfSlice';
 import { loadNodes, selectNodes } from './components/Store/NodeSlice';
 import { loadEdges, selectEdges } from './components/Store/EdgeSlice';
 import { loadOntology, selectOntology } from './components/Store/OntologySlice';
@@ -90,8 +90,12 @@ export function App() {
     fetchOntology()
       .then((data) => {
         dispatch(setRdfString(data));
-        dispatch(setTtlData(data));
         console.log('rdfOntology', rdfOntology);
+        // wrap rdfOntology such that it is of type RdfState
+        const rdfOntologyState: RdfState = {
+          rdfString: data,
+        };
+        console.log('selectSubClassOfTuples', selectSubClassOrObjectPropertyTuples({ rdf: rdfOntologyState }));
       })
       .catch((error) => {
         console.error('Failed to fetch ontology', error);

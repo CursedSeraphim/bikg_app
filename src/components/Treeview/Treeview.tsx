@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Treebeard, theme } from 'react-treebeard';
 import { loadOntology, selectOntology, RDFTuple, OntologySliceState } from '../Store/OntologySlice';
+import { RdfState, setRdfString, selectRdfData, selectSubClassOfTuples, selectSubClassOrObjectPropertyTuples } from '../Store/RdfSlice';
 
 const lightTheme = {
   ...theme,
@@ -83,6 +84,76 @@ const lightTheme = {
 };
 
 /**
+ * Glue that connects rdfslice selectSubClassOrObjectPropertyTuples return value to the Treebeard component
+ * The data from selectSubClassOrObjectPropertyTuples is of the shape 
+ * [
+    {
+        "termType": "Quad",
+        "subject": {
+            "termType": "NamedNode",
+            "value": "http://data.boehringer.com/ontology/omics/TranscriptOmicsSample"
+        },
+        "predicate": {
+            "termType": "NamedNode",
+            "value": "http://www.w3.org/2000/01/rdf-schema#subClassOf"
+        },
+        "object": {
+            "termType": "NamedNode",
+            "value": "http://data.boehringer.com/ontology/omics/Sample"
+        },
+        "graph": {
+            "termType": "DefaultGraph",
+            "value": ""
+        }
+    },
+    {
+        "termType": "Quad",
+        "subject": {
+            "termType": "NamedNode",
+            "value": "http://data.boehringer.com/ontology/omics/DiffExprAnalysis"
+        },
+        "predicate": {
+            "termType": "NamedNode",
+            "value": "http://www.w3.org/2000/01/rdf-schema#subClassOf"
+        },
+        "object": {
+            "termType": "NamedNode",
+            "value": "http://data.boehringer.com/ontology/omics/Analysis"
+        },
+        "graph": {
+            "termType": "DefaultGraph",
+            "value": ""
+        }
+    },
+    ...
+    otherwise does the same as processTTL
+ */
+function getTreeDataFromN3Data(ontology) {
+  const ontologyMap: { [key: string]: { name: string; children: any[] } } = {};
+
+  selectSubClassOrObjectPropertyTuples(ontology).forEach((triple) => {
+    ontologyMap[triple.subject] = ontologyMap[triple.subject] || { name: triple.subject, children: [] };
+    ontologyMap[triple.object] = ontologyMap[triple.object] || { name: triple.object, children: [] };
+    ontologyMap[triple.object].children.push(ontologyMap[triple.subject]);
+  });
+
+  // Find nodes with no parents
+  const roots = Object.values(ontologyMap).filter((node) => {
+    // A node has no parents if no other node has it as a child
+    return Object.values(ontologyMap).every((otherNode) => {
+      return otherNode.children.indexOf(node) === -1;
+    });
+  });
+
+  if (roots.length > 1) {
+    const data = { name: 'root', children: roots };
+    return data;
+  }
+
+  return roots[0];
+}
+
+/**
  * Process the ontology data from the store into the data format that Treebeard expects
  * the data from the store is defined by the interfaces in the ontologySlice.ts file as
  * RDFTuple { subject: string; predicate: string; object: string; }
@@ -141,10 +212,12 @@ const data = {
 export default function Treeview() {
   const [treeData, setTreeData] = useState(null);
   const ontology = useSelector(selectOntology);
+  // const ontology = useSelector(selectRdfData);
 
   useEffect(() => {
     if (ontology) {
       const processedData = processTTL(ontology);
+      // const processedData = getTreeDataFromN3Data(ontology);
       setTreeData(processedData);
     }
   }, [ontology]);
