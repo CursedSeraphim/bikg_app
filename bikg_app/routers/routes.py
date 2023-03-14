@@ -1,4 +1,5 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
+from fastapi.responses import FileResponse
 from rdflib import Graph, Namespace
 import pandas as pd
 import numpy as np
@@ -29,7 +30,18 @@ async def read_csv_file(file_path: str):
 RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
 
 @router.get("/file/ontology")
-async def read_ontology():
+def get_ttl_file(response: Response):
+    """
+    sends the contents of the ttl file serialized to the client
+    """
+    with open("bikg_app/rdf/omics_model.ttl", "r") as file:
+        response.headers["Content-Disposition"] = "attachment; filename=omics_model.ttl"
+        return Response(content=file.read(), media_type="text/turtle")
+        
+
+
+@router.get("/file/ontologyold")
+async def read_ontology_old():
     file_path = os.path.join("bikg_app/rdf", "omics_model.ttl")
     
     # check whether file path exists

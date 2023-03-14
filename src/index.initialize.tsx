@@ -15,10 +15,12 @@ ReactDOM.render(
         <VisynApp
           loginMenu={null}
           navbar={
-            <Navbar width={{ base: 300 }} height="100%" p="xs">
+            <Navbar width={{ base: 500 }} height="100%" p="xs">
               {/* Navbar <br />
                 To be filled with settings, potentially an ontology tree view browser, etc */}
-              <Treeview />
+              <div className="treebeard-container">
+                <Treeview />
+              </div>
             </Navbar>
           }
           header={

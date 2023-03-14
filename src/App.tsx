@@ -1,10 +1,10 @@
 import { AppShell, Header, Navbar } from '@mantine/core';
 import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-// import { RdfState, setRdfData, selectRdfData } from './components/Store/RdfSlice';
 import cytoscape from 'cytoscape';
 import cytoscapeLasso from 'cytoscape-lasso';
 import { TopLevelSpec } from 'vega-lite';
+import { RdfState, setRdfString, selectRdfData, setTtlData } from './components/Store/RdfSlice';
 import { loadNodes, selectNodes } from './components/Store/NodeSlice';
 import { loadEdges, selectEdges } from './components/Store/EdgeSlice';
 import { loadOntology, selectOntology } from './components/Store/OntologySlice';
@@ -42,6 +42,13 @@ async function fetchJSONGivenNodes(file_path, nodeList) {
   return data;
 }
 
+async function fetchOntologyOld() {
+  const endpoint = `http://localhost:9000/file/ontologyold`;
+  const response = await fetch(endpoint);
+  const data = await response.text();
+  return data;
+}
+
 async function fetchOntology() {
   const endpoint = `http://localhost:9000/file/ontology`;
   const response = await fetch(endpoint);
@@ -53,6 +60,7 @@ export function App() {
   const dispatch = useDispatch();
   const ontology = useSelector(selectOntology);
   const cytoData = useSelector(selectCytoData);
+  const rdfOntology = useSelector(selectRdfData);
   const [cy, setCy] = React.useState(null);
   const [spec, setSpec] = React.useState(null); // Add a new state for the Vega spec
 
@@ -80,6 +88,16 @@ export function App() {
 
   React.useEffect(() => {
     fetchOntology()
+      .then((data) => {
+        dispatch(setRdfString(data));
+        dispatch(setTtlData(data));
+        console.log('rdfOntology', rdfOntology);
+      })
+      .catch((error) => {
+        console.error('Failed to fetch ontology', error);
+      });
+
+    fetchOntologyOld()
       .then((data) => {
         dispatch(loadOntology(data));
       })
