@@ -131,7 +131,18 @@ const lightTheme = {
 function getTreeDataFromN3Data(ontology) {
   const ontologyMap: { [key: string]: { name: string; children: any[] } } = {};
 
-  selectSubClassOrObjectPropertyTuples(ontology).forEach((triple) => {
+  // console.log('ontology in getTreeDataFromN3Data', ontology);
+
+  const rdfOntologyState: RdfState = {
+    rdfString: ontology,
+  };
+
+  const quads = selectSubClassOfTuples({ rdf: rdfOntologyState });
+  console.log('{ rdf: rdfOntologyState }', { rdf: rdfOntologyState });
+  console.log('quads after selectSubClassOfTuples', quads);
+
+  quads.forEach((triple) => {
+    console.log('triple', triple);
     ontologyMap[triple.subject] = ontologyMap[triple.subject] || { name: triple.subject, children: [] };
     ontologyMap[triple.object] = ontologyMap[triple.object] || { name: triple.object, children: [] };
     ontologyMap[triple.object].children.push(ontologyMap[triple.subject]);
@@ -216,9 +227,12 @@ export default function Treeview() {
 
   useEffect(() => {
     if (ontology) {
+      console.log('before getting tree data');
       const processedData = processTTL(ontology);
       // const processedData = getTreeDataFromN3Data(ontology);
+      console.log('after getting tree data, before setting tree data', processedData);
       setTreeData(processedData);
+      console.log('after setting tree data');
     }
   }, [ontology]);
 
