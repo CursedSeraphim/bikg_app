@@ -55,6 +55,33 @@ const initialState: RdfState = {
   rdfString: '',
 };
 
+interface CytoNode {
+  data: {
+    id: string;
+    label?: string;
+  };
+  position?: {
+    x: number;
+    y: number;
+  };
+  grabbable?: boolean;
+  locked?: boolean;
+}
+
+interface CytoEdge {
+  data: {
+    id: string;
+    source: string;
+    target: string;
+    label?: string;
+  };
+}
+
+interface CytoData {
+  nodes: CytoNode[];
+  edges: CytoEdge[];
+}
+
 const rdfSlice = createSlice({
   name: 'rdf',
   initialState,
@@ -64,6 +91,18 @@ const rdfSlice = createSlice({
     },
   },
 });
+
+/**
+ * Function that serves as glue between the Cytoscape component and the N3 data form the RDFSlice Redux store.
+ * @param state The Redux store state.
+ * @returns The Cytoscape data.
+ */
+export const selectCytoData = (state: { rdf: RdfState }) => {
+  // TODO
+  // use selectSubClassOfTuples to get the subClassOf tuples
+  // process the tuples and turn them into CytoNodes and CytoEdges as defined in the CytoData interface
+  // return the CytoData
+};
 
 export const selectRdfData = (state: { rdf: RdfState }) => state.rdf.rdfString;
 
