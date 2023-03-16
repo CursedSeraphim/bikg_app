@@ -30,28 +30,6 @@ export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<
   });
 };
 
-// export const selectSubClassOfTuples = (state: { rdf: RdfState }) => {
-//   const { rdfString } = state.rdf;
-//   const store: Store = new N3.Store();
-//   const parser: N3.Parser = new N3.Parser();
-//   console.log('rdfString in slice', rdfString);
-//   parser.parse(rdfString, (error, quad, _prefixes) => {
-//     if (quad) {
-//       console.log('quad in parser', quad);
-//       store.addQuad(quad);
-//     } else if (error) {
-//       console.log('error in parser', error);
-//     } else {
-//       console.log('end of quads, now filtering');
-//       const subClassOfPredicate = new NamedNode('http://www.w3.org/2000/01/rdf-schema#subClassOf');
-//       const subClassOfTuples = store.getQuads(null, subClassOfPredicate, null);
-//       console.log('returning subClassOfTuples', subClassOfTuples);
-//       return subClassOfTuples;
-//     }
-//   });
-//   return [];
-// };
-
 export const selectSubClassOrObjectPropertyTuples = (state: { rdf: RdfState }) => {
   const { rdfString } = state.rdf;
   const store: Store = new N3.Store();
