@@ -85,50 +85,9 @@ const lightTheme = {
 
 /**
  * Glue that connects rdfslice selectSubClassOrObjectPropertyTuples return value to the Treebeard component
- * The data from selectSubClassOrObjectPropertyTuples is of the shape 
- * [
-    {
-        "termType": "Quad",
-        "subject": {
-            "termType": "NamedNode",
-            "value": "http://data.boehringer.com/ontology/omics/TranscriptOmicsSample"
-        },
-        "predicate": {
-            "termType": "NamedNode",
-            "value": "http://www.w3.org/2000/01/rdf-schema#subClassOf"
-        },
-        "object": {
-            "termType": "NamedNode",
-            "value": "http://data.boehringer.com/ontology/omics/Sample"
-        },
-        "graph": {
-            "termType": "DefaultGraph",
-            "value": ""
-        }
-    },
-    {
-        "termType": "Quad",
-        "subject": {
-            "termType": "NamedNode",
-            "value": "http://data.boehringer.com/ontology/omics/DiffExprAnalysis"
-        },
-        "predicate": {
-            "termType": "NamedNode",
-            "value": "http://www.w3.org/2000/01/rdf-schema#subClassOf"
-        },
-        "object": {
-            "termType": "NamedNode",
-            "value": "http://data.boehringer.com/ontology/omics/Analysis"
-        },
-        "graph": {
-            "termType": "DefaultGraph",
-            "value": ""
-        }
-    },
-    ...
-    otherwise does the same as processTTL
+ * otherwise does the same as processTTL
  */
-function getTreeDataFromN3Data(ontology) {
+async function getTreeDataFromN3Data(ontology) {
   const ontologyMap: { [key: string]: { name: string; children: any[] } } = {};
 
   // console.log('ontology in getTreeDataFromN3Data', ontology);
@@ -137,7 +96,7 @@ function getTreeDataFromN3Data(ontology) {
     rdfString: ontology,
   };
 
-  const quads = selectSubClassOfTuples({ rdf: rdfOntologyState });
+  const quads = await selectSubClassOfTuples({ rdf: rdfOntologyState });
   console.log('{ rdf: rdfOntologyState }', { rdf: rdfOntologyState });
   console.log('quads after selectSubClassOfTuples', quads);
 
@@ -147,6 +106,8 @@ function getTreeDataFromN3Data(ontology) {
     ontologyMap[triple.object] = ontologyMap[triple.object] || { name: triple.object, children: [] };
     ontologyMap[triple.object].children.push(ontologyMap[triple.subject]);
   });
+
+  console.log('ontologyMap', ontologyMap);
 
   // Find nodes with no parents
   const roots = Object.values(ontologyMap).filter((node) => {
@@ -222,17 +183,14 @@ const data = {
 
 export default function Treeview() {
   const [treeData, setTreeData] = useState(null);
-  const ontology = useSelector(selectOntology);
-  // const ontology = useSelector(selectRdfData);
+  // const ontology = useSelector(selectOntology);
+  const ontology = useSelector(selectRdfData);
 
   useEffect(() => {
     if (ontology) {
-      console.log('before getting tree data');
-      const processedData = processTTL(ontology);
-      // const processedData = getTreeDataFromN3Data(ontology);
-      console.log('after getting tree data, before setting tree data', processedData);
-      setTreeData(processedData);
-      console.log('after setting tree data');
+      getTreeDataFromN3Data(ontology).then((processedData) => {
+        setTreeData(processedData);
+      });
     }
   }, [ontology]);
 
