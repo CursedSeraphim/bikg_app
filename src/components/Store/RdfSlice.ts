@@ -109,8 +109,8 @@ const rdfSlice = createSlice({
  * @returns The Cytoscape data.
  */
 export const selectCytoData = async (state: { rdf: RdfState }): Promise<CytoData> => {
-  // const subClassOfTuples = await selectSubClassOrObjectPropertyTuples(state);
-  const subClassOfTuples = await selectSubClassOfTuples(state);
+  const subClassOfTuples = await selectSubClassOrObjectPropertyTuples(state);
+  // const subClassOfTuples = await selectSubClassOfTuples(state);
   const nodes: CytoNode[] = [];
   const edges: CytoEdge[] = [];
 

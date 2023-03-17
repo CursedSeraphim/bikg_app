@@ -156,7 +156,7 @@ export function App() {
           console.log('newCytoData', newCytoData);
           cy.add(newCytoData);
           cy.lassoSelectionEnabled(true);
-          cy.layout({ name: 'cose-bilkent' }).run();
+          cy.layout({ name: 'cose-bilkent', idealEdgeLength: 100, nodeDimensionsIncludeLabels: true }).run();
           cy.fit();
           cy.on('boxend', (event) => {
             // get the selected nodes
@@ -215,6 +215,8 @@ export function App() {
 
             layout: {
               name: 'cose-bilkent',
+              idealEdgeLength: 100,
+              nodeDimensionsIncludeLabels: true,
             },
           });
           setCy(newCy);
