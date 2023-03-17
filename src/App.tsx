@@ -1,27 +1,19 @@
-import { AppShell, Header, Navbar } from '@mantine/core';
 import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import cytoscape from 'cytoscape';
+import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
-import { TopLevelSpec } from 'vega-lite';
-import {
-  RdfState,
-  setRdfString,
-  selectRdfData,
-  selectSubClassOfTuples,
-  selectSubClassOrObjectPropertyTuples,
-  selectCytoData,
-} from './components/Store/RdfSlice';
-import { loadNodes, selectNodes } from './components/Store/NodeSlice';
-import { loadEdges, selectEdges } from './components/Store/EdgeSlice';
+import { RdfState, setRdfString, selectRdfData, selectSubClassOrObjectPropertyTuples, selectCytoData } from './components/Store/RdfSlice';
+import { loadNodes } from './components/Store/NodeSlice';
+import { loadEdges } from './components/Store/EdgeSlice';
 import { loadOntology, selectOntology } from './components/Store/OntologySlice';
 import { loadCytoData } from './components/Store/CytoSlice';
 
 import Vega from './components/Vega/vegaspecprop';
-import WebGLView from './components/WebGLView/ThreeCanvasScatter';
 import './styles.css';
 
 cytoscape.use(cytoscapeLasso);
+cytoscape.use(coseBilkent);
 
 async function fetchCSVFile(file_path) {
   const endpoint = `http://localhost:9000/file/csv/${file_path}`;
@@ -163,9 +155,9 @@ export function App() {
           // create a deep copy of the cytoData
           console.log('newCytoData', newCytoData);
           cy.add(newCytoData);
-          cy.fit();
           cy.lassoSelectionEnabled(true);
-          // cy.layout({ name: 'grid', rows: 1 }).run();
+          cy.layout({ name: 'cose-bilkent' }).run();
+          cy.fit();
           cy.on('boxend', (event) => {
             // get the selected nodes
             const selectedNodes = cy.nodes(':selected');
@@ -222,8 +214,7 @@ export function App() {
             ],
 
             layout: {
-              name: 'grid',
-              rows: 1,
+              name: 'cose-bilkent',
             },
           });
           setCy(newCy);
