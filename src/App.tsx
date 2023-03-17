@@ -4,11 +4,19 @@ import { useDispatch, useSelector } from 'react-redux';
 import cytoscape from 'cytoscape';
 import cytoscapeLasso from 'cytoscape-lasso';
 import { TopLevelSpec } from 'vega-lite';
-import { RdfState, setRdfString, selectRdfData, selectSubClassOfTuples, selectSubClassOrObjectPropertyTuples } from './components/Store/RdfSlice';
+import {
+  RdfState,
+  setRdfString,
+  selectRdfData,
+  selectSubClassOfTuples,
+  selectSubClassOrObjectPropertyTuples,
+  selectCytoData,
+} from './components/Store/RdfSlice';
 import { loadNodes, selectNodes } from './components/Store/NodeSlice';
 import { loadEdges, selectEdges } from './components/Store/EdgeSlice';
 import { loadOntology, selectOntology } from './components/Store/OntologySlice';
-import { loadCytoData, selectCytoData } from './components/Store/CytoSlice';
+import { loadCytoData } from './components/Store/CytoSlice';
+
 import Vega from './components/Vega/vegaspecprop';
 import WebGLView from './components/WebGLView/ThreeCanvasScatter';
 import './styles.css';
@@ -59,33 +67,13 @@ async function fetchOntology() {
 export function App() {
   const dispatch = useDispatch();
   const ontology = useSelector(selectOntology);
-  const cytoData = useSelector(selectCytoData);
+  // const cytoData = useSelector(selectCytoData);
   const rdfOntology = useSelector(selectRdfData);
+  const [cytoData, setCytoData] = React.useState(null);
   const [cy, setCy] = React.useState(null);
   const [spec, setSpec] = React.useState(null); // Add a new state for the Vega spec
 
-  // const spec = {
-  //   data: { url: 'https://vega.github.io/vega-lite/examples/data/cars.json' },
-  //   layer: [
-  //     {
-  //       mark: 'bar',
-  //       encoding: {
-  //         x: { field: 'Horsepower', type: 'quantitative' },
-  //         y: { field: 'Origin', type: 'nominal' },
-  //         color: { value: 'green' },
-  //       },
-  //     },
-  //     {
-  //       mark: 'bar',
-  //       encoding: {
-  //         x: { field: 'Acceleration', type: 'quantitative' },
-  //         y: { field: 'Origin', type: 'nominal' },
-  //         color: { value: 'grey' },
-  //       },
-  //     },
-  //   ],
-  // } as TopLevelSpec;
-
+  // TODO check whether it is better to split this into multiple useEffects with their own dependencies
   React.useEffect(() => {
     fetchOntology()
       .then((data) => {
@@ -100,6 +88,17 @@ export function App() {
       .catch((error) => {
         console.error('Failed to fetch ontology', error);
       });
+
+    if (rdfOntology) {
+      selectCytoData({ rdf: { rdfString: rdfOntology } })
+        .then((data) => {
+          setCytoData(data);
+          console.log('cytoData has been set:', cytoData);
+        })
+        .catch((error) => {
+          console.error('Failed to generate Cytoscape data:', error);
+        });
+    }
 
     fetchOntologyOld()
       .then((data) => {
@@ -155,84 +154,91 @@ export function App() {
   }, []);
 
   React.useEffect(() => {
-    const newCytoData = JSON.parse(JSON.stringify(cytoData));
-    // if (cy) {
-    //   // Update the cytoData elements and layout
-    //   cy.elements().remove();
-    //   // create a deep copy of the cytoData
-    //   cy.add(newCytoData);
-    //   cy.fit();
-    //   cy.lassoSelectionEnabled(true);
-    //   // cy.layout({ name: 'grid', rows: 1 }).run();
-    //   cy.on('boxend', (event) => {
-    //     // get the selected nodes
-    //     const selectedNodes = cy.nodes(':selected');
+    selectCytoData({ rdf: { rdfString: rdfOntology } })
+      .then((data) => {
+        const newCytoData = data;
+        if (cy) {
+          // Update the cytoData elements and layout
+          cy.elements().remove();
+          // create a deep copy of the cytoData
+          console.log('newCytoData', newCytoData);
+          cy.add(newCytoData);
+          cy.fit();
+          cy.lassoSelectionEnabled(true);
+          // cy.layout({ name: 'grid', rows: 1 }).run();
+          cy.on('boxend', (event) => {
+            // get the selected nodes
+            const selectedNodes = cy.nodes(':selected');
 
-    //     // get the data of the selected nodes
-    //     const selectedData = selectedNodes.map((node) => {
-    //       return node.data();
-    //     });
+            // get the data of the selected nodes
+            const selectedData = selectedNodes.map((node) => {
+              return node.data();
+            });
 
-    //     // selectedData is of the shape [{'id': 'node1', 'label': 'Node 1'}, ...]
-    //     // create a node list of ids
-    //     const nodeList = selectedData.map((node) => {
-    //       return node.id;
-    //     });
+            // selectedData is of the shape [{'id': 'node1', 'label': 'Node 1'}, ...]
+            // create a node list of ids
+            const nodeList = selectedData.map((node) => {
+              return node.id;
+            });
 
-    //     // fetch the JSON for the Vega spec
-    //     fetchJSONGivenNodes('ex51_violations_metadata.csv', nodeList)
-    //       .then((data) => {
-    //         setSpec(JSON.parse(data));
-    //       })
-    //       .catch((error) => {
-    //         console.error('Failed to fetch RDF file', error);
-    //       });
+            // fetch the JSON for the Vega spec
+            fetchJSONGivenNodes('ex51_violations_metadata.csv', nodeList)
+              .then((data) => {
+                setSpec(JSON.parse(data));
+              })
+              .catch((error) => {
+                console.error('Failed to fetch RDF file', error);
+              });
 
-    //     // log the selected data to the console
-    //     // console.log(selectedData);
-    //   });
-    // } else {
-    //   const newCy = cytoscape({
-    //     container: document.getElementById('cy'), // container to render in
+            // log the selected data to the console
+            // console.log(selectedData);
+          });
+        } else {
+          const newCy = cytoscape({
+            container: document.getElementById('cy'), // container to render in
 
-    //     elements: newCytoData,
+            elements: newCytoData,
 
-    //     style: [
-    //       // the stylesheet for the graph
-    //       {
-    //         selector: 'node',
-    //         style: {
-    //           'background-color': '#666',
-    //           label: 'data(id)',
-    //         },
-    //       },
+            style: [
+              // the stylesheet for the graph
+              {
+                selector: 'node',
+                style: {
+                  'background-color': '#666',
+                  label: 'data(id)',
+                },
+              },
 
-    //       {
-    //         selector: 'edge',
-    //         style: {
-    //           width: 3,
-    //           'line-color': '#ccc',
-    //           'target-arrow-color': '#ccc',
-    //           'target-arrow-shape': 'triangle',
-    //           'curve-style': 'bezier',
-    //         },
-    //       },
-    //     ],
+              {
+                selector: 'edge',
+                style: {
+                  width: 3,
+                  'line-color': '#ccc',
+                  'target-arrow-color': '#ccc',
+                  'target-arrow-shape': 'triangle',
+                  'curve-style': 'bezier',
+                },
+              },
+            ],
 
-    //     layout: {
-    //       name: 'grid',
-    //       rows: 1,
-    //     },
-    //   });
-    //   setCy(newCy);
-    // }
-  }, [cytoData]);
+            layout: {
+              name: 'grid',
+              rows: 1,
+            },
+          });
+          setCy(newCy);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to generate Cytoscape data:', error);
+      });
+  }, [rdfOntology]);
 
   return (
     <div className="grid-container">
       <div className="grid-item">
-        {/* <div id="cy" /> */}
-        Expanded Ontology View
+        <div id="cy" />
+        {/* Expanded Ontology View */}
       </div>
       <div className="grid-item">
         Embedding View

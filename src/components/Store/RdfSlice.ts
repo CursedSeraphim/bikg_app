@@ -30,21 +30,32 @@ export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<
   });
 };
 
-export const selectSubClassOrObjectPropertyTuples = (state: { rdf: RdfState }) => {
+export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: RdfState }): Promise<any[]> => {
   const { rdfString } = state.rdf;
   const store: Store = new N3.Store();
   const parser: N3.Parser = new N3.Parser();
-  parser.parse(rdfString, (error, quad, _prefixes) => {
-    if (quad) {
-      store.addQuad(quad);
-    } else {
-      const subClassOfPredicate = new NamedNode('http://www.w3.org/2000/01/rdf-schema#subClassOf');
-      const objectPropertyPredicate = new NamedNode('http://www.w3.org/2002/07/owl#ObjectProperty');
-      const subClassOrObjectPropertyTuples = store.getQuads(null, subClassOfPredicate, null).concat(store.getQuads(null, null, objectPropertyPredicate));
-      return subClassOrObjectPropertyTuples;
-    }
+  await new Promise<void>((resolve, reject) => {
+    parser.parse(rdfString, (error, quad, _prefixes) => {
+      if (quad) {
+        store.addQuad(quad);
+      } else if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    });
   });
-  return [];
+
+  const subClassOfPredicate = new NamedNode('http://www.w3.org/2000/01/rdf-schema#subClassOf');
+  const objectPropertyPredicate = new NamedNode('http://www.w3.org/2002/07/owl#ObjectProperty');
+  const subClassOrObjectPropertyTuples = store.getQuads(null, subClassOfPredicate, null).concat(store.getQuads(null, null, objectPropertyPredicate));
+  return subClassOrObjectPropertyTuples.map((quad) => {
+    return {
+      subject: quad.subject.id,
+      predicate: quad.predicate.id,
+      object: quad.object.id,
+    };
+  });
 };
 
 export interface RdfState {
@@ -97,11 +108,36 @@ const rdfSlice = createSlice({
  * @param state The Redux store state.
  * @returns The Cytoscape data.
  */
-export const selectCytoData = (state: { rdf: RdfState }) => {
-  // TODO
-  // use selectSubClassOfTuples to get the subClassOf tuples
-  // process the tuples and turn them into CytoNodes and CytoEdges as defined in the CytoData interface
-  // return the CytoData
+export const selectCytoData = async (state: { rdf: RdfState }): Promise<CytoData> => {
+  // const subClassOfTuples = await selectSubClassOrObjectPropertyTuples(state);
+  const subClassOfTuples = await selectSubClassOfTuples(state);
+  const nodes: CytoNode[] = [];
+  const edges: CytoEdge[] = [];
+
+  // Iterate over the subClassOfTuples and create a node for each unique subject and object
+  // Also create an edge for each subClassOf relation
+  subClassOfTuples.forEach((tuple) => {
+    const sourceNode = nodes.find((node) => node.data.id === tuple.subject);
+    if (!sourceNode) {
+      nodes.push({ data: { id: tuple.subject } });
+    }
+
+    const targetNode = nodes.find((node) => node.data.id === tuple.object);
+    if (!targetNode) {
+      nodes.push({ data: { id: tuple.object } });
+    }
+
+    edges.push({
+      data: {
+        id: `${tuple.subject}_${tuple.object}`,
+        source: tuple.subject,
+        target: tuple.object,
+        label: tuple.predicate,
+      },
+    });
+  });
+
+  return { nodes, edges };
 };
 
 export const selectRdfData = (state: { rdf: RdfState }) => state.rdf.rdfString;
