@@ -10,7 +10,7 @@ import { loadEdges } from './components/Store/EdgeSlice';
 import { loadOntology, selectOntology } from './components/Store/OntologySlice';
 import { loadCytoData } from './components/Store/CytoSlice';
 import InteractiveScatterPlot from './components/EmbeddingView/InteractiveScatterPlot';
-import { dataToScatterDataArray } from './components/EmbeddingView/csvToPlotlyData';
+import BarPlotSample from './components/FeatureDistributionView/BarPlotSample';
 
 import Vega from './components/Vega/vegaspecprop';
 import './styles.css';
@@ -255,9 +255,10 @@ export function App() {
       </div>
       <div className="grid-item">
         {/* if not spec just write "vega spec loading..." */}
-        {!spec && <div>vega spec loading...</div>}
+        {/* {!spec && <div>vega spec loading...</div>} */}
         {/* if spec do the following */}
-        {spec && <Vega spec={spec} />}
+        {/* {spec && <Vega spec={spec} />} */}
+        <BarPlotSample />
       </div>
       <div className="grid-item">Fixed Feature Distribution View</div>
     </div>
