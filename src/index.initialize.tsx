@@ -1,3 +1,4 @@
+import 'regenerator-runtime/runtime';
 import * as ReactDOM from 'react-dom';
 import * as React from 'react';
 import { MantineProvider, Navbar, Title } from '@mantine/core';

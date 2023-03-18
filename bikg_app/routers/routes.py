@@ -9,7 +9,6 @@ import time
 
 router = APIRouter()
 
-# TODO consider removing this route
 @router.get("/file/csv/{file_path}")
 async def read_csv_file(file_path: str):
     file_path = os.path.join("bikg_app/csv", file_path)
@@ -20,10 +19,6 @@ async def read_csv_file(file_path: str):
         return {"data": []}
 
     df = pd.read_csv(file_path)
-    # print(df.head(5))
-    # convert problematic float values to strings
-    # df = df.applymap(lambda x: str(x) if isinstance(x, np.floating) and np.isnan(x) else x)
-    # replace nan values
     df = df.replace(np.nan, 'nan', regex=True)
     return {"data": df.to_dict(orient="records")}
 

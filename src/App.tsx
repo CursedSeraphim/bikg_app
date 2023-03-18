@@ -4,13 +4,23 @@ import cytoscape from 'cytoscape';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
 import { RdfState, setRdfString, selectRdfData, selectSubClassOrObjectPropertyTuples, selectCytoData } from './components/Store/RdfSlice';
+import { setCsvData, selectCsvDataForPlotly } from './components/Store/CsvSlice';
 import { loadNodes } from './components/Store/NodeSlice';
 import { loadEdges } from './components/Store/EdgeSlice';
 import { loadOntology, selectOntology } from './components/Store/OntologySlice';
 import { loadCytoData } from './components/Store/CytoSlice';
+import InteractiveScatterPlot from './components/react-plotly/InteractiveScatterPlot';
+import { dataToScatterDataArray } from './components/react-plotly/csvToPlotlyData';
 
 import Vega from './components/Vega/vegaspecprop';
 import './styles.css';
+
+const sampleData = [
+  { x: 1, y: 2, _id: '1' },
+  { x: 2, y: 3, _id: '2' },
+  { x: 3, y: 1, _id: '3' },
+  // More data points...
+];
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(coseBilkent);
@@ -59,6 +69,7 @@ async function fetchOntology() {
 export function App() {
   const dispatch = useDispatch();
   const ontology = useSelector(selectOntology);
+  const plotlyData = useSelector(selectCsvDataForPlotly);
   // const cytoData = useSelector(selectCytoData);
   const rdfOntology = useSelector(selectRdfData);
   const [cytoData, setCytoData] = React.useState(null);
@@ -70,12 +81,10 @@ export function App() {
     fetchOntology()
       .then((data) => {
         dispatch(setRdfString(data));
-        console.log('rdfOntology', rdfOntology);
         // wrap rdfOntology such that it is of type RdfState
         const rdfOntologyState: RdfState = {
           rdfString: data,
         };
-        console.log('selectSubClassOfTuples', selectSubClassOrObjectPropertyTuples({ rdf: rdfOntologyState }));
       })
       .catch((error) => {
         console.error('Failed to fetch ontology', error);
@@ -126,7 +135,8 @@ export function App() {
 
     fetchCSVFile('ex51_violations_metadata.csv')
       .then((data) => {
-        console.log('reading ex51_violations_metadata.csv');
+        const parsedData = JSON.parse(data);
+        dispatch(setCsvData(parsedData.data));
       })
       .catch((error) => {
         console.error('Failed to fetch RDF file', error);
@@ -153,11 +163,10 @@ export function App() {
           // Update the cytoData elements and layout
           cy.elements().remove();
           // create a deep copy of the cytoData
-          console.log('newCytoData', newCytoData);
           cy.add(newCytoData);
           cy.lassoSelectionEnabled(true);
-          cy.layout({ name: 'cose-bilkent', idealEdgeLength: 100, nodeDimensionsIncludeLabels: true }).run();
           cy.fit();
+          cy.layout({ name: 'cose-bilkent', idealEdgeLength: 100, nodeDimensionsIncludeLabels: true }).run();
           cy.on('boxend', (event) => {
             // get the selected nodes
             const selectedNodes = cy.nodes(':selected');
@@ -227,6 +236,10 @@ export function App() {
       });
   }, [rdfOntology]);
 
+  const handleDataSelected = (selectedData) => {
+    console.log('Data selected in App component:', selectedData);
+  };
+
   return (
     <div className="grid-container">
       <div className="grid-item">
@@ -234,7 +247,8 @@ export function App() {
         {/* Expanded Ontology View */}
       </div>
       <div className="grid-item">
-        Embedding View
+        {/* Embedding View */}
+        <InteractiveScatterPlot data={plotlyData} onDataSelected={handleDataSelected} />
         {/* <div className="webgl-view">
           <WebGLView />
         </div> */}

@@ -6,7 +6,7 @@ import { RdfState, selectSubClassOfTuples } from '../Store/RdfSlice';
  * @returns The tree data in the format expected by Treebeard
  */
 export async function getTreeDataFromN3Data(ontology) {
-  const ontologyMap: { [key: string]: { name: string; children: any[]; }; } = {};
+  const ontologyMap: { [key: string]: { name: string; children: any[] } } = {};
 
   const rdfOntologyState: RdfState = {
     rdfString: ontology,

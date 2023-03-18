@@ -1,7 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Store } from 'n3';
-import type { Reducer } from 'redux';
 
 export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<any[]> => {
   const { rdfString } = state.rdf;
