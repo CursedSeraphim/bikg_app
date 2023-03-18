@@ -18,7 +18,7 @@ export function dataToScatterDataArray(samples: CsvData[]): ScatterData[] {
       scatterDataArray.push({
         x: sample.x,
         y: sample.y,
-        text: sample.focus_node, // Use 'focus_node' as the value for the 'text' property
+        text: sample.focus_node,
       });
     });
   }
