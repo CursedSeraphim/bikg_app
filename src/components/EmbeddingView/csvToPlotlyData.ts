@@ -1,4 +1,3 @@
-// csvToPlotlyData.ts
 export interface CsvData {
   x: number;
   y: number;

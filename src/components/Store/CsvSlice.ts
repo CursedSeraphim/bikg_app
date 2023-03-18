@@ -1,13 +1,14 @@
-// CsvSlice.ts
 import { createSlice } from '@reduxjs/toolkit';
-import { CsvData, ScatterData, dataToScatterDataArray } from '../react-plotly/csvToPlotlyData';
+import { CsvData, ScatterData, dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyData';
 
 export interface CsvState {
-  samples: CsvData[]; // Use CsvData instead of ScatterData
+  samples: CsvData[];
+  selectedFocusNodes: string[];
 }
 
 const initialState: CsvState = {
   samples: [],
+  selectedFocusNodes: [],
 };
 
 const csvSlice = createSlice({
@@ -17,15 +18,20 @@ const csvSlice = createSlice({
     setCsvData: (state, action) => {
       state.samples = action.payload;
     },
+    setSelectedFocusNodes: (state, action) => {
+      state.selectedFocusNodes = action.payload;
+    },
   },
 });
 
 export const selectCsvDataForPlotly = (state: { csv: CsvState }): ScatterData[] => {
-  return dataToScatterDataArray(state.csv.samples); // Now it should work as expected
+  return dataToScatterDataArray(state.csv.samples);
 };
 
 export const selectCsvData = (state: { csv: CsvState }) => state.csv.samples;
 
+export const selectSelectedFocusNodes = (state: { csv: CsvState }) => state.csv.selectedFocusNodes;
+
 export default csvSlice.reducer;
 
-export const { setCsvData } = csvSlice.actions;
+export const { setCsvData, setSelectedFocusNodes } = csvSlice.actions;

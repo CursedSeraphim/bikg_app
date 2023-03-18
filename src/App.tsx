@@ -9,8 +9,8 @@ import { loadNodes } from './components/Store/NodeSlice';
 import { loadEdges } from './components/Store/EdgeSlice';
 import { loadOntology, selectOntology } from './components/Store/OntologySlice';
 import { loadCytoData } from './components/Store/CytoSlice';
-import InteractiveScatterPlot from './components/react-plotly/InteractiveScatterPlot';
-import { dataToScatterDataArray } from './components/react-plotly/csvToPlotlyData';
+import InteractiveScatterPlot from './components/EmbeddingView/InteractiveScatterPlot';
+import { dataToScatterDataArray } from './components/EmbeddingView/csvToPlotlyData';
 
 import Vega from './components/Vega/vegaspecprop';
 import './styles.css';
