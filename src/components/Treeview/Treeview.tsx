@@ -28,5 +28,8 @@ export default function Treeview() {
     return <div>Loading...</div>;
   }
 
+  // set root element to be default toggled
+  treeData.toggled = true;
+
   return <Treebeard data={treeData} style={lightTheme} onToggle={onToggle} />;
 }

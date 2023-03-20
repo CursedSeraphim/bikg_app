@@ -11,6 +11,8 @@ import { loadOntology, selectOntology } from './components/Store/OntologySlice';
 import { loadCytoData } from './components/Store/CytoSlice';
 import InteractiveScatterPlot from './components/EmbeddingView/InteractiveScatterPlot';
 import BarPlotSample from './components/FeatureDistributionView/BarPlotSample';
+import BarPlotList from './components/FeatureDistributionView/BarPlotList';
+import FixedBarPlotList from './components/FeatureDistributionView/FixedBarPlotList';
 
 import Vega from './components/Vega/vegaspecprop';
 import './styles.css';
@@ -247,6 +249,15 @@ export function App() {
         {/* Expanded Ontology View */}
       </div>
       <div className="grid-item">
+        {/* if not spec just write "vega spec loading..." */}
+        {/* {!spec && <div>vega spec loading...</div>} */}
+        {/* if spec do the following */}
+        {/* {spec && <Vega spec={spec} />} */}
+        {/* <BarPlotSample feature="http://www.w3.org/1999/02/22-rdf-syntax-ns#type" />
+        <BarPlotSample feature="http://data.boehringer.com/ontology/omics/hasCellType" /> */}
+        <BarPlotList />
+      </div>
+      <div className="grid-item">
         {/* Embedding View */}
         <InteractiveScatterPlot data={plotlyData} onDataSelected={handleDataSelected} />
         {/* <div className="webgl-view">
@@ -254,13 +265,8 @@ export function App() {
         </div> */}
       </div>
       <div className="grid-item">
-        {/* if not spec just write "vega spec loading..." */}
-        {/* {!spec && <div>vega spec loading...</div>} */}
-        {/* if spec do the following */}
-        {/* {spec && <Vega spec={spec} />} */}
-        <BarPlotSample />
+        <FixedBarPlotList />
       </div>
-      <div className="grid-item">Fixed Feature Distribution View</div>
     </div>
   );
 }

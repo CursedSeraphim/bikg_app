@@ -21,8 +21,16 @@ export interface BarPlotData {
  */
 export function csvDataToBarPlotDataGivenFeature(feature: string, focus_nodes: string[], samples: CsvData[]): BarPlotData {
   const counts: Record<string, number> = {};
+  // if undefined return empty
+  if (samples === undefined) {
+    return {
+      x: [],
+      y: [],
+      type: 'bar',
+      name: feature,
+    };
+  }
   focus_nodes.forEach((nodeId) => {
-    console.log(nodeId);
     const nodeData = samples.find((entry) => entry.focus_node === nodeId);
     if (nodeData && nodeData[feature]) {
       const value = nodeData[feature];

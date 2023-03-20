@@ -28,21 +28,8 @@ const csvSlice = createSlice({
   },
 });
 
-export const selectBarPlotData = (state: { csv: CsvState }): Data[] => {
-  // TODO set this dynamically
-  const feature = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
-  const barPlotData = csvDataToBarPlotDataGivenFeature(feature, state.csv.selectedFocusNodes, state.csv.samples);
-
-  return [
-    {
-      x: barPlotData.x,
-      y: barPlotData.y,
-      type: 'bar',
-      marker: {
-        color: 'steelblue',
-      },
-    },
-  ];
+export const selectBarPlotData = (state: { csv: CsvState }): any => {
+  return { selectedNodes: state.csv.selectedFocusNodes, samples: state.csv.samples };
 };
 
 export const selectCsvDataForPlotly = (state: { csv: CsvState }): ScatterData[] => {
