@@ -237,7 +237,7 @@ export function App() {
   }, [rdfOntology]);
 
   const handleDataSelected = (selectedData) => {
-    console.log('Data selected in App component:', selectedData);
+    console.log('Data selected in App component');
   };
 
   return (

@@ -1,5 +1,9 @@
+// CsvSlice.ts
 import { createSlice } from '@reduxjs/toolkit';
-import { CsvData, ScatterData, dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyData';
+import { Data } from 'plotly.js';
+import { ScatterData, ScatterCsvData, dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
+import { FeatureCsvData, csvDataToBarPlotDataGivenFeature } from '../FeatureDistributionView/csvToPlotlyFeatureData';
+import { CsvData } from './types';
 
 export interface CsvState {
   samples: CsvData[];
@@ -23,6 +27,23 @@ const csvSlice = createSlice({
     },
   },
 });
+
+export const selectBarPlotData = (state: { csv: CsvState }): Data[] => {
+  // TODO set this dynamically
+  const feature = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+  const barPlotData = csvDataToBarPlotDataGivenFeature(feature, state.csv.selectedFocusNodes, state.csv.samples);
+
+  return [
+    {
+      x: barPlotData.x,
+      y: barPlotData.y,
+      type: 'bar',
+      marker: {
+        color: 'steelblue',
+      },
+    },
+  ];
+};
 
 export const selectCsvDataForPlotly = (state: { csv: CsvState }): ScatterData[] => {
   return dataToScatterDataArray(state.csv.samples);

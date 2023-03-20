@@ -15,6 +15,7 @@ interface InteractiveScatterPlotProps {
 function InteractiveScatterPlot({ data, onDataSelected }: InteractiveScatterPlotProps) {
   const dispatch = useDispatch();
   const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
+  const [localSelectedFocusNodes, setLocalSelectedFocusNodes] = useState<string[]>([]);
 
   const plotData: Data[] = [
     {
@@ -25,7 +26,8 @@ function InteractiveScatterPlot({ data, onDataSelected }: InteractiveScatterPlot
       text: data.map((d) => d.text),
       marker: {
         size: 6,
-        color: data.map((d) => (selectedFocusNodes.includes(d.text) ? 'red' : 'steelblue')),
+        color: data.map((d) => (localSelectedFocusNodes.includes(d.text) ? 'steelblue' : 'grey')),
+        opacity: 0.5,
       },
     },
   ];
@@ -38,22 +40,22 @@ function InteractiveScatterPlot({ data, onDataSelected }: InteractiveScatterPlot
   };
 
   const handleSelection = (eventData) => {
-    if (eventData?.points) {
+    if (eventData?.points && eventData.points.length > 0) {
       const selectedPoints = eventData.points.map((point) => data[point.pointIndex]);
       const selectedNodes = selectedPoints.map((point) => point.text); // Extract the focus_node from each selected point
+      setLocalSelectedFocusNodes(selectedNodes); // Update the local selected focus nodes
       dispatch(setSelectedFocusNodes(selectedNodes)); // Update the selected focus nodes in the Redux store
     }
   };
 
   useEffect(() => {
-    if (selectedFocusNodes.length) {
+    if (localSelectedFocusNodes.length) {
       // Process the selected focus nodes or pass them to a callback function
-      console.log('Selected focus nodes:', selectedFocusNodes);
       if (onDataSelected) {
-        onDataSelected(selectedFocusNodes);
+        onDataSelected(localSelectedFocusNodes);
       }
     }
-  }, [selectedFocusNodes, onDataSelected]);
+  }, [localSelectedFocusNodes, onDataSelected]);
 
   return <Plot data={plotData} layout={plotLayout} onSelected={handleSelection} config={{ displayModeBar: false }} />;
 }
