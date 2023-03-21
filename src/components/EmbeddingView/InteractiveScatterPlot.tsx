@@ -25,7 +25,7 @@ function InteractiveScatterPlot({ data, onDataSelected }: InteractiveScatterPlot
       type: 'scatter',
       text: data.map((d) => d.text),
       marker: {
-        size: 6,
+        size: 3,
         color: data.map((d) => (localSelectedFocusNodes.includes(d.text) ? 'steelblue' : 'grey')),
         opacity: 0.5,
       },
@@ -57,7 +57,18 @@ function InteractiveScatterPlot({ data, onDataSelected }: InteractiveScatterPlot
     }
   }, [localSelectedFocusNodes, onDataSelected]);
 
-  return <Plot data={plotData} layout={plotLayout} onSelected={handleSelection} config={{ displayModeBar: false }} />;
+  return (
+    <div className="scatter-plot-container">
+      <Plot
+        data={plotData}
+        layout={plotLayout}
+        onSelected={handleSelection}style
+        config={{ displayModeBar: false, responsive: true }}
+        useResizeHandler
+        style={{ width: '100%', height: '100%' }}
+      />
+    </div>
+  );
 }
 
 export default InteractiveScatterPlot;

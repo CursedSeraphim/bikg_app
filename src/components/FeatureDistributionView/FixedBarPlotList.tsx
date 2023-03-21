@@ -12,7 +12,7 @@ function FixedBarPlotList(): any {
   const features = ['http://www.w3.org/1999/02/22-rdf-syntax-ns#type'];
   // TODO define style in a stylesheet etc
   return (
-    <div style={{ backgroundColor: '#f2f2f2', width: '700px', height: '350px', overflow: 'auto', textAlign: 'justify', padding: '20px' }}>
+    <div className="bar-plot-list-container">
       {features.map((feature) => (
         <BarPlotSample feature={feature} />
       ))}

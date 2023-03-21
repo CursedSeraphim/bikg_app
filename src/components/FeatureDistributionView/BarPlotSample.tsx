@@ -19,8 +19,6 @@ interface BarPlotDataState {
 }
 
 const getBarPlotData = (feature: string, selectedNodes: any, samples: any): Data[] => {
-  // TODO set this dynamically
-  // const feature = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
   const barPlotData = csvDataToBarPlotDataGivenFeature(feature, selectedNodes, samples);
 
   return [
@@ -41,10 +39,9 @@ function BarPlotSample(props) {
   const plotData = getBarPlotData(feature, data.selectedNodes, data.samples);
   const plotLayout: Partial<Layout> = {
     title: feature,
-    titlefont : { size: 12 },
+    titlefont: { size: 12 },
     xaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 } },
     yaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 } },
-    width: 350,
     height: 100,
     margin: {
       l: 20,
@@ -55,7 +52,11 @@ function BarPlotSample(props) {
     },
   };
 
-  return <Plot data={plotData} layout={plotLayout} config={{ displayModeBar: false }} />;
+  return (
+    <div className="bar-plot-container">
+      <Plot data={plotData} layout={plotLayout} config={{ displayModeBar: false, responsive: true }} useResizeHandler style={{ width: '100%' }} />
+    </div>
+  );
 }
 
 export default BarPlotSample;

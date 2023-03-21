@@ -243,30 +243,51 @@ export function App() {
   };
 
   return (
-    <div className="grid-container">
-      <div className="grid-item">
+    <div className="container">
+      <div className="Extended-Ontology-View">
+        Extended Ontology View
         <div id="cy" />
-        {/* Expanded Ontology View */}
       </div>
-      <div className="grid-item">
-        {/* if not spec just write "vega spec loading..." */}
-        {/* {!spec && <div>vega spec loading...</div>} */}
-        {/* if spec do the following */}
-        {/* {spec && <Vega spec={spec} />} */}
-        {/* <BarPlotSample feature="http://www.w3.org/1999/02/22-rdf-syntax-ns#type" />
-        <BarPlotSample feature="http://data.boehringer.com/ontology/omics/hasCellType" /> */}
+      <div className="Feature-Distribution-View">
+        Embedding View
+        <InteractiveScatterPlot data={plotlyData} onDataSelected={handleDataSelected} />
+      </div>
+      <div className="Embedding-View">
+        Feature Distribution View
         <BarPlotList />
       </div>
-      <div className="grid-item">
-        {/* Embedding View */}
-        <InteractiveScatterPlot data={plotlyData} onDataSelected={handleDataSelected} />
-        {/* <div className="webgl-view">
-          <WebGLView />
-        </div> */}
-      </div>
-      <div className="grid-item">
+      <div className="Fixed-Feature-Distribution-View">
+        Fixed Feature Distribution View
         <FixedBarPlotList />
       </div>
     </div>
   );
+
+  // return (
+  //   <div className="grid-container">
+  //     <div className="grid-item">
+  //       <div id="cy" />
+  //       {/* Expanded Ontology View */}
+  //     </div>
+  //     <div className="grid-item">
+  //       {/* if not spec just write "vega spec loading..." */}
+  //       {/* {!spec && <div>vega spec loading...</div>} */}
+  //       {/* if spec do the following */}
+  //       {/* {spec && <Vega spec={spec} />} */}
+  //       {/* <BarPlotSample feature="http://www.w3.org/1999/02/22-rdf-syntax-ns#type" />
+  //       <BarPlotSample feature="http://data.boehringer.com/ontology/omics/hasCellType" /> */}
+  //       <BarPlotList />
+  //     </div>
+  //     <div className="grid-item">
+  //       {/* Embedding View */}
+  //       <InteractiveScatterPlot data={plotlyData} onDataSelected={handleDataSelected} />
+  //       {/* <div className="webgl-view">
+  //         <WebGLView />
+  //       </div> */}
+  //     </div>
+  //     <div className="grid-item">
+  //       <FixedBarPlotList />
+  //     </div>
+  //   </div>
+  // );
 }

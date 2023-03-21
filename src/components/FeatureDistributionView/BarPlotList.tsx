@@ -12,9 +12,8 @@ function BarPlotList(): any {
   const csvData = useSelector(selectCsvData);
 
   const features = csvData && csvData[0] ? Object.keys(csvData[0]) : [];
-  // TODO define style in a stylesheet etc
   return (
-    <div style={{ backgroundColor: '#f2f2f2', width: '700px', height: '350px', overflow: 'auto', textAlign: 'justify', padding: '20px' }}>
+    <div className="bar-plot-list-container">
       {features.map((feature) => (
         <BarPlotSample feature={feature} />
       ))}
