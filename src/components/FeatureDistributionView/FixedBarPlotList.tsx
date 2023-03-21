@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 import BarPlotSample from './BarPlotSample';
+import ViolationsBarplotSample from './ViolationsBarPlot';
 import { selectCsvData } from '../Store/CsvSlice';
 
 /**
@@ -13,8 +14,9 @@ function FixedBarPlotList(): any {
   // TODO define style in a stylesheet etc
   return (
     <div className="bar-plot-list-container">
+      <ViolationsBarplotSample />
       {features.map((feature) => (
-        <BarPlotSample feature={feature} />
+        <BarPlotSample key={feature} feature={feature} />
       ))}
     </div>
   );

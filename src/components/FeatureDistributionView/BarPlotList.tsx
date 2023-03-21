@@ -14,8 +14,8 @@ function BarPlotList(): any {
   const features = csvData && csvData[0] ? Object.keys(csvData[0]) : [];
   return (
     <div className="bar-plot-list-container">
-      {features.map((feature) => (
-        <BarPlotSample feature={feature} />
+      {features.map((feature, index) => (
+        <BarPlotSample key={feature} feature={feature} />
       ))}
     </div>
   );

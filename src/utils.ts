@@ -23,6 +23,7 @@ const prefixes = {
   'http://www.metaphacts.com/ontologies/platform/ephedra#': 'ephedra:',
   'http://spinrdf.org/sp#': 'sp:',
   'http://data.boehringer.com/ontology/omics': 'omics:',
+  'http://data.boehringer.com/uuid/': 'uuid:',
   'https://data.boehringer.com/id/': 'id:',
 };
 
