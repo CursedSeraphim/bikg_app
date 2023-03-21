@@ -35,8 +35,22 @@ function InteractiveScatterPlot({ data, onDataSelected }: InteractiveScatterPlot
   const plotLayout: Partial<Layout> = {
     hovermode: 'closest',
     dragmode: 'lasso',
-    xaxis: { title: 'X-axis' },
-    yaxis: { title: 'Y-axis' },
+    xaxis: {
+      title: 'Embedding Dimension 1',
+      showgrid: false,
+      zeroline: false,
+      showticklabels: false,
+      showline: false,
+      ticks: '',
+    },
+    yaxis: {
+      title: 'Embedding Dimension 2',
+      showgrid: false,
+      zeroline: false,
+      showticklabels: false,
+      showline: false,
+      ticks: '',
+    },
   };
 
   const handleSelection = (eventData) => {
