@@ -5,6 +5,7 @@ import { Data, Layout } from 'plotly.js';
 import { useSelector } from 'react-redux';
 import { selectSelectedFocusNodes, selectBarPlotData } from '../Store/CsvSlice';
 import { csvDataToBarPlotDataGivenFeature } from './csvToPlotlyFeatureData';
+import { replaceUrlWithPrefix } from '../../utils';
 
 const Plot = createPlotlyComponent(Plotly);
 
@@ -38,7 +39,7 @@ function BarPlotSample(props) {
   const data = useSelector(selectBarPlotData) as BarPlotDataState;
   const plotData = getBarPlotData(feature, data.selectedNodes, data.samples);
   const plotLayout: Partial<Layout> = {
-    title: feature,
+    title: replaceUrlWithPrefix(feature),
     titlefont: { size: 12 },
     xaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 } },
     yaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 } },
@@ -46,7 +47,7 @@ function BarPlotSample(props) {
     margin: {
       l: 20,
       r: 20,
-      b: 20,
+      b: 40,
       t: 20,
       pad: 0,
     },

@@ -1,6 +1,8 @@
+// RdfSlice.ts
 import { createSlice } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Store } from 'n3';
+import { replaceUrlWithPrefix } from '../../utils';
 
 export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<any[]> => {
   const { rdfString } = state.rdf;
@@ -20,11 +22,12 @@ export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<
   const subClassOfPredicate = new NamedNode('http://www.w3.org/2000/01/rdf-schema#subClassOf');
   const subClassOfTuples = store.getQuads(null, subClassOfPredicate, null);
   // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
+  // In selectSubClassOfTuples and selectSubClassOrObjectPropertyTuples functions
   return subClassOfTuples.map((quad) => {
     return {
-      subject: quad.subject.id,
-      predicate: quad.predicate.id,
-      object: quad.object.id,
+      subject: replaceUrlWithPrefix(quad.subject.id),
+      predicate: replaceUrlWithPrefix(quad.predicate.id),
+      object: replaceUrlWithPrefix(quad.object.id),
     };
   });
 };
@@ -48,11 +51,13 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: RdfStat
   const subClassOfPredicate = new NamedNode('http://www.w3.org/2000/01/rdf-schema#subClassOf');
   const objectPropertyPredicate = new NamedNode('http://www.w3.org/2002/07/owl#ObjectProperty');
   const subClassOrObjectPropertyTuples = store.getQuads(null, subClassOfPredicate, null).concat(store.getQuads(null, null, objectPropertyPredicate));
+  // pseudodebug replaceUrlWithPrefix(quad.subject.id),
+  console.log('replaceUrlWithPrefix(quad.subject.id)', replaceUrlWithPrefix(subClassOrObjectPropertyTuples?.[0].subject.id));
   return subClassOrObjectPropertyTuples.map((quad) => {
     return {
-      subject: quad.subject.id,
-      predicate: quad.predicate.id,
-      object: quad.object.id,
+      subject: replaceUrlWithPrefix(quad.subject.id),
+      predicate: replaceUrlWithPrefix(quad.predicate.id),
+      object: replaceUrlWithPrefix(quad.object.id),
     };
   });
 };
@@ -109,6 +114,7 @@ const rdfSlice = createSlice({
  */
 export const selectCytoData = async (state: { rdf: RdfState }): Promise<CytoData> => {
   const subClassOfTuples = await selectSubClassOrObjectPropertyTuples(state);
+  console.log('subClassOfTuples', subClassOfTuples);
   // const subClassOfTuples = await selectSubClassOfTuples(state);
   const nodes: CytoNode[] = [];
   const edges: CytoEdge[] = [];

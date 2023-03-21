@@ -200,6 +200,8 @@ export function App() {
           const newCy = cytoscape({
             container: document.getElementById('cy'), // container to render in
 
+            wheelSensitivity: 0.1,
+
             elements: newCytoData,
 
             style: [

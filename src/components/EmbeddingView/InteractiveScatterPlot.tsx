@@ -62,7 +62,7 @@ function InteractiveScatterPlot({ data, onDataSelected }: InteractiveScatterPlot
       <Plot
         data={plotData}
         layout={plotLayout}
-        onSelected={handleSelection}style
+        onSelected={handleSelection}
         config={{ displayModeBar: false, responsive: true }}
         useResizeHandler
         style={{ width: '100%', height: '100%' }}

@@ -1,4 +1,5 @@
 import { CsvData } from '../Store/types';
+import { replaceUrlWithPrefix, replaceKeysAndValuesInArray } from '../../utils';
 
 export interface FeatureCsvData {
   Id: string;
@@ -33,7 +34,7 @@ export function csvDataToBarPlotDataGivenFeature(feature: string, focus_nodes: s
   focus_nodes.forEach((nodeId) => {
     const nodeData = samples.find((entry) => entry.focus_node === nodeId);
     if (nodeData && nodeData[feature]) {
-      const value = nodeData[feature];
+      const value = replaceUrlWithPrefix(nodeData[feature]);
       counts[value] = (counts[value] || 0) + 1;
     }
   });

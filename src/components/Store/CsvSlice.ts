@@ -4,6 +4,7 @@ import { Data } from 'plotly.js';
 import { ScatterData, ScatterCsvData, dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
 import { FeatureCsvData, csvDataToBarPlotDataGivenFeature } from '../FeatureDistributionView/csvToPlotlyFeatureData';
 import { CsvData } from './types';
+import { replaceUrlWithPrefix } from '../../utils';
 
 export interface CsvState {
   samples: CsvData[];
@@ -20,6 +21,7 @@ const csvSlice = createSlice({
   initialState,
   reducers: {
     setCsvData: (state, action) => {
+      // state.samples = replaceKeysAndValuesInArray(action.payload, replaceUrlWithPrefix);
       state.samples = action.payload;
     },
     setSelectedFocusNodes: (state, action) => {
