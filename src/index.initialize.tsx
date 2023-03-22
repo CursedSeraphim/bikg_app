@@ -7,6 +7,7 @@ import { VisynApp, VisynAppProvider, VisynHeader } from 'visyn_core/app';
 import { App } from './App';
 import store from './components/Store/Store';
 import Treeview from './components/Treeview/Treeview';
+import { BILogo } from './components/BILogo';
 
 ReactDOM.render(
   // <React.StrictMode> TODO doesn't work with treebeard due to depreacted finddomnode
@@ -32,6 +33,7 @@ ReactDOM.render(
                     Boehringer Ingelheim Knowledge Graphs
                   </Title>
                 ),
+                logo: <BILogo color="white" />,
               }}
             />
           }
