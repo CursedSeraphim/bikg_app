@@ -41,6 +41,23 @@ export const replaceUrlWithPrefix = (url) => {
   return url;
 };
 
+export const replacePrefixWithUrl = (shortUrl) => {
+  if (typeof shortUrl !== 'string') {
+    return shortUrl;
+  }
+  for (const prefixUrl in prefixes) {
+    if (Object.prototype.hasOwnProperty.call(prefixes, prefixUrl)) {
+      const prefix = prefixes[prefixUrl];
+      if (shortUrl.startsWith(prefix)) {
+        return shortUrl.replace(prefix, prefixUrl);
+      }
+    }
+  }
+
+  // If no prefix found, return the original short URL
+  return shortUrl;
+};
+
 export const replaceKeysAndValuesInArray = (dataArray, replaceFn) => {
   return dataArray.map((item) => {
     const newItem = {};

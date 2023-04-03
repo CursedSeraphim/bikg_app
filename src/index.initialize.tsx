@@ -9,6 +9,15 @@ import store from './components/Store/Store';
 import Treeview from './components/Treeview/Treeview';
 import { BILogo } from './components/BILogo';
 
+// const consoleWarn = console.log;
+// const SUPPRESSED_WARNINGS = ['WARN: unrecognized GUI edit: selections'];
+
+// console.log = function filterWarnings(msg, ...args) {
+//   if (!SUPPRESSED_WARNINGS.some((entry) => msg.includes(entry))) {
+//     consoleWarn(msg, ...args);
+//   }
+// };
+
 ReactDOM.render(
   // <React.StrictMode> TODO doesn't work with treebeard due to depreacted finddomnode
   <MantineProvider withGlobalStyles withNormalizeCSS>

@@ -63,6 +63,10 @@ function InteractiveScatterPlot({ data, onDataSelected }: InteractiveScatterPlot
   };
 
   useEffect(() => {
+    setLocalSelectedFocusNodes(selectedFocusNodes);
+  }, [selectedFocusNodes]);
+
+  useEffect(() => {
     if (localSelectedFocusNodes.length) {
       // Process the selected focus nodes or pass them to a callback function
       if (onDataSelected) {

@@ -77,12 +77,9 @@ const getBarPlotData = (selectedNodes: any, samples: any): Data[] => {
     }
   }
 
-  console.log(nonEmptyCountsByFeature);
 
   const xValues = Object.keys(nonEmptyCountsByFeature).map(replaceUrlWithPrefix);
   const yValues = Object.values(nonEmptyCountsByFeature).map((value) => value['1']);
-  console.log('xValues', xValues);
-  console.log('yValues', yValues);
 
   return [
     {
@@ -100,7 +97,6 @@ const getBarPlotData = (selectedNodes: any, samples: any): Data[] => {
 function ViolationsBarPlotSample() {
   const data = useSelector(selectBarPlotData) as BarPlotDataState;
   const plotData = getBarPlotData(data.selectedNodes, data.samples);
-  console.log('violations plotData', plotData);
   const plotLayout: Partial<Layout> = {
     title: 'Violations',
     titlefont: { size: 12 },
