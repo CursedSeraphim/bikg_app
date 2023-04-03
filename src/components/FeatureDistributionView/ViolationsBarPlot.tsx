@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Plotly from 'plotly.js-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import { Data, Layout } from 'plotly.js';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { setSelectedFocusNodes, selectSelectedFocusNodes, selectBarPlotData } from '../Store/CsvSlice';
 
-import { selectSelectedFocusNodes, selectBarPlotData } from '../Store/CsvSlice';
 import { csvDataToBarPlotDataGivenFeature } from './csvToPlotlyFeatureData';
-import { replaceUrlWithPrefix } from '../../utils';
+import { replacePrefixWithUrl, replaceUrlWithPrefix } from '../../utils';
 
 const Plot = createPlotlyComponent(Plotly);
 
@@ -77,9 +77,12 @@ const getBarPlotData = (selectedNodes: any, samples: any): Data[] => {
     }
   }
 
+  console.log(nonEmptyCountsByFeature);
 
   const xValues = Object.keys(nonEmptyCountsByFeature).map(replaceUrlWithPrefix);
   const yValues = Object.values(nonEmptyCountsByFeature).map((value) => value['1']);
+  console.log('xValues', xValues);
+  console.log('yValues', yValues);
 
   return [
     {
@@ -95,13 +98,24 @@ const getBarPlotData = (selectedNodes: any, samples: any): Data[] => {
 };
 
 function ViolationsBarPlotSample() {
+  const feature = 'Violations';
   const data = useSelector(selectBarPlotData) as BarPlotDataState;
   const plotData = getBarPlotData(data.selectedNodes, data.samples);
+  const [localSelectedFocusNodes, setLocalSelectedFocusNodes] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (localSelectedFocusNodes.length) {
+      // Process the selected focus nodes or pass them to a callback function
+    }
+  }, [localSelectedFocusNodes]);
+
+  console.log('violations plotData', plotData);
   const plotLayout: Partial<Layout> = {
-    title: 'Violations',
+    title: feature,
     titlefont: { size: 12 },
     xaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 } },
     yaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 } },
+    dragmode: 'lasso', // Change dragmode to lasso
     height: 100,
     margin: {
       l: 20,
@@ -112,9 +126,21 @@ function ViolationsBarPlotSample() {
     },
   };
 
+  const handleSelection = (eventData) => {
+    // Leave this empty for future implementation
+    console.log('eventData', eventData);
+  };
+
   return (
     <div className="bar-plot-container">
-      <Plot data={plotData} layout={plotLayout} config={{ displayModeBar: false, responsive: true }} useResizeHandler style={{ width: '100%' }} />
+      <Plot
+        data={plotData}
+        layout={plotLayout}
+        onSelected={handleSelection}
+        config={{ displayModeBar: false, responsive: true }}
+        useResizeHandler
+        style={{ width: '100%' }}
+      />
     </div>
   );
 }
