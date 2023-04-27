@@ -24,7 +24,6 @@ export function App() {
   const rdfOntology = useSelector(selectRdfData);
   const [cytoData, setCytoData] = React.useState(null);
   const [cy, setCy] = React.useState(null);
-  const [spec, setSpec] = React.useState(null); // Add a new state for the Vega spec
 
   // Fetch ontology
   React.useEffect(() => {
@@ -43,7 +42,6 @@ export function App() {
       selectCytoData({ rdf: { rdfString: rdfOntology } })
         .then((data) => {
           setCytoData(data);
-          console.log('cytoData has been set:', cytoData);
         })
         .catch((error) => {
           console.error('Failed to generate Cytoscape data:', error);
@@ -125,18 +123,7 @@ export function App() {
               return node.id;
             });
 
-            // fetch the JSON for the Vega spec
-            fetchJSONGivenNodes('ex51_violations_metadata.csv', nodeList)
-              .then((violationsData) => {
-                setSpec(JSON.parse(violationsData));
-                console.log('spec has been set:', spec);
-              })
-              .catch((error) => {
-                console.error('Failed to fetch RDF file', error);
-              });
-
-            // log the selected data to the console
-            // console.log(selectedData);
+            console.log('nodeList', nodeList);
           });
         } else {
           const newCy = cytoscape({
@@ -180,10 +167,10 @@ export function App() {
       .catch((error) => {
         console.error('Failed to generate Cytoscape data:', error);
       });
-  }, [cy, rdfOntology, spec]);
+  }, [cy, rdfOntology]);
 
   const handleDataSelected = (selectedData) => {
-    console.log('Data selected in App component');
+    console.log('Data selected in App component', selectedData);
   };
 
   return (

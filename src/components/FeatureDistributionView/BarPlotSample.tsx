@@ -68,9 +68,6 @@ function BarPlotSample(props) {
       // further filter the data.selectedNodes to only those that match the focus_node
       const updatedSelectedNodes = data.selectedNodes.filter((node) => matchingFocusNodes.includes(node));
 
-      console.log('updatedSelectedNodes', updatedSelectedNodes);
-      console.log('feature', feature);
-
       setLocalSelectedFocusNodes(updatedSelectedNodes);
       dispatch(setSelectedFocusNodes(updatedSelectedNodes));
     }

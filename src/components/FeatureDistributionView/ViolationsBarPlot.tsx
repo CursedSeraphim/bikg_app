@@ -81,8 +81,6 @@ const getBarPlotData = (selectedNodes: any, samples: any): Data[] => {
 
   const xValues = Object.keys(nonEmptyCountsByFeature).map(replaceUrlWithPrefix);
   const yValues = Object.values(nonEmptyCountsByFeature).map((value) => value['1']);
-  console.log('xValues', xValues);
-  console.log('yValues', yValues);
 
   return [
     {
@@ -109,7 +107,6 @@ function ViolationsBarPlotSample() {
     }
   }, [localSelectedFocusNodes]);
 
-  console.log('violations plotData', plotData);
   const plotLayout: Partial<Layout> = {
     title: feature,
     titlefont: { size: 12 },
