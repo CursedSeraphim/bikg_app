@@ -13,7 +13,7 @@ import BarPlotList from './components/FeatureDistributionView/BarPlotList';
 import FixedBarPlotList from './components/FeatureDistributionView/FixedBarPlotList';
 
 import './styles.css';
-import { fetchOntology, fetchCSVFile, fetchJSONFile, fetchJSONGivenNodes } from './api';
+import { fetchOntology, fetchCSVFile, fetchJSONFile } from './api';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(coseBilkent);
@@ -22,7 +22,7 @@ export function App() {
   const dispatch = useDispatch();
   const plotlyData = useSelector(selectCsvDataForPlotly);
   const rdfOntology = useSelector(selectRdfData);
-  const [cytoData, setCytoData] = React.useState(null);
+  const [setCytoData] = React.useState(null);
   const [cy, setCy] = React.useState(null);
 
   // Fetch ontology
@@ -108,7 +108,8 @@ export function App() {
           cy.lassoSelectionEnabled(true);
           cy.fit();
           cy.layout({ name: 'cose-bilkent', idealEdgeLength: 100, nodeDimensionsIncludeLabels: true }).run();
-          cy.on('boxend', (event) => {
+          // could use (event) => if we want to do something with the event
+          cy.on('boxend', () => {
             // get the selected nodes
             const selectedNodes = cy.nodes(':selected');
 

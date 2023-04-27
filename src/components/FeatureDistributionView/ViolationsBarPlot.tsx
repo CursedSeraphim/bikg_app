@@ -2,23 +2,13 @@ import React, { useState, useEffect } from 'react';
 import Plotly from 'plotly.js-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import { Data, Layout } from 'plotly.js';
-import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedFocusNodes, selectSelectedFocusNodes, selectBarPlotData } from '../Store/CsvSlice';
+import { useSelector } from 'react-redux';
+import { selectBarPlotData } from '../Store/CsvSlice';
+import { CsvData } from '../Store/types';
 
-import { csvDataToBarPlotDataGivenFeature } from './csvToPlotlyFeatureData';
-import { replacePrefixWithUrl, replaceUrlWithPrefix } from '../../utils';
+import { replaceUrlWithPrefix } from '../../utils';
 
 const Plot = createPlotlyComponent(Plotly);
-
-interface SampleDataItem {
-  category: string;
-  value: number;
-}
-
-interface BarPlotDataState {
-  selectedNodes: any;
-  samples: any;
-}
 
 const violationFeatures = [
   'http://data.boehringer.com/ontology/omics/TranscriptOmicsSampleShape-isPreparedByLibrary',
@@ -41,15 +31,22 @@ const violationFeatures = [
   'http://data.boehringer.com/ontology/omics/TranscriptOmicsSampleShape-hasStrandedness',
 ];
 
-const getBarPlotData = (selectedNodes: any, samples: any): Data[] => {
+const getBarPlotData = (selectedNodes: string[], samples: CsvData[]): Data[] => {
   if (samples === undefined) {
-    const barPlotData = {
-      x: [],
-      y: [],
-      type: 'bar',
-      name: 'violations',
-    };
+    return [
+      {
+        x: [],
+        y: [],
+        type: 'bar',
+        marker: {
+          color: 'steelblue',
+        },
+        name: 'violations',
+      },
+    ];
   }
+
+  console.log('selectedNodes, samples', selectedNodes, samples);
 
   const countsByFeature: Record<string, Record<string, number>> = {};
 
@@ -63,9 +60,6 @@ const getBarPlotData = (selectedNodes: any, samples: any): Data[] => {
       }
     });
   });
-
-  // find the list of features in countsByFeature that have are not 0 or empty
-  const nonEmptyFeatures = Object.keys(countsByFeature).filter((feature) => Object.keys(countsByFeature[feature]).length > 0);
 
   // turn all non empty features in countsByFeature into 2 arrays of x and y values
   //   console.log('countsByFeature', countsByFeature);
@@ -97,9 +91,9 @@ const getBarPlotData = (selectedNodes: any, samples: any): Data[] => {
 
 function ViolationsBarPlotSample() {
   const feature = 'Violations';
-  const data = useSelector(selectBarPlotData) as BarPlotDataState;
+  const data = useSelector(selectBarPlotData);
   const plotData = getBarPlotData(data.selectedNodes, data.samples);
-  const [localSelectedFocusNodes, setLocalSelectedFocusNodes] = useState<string[]>([]);
+  const [localSelectedFocusNodes] = useState<string[]>([]);
 
   useEffect(() => {
     if (localSelectedFocusNodes.length) {

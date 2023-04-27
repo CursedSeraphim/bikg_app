@@ -26,7 +26,7 @@ const csvSlice = createSlice({
   },
 });
 
-export const selectBarPlotData = (state: { csv: CsvState }): any => {
+export const selectBarPlotData = (state: { csv: CsvState }): CsvState => {
   return { selectedNodes: state.csv.selectedNodes, samples: state.csv.samples };
 };
 
