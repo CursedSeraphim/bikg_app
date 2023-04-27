@@ -35,7 +35,7 @@ export function App() {
       .catch((error) => {
         console.error('Failed to fetch ontology', error);
       });
-  }, []);
+  }, [dispatch]);
 
   // Fetch and process RDF ontology
   React.useEffect(() => {
@@ -49,6 +49,8 @@ export function App() {
           console.error('Failed to generate Cytoscape data:', error);
         });
     }
+    // because adding cytodata to the dependency array causes problems with the lasso selection:
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rdfOntology]);
 
   // Fetch force directed node positions
@@ -60,7 +62,7 @@ export function App() {
       .catch((error) => {
         console.error('Failed to fetch CSV file', error);
       });
-  }, []);
+  }, [dispatch]);
 
   // Fetch force directed edge vectors
   React.useEffect(() => {
@@ -71,7 +73,7 @@ export function App() {
       .catch((error) => {
         console.error('Failed to fetch CSV file', error);
       });
-  }, []);
+  }, [dispatch]);
 
   // Fetch ex51 study data transformed to Cytoscape JSON
   React.useEffect(() => {
@@ -82,7 +84,7 @@ export function App() {
       .catch((error) => {
         console.error('Failed to fetch RDF file', error);
       });
-  }, []);
+  }, [dispatch]);
 
   // Fetch ex51 tabular vfiolations data for Plotly
   React.useEffect(() => {
@@ -94,7 +96,7 @@ export function App() {
       .catch((error) => {
         console.error('Failed to fetch RDF file', error);
       });
-  }, []);
+  }, [dispatch]);
 
   React.useEffect(() => {
     selectCytoData({ rdf: { rdfString: rdfOntology } })
@@ -125,8 +127,8 @@ export function App() {
 
             // fetch the JSON for the Vega spec
             fetchJSONGivenNodes('ex51_violations_metadata.csv', nodeList)
-              .then((data) => {
-                setSpec(JSON.parse(data));
+              .then((violationsData) => {
+                setSpec(JSON.parse(violationsData));
                 console.log('spec has been set:', spec);
               })
               .catch((error) => {
@@ -178,7 +180,7 @@ export function App() {
       .catch((error) => {
         console.error('Failed to generate Cytoscape data:', error);
       });
-  }, [rdfOntology]);
+  }, [cy, rdfOntology, spec]);
 
   const handleDataSelected = (selectedData) => {
     console.log('Data selected in App component');
