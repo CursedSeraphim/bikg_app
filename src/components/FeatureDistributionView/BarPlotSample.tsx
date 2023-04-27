@@ -3,14 +3,15 @@ import Plotly from 'plotly.js-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import { Data, Layout } from 'plotly.js';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedFocusNodes, selectSelectedFocusNodes, selectBarPlotData } from '../Store/CsvSlice';
+import { setSelectedFocusNodes, selectBarPlotData } from '../Store/CsvSlice';
+import { CsvData } from '../Store/types';
 
 import { csvDataToBarPlotDataGivenFeature } from './csvToPlotlyFeatureData';
 import { replacePrefixWithUrl, replaceUrlWithPrefix } from '../../utils';
 
 const Plot = createPlotlyComponent(Plotly);
 
-function getBarPlotData(feature: string, selectedNodes: any, samples: any): Data[] {
+function getBarPlotData(feature: string, selectedNodes: string[], samples: CsvData[]): Data[] {
   const barPlotData = csvDataToBarPlotDataGivenFeature(feature, selectedNodes, samples);
 
   return [

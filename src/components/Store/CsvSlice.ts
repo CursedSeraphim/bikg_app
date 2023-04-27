@@ -1,19 +1,16 @@
 // CsvSlice.ts
 import { createSlice } from '@reduxjs/toolkit';
-import { Data } from 'plotly.js';
-import { ScatterData, ScatterCsvData, dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
-import { FeatureCsvData, csvDataToBarPlotDataGivenFeature } from '../FeatureDistributionView/csvToPlotlyFeatureData';
+import { ScatterData, dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
 import { CsvData } from './types';
-import { replaceUrlWithPrefix } from '../../utils';
 
 export interface CsvState {
   samples: CsvData[];
-  selectedFocusNodes: string[];
+  selectedNodes: string[];
 }
 
 const initialState: CsvState = {
   samples: [],
-  selectedFocusNodes: [],
+  selectedNodes: [],
 };
 
 const csvSlice = createSlice({
@@ -21,17 +18,16 @@ const csvSlice = createSlice({
   initialState,
   reducers: {
     setCsvData: (state, action) => {
-      // state.samples = replaceKeysAndValuesInArray(action.payload, replaceUrlWithPrefix);
       state.samples = action.payload;
     },
     setSelectedFocusNodes: (state, action) => {
-      state.selectedFocusNodes = action.payload;
+      state.selectedNodes = action.payload;
     },
   },
 });
 
 export const selectBarPlotData = (state: { csv: CsvState }): any => {
-  return { selectedNodes: state.csv.selectedFocusNodes, samples: state.csv.samples };
+  return { selectedNodes: state.csv.selectedNodes, samples: state.csv.samples };
 };
 
 export const selectCsvDataForPlotly = (state: { csv: CsvState }): ScatterData[] => {
@@ -40,7 +36,7 @@ export const selectCsvDataForPlotly = (state: { csv: CsvState }): ScatterData[] 
 
 export const selectCsvData = (state: { csv: CsvState }) => state.csv.samples;
 
-export const selectSelectedFocusNodes = (state: { csv: CsvState }) => state.csv.selectedFocusNodes;
+export const selectSelectedFocusNodes = (state: { csv: CsvState }) => state.csv.selectedNodes;
 
 export default csvSlice.reducer;
 
