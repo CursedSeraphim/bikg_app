@@ -30,13 +30,6 @@ function BarPlotSample(props) {
   const { feature } = props;
   const dispatch = useDispatch();
   const data = useSelector(selectBarPlotData);
-  const [localSelectedFocusNodes, setLocalSelectedFocusNodes] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (localSelectedFocusNodes.length) {
-      // Process the selected focus nodes or pass them to a callback function
-    }
-  }, [localSelectedFocusNodes]);
 
   const plotData = getBarPlotData(feature, data.selectedNodes, data.samples);
   const plotLayout: Partial<Layout> = {
@@ -69,7 +62,6 @@ function BarPlotSample(props) {
       // further filter the data.selectedNodes to only those that match the focus_node
       const updatedSelectedNodes = data.selectedNodes.filter((node) => matchingFocusNodes.includes(node));
 
-      setLocalSelectedFocusNodes(updatedSelectedNodes);
       dispatch(setSelectedFocusNodes(updatedSelectedNodes));
     }
   };

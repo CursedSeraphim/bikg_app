@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Plotly from 'plotly.js-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import { Data, Layout } from 'plotly.js';
-import { useSelector } from 'react-redux';
-import { selectBarPlotData } from '../Store/CsvSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { setSelectedFocusNodes, selectBarPlotData } from '../Store/CsvSlice';
 import { CsvData } from '../Store/types';
 
-import { replaceUrlWithPrefix } from '../../utils';
+import { replacePrefixWithUrl, replaceUrlWithPrefix } from '../../utils';
 
 const Plot = createPlotlyComponent(Plotly);
 
+// TODO automatically extract via backend from data if possible
 const violationFeatures = [
   'http://data.boehringer.com/ontology/omics/TranscriptOmicsSampleShape-isPreparedByLibrary',
   'http://data.boehringer.com/ontology/omics/afb51f95-5b17-45a4-b62d-c58f4998f930',
@@ -46,8 +47,6 @@ const getBarPlotData = (selectedNodes: string[], samples: CsvData[]): Data[] => 
     ];
   }
 
-  console.log('selectedNodes, samples', selectedNodes, samples);
-
   const countsByFeature: Record<string, Record<string, number>> = {};
 
   violationFeatures.forEach((feature) => {
@@ -62,7 +61,6 @@ const getBarPlotData = (selectedNodes: string[], samples: CsvData[]): Data[] => 
   });
 
   // turn all non empty features in countsByFeature into 2 arrays of x and y values
-  //   console.log('countsByFeature', countsByFeature);
   const nonEmptyCountsByFeature = {};
 
   for (const [key, value] of Object.entries(countsByFeature)) {
@@ -70,8 +68,6 @@ const getBarPlotData = (selectedNodes: string[], samples: CsvData[]): Data[] => 
       nonEmptyCountsByFeature[key] = value;
     }
   }
-
-  console.log(nonEmptyCountsByFeature);
 
   const xValues = Object.keys(nonEmptyCountsByFeature).map(replaceUrlWithPrefix);
   const yValues = Object.values(nonEmptyCountsByFeature).map((value) => value['1']);
@@ -92,14 +88,8 @@ const getBarPlotData = (selectedNodes: string[], samples: CsvData[]): Data[] => 
 function ViolationsBarPlotSample() {
   const feature = 'Violations';
   const data = useSelector(selectBarPlotData);
+  const dispatch = useDispatch();
   const plotData = getBarPlotData(data.selectedNodes, data.samples);
-  const [localSelectedFocusNodes] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (localSelectedFocusNodes.length) {
-      // Process the selected focus nodes or pass them to a callback function
-    }
-  }, [localSelectedFocusNodes]);
 
   const plotLayout: Partial<Layout> = {
     title: feature,
@@ -119,7 +109,25 @@ function ViolationsBarPlotSample() {
 
   const handleSelection = (eventData) => {
     // Leave this empty for future implementation
-    console.log('eventData', eventData);
+    if (eventData?.points && eventData.points.length > 0) {
+      const selectedValues = eventData.points.map((point) => point.x);
+
+      // Convert abbreviated values to their original form
+      const originalSelectedValues = selectedValues.map((value) => replacePrefixWithUrl(value));
+
+      // Create a list of all objects in data.samples that match the criteria
+      const updatedSelectedNodes = originalSelectedValues.reduce((accumulator, selectedValue) => {
+        // first retrieve list of focus nodes that match the selected value
+        const matchingFocusNodes = data.samples.filter((sample) => sample[selectedValue] === 1).map((sample) => sample.focus_node);
+
+        // then apply filter to selectedNodes to only include those that match the selected value
+        const matchedSamples = data.selectedNodes.filter((node) => matchingFocusNodes.includes(node));
+
+        return accumulator.concat(matchedSamples);
+      }, []);
+
+      dispatch(setSelectedFocusNodes(updatedSelectedNodes));
+    }
   };
 
   return (

@@ -75,7 +75,7 @@ export function App() {
   }, [dispatch]);
 
   const handleDataSelected = (selectedData) => {
-    console.log('Data selected in App component', selectedData);
+    // console.log('Data selected in App component', selectedData);
   };
 
   return (

@@ -20,6 +20,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
     if (rdfOntology) {
       selectCytoData({ rdf: { rdfString: rdfOntology } })
         .then((data) => {
+          // TODO investigate this method call
           setCytoData(data);
         })
         .catch((error) => {
