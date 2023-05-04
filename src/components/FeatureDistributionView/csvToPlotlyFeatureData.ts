@@ -46,3 +46,35 @@ export function csvDataToBarPlotDataGivenFeature(feature: string, focus_nodes: s
     name: feature,
   };
 }
+
+/**
+ * A function that takes a feature (as it appears in the csv in csv slice) and generates the data expected by plotly to create a bar plot of this selection.
+ * @param feature a string that is the name of a feature as it appears in the csv in the csv slice
+ * @param samples all the data in the csv slice
+ */
+export function csvDataToBarPlotDataGivenFeatureOverallDistribution(feature: string, samples: CsvData[]): BarPlotData {
+  const counts: Record<string, number> = {};
+  // if undefined return empty
+  if (samples === undefined) {
+    return {
+      x: [],
+      y: [],
+      type: 'bar',
+      name: feature,
+    };
+  }
+
+  samples.forEach((nodeData) => {
+    if (nodeData && nodeData[feature]) {
+      const value = replaceUrlWithPrefix(nodeData[feature]);
+      counts[value] = (counts[value] || 0) + 1;
+    }
+  });
+
+  return {
+    x: Object.keys(counts),
+    y: Object.values(counts),
+    type: 'bar',
+    name: feature,
+  };
+}

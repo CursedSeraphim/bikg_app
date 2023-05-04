@@ -9,6 +9,9 @@ import { CsvData } from '../Store/types';
 import { replacePrefixWithUrl, replaceUrlWithPrefix } from '../../utils';
 
 const Plot = createPlotlyComponent(Plotly);
+// TODO control this with checkboxes and a data store
+const showOverallDistribution = true;
+const subSelection = false;
 
 // TODO automatically extract via backend from data if possible
 const violationFeatures = [
@@ -72,9 +75,47 @@ const getBarPlotData = (selectedNodes: string[], samples: CsvData[]): Data[] => 
   const xValues = Object.keys(nonEmptyCountsByFeature).map(replaceUrlWithPrefix);
   const yValues = Object.values(nonEmptyCountsByFeature).map((value) => value['1']);
 
+  if (showOverallDistribution) {
+    const overallCountsByFeature: Record<string, Record<string, number>> = {};
+
+    violationFeatures.forEach((feature) => {
+      overallCountsByFeature[feature] = {};
+      samples.forEach((nodeData) => {
+        if (nodeData && nodeData[feature]) {
+          const value = replaceUrlWithPrefix(nodeData[feature]);
+          overallCountsByFeature[feature][value] = (overallCountsByFeature[feature][value] || 0) + 1;
+        }
+      });
+    });
+
+    const overallXValues = Object.keys(overallCountsByFeature).map(replaceUrlWithPrefix);
+    const overallYValues = Object.values(overallCountsByFeature).map((value) => value['1']);
+
+    return [
+      {
+        x: overallXValues,
+        y: overallYValues,
+        type: 'bar',
+        marker: {
+          color: 'lightgrey',
+        },
+        name: 'overall',
+      },
+      {
+        x: xValues,
+        y: yValues,
+        type: 'bar',
+        marker: {
+          color: 'steelblue',
+        },
+        name: 'violations',
+      },
+    ];
+  }
+
   return [
     {
-      x: replaceUrlWithPrefix(xValues),
+      x: xValues,
       y: yValues,
       type: 'bar',
       marker: {
@@ -105,6 +146,8 @@ function ViolationsBarPlotSample() {
       t: 20,
       pad: 0,
     },
+    showlegend: false,
+    barmode: 'overlay',
   };
 
   const handleSelection = (eventData) => {
@@ -120,9 +163,11 @@ function ViolationsBarPlotSample() {
         // first retrieve list of focus nodes that match the selected value
         const matchingFocusNodes = data.samples.filter((sample) => sample[selectedValue] === 1).map((sample) => sample.focus_node);
 
+        if (!subSelection) {
+          return accumulator.concat(matchingFocusNodes);
+        }
         // then apply filter to selectedNodes to only include those that match the selected value
         const matchedSamples = data.selectedNodes.filter((node) => matchingFocusNodes.includes(node));
-
         return accumulator.concat(matchedSamples);
       }, []);
 

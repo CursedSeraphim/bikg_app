@@ -63,17 +63,14 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
         } else {
           const newCy = cytoscape({
             container: document.getElementById('cy'), // container to render in
-
             wheelSensitivity: 0.2,
-
             elements: newCytoData,
-
             style: [
               // the stylesheet for the graph
               {
                 selector: 'node',
                 style: {
-                  'background-color': '#666',
+                  'background-color': 'lightgrey', // previously #666
                   label: 'data(id)',
                 },
               },

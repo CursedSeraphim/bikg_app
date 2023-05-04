@@ -26,7 +26,7 @@ function InteractiveScatterPlot({ data, onDataSelected }: InteractiveScatterPlot
       text: data.map((d) => d.text),
       marker: {
         size: 3,
-        color: data.map((d) => (localSelectedFocusNodes.includes(d.text) ? 'steelblue' : 'grey')),
+        color: data.map((d) => (localSelectedFocusNodes.includes(d.text) ? 'steelblue' : 'lightgrey')),
         opacity: 0.5,
       },
     },
