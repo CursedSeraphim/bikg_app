@@ -1,9 +1,11 @@
-// CombinedSlice.ts
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
+import * as N3 from 'n3';
+import { NamedNode, Store } from 'n3';
 import { ScatterData, dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
 import { CsvData } from './types';
+import { replaceUrlWithPrefix } from '../../utils';
 
-interface Node {
+interface CytoNode {
   data: {
     id: string;
     label?: string;
@@ -14,10 +16,9 @@ interface Node {
   };
   grabbable?: boolean;
   locked?: boolean;
-  selected: boolean;
 }
 
-interface Edge {
+interface CytoEdge {
   data: {
     id: string;
     source: string;
@@ -26,51 +27,150 @@ interface Edge {
   };
 }
 
-export interface CytoSliceState {
-  nodes: Node[];
-  edges: Edge[];
+interface CytoData {
+  nodes: CytoNode[];
+  edges: CytoEdge[];
 }
 
-export interface CsvState {
+export interface RdfState {
+  rdfString: string;
+}
+
+export interface CombinedState {
   samples: CsvData[];
   selectedNodes: string[];
+  rdfString: string;
 }
 
-const initialState: { cyto: CytoSliceState, csv: CsvState } = {
-  cyto: {
-    nodes: [],
-    edges: [],
-  },
-  csv: {
-    samples: [],
-    selectedNodes: [],
-  },
+const initialState: CombinedState = {
+  samples: [],
+  selectedNodes: [],
+  rdfString: '',
 };
 
 const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
-    addData: (state, action: PayloadAction<CytoSliceState>) => {
-      state.cyto.nodes = [...state.cyto.nodes, ...action.payload.nodes];
-      state.cyto.edges = [...state.cyto.edges, ...action.payload.edges];
-    },
-    loadCytoData: (state, action) => {
-      if (action.payload !== undefined) {
-        const data = JSON.parse(action.payload);
-        state.cyto.nodes = data.data.nodes;
-        state.cyto.edges = data.data.edges;
-      }
-    },
     setCsvData: (state, action) => {
-      state.csv.samples = action.payload;
+      state.samples = action.payload;
     },
     setSelectedFocusNodes: (state, action) => {
-      state.csv.selectedNodes = action.payload;
+      state.selectedNodes = action.payload;
+    },
+    setRdfString: (state, action) => {
+      state.rdfString = action.payload;
     },
   },
 });
 
-export const { addData, loadCytoData, setCsvData, setSelectedFocusNodes } = combinedSlice.actions;
+export const selectBarPlotData = (state: { combined: CombinedState }): CombinedState => {
+  return { selectedNodes: state.combined.selectedNodes, samples: state.combined.samples, rdfString: state.combined.rdfString };
+};
+
+export const selectCsvDataForPlotly = (state: { combined: CombinedState }): ScatterData[] => {
+  return dataToScatterDataArray(state.combined.samples);
+};
+
+export const selectCsvData = (state: { combined: CombinedState }) => state.combined.samples;
+
+export const selectSelectedFocusNodes = (state: { combined: CombinedState }) => state.combined.selectedNodes;
+
+export const selectRdfData = (state: { combined: CombinedState }) => state.combined.rdfString;
+
+export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<any[]> => {
+  const { rdfString } = state.rdf;
+  const store: Store = new Store();
+  const parser: N3.Parser = new N3.Parser();
+  await new Promise<void>((resolve, reject) => {
+    parser.parse(rdfString, (error, quad, _prefixes) => {
+      if (quad) {
+        store.addQuad(quad);
+      } else if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    });
+  });
+  const subClassOfPredicate = new NamedNode('http://www.w3.org/2000/01/rdf-schema#subClassOf');
+  const subClassOfTuples = store.getQuads(null, subClassOfPredicate, null);
+  // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
+  // In selectSubClassOfTuples and selectSubClassOrObjectPropertyTuples functions
+  return subClassOfTuples.map((quad) => {
+    return {
+      subject: replaceUrlWithPrefix(quad.subject.id),
+      predicate: replaceUrlWithPrefix(quad.predicate.id),
+      object: replaceUrlWithPrefix(quad.object.id),
+    };
+  });
+};
+
+export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: RdfState }): Promise<any[]> => {
+  const { rdfString } = state.rdf;
+  const store: Store = new N3.Store();
+  const parser: N3.Parser = new N3.Parser();
+  await new Promise<void>((resolve, reject) => {
+    parser.parse(rdfString, (error, quad, _prefixes) => {
+      if (quad) {
+        store.addQuad(quad);
+      } else if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    });
+  });
+
+  const subClassOfPredicate = new NamedNode('http://www.w3.org/2000/01/rdf-schema#subClassOf');
+  const objectPropertyPredicate = new NamedNode('http://www.w3.org/2002/07/owl#ObjectProperty');
+  const subClassOrObjectPropertyTuples = store.getQuads(null, subClassOfPredicate, null).concat(store.getQuads(null, null, objectPropertyPredicate));
+  return subClassOrObjectPropertyTuples.map((quad) => {
+    return {
+      subject: replaceUrlWithPrefix(quad.subject.id),
+      predicate: replaceUrlWithPrefix(quad.predicate.id),
+      object: replaceUrlWithPrefix(quad.object.id),
+    };
+  });
+};
+
+/**
+ * Function that serves as glue between the Cytoscape component and the N3 data form the RDFSlice Redux store.
+ * @param state The Redux store state.
+ * @returns The Cytoscape data.
+ */
+export const selectCytoData = async (state: { rdf: RdfState }): Promise<CytoData> => {
+  // const subClassOfTuples = await selectSubClassOrObjectPropertyTuples(state);
+  const subClassOfTuples = await selectSubClassOfTuples(state);
+  const nodes: CytoNode[] = [];
+  const edges: CytoEdge[] = [];
+
+  // Iterate over the subClassOfTuples and create a node for each unique subject and object
+  // Also create an edge for each subClassOf relation
+  subClassOfTuples.forEach((tuple) => {
+    const sourceNode = nodes.find((node) => node.data.id === tuple.subject);
+    if (!sourceNode) {
+      nodes.push({ data: { id: tuple.subject } });
+    }
+
+    const targetNode = nodes.find((node) => node.data.id === tuple.object);
+    if (!targetNode) {
+      nodes.push({ data: { id: tuple.object } });
+    }
+
+    edges.push({
+      data: {
+        id: `${tuple.subject}_${tuple.object}`,
+        source: tuple.subject,
+        target: tuple.object,
+        label: tuple.predicate,
+      },
+    });
+  });
+
+  return { nodes, edges };
+};
 
 export default combinedSlice.reducer;
+
+export const { setCsvData, setSelectedFocusNodes, setRdfString } = combinedSlice.actions;
