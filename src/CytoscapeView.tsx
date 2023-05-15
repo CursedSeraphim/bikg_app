@@ -19,6 +19,19 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
   const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
   console.log('CytoscapeView called');
 
+  React.useEffect(() => {
+    // console.log('cytoscapeView selectedFocusNodes', selectedFocusNodes);
+    if (cy) {
+      // Unselect all nodes first
+      cy.nodes().unselect();
+
+      // Select nodes that match the selectedNodes from the slice
+      selectedFocusNodes.forEach((nodeId) => {
+        // TODO
+      });
+    }
+  }, [cy, selectedFocusNodes]);
+
   // Fetch and process RDF ontology
   React.useEffect(() => {
     if (rdfOntology) {
@@ -70,7 +83,6 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
             wheelSensitivity: 0.2,
             elements: newCytoData,
             style: [
-              // the stylesheet for the graph
               {
                 selector: 'node',
                 style: {
@@ -79,7 +91,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
                 },
               },
               {
-                selector: 'node:selected',
+                selector: 'node[?selected]',
                 style: {
                   'background-color': 'steelblue',
                 },

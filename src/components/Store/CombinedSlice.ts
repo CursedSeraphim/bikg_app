@@ -9,6 +9,7 @@ interface CytoNode {
   data: {
     id: string;
     label?: string;
+    selected?: boolean;
   };
   position?: {
     x: number;
@@ -57,6 +58,27 @@ const combinedSlice = createSlice({
     },
     setSelectedFocusNodes: (state, action) => {
       state.selectedNodes = action.payload;
+
+      console.log('state', JSON.stringify(state, null, 2)); // for pseudo debugging
+
+      // Initiate an empty array to hold types of selected nodes
+      const selectedTypes = [];
+
+      // Iterate over each selected node
+      state.selectedNodes.forEach((selectedNode) => {
+        // Find the corresponding sample for the selected node
+        const correspondingSample = state.samples.find((sample) => sample.focus_node === selectedNode);
+        if (correspondingSample) {
+          // If the sample has a type, add it to the selectedTypes array
+          const sampleType = correspondingSample['http://www.w3.org/1999/02/22-rdf-syntax-ns#type'];
+          if (sampleType && !selectedTypes.includes(sampleType)) {
+            selectedTypes.push(sampleType);
+          }
+        }
+      });
+
+      // Now, selectedTypes should contain a list of all types that appear among the selected nodes
+      console.log('selectedTypes:', selectedTypes);
     },
     setRdfString: (state, action) => {
       state.rdfString = action.payload;
