@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setRdfString, selectRdfData } from './components/Store/RdfSlice';
-import { setCsvData, selectCsvDataForPlotly } from './components/Store/CsvSlice';
+import { setRdfString, selectRdfData, setCsvData, selectCsvDataForPlotly } from './components/Store/CombinedSlice';
 import { loadNodes } from './components/Store/NodeSlice';
 import { loadEdges } from './components/Store/EdgeSlice';
 import { loadCytoData } from './components/Store/CytoSlice';

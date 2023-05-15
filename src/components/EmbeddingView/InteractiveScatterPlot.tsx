@@ -3,7 +3,7 @@ import Plotly from 'plotly.js-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import { Data, Layout } from 'plotly.js';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedFocusNodes, selectSelectedFocusNodes } from '../Store/CsvSlice'; // Import the necessary actions and selectors from CsvSlice
+import { setSelectedFocusNodes, selectSelectedFocusNodes } from '../Store/CombinedSlice'; // Import the necessary actions and selectors from CombinedSlice
 
 const Plot = createPlotlyComponent(Plotly);
 

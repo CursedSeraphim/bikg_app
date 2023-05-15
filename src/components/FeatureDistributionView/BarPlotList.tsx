@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 import BarPlotSample from './BarPlotSample';
-import { selectCsvData } from '../Store/CsvSlice';
+import { selectCsvData } from '../Store/CombinedSlice';
 
 /**
  * This function takes the list of all features in the CSV and creates a list of JSX elements frmo the BarPlotSample one below the other to which it hands the feature name as a prop.

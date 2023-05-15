@@ -3,7 +3,7 @@ import Plotly from 'plotly.js-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import { Data, Layout } from 'plotly.js';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedFocusNodes, selectBarPlotData } from '../Store/CsvSlice';
+import { setSelectedFocusNodes, selectBarPlotData } from '../Store/CombinedSlice';
 import { CsvData } from '../Store/types';
 
 import { csvDataToBarPlotDataGivenFeature, csvDataToBarPlotDataGivenFeatureOverallDistribution } from './csvToPlotlyFeatureData';
