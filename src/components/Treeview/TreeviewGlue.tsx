@@ -1,7 +1,7 @@
-import { RdfState, selectSubClassOfTuples } from '../Store/RdfSlice';
+import { RdfState, selectSubClassOfTuples } from '../Store/CombinedSlice';
 
 /**
- * Glue that connects rdfslice selectSubClassOrObjectPropertyTuples return value to the Treebeard component
+ * Glue that connects CombinedSlice selectSubClassOrObjectPropertyTuples return value to the Treebeard component
  * @param ontology The ontology data in N3 format
  * @returns The tree data in the format expected by Treebeard
  */

@@ -4,8 +4,7 @@ import cytoscape from 'cytoscape';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
 import { useSelector } from 'react-redux';
-import { setSelectedFocusNodes, selectSelectedFocusNodes } from './components/Store/CombinedSlice'; // Import the necessary actions and selectors from CombinedSlice
-import { selectCytoData } from './components/Store/CombinedSlice';
+import { selectCytoData, setSelectedFocusNodes, selectSelectedFocusNodes } from './components/Store/CombinedSlice'; // Import the necessary actions and selectors from CombinedSlice
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(coseBilkent);

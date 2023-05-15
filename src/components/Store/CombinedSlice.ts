@@ -135,7 +135,7 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: RdfStat
 };
 
 /**
- * Function that serves as glue between the Cytoscape component and the N3 data form the RDFSlice Redux store.
+ * Function that serves as glue between the Cytoscape component and the N3 data from the CombinedSlice Redux store.
  * @param state The Redux store state.
  * @returns The Cytoscape data.
  */

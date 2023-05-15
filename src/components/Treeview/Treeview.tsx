@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Treebeard } from 'react-treebeard';
-import { selectRdfData } from '../Store/RdfSlice';
+import { selectRdfData } from '../Store/CombinedSlice';
 import { getTreeDataFromN3Data } from './TreeviewGlue';
 import { lightTheme } from './lightTheme';
 
