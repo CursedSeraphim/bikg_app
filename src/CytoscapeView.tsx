@@ -1,7 +1,10 @@
+// CytoscapeView.tsx
 import * as React from 'react';
 import cytoscape from 'cytoscape';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
+import { useSelector } from 'react-redux';
+import { setSelectedFocusNodes, selectSelectedFocusNodes } from './components/Store/CsvSlice'; // Import the necessary actions and selectors from CsvSlice
 import { selectCytoData } from './components/Store/RdfSlice';
 
 cytoscape.use(cytoscapeLasso);
@@ -14,6 +17,8 @@ interface CytoscapeViewProps {
 function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
   const [cy, setCy] = React.useState<cytoscape.Core | null>(null);
   const [setCytoData] = React.useState(null);
+  const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
+  console.log('CytoscapeView called');
 
   // Fetch and process RDF ontology
   React.useEffect(() => {
@@ -72,6 +77,12 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
                 style: {
                   'background-color': 'lightgrey', // previously #666
                   label: 'data(id)',
+                },
+              },
+              {
+                selector: 'node:selected',
+                style: {
+                  'background-color': 'steelblue',
                 },
               },
 

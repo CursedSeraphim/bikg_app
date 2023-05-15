@@ -1,5 +1,6 @@
+// CytoSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import * as d3 from 'd3';
+
 interface Node {
   data: {
     id: string;
@@ -11,6 +12,7 @@ interface Node {
   };
   grabbable?: boolean;
   locked?: boolean;
+  selected: boolean;
 }
 
 interface Edge {
@@ -22,7 +24,7 @@ interface Edge {
   };
 }
 
-interface CytoSliceState {
+export interface CytoSliceState {
   nodes: Node[];
   edges: Edge[];
 }
