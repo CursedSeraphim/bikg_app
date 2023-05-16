@@ -82,7 +82,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
                 },
               },
               {
-                selector: 'node[?selected]', // previouslz 'node:selected' which works for the default selection
+                selector: 'node[?selected]', // previously 'node:selected' which works for the default selection
                 style: {
                   'background-color': 'steelblue',
                 },
