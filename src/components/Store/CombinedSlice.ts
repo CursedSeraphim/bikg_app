@@ -37,15 +37,17 @@ export interface RdfState {
   rdfString: string;
 }
 
-export interface CombinedState {
+interface CombinedState {
   samples: CsvData[];
   selectedNodes: string[];
+  selectedTypes: string[];
   rdfString: string;
 }
 
 const initialState: CombinedState = {
   samples: [],
   selectedNodes: [],
+  selectedTypes: [],
   rdfString: '',
 };
 
@@ -59,10 +61,8 @@ const combinedSlice = createSlice({
     setSelectedFocusNodes: (state, action) => {
       state.selectedNodes = action.payload;
 
-      console.log('state', JSON.stringify(state, null, 2)); // for pseudo debugging
-
       // Initiate an empty array to hold types of selected nodes
-      const selectedTypes = [];
+      state.selectedTypes = []; // use the state field instead of a local variable
 
       // Iterate over each selected node
       state.selectedNodes.forEach((selectedNode) => {
@@ -70,15 +70,27 @@ const combinedSlice = createSlice({
         const correspondingSample = state.samples.find((sample) => sample.focus_node === selectedNode);
         if (correspondingSample) {
           // If the sample has a type, add it to the selectedTypes array
-          const sampleType = correspondingSample['http://www.w3.org/1999/02/22-rdf-syntax-ns#type'];
-          if (sampleType && !selectedTypes.includes(sampleType)) {
-            selectedTypes.push(sampleType);
+          const sampleType = String(correspondingSample['http://www.w3.org/1999/02/22-rdf-syntax-ns#type']);
+          if (sampleType && !state.selectedTypes.includes(sampleType)) {
+            state.selectedTypes.push(sampleType);
           }
         }
       });
+    },
+    // TODO setSelectedTypes is not tested yet
+    setSelectedTypes: (state, action) => {
+      state.selectedTypes = action.payload;
 
-      // Now, selectedTypes should contain a list of all types that appear among the selected nodes
-      console.log('selectedTypes:', selectedTypes);
+      // Initiate an empty array to hold focus nodes of selected types
+      state.selectedNodes = [];
+
+      // Iterate over each sample
+      state.samples.forEach((sample) => {
+        // If the sample's type is in the selected types array, add its focus node to the selectedNodes array
+        if (state.selectedTypes.includes(String(sample['http://www.w3.org/1999/02/22-rdf-syntax-ns#type']))) {
+          state.selectedNodes.push(sample.focus_node);
+        }
+      });
     },
     setRdfString: (state, action) => {
       state.rdfString = action.payload;
@@ -87,7 +99,12 @@ const combinedSlice = createSlice({
 });
 
 export const selectBarPlotData = (state: { combined: CombinedState }): CombinedState => {
-  return { selectedNodes: state.combined.selectedNodes, samples: state.combined.samples, rdfString: state.combined.rdfString };
+  return {
+    selectedNodes: state.combined.selectedNodes,
+    selectedTypes: state.combined.selectedTypes,
+    samples: state.combined.samples,
+    rdfString: state.combined.rdfString,
+  };
 };
 
 export const selectCsvDataForPlotly = (state: { combined: CombinedState }): ScatterData[] => {
@@ -97,6 +114,8 @@ export const selectCsvDataForPlotly = (state: { combined: CombinedState }): Scat
 export const selectCsvData = (state: { combined: CombinedState }) => state.combined.samples;
 
 export const selectSelectedFocusNodes = (state: { combined: CombinedState }) => state.combined.selectedNodes;
+
+export const selectSelectedTypes = (state: { combined: CombinedState }) => state.combined.selectedTypes;
 
 export const selectRdfData = (state: { combined: CombinedState }) => state.combined.rdfString;
 

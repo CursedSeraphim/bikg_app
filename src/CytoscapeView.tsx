@@ -4,7 +4,8 @@ import cytoscape from 'cytoscape';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
 import { useSelector } from 'react-redux';
-import { selectCytoData, setSelectedFocusNodes, selectSelectedFocusNodes } from './components/Store/CombinedSlice'; // Import the necessary actions and selectors from CombinedSlice
+import { selectCytoData, setSelectedFocusNodes, selectSelectedFocusNodes, selectSelectedTypes } from './components/Store/CombinedSlice';
+import { replaceUrlWithPrefix, replacePrefixWithUrl } from './utils';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(coseBilkent);
@@ -17,20 +18,28 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
   const [cy, setCy] = React.useState<cytoscape.Core | null>(null);
   const [setCytoData] = React.useState(null);
   const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
-  console.log('CytoscapeView called');
+  const selectedTypes = useSelector(selectSelectedTypes); // Add this line
 
   React.useEffect(() => {
-    // console.log('cytoscapeView selectedFocusNodes', selectedFocusNodes);
-    if (cy) {
-      // Unselect all nodes first
-      cy.nodes().unselect();
+    if (cy && selectedTypes) {
+      // Iterate over all nodes
+      cy.nodes().forEach((node) => {
+        const nodeType = node.data().id;
+        const nodeTypeUrl = replacePrefixWithUrl(nodeType);
 
-      // Select nodes that match the selectedNodes from the slice
-      selectedFocusNodes.forEach((nodeId) => {
-        // TODO
+        // If the node's type (in URL format) is in selectedTypes, select the node and set its color to 'steelblue'
+        if (selectedTypes.includes(nodeTypeUrl)) {
+          console.log(selectedTypes, 'includes', nodeTypeUrl);
+          node.select();
+          node.style('background-color', 'steelblue'); // Add this line
+        } else {
+          // If the node's type (in URL format) is not in selectedTypes, unselect the node and set its color back to 'lightgrey'
+          node.unselect();
+          node.style('background-color', 'lightgrey'); // Add this line
+        }
       });
     }
-  }, [cy, selectedFocusNodes]);
+  }, [cy, selectedTypes]);
 
   // Fetch and process RDF ontology
   React.useEffect(() => {
@@ -91,7 +100,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
                 },
               },
               {
-                selector: 'node[?selected]',
+                selector: 'node[?selected]', // previouslz 'node:selected' which works for the default selection
                 style: {
                   'background-color': 'steelblue',
                 },
