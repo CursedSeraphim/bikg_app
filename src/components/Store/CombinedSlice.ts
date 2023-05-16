@@ -1,3 +1,4 @@
+// CombinedSlice.ts
 import { createSlice } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Store } from 'n3';
@@ -59,6 +60,7 @@ const combinedSlice = createSlice({
       state.samples = action.payload;
     },
     setSelectedFocusNodes: (state, action) => {
+      console.log('setSelectedFocusNodes is called with action payload: ', action.payload);
       state.selectedNodes = action.payload;
 
       // Initiate an empty array to hold types of selected nodes
@@ -81,8 +83,17 @@ const combinedSlice = createSlice({
     setSelectedTypes: (state, action) => {
       state.selectedTypes = action.payload;
 
+      // if selectedTypes is empty, set selectedNodes to empty
+      if (state.selectedTypes.length === 0) {
+        state.selectedNodes = [];
+        return;
+      }
+
       // Initiate an empty array to hold focus nodes of selected types
       state.selectedNodes = [];
+
+      console.log('setSelectedTypes is called with action payload: ', action.payload);
+      console.log('iterating over each sample...');
 
       // Iterate over each sample
       state.samples.forEach((sample) => {
@@ -214,4 +225,4 @@ export const selectCytoData = async (state: { rdf: RdfState }): Promise<CytoData
 
 export default combinedSlice.reducer;
 
-export const { setCsvData, setSelectedFocusNodes, setRdfString } = combinedSlice.actions;
+export const { setCsvData, setSelectedFocusNodes, setSelectedTypes, setRdfString } = combinedSlice.actions;

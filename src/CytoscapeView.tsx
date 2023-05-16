@@ -3,8 +3,8 @@ import * as React from 'react';
 import cytoscape from 'cytoscape';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
-import { useSelector } from 'react-redux';
-import { selectCytoData, setSelectedFocusNodes, selectSelectedFocusNodes, selectSelectedTypes } from './components/Store/CombinedSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectCytoData, setSelectedTypes, selectSelectedTypes } from './components/Store/CombinedSlice';
 import { replaceUrlWithPrefix, replacePrefixWithUrl } from './utils';
 
 cytoscape.use(cytoscapeLasso);
@@ -17,8 +17,8 @@ interface CytoscapeViewProps {
 function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
   const [cy, setCy] = React.useState<cytoscape.Core | null>(null);
   const [setCytoData] = React.useState(null);
-  const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
   const selectedTypes = useSelector(selectSelectedTypes); // Add this line
+  const dispatch = useDispatch();
 
   React.useEffect(() => {
     if (cy && selectedTypes) {
@@ -30,11 +30,11 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
         // If the node's type (in URL format) is in selectedTypes, select the node and set its color to 'steelblue'
         if (selectedTypes.includes(nodeTypeUrl)) {
           console.log(selectedTypes, 'includes', nodeTypeUrl);
-          node.select();
+          // node.select(); removing this call such that the user interaction event doesn't get triggered. TODO if the selected nodes are important this has to be implemented differently
           node.style('background-color', 'steelblue'); // Add this line
         } else {
           // If the node's type (in URL format) is not in selectedTypes, unselect the node and set its color back to 'lightgrey'
-          node.unselect();
+          // node.unselect(); removing this call such that the user interaction event doesn't get triggered. TODO if the selected nodes are important this has to be implemented differently
           node.style('background-color', 'lightgrey'); // Add this line
         }
       });
@@ -69,23 +69,23 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
           cy.fit();
           cy.layout({ name: 'cose-bilkent', idealEdgeLength: 100, nodeDimensionsIncludeLabels: true }).run();
           // could use (event) => if we want to do something with the event
-          cy.on('boxend', () => {
-            // get the selected nodes
-            const selectedNodes = cy.nodes(':selected');
+          // cy.on('boxend', () => {
+          //   // get the selected nodes
+          //   const selectedNodes = cy.nodes(':selected');
 
-            // get the data of the selected nodes
-            const selectedData = selectedNodes.map((node) => {
-              return node.data();
-            });
+          //   // get the data of the selected nodes
+          //   const selectedData = selectedNodes.map((node) => {
+          //     return node.data();
+          //   });
 
-            // selectedData is of the shape [{'id': 'node1', 'label': 'Node 1'}, ...]
-            // create a node list of ids
-            const nodeList = selectedData.map((node) => {
-              return node.id;
-            });
+          //   // selectedData is of the shape [{'id': 'node1', 'label': 'Node 1'}, ...]
+          //   // create a node list of ids
+          //   const nodeList = selectedData.map((node) => {
+          //     return node.id;
+          //   });
 
-            console.log('nodeList', nodeList);
-          });
+          //   console.log('nodeList', nodeList);
+          // });
         } else {
           const newCy = cytoscape({
             container: document.getElementById('cy'), // container to render in
@@ -124,6 +124,65 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
               nodeDimensionsIncludeLabels: true,
             },
           });
+
+          let lassoSelectionInProgress = false;
+
+          newCy.on('boxstart', () => {
+            console.log('boxstart');
+            newCy.nodes(':selected').unselect();
+          });
+
+          newCy.on('boxend', () => {
+            console.log('boxend');
+            const selectedNodes = newCy.nodes(':selected');
+            const selectedNodeTypes = selectedNodes.map((node) => replacePrefixWithUrl(node.data().id));
+
+            // Filter out duplicates
+            const uniqueSelectedNodeTypes = [...new Set(selectedNodeTypes)];
+
+            if (selectedNodes.length === 0) {
+              // If no nodes were selected in the lasso, deselect all types
+              dispatch(setSelectedTypes([]));
+            } else {
+              // Dispatch setSelectedTypes action with the new list of selected types
+              dispatch(setSelectedTypes(uniqueSelectedNodeTypes));
+            }
+
+            lassoSelectionInProgress = false;
+          });
+
+          newCy.on('select', 'node', (event) => {
+            console.log('select');
+            // Ignore the event if a lasso selection is in progress
+            if (lassoSelectionInProgress) {
+              return;
+            }
+
+            const nodeType = replacePrefixWithUrl(event.target.data().id);
+
+            console.log('after select', [nodeType]);
+
+            // Dispatch setSelectedTypes action with the new selected type
+            dispatch(setSelectedTypes([nodeType]));
+          });
+
+          newCy.on('unselect', 'node', (event) => {
+            console.log('unselect');
+            // Ignore the event if a lasso selection is in progress
+            if (lassoSelectionInProgress) {
+              return;
+            }
+
+            const nodeType = replacePrefixWithUrl(event.target.data().id);
+            let newSelectedTypes = [...selectedTypes];
+
+            // Remove the node type from the selectedTypes array
+            newSelectedTypes = newSelectedTypes.filter((type) => type !== nodeType);
+
+            // Dispatch setSelectedTypes action with the new list of selected types
+            dispatch(setSelectedTypes(newSelectedTypes));
+          });
+
           setCy(newCy);
         }
       })
