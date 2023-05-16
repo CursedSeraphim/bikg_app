@@ -60,7 +60,6 @@ const combinedSlice = createSlice({
       state.samples = action.payload;
     },
     setSelectedFocusNodes: (state, action) => {
-      console.log('setSelectedFocusNodes is called with action payload: ', action.payload);
       state.selectedNodes = action.payload;
 
       // Initiate an empty array to hold types of selected nodes
@@ -91,9 +90,6 @@ const combinedSlice = createSlice({
 
       // Initiate an empty array to hold focus nodes of selected types
       state.selectedNodes = [];
-
-      console.log('setSelectedTypes is called with action payload: ', action.payload);
-      console.log('iterating over each sample...');
 
       // Iterate over each sample
       state.samples.forEach((sample) => {

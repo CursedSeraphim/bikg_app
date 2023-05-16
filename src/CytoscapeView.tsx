@@ -68,24 +68,6 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
           cy.lassoSelectionEnabled(true);
           cy.fit();
           cy.layout({ name: 'cose-bilkent', idealEdgeLength: 100, nodeDimensionsIncludeLabels: true }).run();
-          // could use (event) => if we want to do something with the event
-          // cy.on('boxend', () => {
-          //   // get the selected nodes
-          //   const selectedNodes = cy.nodes(':selected');
-
-          //   // get the data of the selected nodes
-          //   const selectedData = selectedNodes.map((node) => {
-          //     return node.data();
-          //   });
-
-          //   // selectedData is of the shape [{'id': 'node1', 'label': 'Node 1'}, ...]
-          //   // create a node list of ids
-          //   const nodeList = selectedData.map((node) => {
-          //     return node.id;
-          //   });
-
-          //   console.log('nodeList', nodeList);
-          // });
         } else {
           const newCy = cytoscape({
             container: document.getElementById('cy'), // container to render in
@@ -128,12 +110,10 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
           let lassoSelectionInProgress = false;
 
           newCy.on('boxstart', () => {
-            console.log('boxstart');
             newCy.nodes(':selected').unselect();
           });
 
           newCy.on('boxend', () => {
-            console.log('boxend');
             const selectedNodes = newCy.nodes(':selected');
             const selectedNodeTypes = selectedNodes.map((node) => replacePrefixWithUrl(node.data().id));
 
@@ -152,7 +132,6 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
           });
 
           newCy.on('select', 'node', (event) => {
-            console.log('select');
             // Ignore the event if a lasso selection is in progress
             if (lassoSelectionInProgress) {
               return;
@@ -160,14 +139,11 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
 
             const nodeType = replacePrefixWithUrl(event.target.data().id);
 
-            console.log('after select', [nodeType]);
-
             // Dispatch setSelectedTypes action with the new selected type
             dispatch(setSelectedTypes([nodeType]));
           });
 
           newCy.on('unselect', 'node', (event) => {
-            console.log('unselect');
             // Ignore the event if a lasso selection is in progress
             if (lassoSelectionInProgress) {
               return;
