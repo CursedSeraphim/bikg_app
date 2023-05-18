@@ -1,3 +1,4 @@
+// ViolationsBarPlot.tsx
 import React from 'react';
 import Plotly from 'plotly.js-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
@@ -50,6 +51,29 @@ const getBarPlotData = (selectedNodes: string[], samples: CsvData[]): Data[] => 
     ];
   }
 
+  React.useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Shift') {
+        setDragMode('lasso');
+      }
+    };
+
+    const handleKeyUp = (event) => {
+      if (event.key === 'Shift') {
+        setDragMode('zoom');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    // Clean up the event listeners when the component is unmounted
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
   const countsByFeature: Record<string, Record<string, number>> = {};
 
   violationFeatures.forEach((feature) => {
@@ -93,8 +117,9 @@ const getBarPlotData = (selectedNodes: string[], samples: CsvData[]): Data[] => 
 
     return [
       {
-        x: overallXValues,
-        y: overallYValues,
+        y: overallXValues,
+        x: overallYValues,
+        orientation: 'h',
         type: 'bar',
         marker: {
           color: 'lightgrey',
@@ -102,8 +127,9 @@ const getBarPlotData = (selectedNodes: string[], samples: CsvData[]): Data[] => 
         name: 'overall',
       },
       {
-        x: xValues,
-        y: yValues,
+        y: xValues,
+        x: yValues,
+        orientation: 'h',
         type: 'bar',
         marker: {
           color: 'steelblue',
@@ -115,8 +141,9 @@ const getBarPlotData = (selectedNodes: string[], samples: CsvData[]): Data[] => 
 
   return [
     {
-      x: xValues,
-      y: yValues,
+      y: xValues,
+      x: yValues,
+      orientation: 'h',
       type: 'bar',
       marker: {
         color: 'steelblue',
@@ -131,14 +158,40 @@ function ViolationsBarPlotSample() {
   const data = useSelector(selectBarPlotData);
   const dispatch = useDispatch();
   const plotData = getBarPlotData(data.selectedNodes, data.samples);
+  const [dragMode, setDragMode] = React.useState<'zoom' | 'pan' | 'select' | 'lasso' | 'orbit' | 'turntable' | false>('zoom');
+  const [xRange, setXRange] = React.useState([]);
+  const [yRange, setYRange] = React.useState([]);
+
+  React.useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Shift') {
+        setDragMode('lasso');
+      }
+    };
+
+    const handleKeyUp = (event) => {
+      if (event.key === 'Shift') {
+        setDragMode('zoom');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    // Clean up the event listeners when the component is unmounted
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
   const plotLayout: Partial<Layout> = {
     title: feature,
     titlefont: { size: 12 },
-    xaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 } },
-    yaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 } },
-    dragmode: 'lasso', // Change dragmode to lasso
-    height: 100,
+    xaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 }, range: xRange },
+    yaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 }, range: yRange },
+    dragmode: dragMode,
+    height: 200,
     margin: {
       l: 20,
       r: 20,
@@ -153,7 +206,7 @@ function ViolationsBarPlotSample() {
   const handleSelection = (eventData) => {
     // Leave this empty for future implementation
     if (eventData?.points && eventData.points.length > 0) {
-      const selectedValues = eventData.points.map((point) => point.x);
+      const selectedValues = eventData.points.map((point) => point.y);
 
       // Convert abbreviated values to their original form
       const originalSelectedValues = selectedValues.map((value) => replacePrefixWithUrl(value));
@@ -181,6 +234,14 @@ function ViolationsBarPlotSample() {
         data={plotData}
         layout={plotLayout}
         onSelected={handleSelection}
+        onRelayout={(eventData) => {
+          if (eventData['xaxis.range[0]'] && eventData['xaxis.range[1]']) {
+            setXRange([eventData['xaxis.range[0]'], eventData['xaxis.range[1]']]);
+          }
+          if (eventData['yaxis.range[0]'] && eventData['yaxis.range[1]']) {
+            setYRange([eventData['yaxis.range[0]'], eventData['yaxis.range[1]']]);
+          }
+        }}
         config={{ displayModeBar: false, responsive: true }}
         useResizeHandler
         style={{ width: '100%' }}

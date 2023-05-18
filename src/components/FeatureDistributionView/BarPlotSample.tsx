@@ -21,18 +21,20 @@ function getBarPlotData(feature: string, selectedNodes: string[], samples: CsvDa
 
     return [
       {
-        x: overallBarPlotData.x,
-        y: overallBarPlotData.y,
+        y: overallBarPlotData.x,
+        x: overallBarPlotData.y,
         type: 'bar',
+        orientation: 'h',
         name: 'Overall Distribution',
         marker: {
           color: 'lightgrey',
         },
       },
       {
-        x: selectionBarPlotData.x,
-        y: selectionBarPlotData.y,
+        y: selectionBarPlotData.x,
+        x: selectionBarPlotData.y,
         type: 'bar',
+        orientation: 'h',
         name: 'Selected Nodes',
         marker: {
           color: 'steelblue',
@@ -42,9 +44,10 @@ function getBarPlotData(feature: string, selectedNodes: string[], samples: CsvDa
   }
   return [
     {
-      x: selectionBarPlotData.x,
-      y: selectionBarPlotData.y,
+      y: selectionBarPlotData.x,
+      x: selectionBarPlotData.y,
       type: 'bar',
+      orientation: 'h',
       name: 'Selected Nodes',
       marker: {
         color: 'steelblue',
@@ -55,17 +58,41 @@ function getBarPlotData(feature: string, selectedNodes: string[], samples: CsvDa
 
 function BarPlotSample(props) {
   const { feature } = props;
+  const [dragMode, setDragMode] = useState<'zoom' | 'pan' | 'select' | 'lasso' | 'orbit' | 'turntable' | false>('zoom');
   const dispatch = useDispatch();
   const data = useSelector(selectBarPlotData);
+  const [xRange, setXRange] = useState([]);
+  const [yRange, setYRange] = useState([]);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Shift') {
+        setDragMode('lasso');
+      }
+    };
+
+    const handleKeyUp = (event) => {
+      if (event.key === 'Shift') {
+        setDragMode('zoom');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    // Clean up the event listeners when the component is unmounted
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
   const plotData = getBarPlotData(feature, data.selectedNodes, data.samples);
   const plotLayout: Partial<Layout> = {
     title: replaceUrlWithPrefix(feature),
     titlefont: { size: 12 },
-    xaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 } },
-    yaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 } },
-    dragmode: 'lasso',
-    height: 100,
+    dragmode: dragMode,
+    height: 200,
     margin: {
       l: 20,
       r: 20,
@@ -75,11 +102,17 @@ function BarPlotSample(props) {
     },
     showlegend: false,
     barmode: 'overlay',
+    xaxis: {
+      range: xRange,
+    },
+    yaxis: {
+      range: yRange,
+    },
   };
 
   const handleSelection = (eventData) => {
     if (eventData?.points && eventData.points.length > 0) {
-      const selectedValues = eventData.points.map((point) => point.x);
+      const selectedValues = eventData.points.map((point) => point.y);
 
       // Convert abbreviated values to their original form
       const originalSelectedValues = selectedValues.map((value) => replacePrefixWithUrl(value));
@@ -104,6 +137,14 @@ function BarPlotSample(props) {
         data={plotData}
         layout={plotLayout}
         onSelected={handleSelection}
+        onRelayout={(eventData) => {
+          if (eventData['xaxis.range[0]'] && eventData['xaxis.range[1]']) {
+            setXRange([eventData['xaxis.range[0]'], eventData['xaxis.range[1]']]);
+          }
+          if (eventData['yaxis.range[0]'] && eventData['yaxis.range[1]']) {
+            setYRange([eventData['yaxis.range[0]'], eventData['yaxis.range[1]']]);
+          }
+        }}
         config={{ displayModeBar: false, responsive: true }}
         useResizeHandler
         style={{ width: '100%' }}
