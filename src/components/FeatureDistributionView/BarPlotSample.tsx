@@ -1,3 +1,4 @@
+// BarPlotSample.tsx
 import React, { useState, useEffect } from 'react';
 import Plotly from 'plotly.js-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
@@ -13,6 +14,8 @@ const Plot = createPlotlyComponent(Plotly);
 // TODO control this with checkboxes and a data store
 const showOverallDistribution = true;
 const subSelection = false;
+
+const shouldShowTickLabels = (num: number) => num <= 8;
 
 function getBarPlotData(feature: string, selectedNodes: string[], samples: CsvData[]): Data[] {
   const selectionBarPlotData = csvDataToBarPlotDataGivenFeature(feature, selectedNodes, samples);
@@ -63,6 +66,9 @@ function BarPlotSample(props) {
   const data = useSelector(selectBarPlotData);
   const [xRange, setXRange] = useState([]);
   const [yRange, setYRange] = useState([]);
+  const plotData = getBarPlotData(feature, data.selectedNodes, data.samples);
+  const numberOfTicks = (plotData[0] as any)?.y?.length || 0;
+  const [showTickLabels, setShowTickLabels] = useState(shouldShowTickLabels(numberOfTicks));
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -87,7 +93,24 @@ function BarPlotSample(props) {
     };
   }, []);
 
-  const plotData = getBarPlotData(feature, data.selectedNodes, data.samples);
+  const handleRelayout = (eventData) => {
+    if (eventData['xaxis.autorange']) {
+      setXRange([eventData['xaxis.range[0]'], eventData['xaxis.range[1]']]);
+    }
+    if (eventData['yaxis.autorange']) {
+      setYRange([eventData['yaxis.range[0]'], eventData['yaxis.range[1]']]);
+      setShowTickLabels(shouldShowTickLabels(numberOfTicks));
+    }
+    if (eventData['xaxis.range[0]'] && eventData['xaxis.range[1]']) {
+      setXRange([eventData['xaxis.range[0]'], eventData['xaxis.range[1]']]);
+    }
+    if (eventData['yaxis.range[0]'] && eventData['yaxis.range[1]']) {
+      setYRange([eventData['yaxis.range[0]'], eventData['yaxis.range[1]']]);
+      const numberOfTicksInZoom = Math.abs(eventData['yaxis.range[1]'] - eventData['yaxis.range[0]']);
+      setShowTickLabels(shouldShowTickLabels(numberOfTicksInZoom));
+    }
+  };
+
   const plotLayout: Partial<Layout> = {
     title: replaceUrlWithPrefix(feature),
     titlefont: { size: 12 },
@@ -96,17 +119,19 @@ function BarPlotSample(props) {
     margin: {
       l: 20,
       r: 20,
-      b: 40,
-      t: 20,
+      b: 50,
+      t: 30,
       pad: 0,
     },
     showlegend: false,
     barmode: 'overlay',
     xaxis: {
       range: xRange,
+      showticklabels: true,
     },
     yaxis: {
       range: yRange,
+      showticklabels: showTickLabels,
     },
   };
 
@@ -137,14 +162,7 @@ function BarPlotSample(props) {
         data={plotData}
         layout={plotLayout}
         onSelected={handleSelection}
-        onRelayout={(eventData) => {
-          if (eventData['xaxis.range[0]'] && eventData['xaxis.range[1]']) {
-            setXRange([eventData['xaxis.range[0]'], eventData['xaxis.range[1]']]);
-          }
-          if (eventData['yaxis.range[0]'] && eventData['yaxis.range[1]']) {
-            setYRange([eventData['yaxis.range[0]'], eventData['yaxis.range[1]']]);
-          }
-        }}
+        onRelayout={handleRelayout}
         config={{ displayModeBar: false, responsive: true }}
         useResizeHandler
         style={{ width: '100%' }}
