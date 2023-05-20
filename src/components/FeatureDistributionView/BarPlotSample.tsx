@@ -15,7 +15,7 @@ const Plot = createPlotlyComponent(Plotly);
 const showOverallDistribution = true;
 const subSelection = false;
 
-const shouldShowTickLabels = (num: number) => num <= 8;
+const shouldShowTickLabels = (num: number) => num <= 6;
 
 function getBarPlotData(feature: string, selectedNodes: string[], samples: CsvData[]): Data[] {
   const selectionBarPlotData = csvDataToBarPlotDataGivenFeature(feature, selectedNodes, samples);
@@ -111,13 +111,18 @@ function BarPlotSample(props) {
     }
   };
 
+  // const numBars = (plotData[0] as any)?.y?.length || 0;
+  // const chartHeight = Math.max(70, Math.min(8 * 35, numBars * 35));
+
   const plotLayout: Partial<Layout> = {
     title: replaceUrlWithPrefix(feature),
     titlefont: { size: 12 },
     dragmode: dragMode,
-    height: 200,
+    height: 150,
+    xaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 }, range: xRange },
+    yaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 }, range: yRange, showticklabels: showTickLabels },
     margin: {
-      l: 20,
+      l: 70,
       r: 20,
       b: 50,
       t: 30,
@@ -125,14 +130,6 @@ function BarPlotSample(props) {
     },
     showlegend: false,
     barmode: 'overlay',
-    xaxis: {
-      range: xRange,
-      showticklabels: true,
-    },
-    yaxis: {
-      range: yRange,
-      showticklabels: showTickLabels,
-    },
   };
 
   const handleSelection = (eventData) => {

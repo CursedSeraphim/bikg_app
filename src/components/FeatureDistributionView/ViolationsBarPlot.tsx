@@ -14,7 +14,7 @@ const Plot = createPlotlyComponent(Plotly);
 const showOverallDistribution = true;
 const subSelection = false;
 
-const shouldShowTickLabels = (num: number) => num <= 8;
+const shouldShowTickLabels = (num: number) => num <= 6;
 
 // TODO automatically extract via backend from data if possible
 const violationFeatures = [
@@ -207,15 +207,18 @@ function ViolationsBarPlotSample() {
     }
   };
 
+  // const numBars = (plotData[0] as any)?.y?.length || 0;
+  // const chartHeight = Math.max(70, Math.min(8 * 35, numBars * 35));
+
   const plotLayout: Partial<Layout> = {
     title: feature,
     titlefont: { size: 12 },
-    xaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 }, range: xRange, showticklabels: showTickLabels },
+    xaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 }, range: xRange },
     yaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 }, range: yRange, showticklabels: showTickLabels },
     dragmode: dragMode,
-    height: 200,
+    height: 150,
     margin: {
-      l: 20,
+      l: 70,
       r: 20,
       b: 50,
       t: 30,
