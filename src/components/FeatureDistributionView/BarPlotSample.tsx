@@ -1,4 +1,3 @@
-// BarPlotSample.tsx
 import React, { useState, useEffect } from 'react';
 import Plotly from 'plotly.js-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
@@ -17,12 +16,47 @@ const subSelection = false;
 
 const shouldShowTickLabels = (num: number) => num <= 6;
 
-function getBarPlotData(feature: string, selectedNodes: string[], samples: CsvData[]): Data[] {
-  const selectionBarPlotData = csvDataToBarPlotDataGivenFeature(feature, selectedNodes, samples);
-  if (showOverallDistribution) {
-    const overallBarPlotData = csvDataToBarPlotDataGivenFeatureOverallDistribution(feature, samples);
+function calculateChiSquaredScore(observed, expected) {
+  console.log('observed', observed);
+  console.log('expected', expected);
 
-    return [
+  let chiSquared = 0;
+
+  // Compute total for observed and expected
+  const totalObserved = observed.reduce((a, b) => a + b, 0);
+  const totalExpected = expected.reduce((a, b) => a + b, 0);
+
+  for (let i = 0; i < observed.length; i++) {
+    // Calculate relative frequencies
+    const observedRelative = observed[i] / totalObserved;
+    const expectedRelative = expected[i] / totalExpected;
+
+    // Compute the chi-squared score using relative frequencies
+    chiSquared += (observedRelative - expectedRelative) ** 2 / expectedRelative;
+  }
+
+  return chiSquared;
+}
+
+type BarPlotDataAndScore = {
+  plotData: Data[];
+  chiSquareScore: number;
+};
+
+function getBarPlotData(feature: string, selectedNodes: string[], samples: CsvData[]): BarPlotDataAndScore {
+  const selectionBarPlotData = csvDataToBarPlotDataGivenFeature(feature, selectedNodes, samples);
+  const overallBarPlotData = csvDataToBarPlotDataGivenFeatureOverallDistribution(feature, samples);
+
+  console.log('selectionBarPlotData', selectionBarPlotData);
+  console.log('overallBarPlotData', overallBarPlotData);
+
+  const chiSquareScore = calculateChiSquaredScore(selectionBarPlotData.y, overallBarPlotData.y);
+  console.log(chiSquareScore);
+
+  let plotData: Data[];
+
+  if (showOverallDistribution) {
+    plotData = [
       {
         y: overallBarPlotData.x,
         x: overallBarPlotData.y,
@@ -44,33 +78,41 @@ function getBarPlotData(feature: string, selectedNodes: string[], samples: CsvDa
         },
       },
     ];
-  }
-  return [
-    {
-      y: selectionBarPlotData.x,
-      x: selectionBarPlotData.y,
-      type: 'bar',
-      orientation: 'h',
-      name: 'Selected Nodes',
-      marker: {
-        color: 'steelblue',
+  } else {
+    plotData = [
+      {
+        y: selectionBarPlotData.x,
+        x: selectionBarPlotData.y,
+        type: 'bar',
+        orientation: 'h',
+        name: 'Selected Nodes',
+        marker: {
+          color: 'steelblue',
+        },
       },
-    },
-  ];
+    ];
+  }
+
+  return { plotData, chiSquareScore };
 }
 
-function BarPlotSample(props) {
-  const { feature } = props;
+function BarPlotSample({ feature, onChiSquareScoreChange }) {
   const [dragMode, setDragMode] = useState<'zoom' | 'pan' | 'select' | 'lasso' | 'orbit' | 'turntable' | false>('zoom');
   const dispatch = useDispatch();
   const data = useSelector(selectBarPlotData);
   const [xRange, setXRange] = useState([]);
   const [yRange, setYRange] = useState([]);
-  const plotData = getBarPlotData(feature, data.selectedNodes, data.samples);
+  const [plotData, setPlotData] = useState<Data[]>([]);
   const numberOfTicks = (plotData[0] as any)?.y?.length || 0;
   const [showTickLabels, setShowTickLabels] = useState(shouldShowTickLabels(numberOfTicks));
 
   useEffect(() => {
+    const { plotData: newPlotData, chiSquareScore } = getBarPlotData(feature, data.selectedNodes, data.samples);
+    setPlotData(newPlotData);
+    const newNumberOfTicks = (newPlotData[0] as any)?.y?.length || 0;
+    setShowTickLabels(shouldShowTickLabels(newNumberOfTicks));
+    onChiSquareScoreChange(feature, chiSquareScore);
+
     const handleKeyDown = (event) => {
       if (event.key === 'Shift') {
         setDragMode('lasso');
@@ -91,7 +133,7 @@ function BarPlotSample(props) {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, []);
+  }, [feature, data, onChiSquareScoreChange]);
 
   const handleRelayout = (eventData) => {
     if (eventData['xaxis.autorange']) {

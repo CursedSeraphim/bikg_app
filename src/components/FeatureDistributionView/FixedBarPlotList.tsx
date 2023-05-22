@@ -4,6 +4,10 @@ import BarPlotSample from './BarPlotSample';
 import ViolationsBarplotSample from './ViolationsBarPlot';
 import { selectCsvData } from '../Store/CombinedSlice';
 
+const handleChiSquareScoreChange = (feature: string, chiSquareScore: number) => {
+  console.log(`Chi-Square score changed for feature ${feature}: ${chiSquareScore}`);
+};
+
 /**
  * This function takes the list of all features in the CSV and creates a list of JSX elements frmo the BarPlotSample one below the other to which it hands the feature name as a prop.
  * The csvData does not explicitly have a features list, but it is implicitly there in each of the samples.
@@ -16,7 +20,7 @@ function FixedBarPlotList(): any {
     <div className="bar-plot-list-container">
       <ViolationsBarplotSample />
       {features.map((feature) => (
-        <BarPlotSample key={feature} feature={feature} />
+        <BarPlotSample key={feature} feature={feature} onChiSquareScoreChange={handleChiSquareScoreChange} />
       ))}
     </div>
   );
