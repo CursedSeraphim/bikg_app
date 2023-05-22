@@ -13,7 +13,10 @@ function BarPlotList(): JSX.Element {
   const csvData = useSelector(selectCsvData);
   const [chiSquareScores, setChiSquareScores] = useState({});
 
-  const features = csvData && csvData[0] ? Object.keys(csvData[0]) : [];
+  // List of filtered features
+  const filteredFeatures = ['x', 'y'];
+
+  const features = csvData && csvData[0] ? Object.keys(csvData[0]).filter((feature) => !filteredFeatures.includes(feature)) : [];
 
   const handleChiSquareScoreChange = useCallback((feature: string, chiSquareScore: number) => {
     setChiSquareScores((prevScores) => ({ ...prevScores, [feature]: chiSquareScore }));

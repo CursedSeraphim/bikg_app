@@ -17,9 +17,6 @@ const subSelection = false;
 const shouldShowTickLabels = (num: number) => num <= 6;
 
 function calculateChiSquaredScore(observed, expected) {
-  console.log('observed', observed);
-  console.log('expected', expected);
-
   let chiSquared = 0;
 
   // Compute total for observed and expected
@@ -47,8 +44,11 @@ function getBarPlotData(feature: string, selectedNodes: string[], samples: CsvDa
   const selectionBarPlotData = csvDataToBarPlotDataGivenFeature(feature, selectedNodes, samples);
   const overallBarPlotData = csvDataToBarPlotDataGivenFeatureOverallDistribution(feature, samples);
 
-  console.log('selectionBarPlotData', selectionBarPlotData);
-  console.log('overallBarPlotData', overallBarPlotData);
+  // if feature is "cluster" print data
+  if (feature === 'cluster') {
+    console.log('selectionBarPlotData', selectionBarPlotData);
+    console.log('overallBarPlotData', overallBarPlotData);
+  }
 
   const chiSquareScore = calculateChiSquaredScore(selectionBarPlotData.y, overallBarPlotData.y);
   console.log(chiSquareScore);

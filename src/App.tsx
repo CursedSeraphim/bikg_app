@@ -61,7 +61,7 @@ export function App() {
       });
   }, [dispatch]);
 
-  // Fetch ex51 tabular vfiolations data for Plotly
+  // Fetch ex51 tabular violations data for Plotly
   React.useEffect(() => {
     fetchCSVFile('ex51_violations_metadata.csv')
       .then((data) => {
