@@ -212,13 +212,13 @@ function ViolationsBarPlotSample() {
 
   const plotLayout: Partial<Layout> = {
     title: feature,
-    titlefont: { size: 12 },
+    titlefont: { size: 10 },
     xaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 }, range: xRange },
     yaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 }, range: yRange, showticklabels: showTickLabels },
     dragmode: dragMode,
     height: 150,
     margin: {
-      l: 70,
+      l: 130,
       r: 20,
       b: 50,
       t: 30,

@@ -158,13 +158,13 @@ function BarPlotSample({ feature, onChiSquareScoreChange }) {
 
   const plotLayout: Partial<Layout> = {
     title: replaceUrlWithPrefix(feature),
-    titlefont: { size: 12 },
+    titlefont: { size: 10 },
     dragmode: dragMode,
     height: 150,
     xaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 }, range: xRange },
     yaxis: { title: null, titlefont: { size: 12 }, tickfont: { size: 10 }, range: yRange, showticklabels: showTickLabels },
     margin: {
-      l: 70,
+      l: 130,
       r: 20,
       b: 50,
       t: 30,
