@@ -5,7 +5,7 @@ import ViolationsBarplotSample from './ViolationsBarPlot';
 import { selectCsvData } from '../Store/CombinedSlice';
 
 const handleChiSquareScoreChange = (feature: string, chiSquareScore: number) => {
-  console.log(`Chi-Square score changed for feature ${feature}: ${chiSquareScore}`);
+  // console.log(`Chi-Square score changed for feature ${feature}: ${chiSquareScore}`);
 };
 
 /**

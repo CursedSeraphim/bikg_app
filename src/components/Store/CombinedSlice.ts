@@ -78,7 +78,6 @@ const combinedSlice = createSlice({
         }
       });
     },
-    // TODO setSelectedTypes is not tested yet
     setSelectedTypes: (state, action) => {
       state.selectedTypes = action.payload;
 

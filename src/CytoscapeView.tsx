@@ -29,7 +29,6 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
 
         // If the node's type (in URL format) is in selectedTypes, select the node and set its color to 'steelblue'
         if (selectedTypes.includes(nodeTypeUrl)) {
-          console.log(selectedTypes, 'includes', nodeTypeUrl);
           // node.select(); removing this call such that the user interaction event doesn't get triggered. TODO if the selected nodes are important this has to be implemented differently
           node.style('background-color', 'steelblue'); // Add this line
         } else {

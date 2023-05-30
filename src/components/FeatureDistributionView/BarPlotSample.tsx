@@ -44,14 +44,7 @@ function getBarPlotData(feature: string, selectedNodes: string[], samples: CsvDa
   const selectionBarPlotData = csvDataToBarPlotDataGivenFeature(feature, selectedNodes, samples);
   const overallBarPlotData = csvDataToBarPlotDataGivenFeatureOverallDistribution(feature, samples);
 
-  // if feature is "cluster" print data
-  if (feature === 'cluster') {
-    console.log('selectionBarPlotData', selectionBarPlotData);
-    console.log('overallBarPlotData', overallBarPlotData);
-  }
-
   const chiSquareScore = calculateChiSquaredScore(selectionBarPlotData.y, overallBarPlotData.y);
-  console.log(chiSquareScore);
 
   let plotData: Data[];
 
