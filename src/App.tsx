@@ -1,8 +1,6 @@
 import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setRdfString, selectRdfData, setCsvData, selectCsvDataForPlotly } from './components/Store/CombinedSlice';
-import { loadNodes } from './components/Store/NodeSlice';
-import { loadEdges } from './components/Store/EdgeSlice';
 import { loadCytoData } from './components/Store/CytoSlice';
 import InteractiveScatterPlot from './components/EmbeddingView/InteractiveScatterPlot';
 import BarPlotList from './components/FeatureDistributionView/BarPlotList';
@@ -25,28 +23,6 @@ export function App() {
       })
       .catch((error) => {
         console.error('Failed to fetch ontology', error);
-      });
-  }, [dispatch]);
-
-  // Fetch force directed node positions
-  React.useEffect(() => {
-    fetchCSVFile('force_directed_node_positions.csv')
-      .then((data) => {
-        dispatch(loadNodes(data));
-      })
-      .catch((error) => {
-        console.error('Failed to fetch CSV file', error);
-      });
-  }, [dispatch]);
-
-  // Fetch force directed edge vectors
-  React.useEffect(() => {
-    fetchCSVFile('force_directed_edge_vectors.csv')
-      .then((data) => {
-        dispatch(loadEdges(data));
-      })
-      .catch((error) => {
-        console.error('Failed to fetch CSV file', error);
       });
   }, [dispatch]);
 
