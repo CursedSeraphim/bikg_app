@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setRdfString, selectRdfData, setCsvData, selectCsvDataForPlotly } from './components/Store/CombinedSlice';
-import { loadCytoData } from './components/Store/CytoSlice';
 import InteractiveScatterPlot from './components/EmbeddingView/InteractiveScatterPlot';
 import BarPlotList from './components/FeatureDistributionView/BarPlotList';
 import FixedBarPlotList from './components/FeatureDistributionView/FixedBarPlotList';
@@ -23,17 +22,6 @@ export function App() {
       })
       .catch((error) => {
         console.error('Failed to fetch ontology', error);
-      });
-  }, [dispatch]);
-
-  // Fetch ex51 study data transformed to Cytoscape JSON
-  React.useEffect(() => {
-    fetchJSONFile('ex51_cytoscape.json')
-      .then((data) => {
-        dispatch(loadCytoData(data));
-      })
-      .catch((error) => {
-        console.error('Failed to fetch RDF file', error);
       });
   }, [dispatch]);
 
