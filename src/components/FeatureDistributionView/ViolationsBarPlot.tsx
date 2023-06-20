@@ -4,7 +4,7 @@ import Plotly from 'plotly.js-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import { Data, Layout } from 'plotly.js';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedFocusNodes, selectBarPlotData } from '../Store/CombinedSlice';
+import { setSelectedFocusNodes, selectBarPlotData, selectViolations } from '../Store/CombinedSlice';
 import { CsvData } from '../Store/types';
 
 import { replacePrefixWithUrl, replaceUrlWithPrefix } from '../../utils';
@@ -16,29 +16,7 @@ const subSelection = false;
 
 const shouldShowTickLabels = (num: number) => num <= 6;
 
-// TODO automatically extract via backend from data if possible
-const violationFeatures = [
-  'http://data.boehringer.com/ontology/omics/TranscriptOmicsSampleShape-isPreparedByLibrary',
-  'http://data.boehringer.com/ontology/omics/afb51f95-5b17-45a4-b62d-c58f4998f930',
-  'http://data.boehringer.com/ontology/omics/0c2600b5-30b2-40c7-917a-b402e73f55ae',
-  'http://data.boehringer.com/ontology/omics/TranscriptOmicsSampleShape-hasSequencingProtocol',
-  'http://data.boehringer.com/ontology/omics/38c0a1c7-1c92-489a-a22e-87f5335ccb1a',
-  'http://data.boehringer.com/ontology/omics/TranscriptOmicsSampleShape-isMeasuredOnPlatform',
-  'http://data.boehringer.com/ontology/omics/OmicsStudyShape-isSequencedForIndication',
-  'http://data.boehringer.com/ontology/omics/OmicsStudyShape-isPartOfProject',
-  'http://data.boehringer.com/ontology/omics/248e9792-8549-4e0d-8665-06c42aff8ffc',
-  'http://data.boehringer.com/ontology/omics/OmicsStudyShape-hasStudyType',
-  'http://data.boehringer.com/ontology/omics/OmicsStudyShape-hasContactScientist',
-  'http://data.boehringer.com/ontology/omics/ece15faa-30b3-471c-ae51-2d6d1f80e3a9',
-  'http://data.boehringer.com/ontology/omics/af998a22-f11b-43ea-b0ac-44e728baeafb',
-  'http://data.boehringer.com/ontology/omics/OmicsStudyShape-hasResponsibleSite',
-  'http://data.boehringer.com/ontology/omics/9589ebf0-6f4f-4b80-9a5a-75aa25b5715f',
-  'http://data.boehringer.com/ontology/omics/OmicsStudyShape-isSequencedForTherapeuticArea',
-  'http://data.boehringer.com/ontology/omics/OmicsStudyShape-hasContactCompBio',
-  'http://data.boehringer.com/ontology/omics/TranscriptOmicsSampleShape-hasStrandedness',
-];
-
-const getBarPlotData = (selectedNodes: string[], samples: CsvData[]): Data[] => {
+const getBarPlotData = (selectedNodes: string[], samples: CsvData[], violationFeatures: string[]): Data[] => {
   if (samples === undefined) {
     return [
       {
@@ -135,36 +113,14 @@ const getBarPlotData = (selectedNodes: string[], samples: CsvData[]): Data[] => 
 function ViolationsBarPlotSample() {
   const feature = 'Violations';
   const data = useSelector(selectBarPlotData);
+  const violationFeatures = useSelector(selectViolations);
   const dispatch = useDispatch();
-  const plotData = getBarPlotData(data.selectedNodes, data.samples);
+  const plotData = getBarPlotData(data.selectedNodes, data.samples, violationFeatures);
   const numberOfTicks = (plotData[0] as any)?.y?.length || 0;
   const [showTickLabels, setShowTickLabels] = useState(shouldShowTickLabels(numberOfTicks));
   const [dragMode, setDragMode] = React.useState<'zoom' | 'pan' | 'select' | 'lasso' | 'orbit' | 'turntable' | false>('zoom');
   const [xRange, setXRange] = React.useState([]);
   const [yRange, setYRange] = React.useState([]);
-
-  React.useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.key === 'Shift') {
-        setDragMode('lasso');
-      }
-    };
-
-    const handleKeyUp = (event) => {
-      if (event.key === 'Shift') {
-        setDragMode('zoom');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-
-    // Clean up the event listeners when the component is unmounted
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, []);
 
   React.useEffect(() => {
     const handleKeyDown = (event) => {

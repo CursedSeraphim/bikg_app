@@ -43,6 +43,7 @@ interface CombinedState {
   selectedNodes: string[];
   selectedTypes: string[];
   rdfString: string;
+  violations: string[]; // list of possible violation source shapes
 }
 
 const initialState: CombinedState = {
@@ -50,12 +51,16 @@ const initialState: CombinedState = {
   selectedNodes: [],
   selectedTypes: [],
   rdfString: '',
+  violations: [],
 };
 
 const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
+    setViolations: (state, action) => {
+      state.violations = JSON.parse(action.payload);
+    },
     setCsvData: (state, action) => {
       state.samples = action.payload;
     },
@@ -110,12 +115,15 @@ export const selectBarPlotData = (state: { combined: CombinedState }): CombinedS
     selectedTypes: state.combined.selectedTypes,
     samples: state.combined.samples,
     rdfString: state.combined.rdfString,
+    violations: state.combined.violations,
   };
 };
 
 export const selectCsvDataForPlotly = (state: { combined: CombinedState }): ScatterData[] => {
   return dataToScatterDataArray(state.combined.samples);
 };
+
+export const selectViolations = (state: { combined: CombinedState }) => state.combined.violations; // Add a selector for violations
 
 export const selectCsvData = (state: { combined: CombinedState }) => state.combined.samples;
 
@@ -220,4 +228,4 @@ export const selectCytoData = async (state: { rdf: RdfState }): Promise<CytoData
 
 export default combinedSlice.reducer;
 
-export const { setCsvData, setSelectedFocusNodes, setSelectedTypes, setRdfString } = combinedSlice.actions;
+export const { setViolations, setCsvData, setSelectedFocusNodes, setSelectedTypes, setRdfString } = combinedSlice.actions;

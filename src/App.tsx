@@ -1,7 +1,7 @@
 // App.tsx
 import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setRdfString, selectRdfData, setCsvData, selectCsvDataForPlotly } from './components/Store/CombinedSlice';
+import { setRdfString, selectRdfData, setCsvData, selectCsvDataForPlotly, setViolations } from './components/Store/CombinedSlice';
 import InteractiveScatterPlot from './components/EmbeddingView/InteractiveScatterPlot';
 import BarPlotList from './components/FeatureDistributionView/BarPlotList';
 import FixedBarPlotList from './components/FeatureDistributionView/FixedBarPlotList';
@@ -14,6 +14,17 @@ export function App() {
   const dispatch = useDispatch();
   const plotlyData = useSelector(selectCsvDataForPlotly);
   const rdfOntology = useSelector(selectRdfData);
+
+  // Fetch violatoin list
+  React.useEffect(() => {
+    fetchJSONFile('violation_list.json')
+      .then((data) => {
+        dispatch(setViolations(data));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch RDF file', error);
+      });
+  }, [dispatch]);
 
   // Fetch ontology
   React.useEffect(() => {
