@@ -27,7 +27,8 @@ export function App() {
 
   // Fetch ex51 tabular violations data for Plotly
   React.useEffect(() => {
-    fetchCSVFile('ex51_violations_metadata.csv')
+    // fetchCSVFile('ex51_violations_metadata.csv')
+    fetchCSVFile('study.csv')
       .then((data) => {
         const parsedData = JSON.parse(data);
         dispatch(setCsvData(parsedData.data));
