@@ -15,7 +15,7 @@ export function App() {
   const plotlyData = useSelector(selectCsvDataForPlotly);
   const rdfOntology = useSelector(selectRdfData);
 
-  // Fetch violatoin list
+  // Fetch violation list
   React.useEffect(() => {
     fetchJSONFile('violation_list.json')
       .then((data) => {
