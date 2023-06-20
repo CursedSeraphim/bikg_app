@@ -1,7 +1,7 @@
 import json
 from rdflib import Graph
 
-file_name = "bikg_app/rdf/ex51_filtered.ttl"
+file_name = "bikg_app/ttl/ex51_filtered.ttl"
 cytoscape_file_name = "bikg_app/json/ex51_cytoscape.json"
 
 def process_nodes_edges_for_cytoscape(file_path):

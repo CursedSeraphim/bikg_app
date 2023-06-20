@@ -30,7 +30,7 @@ def get_ttl_file(response: Response):
     """
     sends the contents of the ttl file serialized to the client
     """
-    with open("bikg_app/rdf/omics_model.ttl", "r") as file:
+    with open("bikg_app/ttl/omics_model.ttl", "r") as file:
         response.headers["Content-Disposition"] = "attachment; filename=omics_model.ttl"
         return Response(content=file.read(), media_type="text/turtle")
         
