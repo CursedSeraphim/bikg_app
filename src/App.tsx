@@ -1,3 +1,4 @@
+// App.tsx
 import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setRdfString, selectRdfData, setCsvData, selectCsvDataForPlotly } from './components/Store/CombinedSlice';
