@@ -4,6 +4,7 @@ import BarPlotSample from './BarPlotSample';
 import ViolationsBarplotSample from './ViolationsBarPlot';
 import { selectCsvData } from '../Store/CombinedSlice';
 
+// TODO investigate this function
 const handleChiSquareScoreChange = (feature: string, chiSquareScore: number) => {
   // console.log(`Chi-Square score changed for feature ${feature}: ${chiSquareScore}`);
 };
@@ -14,7 +15,7 @@ const handleChiSquareScoreChange = (feature: string, chiSquareScore: number) => 
  * @returns {JSX.Element[]}
  */
 function FixedBarPlotList(): any {
-  const features = ['http://www.w3.org/1999/02/22-rdf-syntax-ns#type'];
+  const features = ['rdf:type'];
   // TODO define style in a stylesheet etc
   return (
     <div className="bar-plot-list-container">

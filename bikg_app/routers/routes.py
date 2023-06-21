@@ -6,7 +6,6 @@ import pandas as pd
 import numpy as np
 import json
 import os
-import time
 
 router = APIRouter()
 

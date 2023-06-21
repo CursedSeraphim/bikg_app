@@ -39,22 +39,6 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
     }
   }, [cy, selectedTypes]);
 
-  // Fetch and process RDF ontology
-  React.useEffect(() => {
-    if (rdfOntology) {
-      selectCytoData({ rdf: { rdfString: rdfOntology } })
-        .then((data) => {
-          // TODO investigate this method call
-          setCytoData(data);
-        })
-        .catch((error) => {
-          console.error('Failed to generate Cytoscape data:', error);
-        });
-    }
-    // because adding cytodata to the dependency array causes problems with the lasso selection:
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rdfOntology]);
-
   React.useEffect(() => {
     selectCytoData({ rdf: { rdfString: rdfOntology } })
       .then((data) => {

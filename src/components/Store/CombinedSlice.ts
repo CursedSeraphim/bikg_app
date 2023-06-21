@@ -75,7 +75,7 @@ const combinedSlice = createSlice({
         const correspondingSample = state.samples.find((sample) => sample.focus_node === selectedNode);
         if (correspondingSample) {
           // If the sample has a type, add it to the selectedTypes array
-          const sampleType = String(correspondingSample['http://www.w3.org/1999/02/22-rdf-syntax-ns#type']);
+          const sampleType = String(correspondingSample['rdf:type']);
           if (sampleType && !state.selectedTypes.includes(sampleType)) {
             state.selectedTypes.push(sampleType);
           }
@@ -97,7 +97,7 @@ const combinedSlice = createSlice({
       // Iterate over each sample
       state.samples.forEach((sample) => {
         // If the sample's type is in the selected types array, add its focus node to the selectedNodes array
-        if (state.selectedTypes.includes(String(sample['http://www.w3.org/1999/02/22-rdf-syntax-ns#type']))) {
+        if (state.selectedTypes.includes(String(sample['rdf:type']))) {
           state.selectedNodes.push(sample.focus_node);
         }
       });
@@ -132,10 +132,21 @@ export const selectSelectedTypes = (state: { combined: CombinedState }) => state
 
 export const selectRdfData = (state: { combined: CombinedState }) => state.combined.rdfString;
 
+function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
+  for (const [prefix, prefixURI] of Object.entries(prefixes)) {
+    if (uri.startsWith(prefixURI)) {
+      return uri.replace(prefixURI, `${prefix}:`);
+    }
+  }
+  return uri;
+}
+
 export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<any[]> => {
   const { rdfString } = state.rdf;
   const store: Store = new Store();
   const parser: N3.Parser = new N3.Parser();
+  let prefixes: { [key: string]: string } = {};
+
   await new Promise<void>((resolve, reject) => {
     parser.parse(rdfString, (error, quad, _prefixes) => {
       if (quad) {
@@ -143,23 +154,25 @@ export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<
       } else if (error) {
         reject(error);
       } else {
+        prefixes = _prefixes;
         resolve();
       }
     });
   });
-  const subClassOfPredicate = new NamedNode('http://www.w3.org/2000/01/rdf-schema#subClassOf');
+  const subClassOfPredicate = new NamedNode(`${prefixes.rdfs}subClassOf`);
   const subClassOfTuples = store.getQuads(null, subClassOfPredicate, null);
   // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
   // In selectSubClassOfTuples and selectSubClassOrObjectPropertyTuples functions
   return subClassOfTuples.map((quad) => {
     return {
-      subject: quad.subject.id,
-      predicate: quad.predicate.id,
-      object: quad.object.id,
+      subject: shortenURI(quad.subject.id, prefixes),
+      predicate: shortenURI(quad.predicate.id, prefixes),
+      object: shortenURI(quad.object.id, prefixes),
     };
   });
 };
 
+// TODO, if this is needed again add the prefix logic from selectSubClassOfTuples
 export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: RdfState }): Promise<any[]> => {
   const { rdfString } = state.rdf;
   const store: Store = new N3.Store();
