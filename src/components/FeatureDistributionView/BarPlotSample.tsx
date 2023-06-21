@@ -5,9 +5,7 @@ import { Data, Layout } from 'plotly.js';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSelectedFocusNodes, selectBarPlotData } from '../Store/CombinedSlice';
 import { CsvData } from '../Store/types';
-
 import { csvDataToBarPlotDataGivenFeature, csvDataToBarPlotDataGivenFeatureOverallDistribution } from './csvToPlotlyFeatureData';
-import { replacePrefixWithUrl, replaceUrlWithPrefix } from '../../utils';
 
 const Plot = createPlotlyComponent(Plotly);
 // TODO control this with checkboxes and a data store
@@ -150,7 +148,7 @@ function BarPlotSample({ feature, onChiSquareScoreChange }) {
   // const chartHeight = Math.max(70, Math.min(8 * 35, numBars * 35));
 
   const plotLayout: Partial<Layout> = {
-    title: replaceUrlWithPrefix(feature),
+    title: feature,
     titlefont: { size: 10 },
     dragmode: dragMode,
     height: 150,
@@ -171,11 +169,8 @@ function BarPlotSample({ feature, onChiSquareScoreChange }) {
     if (eventData?.points && eventData.points.length > 0) {
       const selectedValues = eventData.points.map((point) => point.y);
 
-      // Convert abbreviated values to their original form
-      const originalSelectedValues = selectedValues.map((value) => replacePrefixWithUrl(value));
-
       // from all data samples get those where the feature value matches and retrieve their focus_node
-      const matchingSamples = data.samples.filter((sample) => originalSelectedValues.includes(sample[feature]));
+      const matchingSamples = data.samples.filter((sample) => selectedValues.includes(sample[feature]));
       const matchingFocusNodes = matchingSamples.map((sample) => sample.focus_node);
 
       if (!subSelection) {

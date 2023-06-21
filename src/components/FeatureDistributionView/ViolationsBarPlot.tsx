@@ -7,8 +7,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setSelectedFocusNodes, selectBarPlotData, selectViolations } from '../Store/CombinedSlice';
 import { CsvData } from '../Store/types';
 
-import { replacePrefixWithUrl, replaceUrlWithPrefix } from '../../utils';
-
 const Plot = createPlotlyComponent(Plotly);
 // TODO control this with checkboxes and a data store
 const showOverallDistribution = true;
@@ -38,7 +36,7 @@ const getBarPlotData = (selectedNodes: string[], samples: CsvData[], violationFe
     selectedNodes.forEach((nodeId) => {
       const nodeData = samples.find((entry) => entry.focus_node === nodeId);
       if (nodeData && nodeData[feature]) {
-        const value = replaceUrlWithPrefix(nodeData[feature]);
+        const value = nodeData[feature];
         countsByFeature[feature][value] = (countsByFeature[feature][value] || 0) + 1;
       }
     });
@@ -53,7 +51,7 @@ const getBarPlotData = (selectedNodes: string[], samples: CsvData[], violationFe
     }
   }
 
-  const xValues = Object.keys(nonEmptyCountsByFeature).map(replaceUrlWithPrefix);
+  const xValues = Object.keys(nonEmptyCountsByFeature);
   const yValues = Object.values(nonEmptyCountsByFeature).map((value) => value['1']);
 
   if (showOverallDistribution) {
@@ -63,13 +61,13 @@ const getBarPlotData = (selectedNodes: string[], samples: CsvData[], violationFe
       overallCountsByFeature[feature] = {};
       samples.forEach((nodeData) => {
         if (nodeData && nodeData[feature]) {
-          const value = replaceUrlWithPrefix(nodeData[feature]);
+          const value = nodeData[feature];
           overallCountsByFeature[feature][value] = (overallCountsByFeature[feature][value] || 0) + 1;
         }
       });
     });
 
-    const overallXValues = Object.keys(overallCountsByFeature).map(replaceUrlWithPrefix);
+    const overallXValues = Object.keys(overallCountsByFeature);
     const overallYValues = Object.values(overallCountsByFeature).map((value) => value['1']);
 
     return [
@@ -189,11 +187,8 @@ function ViolationsBarPlotSample() {
     if (eventData?.points && eventData.points.length > 0) {
       const selectedValues = eventData.points.map((point) => point.y);
 
-      // Convert abbreviated values to their original form
-      const originalSelectedValues = selectedValues.map((value) => replacePrefixWithUrl(value));
-
       // Create a list of all objects in data.samples that match the criteria
-      const updatedSelectedNodes = originalSelectedValues.reduce((accumulator, selectedValue) => {
+      const updatedSelectedNodes = selectedValues.reduce((accumulator, selectedValue) => {
         // first retrieve list of focus nodes that match the selected value
         const matchingFocusNodes = data.samples.filter((sample) => sample[selectedValue] === 1).map((sample) => sample.focus_node);
 

@@ -5,7 +5,6 @@ import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectCytoData, setSelectedTypes, selectSelectedTypes } from './components/Store/CombinedSlice';
-import { replaceUrlWithPrefix, replacePrefixWithUrl } from './utils';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(coseBilkent);
@@ -25,7 +24,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
       // Iterate over all nodes
       cy.nodes().forEach((node) => {
         const nodeType = node.data().id;
-        const nodeTypeUrl = replacePrefixWithUrl(nodeType);
+        const nodeTypeUrl = nodeType;
 
         // If the node's type (in URL format) is in selectedTypes, select the node and set its color to 'steelblue'
         if (selectedTypes.includes(nodeTypeUrl)) {
@@ -114,7 +113,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
 
           newCy.on('boxend', () => {
             const selectedNodes = newCy.nodes(':selected');
-            const selectedNodeTypes = selectedNodes.map((node) => replacePrefixWithUrl(node.data().id));
+            const selectedNodeTypes = selectedNodes.map((node) => node.data().id);
 
             // Filter out duplicates
             const uniqueSelectedNodeTypes = [...new Set(selectedNodeTypes)];
@@ -136,7 +135,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
               return;
             }
 
-            const nodeType = replacePrefixWithUrl(event.target.data().id);
+            const nodeType = event.target.data().id;
 
             // Dispatch setSelectedTypes action with the new selected type
             dispatch(setSelectedTypes([nodeType]));
@@ -148,7 +147,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
               return;
             }
 
-            const nodeType = replacePrefixWithUrl(event.target.data().id);
+            const nodeType = event.target.data().id;
             let newSelectedTypes = [...selectedTypes];
 
             // Remove the node type from the selectedTypes array

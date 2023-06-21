@@ -2,7 +2,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Store } from 'n3';
-import { replaceUrlWithPrefix } from '../../utils';
 
 export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<any[]> => {
   const { rdfString } = state.rdf;
@@ -25,9 +24,9 @@ export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<
   // In selectSubClassOfTuples and selectSubClassOrObjectPropertyTuples functions
   return subClassOfTuples.map((quad) => {
     return {
-      subject: replaceUrlWithPrefix(quad.subject.id),
-      predicate: replaceUrlWithPrefix(quad.predicate.id),
-      object: replaceUrlWithPrefix(quad.object.id),
+      subject: quad.subject.id,
+      predicate: quad.predicate.id,
+      object: quad.object.id,
     };
   });
 };
@@ -53,9 +52,9 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: RdfStat
   const subClassOrObjectPropertyTuples = store.getQuads(null, subClassOfPredicate, null).concat(store.getQuads(null, null, objectPropertyPredicate));
   return subClassOrObjectPropertyTuples.map((quad) => {
     return {
-      subject: replaceUrlWithPrefix(quad.subject.id),
-      predicate: replaceUrlWithPrefix(quad.predicate.id),
-      object: replaceUrlWithPrefix(quad.object.id),
+      subject: quad.subject.id,
+      predicate: quad.predicate.id,
+      object: quad.object.id,
     };
   });
 };
