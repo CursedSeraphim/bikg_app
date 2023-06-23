@@ -47,4 +47,4 @@ async def read_file(file_path: str):
     # load file_path and return it
     with open(file_path, "rb") as f:
         return json.load(f)
-        
+    
