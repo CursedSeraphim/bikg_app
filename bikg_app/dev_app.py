@@ -1,5 +1,6 @@
 import os
 import sys
+from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
 # import requests
 
@@ -11,6 +12,12 @@ from routers.routes import router as rdf_router
 app = create_visyn_server(
     start_cmd=" ".join(sys.argv[1:]), workspace_config={"_env_file": os.path.join(os.path.dirname(os.path.realpath(__file__)), ".env")}
 )
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"Incoming request: {request.method} {request.url.path}")
+    response = await call_next(request)
+    return response
 
 # print(f"Adding router for reading RDF files from folder: {folder_path}")
 app.include_router(rdf_router)
