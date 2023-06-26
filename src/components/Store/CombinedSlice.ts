@@ -141,6 +141,64 @@ function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
   return uri;
 }
 
+const mapQuadToShortenedResult = (quad: any, prefixes: { [key: string]: string }) => {
+  return {
+    subject: shortenURI(quad.subject.id, prefixes),
+    predicate: shortenURI(quad.predicate.id, prefixes),
+    object: shortenURI(quad.object.id, prefixes),
+  };
+};
+
+export const selectSubClassesAndViolations = async (state: { rdf: RdfState }): Promise<any[]> => {
+  const { rdfString } = state.rdf;
+  const store: Store = new Store();
+  const parser: N3.Parser = new N3.Parser();
+
+  // Extract the prefixes from the rdfString
+  const prefixes: { [key: string]: string } = await new Promise((resolve, reject) => {
+    parser.parse(rdfString, (error, quad, prefixes) => {
+      if (quad) {
+        store.addQuad(quad);
+      } else if (error) {
+        reject(error);
+      } else {
+        resolve(prefixes);
+      }
+    });
+  });
+
+  // Define some common nodes using the extracted prefixes
+  const predicates = [new NamedNode(`${prefixes.rdfs}subClassOf`)];
+  const propertyShapeNode = new NamedNode(`${prefixes.sh}PropertyShape`);
+  const classNode = new NamedNode(`${prefixes.sh}class`);
+  const namedNode = new NamedNode(`${prefixes.omics}Donor`);
+
+  // Start querying the store
+  const initialQuads = store.getQuads(null, null, propertyShapeNode);
+  const initialSubjects = [...new Set(initialQuads.map((quad) => quad.subject))];
+
+  // Get quads where subject is from initialSubjects and object is namedNode
+  const intermediateQuads = initialSubjects.flatMap((subject) => store.getQuads(subject, classNode, namedNode));
+  const intermediateSubjects = [...new Set(intermediateQuads.map((quad) => quad.subject))];
+
+  // Get all quads where subject is from intermediateSubjects
+  const finalQuads = intermediateSubjects.flatMap((subject) => store.getQuads(subject, null, null));
+
+  // Process and combine results
+  const results = [];
+  predicates.forEach((predicate) => {
+    const tuples = store.getQuads(null, predicate, null).map((quad) => mapQuadToShortenedResult(quad, prefixes));
+    results.push(...tuples);
+  });
+
+  const shortenedIntermediateQuads = intermediateQuads.map((quad) => mapQuadToShortenedResult(quad, prefixes));
+  const shortenedFinalQuads = finalQuads.map((quad) => mapQuadToShortenedResult(quad, prefixes));
+
+  results.push(...shortenedIntermediateQuads, ...shortenedFinalQuads);
+
+  return results;
+};
+
 export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<any[]> => {
   const { rdfString } = state.rdf;
   const store: Store = new Store();
@@ -208,7 +266,7 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: RdfStat
  */
 export const selectCytoData = async (state: { rdf: RdfState }): Promise<CytoData> => {
   // const subClassOfTuples = await selectSubClassOrObjectPropertyTuples(state);
-  const subClassOfTuples = await selectSubClassOfTuples(state);
+  const subClassOfTuples = await selectSubClassesAndViolations(state);
   const nodes: CytoNode[] = [];
   const edges: CytoEdge[] = [];
 
