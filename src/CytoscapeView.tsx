@@ -16,7 +16,7 @@ interface CytoscapeViewProps {
 function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
   const [cy, setCy] = React.useState<cytoscape.Core | null>(null);
   const [setCytoData] = React.useState(null);
-  const selectedTypes = useSelector(selectSelectedTypes); // Add this line
+  const selectedTypes = useSelector(selectSelectedTypes);
   const dispatch = useDispatch();
 
   React.useEffect(() => {
@@ -29,11 +29,11 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
         // If the node's type (in URL format) is in selectedTypes, select the node and set its color to 'steelblue'
         if (selectedTypes.includes(nodeTypeUrl)) {
           // node.select(); removing this call such that the user interaction event doesn't get triggered. TODO if the selected nodes are important this has to be implemented differently
-          node.style('background-color', 'steelblue'); // Add this line
+          node.style('background-color', 'steelblue');
         } else {
           // If the node's type (in URL format) is not in selectedTypes, unselect the node and set its color back to 'lightgrey'
           // node.unselect(); removing this call such that the user interaction event doesn't get triggered. TODO if the selected nodes are important this has to be implemented differently
-          node.style('background-color', 'lightgrey'); // Add this line
+          node.style('background-color', 'lightgrey');
         }
       });
     }
@@ -49,7 +49,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
           cy.add(newCytoData);
           cy.lassoSelectionEnabled(true);
           cy.fit();
-          cy.layout({ name: 'cose-bilkent', idealEdgeLength: 100, nodeDimensionsIncludeLabels: true }).run();
+          cy.layout({ name: 'cose-bilkent', idealEdgeLength: 500, nodeDimensionsIncludeLabels: true }).run();
         } else {
           const newCy = cytoscape({
             container: document.getElementById('cy'), // container to render in
@@ -78,13 +78,14 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
                   'target-arrow-color': '#ccc',
                   'target-arrow-shape': 'triangle',
                   'curve-style': 'bezier',
+                  label: 'data(id)',
                 },
               },
             ],
 
             layout: {
               name: 'cose-bilkent',
-              idealEdgeLength: 100,
+              idealEdgeLength: 500,
               nodeDimensionsIncludeLabels: true,
             },
           });
