@@ -41,6 +41,7 @@ interface CombinedState {
   samples: CsvData[];
   selectedNodes: string[];
   selectedTypes: string[];
+  selectedViolations: string[];
   rdfString: string;
   violations: string[]; // list of possible violation source shapes
 }
@@ -49,6 +50,7 @@ const initialState: CombinedState = {
   samples: [],
   selectedNodes: [],
   selectedTypes: [],
+  selectedViolations: [],
   rdfString: '',
   violations: [],
 };
@@ -69,10 +71,22 @@ const combinedSlice = createSlice({
       // Initiate an empty array to hold types of selected nodes
       state.selectedTypes = []; // use the state field instead of a local variable
 
+      // create map from state.violations array, initialized with 0 at each violation key
+      const violationMap = new Map();
+      state.violations.forEach((violation) => {
+        violationMap.set(violation, 0);
+      });
+
       // Iterate over each selected node
       state.selectedNodes.forEach((selectedNode) => {
         // Find the corresponding sample for the selected node
         const correspondingSample = state.samples.find((sample) => sample.focus_node === selectedNode);
+        // check all violations in state.violations, if a violation is found, increment the value in the map
+        state.violations.forEach((violation) => {
+          if (correspondingSample && correspondingSample[`${violation}`]) {
+            violationMap.set(violation, violationMap.get(violation) + 1);
+          }
+        });
         if (correspondingSample) {
           // If the sample has a type, add it to the selectedTypes array
           const sampleType = String(correspondingSample['rdf:type']);
@@ -81,6 +95,16 @@ const combinedSlice = createSlice({
           }
         }
       });
+      // set state.selectedViolations to the keys of the map with value > 0
+      state.selectedViolations = [];
+      violationMap.forEach((value, key) => {
+        if (value > 0) {
+          state.selectedViolations.push(key);
+        }
+      });
+    },
+    setSelectedViolations: (state, action) => {
+      state.selectedViolations = action.payload;
     },
     setSelectedTypes: (state, action) => {
       state.selectedTypes = action.payload;
@@ -94,11 +118,29 @@ const combinedSlice = createSlice({
       // Initiate an empty array to hold focus nodes of selected types
       state.selectedNodes = [];
 
+      // create map from state.violations array, initialized with 0 at each violation key
+      const violationMap = new Map();
+      state.violations.forEach((violation) => {
+        violationMap.set(violation, 0);
+      });
+
       // Iterate over each sample
       state.samples.forEach((sample) => {
         // If the sample's type is in the selected types array, add its focus node to the selectedNodes array
         if (state.selectedTypes.includes(String(sample['rdf:type']))) {
           state.selectedNodes.push(sample.focus_node);
+          state.violations.forEach((violation) => {
+            if (sample && sample[`${violation}`]) {
+              violationMap.set(violation, violationMap.get(violation) + 1);
+            }
+          });
+        }
+      });
+      // set state.selectedViolations to the keys of the map with value > 0
+      state.selectedViolations = [];
+      violationMap.forEach((value, key) => {
+        if (value > 0) {
+          state.selectedViolations.push(key);
         }
       });
     },
@@ -115,12 +157,15 @@ export const selectBarPlotData = (state: { combined: CombinedState }): CombinedS
     samples: state.combined.samples,
     rdfString: state.combined.rdfString,
     violations: state.combined.violations,
+    selectedViolations: state.combined.selectedViolations,
   };
 };
 
 export const selectCsvDataForPlotly = (state: { combined: CombinedState }): ScatterData[] => {
   return dataToScatterDataArray(state.combined.samples);
 };
+
+export const selectSelectedViolations = (state: { combined: CombinedState }) => state.combined.selectedViolations;
 
 export const selectViolations = (state: { combined: CombinedState }) => state.combined.violations; // Add a selector for violations
 
@@ -149,10 +194,12 @@ const mapQuadToShortenedResult = (quad: any, prefixes: { [key: string]: string }
   };
 };
 
-export const selectSubClassesAndViolations = async (state: { rdf: RdfState }): Promise<any[]> => {
-  const { rdfString } = state.rdf;
+export const selectSubClassesAndViolations = async (state: { combined: CombinedState }): Promise<any[]> => {
+  const { samples, selectedNodes, selectedTypes, selectedViolations, rdfString, violations } = state.combined;
   const store: Store = new Store();
   const parser: N3.Parser = new N3.Parser();
+
+  console.log('selectedViolations: ', selectedViolations);
 
   // Extract the prefixes from the rdfString
   const prefixes: { [key: string]: string } = await new Promise((resolve, reject) => {
@@ -264,7 +311,7 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: RdfStat
  * @param state The Redux store state.
  * @returns The Cytoscape data.
  */
-export const selectCytoData = async (state: { rdf: RdfState }): Promise<CytoData> => {
+export const selectCytoData = async (state: { combined: CombinedState }): Promise<CytoData> => {
   // const subClassOfTuples = await selectSubClassOrObjectPropertyTuples(state);
   const subClassOfTuples = await selectSubClassesAndViolations(state);
   const nodes: CytoNode[] = [];
@@ -298,4 +345,4 @@ export const selectCytoData = async (state: { rdf: RdfState }): Promise<CytoData
 
 export default combinedSlice.reducer;
 
-export const { setViolations, setCsvData, setSelectedFocusNodes, setSelectedTypes, setRdfString } = combinedSlice.actions;
+export const { setSelectedViolations, setViolations, setCsvData, setSelectedFocusNodes, setSelectedTypes, setRdfString } = combinedSlice.actions;

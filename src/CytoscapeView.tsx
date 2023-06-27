@@ -4,7 +4,7 @@ import cytoscape from 'cytoscape';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
 import { useDispatch, useSelector } from 'react-redux';
-import { selectCytoData, setSelectedTypes, selectSelectedTypes } from './components/Store/CombinedSlice';
+import { selectSelectedViolations as selectSelectedViolations, selectCytoData, setSelectedTypes, selectSelectedTypes } from './components/Store/CombinedSlice';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(coseBilkent);
@@ -17,6 +17,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
   const [cy, setCy] = React.useState<cytoscape.Core | null>(null);
   const [setCytoData] = React.useState(null);
   const selectedTypes = useSelector(selectSelectedTypes);
+  const selectedViolations = useSelector(selectSelectedViolations);
   const dispatch = useDispatch();
 
   React.useEffect(() => {
@@ -40,7 +41,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
   }, [cy, selectedTypes]);
 
   React.useEffect(() => {
-    selectCytoData({ rdf: { rdfString: rdfOntology } })
+    selectCytoData({ combined: { rdfString: rdfOntology, samples: [], selectedNodes: [], selectedViolations, selectedTypes, violations: [] } })
       .then((data) => {
         const newCytoData = data;
         if (cy) {
@@ -78,7 +79,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
                   'target-arrow-color': '#ccc',
                   'target-arrow-shape': 'triangle',
                   'curve-style': 'bezier',
-                  label: 'data(id)',
+                  // label: 'data(id)',
                 },
               },
             ],
@@ -148,7 +149,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
       .catch((error) => {
         console.error('Failed to generate Cytoscape data:', error);
       });
-  }, [cy, rdfOntology]);
+  }, [cy, rdfOntology, selectedTypes, selectedViolations]);
 
   return <div id="cy" />;
 }
