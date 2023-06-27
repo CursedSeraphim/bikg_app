@@ -10,6 +10,7 @@ interface CytoNode {
     id: string;
     label?: string;
     selected?: boolean;
+    visible?: boolean;
   };
   position?: {
     x: number;
@@ -25,6 +26,7 @@ interface CytoEdge {
     source: string;
     target: string;
     label?: string;
+    visible?: boolean;
   };
 }
 
@@ -60,12 +62,15 @@ const combinedSlice = createSlice({
   initialState,
   reducers: {
     setViolations: (state, action) => {
+      console.log('setViolations');
       state.violations = JSON.parse(action.payload);
     },
     setCsvData: (state, action) => {
+      console.log('setCsvData');
       state.samples = action.payload;
     },
     setSelectedFocusNodes: (state, action) => {
+      console.log('setSelectedFocusNodes');
       state.selectedNodes = action.payload;
 
       // Initiate an empty array to hold types of selected nodes
@@ -104,9 +109,11 @@ const combinedSlice = createSlice({
       });
     },
     setSelectedViolations: (state, action) => {
+      console.log('setSelectedViolations');
       state.selectedViolations = action.payload;
     },
     setSelectedTypes: (state, action) => {
+      console.log('setSelectedTypes');
       state.selectedTypes = action.payload;
 
       // if selectedTypes is empty, set selectedNodes to empty
@@ -145,6 +152,7 @@ const combinedSlice = createSlice({
       });
     },
     setRdfString: (state, action) => {
+      console.log('setRdfString');
       state.rdfString = action.payload;
     },
   },
@@ -199,17 +207,15 @@ export const selectSubClassesAndViolations = async (state: { combined: CombinedS
   const store: Store = new Store();
   const parser: N3.Parser = new N3.Parser();
 
-  console.log('selectedViolations: ', selectedViolations);
-
   // Extract the prefixes from the rdfString
   const prefixes: { [key: string]: string } = await new Promise((resolve, reject) => {
-    parser.parse(rdfString, (error, quad, prefixes) => {
+    parser.parse(rdfString, (error, quad, pref) => {
       if (quad) {
         store.addQuad(quad);
       } else if (error) {
         reject(error);
       } else {
-        resolve(prefixes);
+        resolve(pref);
       }
     });
   });
@@ -277,6 +283,46 @@ export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<
   });
 };
 
+export const selectAllTriples = async (state: { combined: CombinedState }): Promise<any> => {
+  const { samples, selectedNodes, selectedTypes, selectedViolations, rdfString, violations } = state.combined;
+  const store: Store = new Store();
+  const parser: N3.Parser = new N3.Parser();
+  let prefixes: { [key: string]: string } = {};
+
+  await new Promise<void>((resolve, reject) => {
+    parser.parse(rdfString, (error, quad, _prefixes) => {
+      if (quad) {
+        store.addQuad(quad);
+      } else if (error) {
+        reject(error);
+      } else {
+        prefixes = _prefixes;
+        resolve();
+      }
+    });
+  });
+  const subClassOfPredicate = new NamedNode(`${prefixes.rdfs}subClassOf`);
+  const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null);
+  const allHiddenTuples = store.getQuads(null, null, null).filter((quad) => !allVisibleTuples.includes(quad));
+
+  // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
+  const visibleTriples = allVisibleTuples.map((quad) => {
+    return {
+      subject: shortenURI(quad.subject.id, prefixes),
+      predicate: shortenURI(quad.predicate.id, prefixes),
+      object: shortenURI(quad.object.id, prefixes),
+    };
+  });
+  const hiddenTriples = allHiddenTuples.map((quad) => {
+    return {
+      subject: shortenURI(quad.subject.id, prefixes),
+      predicate: shortenURI(quad.predicate.id, prefixes),
+      object: shortenURI(quad.object.id, prefixes),
+    };
+  });
+  return { visibleTriples, hiddenTriples };
+};
+
 // TODO, if this is needed again add the prefix logic from selectSubClassOfTuples
 export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: RdfState }): Promise<any[]> => {
   const { rdfString } = state.rdf;
@@ -312,30 +358,49 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: RdfStat
  * @returns The Cytoscape data.
  */
 export const selectCytoData = async (state: { combined: CombinedState }): Promise<CytoData> => {
-  // const subClassOfTuples = await selectSubClassOrObjectPropertyTuples(state);
-  const subClassOfTuples = await selectSubClassesAndViolations(state);
+  const { visibleTriples, hiddenTriples } = await selectAllTriples(state);
   const nodes: CytoNode[] = [];
   const edges: CytoEdge[] = [];
 
-  // Iterate over the subClassOfTuples and create a node for each unique subject and object
-  // Also create an edge for each subClassOf relation
-  subClassOfTuples.forEach((tuple) => {
-    const sourceNode = nodes.find((node) => node.data.id === tuple.subject);
-    if (!sourceNode) {
-      nodes.push({ data: { id: tuple.subject } });
-    }
+  // Function to add or update a node
+  const addOrUpdateNode = (id: string, visible: boolean) => {
+    const node = nodes.find((n) => n.data.id === id);
 
-    const targetNode = nodes.find((node) => node.data.id === tuple.object);
-    if (!targetNode) {
-      nodes.push({ data: { id: tuple.object } });
+    if (node) {
+      // If the node already exists, update its visible property
+      node.data.visible = visible;
+    } else {
+      // If the node does not exist, create it
+      nodes.push({ data: { id, visible } });
     }
+  };
+
+  // Iterate over the hidden triples and add or update nodes
+  hiddenTriples.forEach((t) => {
+    addOrUpdateNode(t.subject, false);
+    addOrUpdateNode(t.object, false);
 
     edges.push({
       data: {
-        id: `${tuple.subject}_${tuple.object}`,
-        source: tuple.subject,
-        target: tuple.object,
-        label: tuple.predicate,
+        id: `${t.subject}_${t.object}`,
+        source: t.subject,
+        target: t.object,
+        label: t.predicate,
+      },
+    });
+  });
+
+  // Iterate over the visible triples and add or update nodes
+  visibleTriples.forEach((t) => {
+    addOrUpdateNode(t.subject, true);
+    addOrUpdateNode(t.object, true);
+
+    edges.push({
+      data: {
+        id: `${t.subject}_${t.object}`,
+        source: t.subject,
+        target: t.object,
+        label: t.predicate,
       },
     });
   });

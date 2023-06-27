@@ -4,7 +4,7 @@ import cytoscape from 'cytoscape';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
 import { useDispatch, useSelector } from 'react-redux';
-import { selectSelectedViolations as selectSelectedViolations, selectCytoData, setSelectedTypes, selectSelectedTypes } from './components/Store/CombinedSlice';
+import { selectSelectedViolations, selectCytoData, setSelectedTypes, selectSelectedTypes } from './components/Store/CombinedSlice';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(coseBilkent);
@@ -13,9 +13,14 @@ interface CytoscapeViewProps {
   rdfOntology: string;
 }
 
+const CY_LAYOUT = {
+  name: 'cose-bilkent',
+  idealEdgeLength: 500,
+  nodeDimensionsIncludeLabels: true,
+};
+
 function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
   const [cy, setCy] = React.useState<cytoscape.Core | null>(null);
-  const [setCytoData] = React.useState(null);
   const selectedTypes = useSelector(selectSelectedTypes);
   const selectedViolations = useSelector(selectSelectedViolations);
   const dispatch = useDispatch();
@@ -25,15 +30,10 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
       // Iterate over all nodes
       cy.nodes().forEach((node) => {
         const nodeType = node.data().id;
-        const nodeTypeUrl = nodeType;
 
-        // If the node's type (in URL format) is in selectedTypes, select the node and set its color to 'steelblue'
-        if (selectedTypes.includes(nodeTypeUrl)) {
-          // node.select(); removing this call such that the user interaction event doesn't get triggered. TODO if the selected nodes are important this has to be implemented differently
+        if (selectedTypes.includes(nodeType)) {
           node.style('background-color', 'steelblue');
         } else {
-          // If the node's type (in URL format) is not in selectedTypes, unselect the node and set its color back to 'lightgrey'
-          // node.unselect(); removing this call such that the user interaction event doesn't get triggered. TODO if the selected nodes are important this has to be implemented differently
           node.style('background-color', 'lightgrey');
         }
       });
@@ -50,7 +50,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
           cy.add(newCytoData);
           cy.lassoSelectionEnabled(true);
           cy.fit();
-          cy.layout({ name: 'cose-bilkent', idealEdgeLength: 500, nodeDimensionsIncludeLabels: true }).run();
+          cy.layout({ ...CY_LAYOUT, eles: cy.elements(':visible') }).run();
         } else {
           const newCy = cytoscape({
             container: document.getElementById('cy'), // container to render in
@@ -62,12 +62,14 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
                 style: {
                   'background-color': 'lightgrey', // previously #666
                   label: 'data(id)',
+                  display: (ele) => (ele.data('visible') ? 'element' : 'none'),
                 },
               },
               {
                 selector: 'node[?selected]', // previously 'node:selected' which works for the default selection
                 style: {
                   'background-color': 'steelblue',
+                  display: (ele) => (ele.data('visible') ? 'element' : 'none'),
                 },
               },
 
@@ -84,11 +86,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
               },
             ],
 
-            layout: {
-              name: 'cose-bilkent',
-              idealEdgeLength: 500,
-              nodeDimensionsIncludeLabels: true,
-            },
+            layout: CY_LAYOUT,
           });
 
           let lassoSelectionInProgress = false;
@@ -115,33 +113,69 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
             lassoSelectionInProgress = false;
           });
 
-          newCy.on('select', 'node', (event) => {
-            // Ignore the event if a lasso selection is in progress
+          newCy.on('tap', 'node', (event) => {
             if (lassoSelectionInProgress) {
               return;
             }
-
-            const nodeType = event.target.data().id;
-
-            // Dispatch setSelectedTypes action with the new selected type
-            dispatch(setSelectedTypes([nodeType]));
+            const node = event.target;
+            const edges = node.connectedEdges();
+            const children = edges.targets().filter((child) => child.id() !== node.id());
+            children.style('display', 'element');
+            edges.style('display', 'element');
+            node.predecessors().style('display', 'element');
+            children.layout(CY_LAYOUT).run();
           });
 
-          newCy.on('unselect', 'node', (event) => {
-            // Ignore the event if a lasso selection is in progress
+          newCy.on('cxttap', 'node', (event) => {
             if (lassoSelectionInProgress) {
               return;
             }
-
-            const nodeType = event.target.data().id;
-            let newSelectedTypes = [...selectedTypes];
-
-            // Remove the node type from the selectedTypes array
-            newSelectedTypes = newSelectedTypes.filter((type) => type !== nodeType);
-
-            // Dispatch setSelectedTypes action with the new list of selected types
-            dispatch(setSelectedTypes(newSelectedTypes));
+            const node = event.target;
+            node.successors().style('display', 'none');
           });
+
+          // Prevent the default context menu from appearing on right click
+          newCy.on('cxttapstart cxttapend', (event) => {
+            event.originalEvent.preventDefault();
+          });
+
+          // in this version the left click shows all children if some are still hidden and hides all successors if all are visible
+          // newCy.on('tap', 'node', (event) => {
+          //   // Ignore the event if a lasso selection is in progress
+          //   if (lassoSelectionInProgress) {
+          //     return;
+          //   }
+          //   const node = event.target;
+          //   const edges = node.connectedEdges();
+          //   // get the children and filter out the current node if it's included
+          //   const children = edges.targets().filter((child) => child.id() !== node.id());
+
+          //   // Check whether all children are hidden
+          //   const someChildrenHidden = children.some((child) => child.style('display') === 'none');
+          //   if (someChildrenHidden) {
+          //     children.style('display', 'element');
+          //     edges.style('display', 'element');
+          //     children.layout(CY_LAYOUT).run();
+          //   } else {
+          //     node.successors().style('display', 'none');
+          //   }
+          // });
+
+          // newCy.on('unselect', 'node', (event) => {
+          //   // Ignore the event if a lasso selection is in progress
+          //   if (lassoSelectionInProgress) {
+          //     return;
+          //   }
+
+          //   const nodeType = event.target.data().id;
+          //   let newSelectedTypes = [...selectedTypes];
+
+          //   // Remove the node type from the selectedTypes array
+          //   newSelectedTypes = newSelectedTypes.filter((type) => type !== nodeType);
+
+          //   // Dispatch setSelectedTypes action with the new list of selected types
+          //   dispatch(setSelectedTypes(newSelectedTypes));
+          // });
 
           setCy(newCy);
         }
@@ -149,7 +183,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
       .catch((error) => {
         console.error('Failed to generate Cytoscape data:', error);
       });
-  }, [cy, rdfOntology, selectedTypes, selectedViolations]);
+  }, [rdfOntology, selectedTypes, selectedViolations]);
 
   return <div id="cy" />;
 }
