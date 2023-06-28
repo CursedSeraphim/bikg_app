@@ -19,6 +19,24 @@ const CY_LAYOUT = {
   nodeDimensionsIncludeLabels: true,
 };
 
+// Function to align nodes
+function alignNodes(nodes, parentNodePosition, isChild) {
+  const nodeLayoutOffsetX = 250;
+  const distanceBetweenNodesY = 50;
+  const totalHeight = distanceBetweenNodesY * (nodes.length - 1);
+  const positionX = isChild ? parentNodePosition.x + nodeLayoutOffsetX : parentNodePosition.x - nodeLayoutOffsetX;
+
+  nodes.data('visible', true);
+  nodes.forEach((node, index) => {
+    if (!node.data('permanent')) {
+      node.position({
+        x: positionX,
+        y: parentNodePosition.y + distanceBetweenNodesY * index - totalHeight / 2,
+      });
+    }
+  });
+}
+
 function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
   const [cy, setCy] = React.useState<cytoscape.Core | null>(null);
   const selectedTypes = useSelector(selectSelectedTypes);
@@ -113,60 +131,58 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
             lassoSelectionInProgress = false;
           });
 
-          const showNodes = (nodes) => {
+          // Function to display nodes and their connections to sourceNode
+          const showNodes = (nodes, sourceNode) => {
             nodes.style('display', 'element');
             nodes.data('visible', true);
-          };
-          const hideNodes = (nodes) => {
-            for (const node of nodes) {
-              if (!node.data('permanent')) {
-                node.data('visible', false);
-                node.style('display', 'none');
-              }
-            }
+
+            // Display edges between sourceNode and nodes in the collection
+            const connectedEdges = nodes.edgesWith(sourceNode);
+            connectedEdges.style('display', 'element');
+            connectedEdges.data('visible', true);
           };
 
+          // Function to hide nodes and their connections to sourceNode
+          const hideNodes = (nodes, sourceNode) => {
+            nodes.forEach((node) => {
+              const connectedEdge = sourceNode.edgesWith(node);
+
+              // Only hide nodes that are not 'permanent'
+              if (node.data('permanent') === false) {
+                node.data('visible', false);
+                node.style('display', 'none');
+
+                // Hide edge if both nodes are not 'permanent'
+                if (sourceNode.data('permanent') === false) {
+                  connectedEdge.style('display', 'none');
+                  connectedEdge.data('visible', false);
+                }
+              } else {
+                connectedEdge.style('display', 'element');
+              }
+            });
+          };
+
+          // Event handlers for tap and cxttap events
           newCy.on('tap', 'node', (event) => {
             if (lassoSelectionInProgress) {
               return;
             }
+
             const node = event.target;
             const edges = node.connectedEdges();
             const children = edges.targets().filter((child) => child.id() !== node.id());
-            edges.style('display', 'element');
-
             const parentNodePosition = node.position();
 
+            // If ctrlKey is pressed, show nodes and align children
             if (event.originalEvent.ctrlKey) {
-              showNodes(children);
-              const totalHeightChildren = 50 * (children.length - 1);
-
-              children.data('visible', true);
-              // TODO remove print each child
-              children.forEach((child, index) => {
-                console.log(child);
-              });
-
-              // Align the children
-              children.forEach((child, index) => {
-                if (!child.data('permanent')) {
-                  child.position({
-                    x: parentNodePosition.x + 250,
-                    y: parentNodePosition.y + 50 * index - totalHeightChildren / 2,
-                  });
-                }
-              });
+              showNodes(children, node);
+              alignNodes(children, parentNodePosition, true);
             } else if (event.originalEvent.shiftKey) {
-              const predecessors = node.predecessors();
-              const totalHeightPredecessors = 50 * (predecessors.length - 1);
-              showNodes(predecessors);
-              // Align the parents
-              predecessors.forEach((pred, index) => {
-                pred.position({
-                  x: parentNodePosition.x - 250,
-                  y: parentNodePosition.y + 50 * index - totalHeightPredecessors / 2,
-                });
-              });
+              // If shiftKey is pressed, show nodes and align parents
+              const incomers = node.incomers();
+              showNodes(incomers, node);
+              alignNodes(incomers, parentNodePosition, false);
             }
           });
 
@@ -174,22 +190,23 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
             if (lassoSelectionInProgress) {
               return;
             }
+
             const node = event.target;
             const edges = node.connectedEdges();
             const children = edges.targets().filter((child) => child.id() !== node.id());
+
+            // Hide nodes based on key press events
             if (event.originalEvent.ctrlKey) {
-              hideNodes(children);
+              hideNodes(children, node);
             } else if (event.originalEvent.shiftKey) {
-              hideNodes(node.predecessors());
+              hideNodes(node.incomers(), node);
             } else {
-              hideNodes(node);
+              hideNodes(node, node);
             }
           });
 
           // Prevent the default context menu from appearing on right click
-          newCy.on('cxttapstart cxttapend', (event) => {
-            event.originalEvent.preventDefault();
-          });
+          newCy.on('cxttapstart cxttapend', (event) => event.originalEvent.preventDefault());
 
           setCy(newCy);
         }

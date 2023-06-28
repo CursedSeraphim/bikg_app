@@ -28,6 +28,7 @@ interface CytoEdge {
     target: string;
     label?: string;
     visible?: boolean;
+    permanent?: boolean;
   };
 }
 
@@ -85,22 +86,34 @@ const combinedSlice = createSlice({
 
       // Iterate over each selected node
       state.selectedNodes.forEach((selectedNode) => {
+        console.log('Selected Node:', selectedNode); // Log selectedNode
+
         // Find the corresponding sample for the selected node
         const correspondingSample = state.samples.find((sample) => sample.focus_node === selectedNode);
+        console.log('Corresponding Sample:', correspondingSample); // Log correspondingSample
+
         // check all violations in state.violations, if a violation is found, increment the value in the map
         state.violations.forEach((violation) => {
+          console.log('Violation:', violation); // Log violation
+
           if (correspondingSample && correspondingSample[`${violation}`]) {
+            console.log('Violation found in Sample:', correspondingSample[`${violation}`]); // Log violation value in correspondingSample
             violationMap.set(violation, violationMap.get(violation) + 1);
           }
         });
+
         if (correspondingSample) {
+          console.log('Sample Type:', correspondingSample['rdf:type']); // Log sample type
+
           // If the sample has a type, add it to the selectedTypes array
           const sampleType = String(correspondingSample['rdf:type']);
           if (sampleType && !state.selectedTypes.includes(sampleType)) {
+            console.log('New Sample Type:', sampleType); // Log new sample type
             state.selectedTypes.push(sampleType);
           }
         }
       });
+
       // set state.selectedViolations to the keys of the map with value > 0
       state.selectedViolations = [];
       violationMap.forEach((value, key) => {
@@ -388,6 +401,8 @@ export const selectCytoData = async (state: { combined: CombinedState }): Promis
         source: t.subject,
         target: t.object,
         label: t.predicate,
+        visible: false,
+        permanent: false,
       },
     });
   });
@@ -403,6 +418,8 @@ export const selectCytoData = async (state: { combined: CombinedState }): Promis
         source: t.subject,
         target: t.object,
         label: t.predicate,
+        visible: true,
+        permanent: true,
       },
     });
   });
