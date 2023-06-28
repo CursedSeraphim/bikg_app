@@ -11,6 +11,7 @@ interface CytoNode {
     label?: string;
     selected?: boolean;
     visible?: boolean;
+    permanent?: boolean;
   };
   position?: {
     x: number;
@@ -369,9 +370,10 @@ export const selectCytoData = async (state: { combined: CombinedState }): Promis
     if (node) {
       // If the node already exists, update its visible property
       node.data.visible = visible;
+      node.data.permanent = visible;
     } else {
       // If the node does not exist, create it
-      nodes.push({ data: { id, visible } });
+      nodes.push({ data: { id, visible, permanent: visible } });
     }
   };
 

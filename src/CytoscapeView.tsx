@@ -113,6 +113,19 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
             lassoSelectionInProgress = false;
           });
 
+          const showNodes = (nodes) => {
+            nodes.style('display', 'element');
+            nodes.data('visible', true);
+          };
+          const hideNodes = (nodes) => {
+            for (const node of nodes) {
+              if (!node.data('permanent')) {
+                node.data('visible', false);
+                node.style('display', 'none');
+              }
+            }
+          };
+
           newCy.on('tap', 'node', (event) => {
             if (lassoSelectionInProgress) {
               return;
@@ -120,10 +133,41 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
             const node = event.target;
             const edges = node.connectedEdges();
             const children = edges.targets().filter((child) => child.id() !== node.id());
-            children.style('display', 'element');
             edges.style('display', 'element');
-            node.predecessors().style('display', 'element');
-            children.layout(CY_LAYOUT).run();
+
+            const parentNodePosition = node.position();
+
+            if (event.originalEvent.ctrlKey) {
+              showNodes(children);
+              const totalHeightChildren = 50 * (children.length - 1);
+
+              children.data('visible', true);
+              // TODO remove print each child
+              children.forEach((child, index) => {
+                console.log(child);
+              });
+
+              // Align the children
+              children.forEach((child, index) => {
+                if (!child.data('permanent')) {
+                  child.position({
+                    x: parentNodePosition.x + 250,
+                    y: parentNodePosition.y + 50 * index - totalHeightChildren / 2,
+                  });
+                }
+              });
+            } else if (event.originalEvent.shiftKey) {
+              const predecessors = node.predecessors();
+              const totalHeightPredecessors = 50 * (predecessors.length - 1);
+              showNodes(predecessors);
+              // Align the parents
+              predecessors.forEach((pred, index) => {
+                pred.position({
+                  x: parentNodePosition.x - 250,
+                  y: parentNodePosition.y + 50 * index - totalHeightPredecessors / 2,
+                });
+              });
+            }
           });
 
           newCy.on('cxttap', 'node', (event) => {
@@ -131,51 +175,21 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
               return;
             }
             const node = event.target;
-            node.successors().style('display', 'none');
+            const edges = node.connectedEdges();
+            const children = edges.targets().filter((child) => child.id() !== node.id());
+            if (event.originalEvent.ctrlKey) {
+              hideNodes(children);
+            } else if (event.originalEvent.shiftKey) {
+              hideNodes(node.predecessors());
+            } else {
+              hideNodes(node);
+            }
           });
 
           // Prevent the default context menu from appearing on right click
           newCy.on('cxttapstart cxttapend', (event) => {
             event.originalEvent.preventDefault();
           });
-
-          // in this version the left click shows all children if some are still hidden and hides all successors if all are visible
-          // newCy.on('tap', 'node', (event) => {
-          //   // Ignore the event if a lasso selection is in progress
-          //   if (lassoSelectionInProgress) {
-          //     return;
-          //   }
-          //   const node = event.target;
-          //   const edges = node.connectedEdges();
-          //   // get the children and filter out the current node if it's included
-          //   const children = edges.targets().filter((child) => child.id() !== node.id());
-
-          //   // Check whether all children are hidden
-          //   const someChildrenHidden = children.some((child) => child.style('display') === 'none');
-          //   if (someChildrenHidden) {
-          //     children.style('display', 'element');
-          //     edges.style('display', 'element');
-          //     children.layout(CY_LAYOUT).run();
-          //   } else {
-          //     node.successors().style('display', 'none');
-          //   }
-          // });
-
-          // newCy.on('unselect', 'node', (event) => {
-          //   // Ignore the event if a lasso selection is in progress
-          //   if (lassoSelectionInProgress) {
-          //     return;
-          //   }
-
-          //   const nodeType = event.target.data().id;
-          //   let newSelectedTypes = [...selectedTypes];
-
-          //   // Remove the node type from the selectedTypes array
-          //   newSelectedTypes = newSelectedTypes.filter((type) => type !== nodeType);
-
-          //   // Dispatch setSelectedTypes action with the new list of selected types
-          //   dispatch(setSelectedTypes(newSelectedTypes));
-          // });
 
           setCy(newCy);
         }
