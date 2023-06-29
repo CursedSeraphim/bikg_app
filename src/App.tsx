@@ -69,7 +69,7 @@ export function App() {
       </div>
       <div className="Fixed-Feature-Distribution-View">
         Fixed Feature Distribution View
-        <FixedBarPlotList />
+        {/* <FixedBarPlotList /> */}
       </div>
     </div>
   );
