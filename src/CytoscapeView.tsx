@@ -48,7 +48,6 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
       // Iterate over all nodes
       cy.nodes().forEach((node) => {
         const nodeType = node.data().id;
-
         if (selectedTypes.includes(nodeType)) {
           node.style('background-color', 'steelblue');
         } else {
@@ -214,7 +213,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
       .catch((error) => {
         console.error('Failed to generate Cytoscape data:', error);
       });
-  }, [rdfOntology, selectedTypes, selectedViolations]);
+  }, [rdfOntology]);
 
   return <div id="cy" />;
 }
