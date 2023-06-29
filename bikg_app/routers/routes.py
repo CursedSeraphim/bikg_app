@@ -30,6 +30,7 @@ async def get_bar_plot_data_given_selected_nodes(request: Request):
         Computes the number of occurrences of each category of each feature.
         returns: A dictionary where each key is a feature and each value is a dictionary of the form {category: count}
     """
+    start = time()
     selected_nodes = await request.json()  # selected_nodes is a dictionary here
     selected_nodes = selected_nodes.get("selectedNodes", [])  # Extracting the list from the dictionary
 
@@ -47,14 +48,12 @@ async def get_bar_plot_data_given_selected_nodes(request: Request):
         chi_scores[column] = chi_square_score(selection_value_counts[column], overall_value_counts[column])
 
     # Transform the result into a format that can be used by plotly.
-    start = time()
     plotly_data = {}
     for column in filtered_columns:
-        plotly_data[column] = value_counts_to_plotly_data(selection_value_counts[column], column, 'steelblue')
-        plotly_data[column] = value_counts_to_plotly_data(overall_value_counts[column], column, 'lightgrey')
-    end = time()
+        plotly_data[column] = {'selected': value_counts_to_plotly_data(selection_value_counts[column], 'Selected Nodes', 'steelblue'), 'overall': value_counts_to_plotly_data(overall_value_counts[column], 'Overall Distribution', 'lightgrey')}
 
-    # Send the processed data to the client
+    end = time()
+    # Send the processed data to the client    
     return {"plotly_data": plotly_data, "chi_scores": chi_scores}
 
 
@@ -78,7 +77,7 @@ def chi_square_score(selection_data, overall_data):
     return chi2
 
 
-def value_counts_to_plotly_data(value_counts, feature_name, marker_color):
+def value_counts_to_plotly_data(value_counts, distribution_name, marker_color):
     """
     example - per feature it will look like this:
     {
@@ -86,7 +85,7 @@ def value_counts_to_plotly_data(value_counts, feature_name, marker_color):
         x: counts,
         type: 'bar',
         orientation: 'h',
-        name: feature_name,
+        name: distribution_name,
         marker: {
             color: marker_color
         }
@@ -97,7 +96,7 @@ def value_counts_to_plotly_data(value_counts, feature_name, marker_color):
         'x': list(value_counts.values()),
         'type': 'bar',
         'orientation': 'h',
-        'name': feature_name,
+        'name': distribution_name,
         'marker': {
             'color': marker_color
         }
