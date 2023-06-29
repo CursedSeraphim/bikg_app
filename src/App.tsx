@@ -60,11 +60,11 @@ export function App() {
         Extended Ontology View
         <CytoscapeView rdfOntology={rdfOntology} />
       </div>
-      <div className="Feature-Distribution-View">
+      <div className="Embedding-View">
         Embedding View
         <InteractiveScatterPlot data={plotlyData} onDataSelected={handleDataSelected} />
       </div>
-      <div className="Embedding-View">
+      <div className="Feature-Distribution-View">
         Feature Distribution View
         <BarPlotList />
       </div>
