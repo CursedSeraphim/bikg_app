@@ -4,6 +4,7 @@ import * as N3 from 'n3';
 import { NamedNode, Store } from 'n3';
 import { ScatterData, dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
 import { CsvData } from './types';
+import { fetchSelectedNodesAndValueCountsGivenFeatureCategorySelection as fetchFeatureCategorySelection } from '../../api';
 
 interface CytoNode {
   data: {
@@ -71,6 +72,37 @@ const combinedSlice = createSlice({
       console.log('setCsvData');
       state.samples = action.payload;
     },
+    setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
+      console.log('setSelectedFocusNodesUsingFeatureCategories');
+      const { selectedNodes, valueCounts } = action.payload;
+      state.selectedNodes = selectedNodes;
+
+      // Use a Set to store keys with value > 1
+      const selectedViolations = new Set();
+
+      // Iterate through violations and check if any of their corresponding values in valueCounts is non-zero
+      state.violations.forEach((violation) => {
+        const violationValues = valueCounts[violation];
+        if (violationValues) {
+          for (const key in violationValues) {
+            if (key !== '0.0') {
+              selectedViolations.add(violation);
+              break; // Exit the loop as soon as a non-zero value is found
+            }
+          }
+        }
+      });
+
+      // Set state.selectedViolations to the new list (convert Set to Array)
+      state.selectedViolations = Array.from(selectedViolations) as string[];
+
+      // convert valueCoutns['rdf:type'] from a dictionary of coutns per category, to a list of categories with > 1 counts
+      const typeCounts = valueCounts['rdf:type'];
+      state.selectedTypes = Object.entries(typeCounts)
+        .filter(([category, count]) => (count as number) > 1)
+        .map(([category, count]) => category);
+    },
+
     setSelectedFocusNodes: (state, action) => {
       console.log('setSelectedFocusNodes');
       state.selectedNodes = action.payload;
@@ -421,4 +453,12 @@ export const selectCytoData = async (state: { combined: CombinedState }): Promis
 
 export default combinedSlice.reducer;
 
-export const { setSelectedViolations, setViolations, setCsvData, setSelectedFocusNodes, setSelectedTypes, setRdfString } = combinedSlice.actions;
+export const {
+  setSelectedViolations,
+  setViolations,
+  setCsvData,
+  setSelectedFocusNodesUsingFeatureCategories,
+  setSelectedFocusNodes,
+  setSelectedTypes,
+  setRdfString,
+} = combinedSlice.actions;

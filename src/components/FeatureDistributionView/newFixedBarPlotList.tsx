@@ -15,7 +15,7 @@ function BarPlotList(): JSX.Element {
   const [localBarPlotData, setLocalBarPlotData] = useState({ plotlyData: [], chiScores: {} });
 
   // List of filtered features
-  const filteredFeatures = ['x', 'y', 'rdf:type'];
+  const features = ['rdf:type'];
 
   useEffect(() => {
     fetchBarPlotDataGivenSelection(data.selectedNodes).then((d) => {
@@ -26,9 +26,7 @@ function BarPlotList(): JSX.Element {
     return <div>Loading...</div>;
   }
   // Create array of keys sorted by chiScores in descending order
-  const sortedKeys = Object.keys(localBarPlotData.plotlyData)
-    .filter((key) => !filteredFeatures.includes(key))
-    .sort((a, b) => localBarPlotData.chiScores[b] - localBarPlotData.chiScores[a]);
+  const sortedKeys = Object.keys(localBarPlotData.plotlyData).filter((key) => features.includes(key));
 
   return (
     <div className="bar-plot-list-container">

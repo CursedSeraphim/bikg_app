@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setRdfString, selectRdfData, setCsvData, selectCsvDataForPlotly, setViolations } from './components/Store/CombinedSlice';
 import InteractiveScatterPlot from './components/EmbeddingView/InteractiveScatterPlot';
 import BarPlotList from './components/FeatureDistributionView/BarPlotList';
-import FixedBarPlotList from './components/FeatureDistributionView/FixedBarPlotList';
+import FixedBarPlotList from './components/FeatureDistributionView/newFixedBarPlotList';
 import CytoscapeView from './CytoscapeView';
 
 import './styles.css';
@@ -69,7 +69,7 @@ export function App() {
       </div>
       <div className="Fixed-Feature-Distribution-View">
         Fixed Feature Distribution View
-        {/* <FixedBarPlotList /> */}
+        <FixedBarPlotList />
       </div>
     </div>
   );

@@ -23,6 +23,32 @@ async def read_csv_file():
     return {"data": df.to_dict(orient="records")}
 
 
+@router.post("/FeatureCategorySelection")
+async def get_nodes_violations_types_from_feature_categories(request: Request):
+    """
+    Uses the existing "df" variable of the tabulraized data to efficiently under all best practices of pandas extract:
+    - The nodes (indices) that have the selected feature categories, where feature is a column of the df and category is a value of that column.
+    - The value counts of this view of the df.
+    """
+    selected_feature_categories = await request.json()
+    feature = selected_feature_categories.get("feature", []) 
+    categories = selected_feature_categories.get("categories", [])
+
+    # Use pandas best practices to efficiently extract the nodes that have the selected feature categories
+    selected_nodes = df[df[feature].isin(categories)].index.tolist()
+
+    # Use pandas best practices to efficiently extract the value counts of this view of the df
+    selected_df = df.loc[selected_nodes]
+    selected_value_counts = {}
+    for column in filtered_columns:
+        selected_value_counts[column] = selected_df[column].value_counts().to_dict()
+
+    # Return the nodes and the value counts as a dictionary
+    return {
+        "selectedNodes": selected_nodes,
+        "valueCounts": selected_value_counts
+    }
+
 @router.post("/plot/bar")
 async def get_bar_plot_data_given_selected_nodes(request: Request):
     """
@@ -54,7 +80,7 @@ async def get_bar_plot_data_given_selected_nodes(request: Request):
 
     end = time()
     # Send the processed data to the client    
-    return {"plotly_data": plotly_data, "chi_scores": chi_scores}
+    return {"plotlyData": plotly_data, "chiScores": chi_scores}
 
 
 def chi_square_score(selection_data, overall_data):
