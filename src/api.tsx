@@ -21,8 +21,6 @@ export async function fetchBarPlotDataGivenSelection(selectedNodes) {
     }),
   });
 
-  // Here I'm assuming that the response from this endpoint will be JSON
-  // If that's not the case, please adjust accordingly
   const data = await response.json();
   return data;
 }
