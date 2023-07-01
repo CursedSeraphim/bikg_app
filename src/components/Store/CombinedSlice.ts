@@ -102,50 +102,50 @@ const combinedSlice = createSlice({
         .filter(([category, count]) => (count as number) > 1)
         .map(([category, count]) => category);
     },
-
     setSelectedFocusNodes: (state, action) => {
-      console.log('setSelectedFocusNodes');
       state.selectedNodes = action.payload;
 
-      // Initiate an empty array to hold types of selected nodes
-      state.selectedTypes = []; // use the state field instead of a local variable
+      // Convert state.samples into an object for O(1) lookup
+      const samplesMap = {};
+      state.samples.forEach((sample) => {
+        samplesMap[sample.focus_node] = sample;
+      });
 
-      // create map from state.violations array, initialized with 0 at each violation key
+      // Initiate a violation map with 0 at each violation key
       const violationMap = new Map();
       state.violations.forEach((violation) => {
         violationMap.set(violation, 0);
       });
 
-      // Iterate over each selected node
-      state.selectedNodes.forEach((selectedNode) => {
-        // Find the corresponding sample for the selected node
-        const correspondingSample = state.samples.find((sample) => sample.focus_node === selectedNode);
+      // Use reduce() method to iterate over selected nodes
+      const selectedTypes = new Set(); // use Set to avoid duplicates
+      state.selectedNodes.reduce((acc, selectedNode) => {
+        const correspondingSample = samplesMap[selectedNode];
 
-        // check all violations in state.violations, if a violation is found, increment the value in the map
+        if (!correspondingSample) return acc; // if no corresponding sample is found, skip
+
         state.violations.forEach((violation) => {
-          if (correspondingSample && correspondingSample[`${violation}`]) {
+          if (correspondingSample[violation]) {
             violationMap.set(violation, violationMap.get(violation) + 1);
           }
         });
 
-        if (correspondingSample) {
-          // If the sample has a type, add it to the selectedTypes array
-          const sampleType = String(correspondingSample['rdf:type']);
-          if (sampleType && !state.selectedTypes.includes(sampleType)) {
-            console.log('New Sample Type:', sampleType); // Log new sample type
-            state.selectedTypes.push(sampleType);
-          }
-        }
-      });
+        // If the sample has a type, add it to the selectedTypes set
+        const sampleType = String(correspondingSample['rdf:type']);
+        if (sampleType) selectedTypes.add(sampleType);
+
+        return acc;
+      }, {});
+
+      // convert selectedTypes set back to array
+      state.selectedTypes = Array.from(selectedTypes) as string[];
 
       // set state.selectedViolations to the keys of the map with value > 0
-      state.selectedViolations = [];
-      violationMap.forEach((value, key) => {
-        if (value > 0) {
-          state.selectedViolations.push(key);
-        }
-      });
+      state.selectedViolations = Array.from(violationMap.entries())
+        .filter(([key, value]) => value > 0)
+        .map(([key, value]) => key);
     },
+
     setSelectedViolations: (state, action) => {
       console.log('setSelectedViolations');
       state.selectedViolations = action.payload;
