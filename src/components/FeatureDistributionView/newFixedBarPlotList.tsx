@@ -5,8 +5,19 @@ import { BarLoader } from 'react-spinners';
 import BarPlotSample from './BarPlotSample';
 import { selectBarPlotData } from '../Store/CombinedSlice';
 import { fetchBarPlotDataGivenSelection, fetchViolationList, fetchViolationValueCountsGivenSelection } from '../../api';
-// import BarPlotSample under the name ViolationsBarplotSample
-import ViolationsBarPlotSample from './newViolationsBarPlot';
+
+interface IPlotlyData {
+  [key: string]: any; // Replace `any` with the expected data structure if known.
+}
+
+interface IChiScore {
+  [key: string]: number;
+}
+
+interface IData {
+  plotlyData: IPlotlyData;
+  chiScores: IChiScore;
+}
 
 /**
  * This function takes the list of all features in the CSV and creates a list of JSX elements from the BarPlotSample one below the other to which it hands the feature name as a prop.
@@ -15,8 +26,8 @@ import ViolationsBarPlotSample from './newViolationsBarPlot';
  */
 function BarPlotList(): JSX.Element {
   const data = useSelector(selectBarPlotData);
-  const [localBarPlotData, setLocalBarPlotData] = useState({ plotlyData: [], chiScores: {} });
-  const [localViolationValueCounts, setLocalViolationValueCounts] = useState({ plotlyData: [], chiScores: {} });
+  const [localBarPlotData, setLocalBarPlotData] = useState<IData>({ plotlyData: {}, chiScores: {} });
+  const [localViolationValueCounts, setLocalViolationValueCounts] = useState<IData>({ plotlyData: {}, chiScores: {} });
 
   // List of filtered features
   const features = ['rdf:type'];
@@ -27,19 +38,16 @@ function BarPlotList(): JSX.Element {
     });
     fetchViolationValueCountsGivenSelection(data.selectedNodes).then((d) => {
       setLocalViolationValueCounts(d);
-      console.log('d', d);
     });
   }, [data]);
-  if (localBarPlotData.plotlyData.length === 0 || localViolationValueCounts.plotlyData.length === 0) {
+
+  if (Object.keys(localBarPlotData.plotlyData).length === 0 || Object.keys(localViolationValueCounts.plotlyData).length === 0) {
     return <BarLoader color="steelblue" loading />;
   }
-  console.log(localViolationValueCounts.plotlyData);
+
   // Create array of keys sorted by chiScores in descending order
   const sortedKeys = Object.keys(localBarPlotData.plotlyData).filter((key) => features.includes(key));
 
-  console.log('before return', localViolationValueCounts);
-
-  // TODO change the properties
   return (
     <div className="bar-plot-list-container">
       <BarPlotSample

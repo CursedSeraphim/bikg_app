@@ -4,7 +4,7 @@ import createPlotlyComponent from 'react-plotly.js/factory';
 import { Data, Layout } from 'plotly.js';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectBarPlotData, setSelectedFocusNodesUsingFeatureCategories } from '../Store/CombinedSlice';
-import { fetchSelectedNodesAndValueCountsGivenFeatureCategorySelection } from '../../api';
+import { fetchSelectedNodesAndValueCountsGivenFeatureCategorySelection, fetchSelectedNodesAndValueCountsGivenViolationSelection } from '../../api';
 
 const Plot = createPlotlyComponent(Plotly);
 // TODO control this with checkboxes and a data store
@@ -16,9 +16,6 @@ const shouldShowTickLabels = (num: number) => num <= 6;
 function BarPlotSample({ plotlyData, chiScore, feature }) {
   // TODO handle ifShowOverallDistribution
   const { selected, overall } = plotlyData;
-  if (feature === 'violations') {
-    console.log('plotlyData', plotlyData);
-  }
   const [dragMode, setDragMode] = useState<'zoom' | 'pan' | 'select' | 'lasso' | 'orbit' | 'turntable' | false>('zoom');
   const dispatch = useDispatch();
   const [xRange, setXRange] = useState([]);
@@ -91,18 +88,19 @@ function BarPlotSample({ plotlyData, chiScore, feature }) {
   };
 
   const handleSelection = (eventData) => {
-    console.log('handleSelection', eventData);
     if (eventData?.points && eventData.points.length > 0) {
       const selectedValues = eventData.points.map((point) => point.y);
-      fetchSelectedNodesAndValueCountsGivenFeatureCategorySelection(feature, selectedValues).then((d) => {
-        dispatch(setSelectedFocusNodesUsingFeatureCategories(d));
-      });
+      if (feature === 'violations') {
+        fetchSelectedNodesAndValueCountsGivenViolationSelection(feature, selectedValues).then((d) => {
+          dispatch(setSelectedFocusNodesUsingFeatureCategories(d));
+        });
+      } else {
+        fetchSelectedNodesAndValueCountsGivenFeatureCategorySelection(feature, selectedValues).then((d) => {
+          dispatch(setSelectedFocusNodesUsingFeatureCategories(d));
+        });
+      }
     }
   };
-
-  if (feature === 'violations') {
-    console.log('plotData', plotData);
-  }
 
   return (
     <div className="bar-plot-container">

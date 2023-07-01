@@ -63,6 +63,32 @@ async def get_nodes_violations_types_from_feature_categories(request: Request):
         "valueCounts": selected_value_counts
     }
 
+
+@router.post("/ViolationSelection")
+async def get_nodes_violations_types_from_violations(request: Request):
+    """
+    Uses the existing "df" variable of the tabulraized data to efficiently under all best practices of pandas extract:
+    - The nodes (indices) that have the selected violation feature categories, where categories are a columns of the df and we want to find those with values > 0
+    - The value counts of this view of the df.
+    """
+    selected_feature_categories = await request.json()
+    feature = selected_feature_categories.get("feature", []) 
+    categories = selected_feature_categories.get("categories", [])
+
+    selected_nodes = df[df[categories].gt(0).any(axis=1)].index.tolist()
+    selected_df = df.loc[selected_nodes]
+
+    selected_value_counts = {}
+    for column in filtered_columns:
+        selected_value_counts[column] = selected_df[column].value_counts().to_dict()    
+
+    # Return the nodes and the value counts as a dictionary
+    return {
+        "selectedNodes": selected_nodes,
+        "valueCounts": selected_value_counts
+    }
+
+
 @router.post("/plot/bar/violations")
 async def get_violations_bar_plot_data_given_selected_nodes(request: Request):
     selected_nodes = await request.json()  # selected_nodes is a dictionary here
