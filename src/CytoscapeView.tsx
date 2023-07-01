@@ -109,7 +109,14 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
           let lassoSelectionInProgress = false;
 
           newCy.on('boxstart', () => {
+            lassoSelectionInProgress = true;
             newCy.nodes(':selected').unselect();
+          });
+
+          newCy.on('mousemove', (event) => {
+            if (lassoSelectionInProgress) {
+              event.originalEvent.preventDefault();
+            }
           });
 
           newCy.on('boxend', () => {
