@@ -8,7 +8,7 @@ import FixedBarPlotList from './components/FeatureDistributionView/newFixedBarPl
 import CytoscapeView from './CytoscapeView';
 
 import './styles.css';
-import { fetchOntology, fetchCSVFile, fetchJSONFile } from './api';
+import { fetchOntology, fetchCSVFile, fetchJSONFile, fetchViolationList } from './api';
 
 export function App() {
   const dispatch = useDispatch();
@@ -17,7 +17,7 @@ export function App() {
 
   // Fetch violation list
   React.useEffect(() => {
-    fetchJSONFile('violation_list.json')
+    fetchViolationList()
       .then((data) => {
         dispatch(setViolations(data));
       })

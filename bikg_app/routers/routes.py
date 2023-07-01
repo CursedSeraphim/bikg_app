@@ -9,12 +9,26 @@ import os
 from time import time
 from scipy.stats import chi2_contingency
 
+
+violations_file_path = os.path.join("bikg_app/json", "violation_list.json")
+assert os.path.exists(violations_file_path)
+with open(violations_file_path, "rb") as f:
+    violations_json = json.load(f)
+
 df = pd.read_csv("bikg_app/csv/study.csv", index_col=0)
 df = df.replace(np.nan, 'nan', regex=True)
 filtered_columns = [column for column in df.columns if column not in ['x', 'y']]
 overall_value_counts = {}
 for column in filtered_columns:
     overall_value_counts[column] = df[column].value_counts().to_dict()
+
+overall_violation_value_dict = {}
+violation_list = []
+for column in violations_json:
+    overall_violation_value_dict[column] = df[column].value_counts().to_dict()
+
+    
+overall_violation_value_counts = {violation: sum(key*value for key, value in counts.items()) for violation, counts in overall_violation_value_dict.items()}
 
 router = APIRouter()
 
@@ -48,6 +62,35 @@ async def get_nodes_violations_types_from_feature_categories(request: Request):
         "selectedNodes": selected_nodes,
         "valueCounts": selected_value_counts
     }
+
+@router.post("/plot/bar/violations")
+async def get_violations_bar_plot_data_given_selected_nodes(request: Request):
+    selected_nodes = await request.json()  # selected_nodes is a dictionary here
+    selected_nodes = selected_nodes.get("selectedNodes", [])  # Extracting the list from the dictionary
+
+    # Select rows from df using selected_nodes as indices
+    selected_df = df.loc[selected_nodes]
+
+    # Process the selected data: for each column, count the occurrences of each category
+    selection_violation_value_counts = {}
+    violation_list = []
+    for column in violations_json:
+        selection_violation_value_counts[column] = selected_df[column].value_counts().to_dict()
+    
+    # Convert selection_value_counts into a dictionary where the key is the violation 
+    # and the value is the number of times (weighted sum of counts) that the violation has occurred.
+    selection_violation_counts = {violation: sum(key*value for key, value in counts.items()) 
+                        for violation, counts in selection_violation_value_counts.items()}
+        
+    # Compute chi square score per column
+    chi_scores = {}
+    chi_scores['violations'] = chi_square_score(selection_violation_counts, overall_violation_value_counts)
+
+    # Transform the result into a format that can be used by plotly.
+    plotly_data = {}
+    plotly_data = {'selected': value_counts_to_plotly_data(selection_violation_counts, 'Selected Nodes', 'steelblue'), 'overall': value_counts_to_plotly_data(overall_violation_value_counts, 'Overall Distribution', 'lightgrey')}
+    # Send the processed data to the client    
+    return {"plotlyData": {"violations": plotly_data}, "chiScores": {"violations": chi_scores}}
 
 @router.post("/plot/bar")
 async def get_bar_plot_data_given_selected_nodes(request: Request):
@@ -94,8 +137,8 @@ def chi_square_score(selection_data, overall_data):
     """
     # create observed frequency table
     categories = set(list(selection_data.keys()) + list(overall_data.keys()))
-    observed = np.array([selection_data.get(category, 1e-7) for category in categories])
-    expected = np.array([overall_data.get(category, 1e-7) for category in categories])
+    observed = np.array([selection_data.get(category, 1e-7) if selection_data.get(category, 1e-7) != 0 else 1e-7 for category in categories])
+    expected = np.array([overall_data.get(category, 1e-7) if overall_data.get(category, 1e-7) != 0 else 1e-7 for category in categories])
 
     # Compute chi-square scores
     chi2, _, _, _ = chi2_contingency([observed, expected])
@@ -138,6 +181,11 @@ def get_ttl_file(response: Response):
         response.headers["Content-Disposition"] = "attachment; filename=omics_model.ttl"
         return Response(content=file.read(), media_type="text/turtle")
         
+
+@router.get("/violation_list")
+async def get_violation_list():
+    return violations_json
+
 
 @router.get("/file/json/{file_path}")
 async def read_file(file_path: str):

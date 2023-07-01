@@ -3,9 +3,8 @@ import Plotly from 'plotly.js-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import { Data, Layout } from 'plotly.js';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedFocusNodes, selectBarPlotData } from '../Store/CombinedSlice';
-import { CsvData } from '../Store/types';
-import { csvDataToBarPlotDataGivenFeature, csvDataToBarPlotDataGivenFeatureOverallDistribution } from './csvToPlotlyFeatureData';
+import { selectBarPlotData, setSelectedFocusNodesUsingFeatureCategories } from '../Store/CombinedSlice';
+import { fetchSelectedNodesAndValueCountsGivenFeatureCategorySelection } from '../../api';
 
 const Plot = createPlotlyComponent(Plotly);
 // TODO control this with checkboxes and a data store
@@ -14,95 +13,24 @@ const subSelection = false;
 
 const shouldShowTickLabels = (num: number) => num <= 6;
 
-function calculateChiSquaredScore(observed, expected) {
-  let chiSquared = 0;
-
-  // Compute total for observed and expected
-  const totalObserved = observed.reduce((a, b) => a + b, 0);
-  const totalExpected = expected.reduce((a, b) => a + b, 0);
-
-  for (let i = 0; i < observed.length; i++) {
-    // Calculate relative frequencies
-    const observedRelative = observed[i] / totalObserved;
-    const expectedRelative = expected[i] / totalExpected;
-
-    // Compute the chi-squared score using relative frequencies
-    chiSquared += (observedRelative - expectedRelative) ** 2 / expectedRelative;
+function BarPlotSample({ plotlyData, chiScore, feature }) {
+  // TODO handle ifShowOverallDistribution
+  const { selected, overall } = plotlyData;
+  if (feature === 'violations') {
+    console.log('plotlyData', plotlyData);
   }
-
-  return chiSquared;
-}
-
-type BarPlotDataAndScore = {
-  plotData: Data[];
-  chiSquareScore: number;
-};
-
-function getBarPlotData(feature: string, selectedNodes: string[], samples: CsvData[]): BarPlotDataAndScore {
-  const selectionBarPlotData = csvDataToBarPlotDataGivenFeature(feature, selectedNodes, samples);
-  const overallBarPlotData = csvDataToBarPlotDataGivenFeatureOverallDistribution(feature, samples);
-
-  const chiSquareScore = calculateChiSquaredScore(selectionBarPlotData.y, overallBarPlotData.y);
-
-  let plotData: Data[];
-
-  if (showOverallDistribution) {
-    plotData = [
-      {
-        y: overallBarPlotData.x,
-        x: overallBarPlotData.y,
-        type: 'bar',
-        orientation: 'h',
-        name: 'Overall Distribution',
-        marker: {
-          color: 'lightgrey',
-        },
-      },
-      {
-        y: selectionBarPlotData.x,
-        x: selectionBarPlotData.y,
-        type: 'bar',
-        orientation: 'h',
-        name: 'Selected Nodes',
-        marker: {
-          color: 'steelblue',
-        },
-      },
-    ];
-  } else {
-    plotData = [
-      {
-        y: selectionBarPlotData.x,
-        x: selectionBarPlotData.y,
-        type: 'bar',
-        orientation: 'h',
-        name: 'Selected Nodes',
-        marker: {
-          color: 'steelblue',
-        },
-      },
-    ];
-  }
-
-  return { plotData, chiSquareScore };
-}
-
-function BarPlotSample({ feature, onChiSquareScoreChange }) {
   const [dragMode, setDragMode] = useState<'zoom' | 'pan' | 'select' | 'lasso' | 'orbit' | 'turntable' | false>('zoom');
   const dispatch = useDispatch();
-  const data = useSelector(selectBarPlotData);
   const [xRange, setXRange] = useState([]);
   const [yRange, setYRange] = useState([]);
-  const [plotData, setPlotData] = useState<Data[]>([]);
-  const numberOfTicks = (plotData[0] as any)?.y?.length || 0;
+  const plotData = [overall, selected];
+  const numberOfTicks = (overall as any)?.y?.length || 0;
   const [showTickLabels, setShowTickLabels] = useState(shouldShowTickLabels(numberOfTicks));
 
   useEffect(() => {
-    const { plotData: newPlotData, chiSquareScore } = getBarPlotData(feature, data.selectedNodes, data.samples);
-    setPlotData(newPlotData);
-    const newNumberOfTicks = (newPlotData[0] as any)?.y?.length || 0;
+    // const { plotData: newPlotData, chiSquareScore } = getBarPlotData(feature, data.selectedNodes, data.samples);
+    const newNumberOfTicks = (overall as any)?.y?.length || 0;
     setShowTickLabels(shouldShowTickLabels(newNumberOfTicks));
-    onChiSquareScoreChange(feature, chiSquareScore);
 
     const handleKeyDown = (event) => {
       if (event.key === 'Shift') {
@@ -124,7 +52,7 @@ function BarPlotSample({ feature, onChiSquareScoreChange }) {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [feature, data, onChiSquareScoreChange]);
+  }, []); // [feature, data, onChiSquareScoreChange]);
 
   const handleRelayout = (eventData) => {
     if (eventData['xaxis.autorange']) {
@@ -144,9 +72,6 @@ function BarPlotSample({ feature, onChiSquareScoreChange }) {
     }
   };
 
-  // const numBars = (plotData[0] as any)?.y?.length || 0;
-  // const chartHeight = Math.max(70, Math.min(8 * 35, numBars * 35));
-
   const plotLayout: Partial<Layout> = {
     title: feature,
     titlefont: { size: 10 },
@@ -162,26 +87,22 @@ function BarPlotSample({ feature, onChiSquareScoreChange }) {
       pad: 0,
     },
     showlegend: false,
-    barmode: 'overlay',
+    barmode: 'group',
   };
 
   const handleSelection = (eventData) => {
+    console.log('handleSelection', eventData);
     if (eventData?.points && eventData.points.length > 0) {
       const selectedValues = eventData.points.map((point) => point.y);
-
-      // from all data samples get those where the feature value matches and retrieve their focus_node
-      const matchingSamples = data.samples.filter((sample) => selectedValues.includes(sample[feature]));
-      const matchingFocusNodes = matchingSamples.map((sample) => sample.focus_node);
-
-      if (!subSelection) {
-        dispatch(setSelectedFocusNodes(matchingFocusNodes));
-      } else {
-        // further filter the data.selectedNodes to only those that match the focus_node
-        const updatedSelectedNodes = data.selectedNodes.filter((node) => matchingFocusNodes.includes(node));
-        dispatch(setSelectedFocusNodes(updatedSelectedNodes));
-      }
+      fetchSelectedNodesAndValueCountsGivenFeatureCategorySelection(feature, selectedValues).then((d) => {
+        dispatch(setSelectedFocusNodesUsingFeatureCategories(d));
+      });
     }
   };
+
+  if (feature === 'violations') {
+    console.log('plotData', plotData);
+  }
 
   return (
     <div className="bar-plot-container">

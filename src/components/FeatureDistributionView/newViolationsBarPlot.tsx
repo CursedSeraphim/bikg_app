@@ -4,7 +4,7 @@ import createPlotlyComponent from 'react-plotly.js/factory';
 import { Data, Layout } from 'plotly.js';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectBarPlotData, setSelectedFocusNodesUsingFeatureCategories } from '../Store/CombinedSlice';
-import { fetchSelectedNodesAndValueCountsGivenFeatureCategorySelection } from '../../api';
+import { fetchViolationValueCountsGivenSelection, fetchSelectedNodesAndValueCountsGivenFeatureCategorySelection } from '../../api';
 
 const Plot = createPlotlyComponent(Plotly);
 // TODO control this with checkboxes and a data store
@@ -13,7 +13,7 @@ const subSelection = false;
 
 const shouldShowTickLabels = (num: number) => num <= 6;
 
-function BarPlotSample({ plotlyData, chiScore, featureName }) {
+function ViolationsBarPlotSample(plotlyData, chiScore, featureName) {
   // TODO handle ifShowOverallDistribution
   const { selected, overall } = plotlyData;
   const feature = featureName;
@@ -26,7 +26,6 @@ function BarPlotSample({ plotlyData, chiScore, featureName }) {
   const [showTickLabels, setShowTickLabels] = useState(shouldShowTickLabels(numberOfTicks));
 
   useEffect(() => {
-    console.time('useEffect');
     // const { plotData: newPlotData, chiSquareScore } = getBarPlotData(feature, data.selectedNodes, data.samples);
     const newPlotData = plotlyData;
     const newNumberOfTicks = (newPlotData[0] as any)?.y?.length || 0;
@@ -46,7 +45,6 @@ function BarPlotSample({ plotlyData, chiScore, featureName }) {
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-    console.timeEnd('useEffect');
 
     // Clean up the event listeners when the component is unmounted
     return () => {
@@ -92,14 +90,13 @@ function BarPlotSample({ plotlyData, chiScore, featureName }) {
   };
 
   const handleSelection = (eventData) => {
-    console.time('handleSelection');
     if (eventData?.points && eventData.points.length > 0) {
       const selectedValues = eventData.points.map((point) => point.y);
-      fetchSelectedNodesAndValueCountsGivenFeatureCategorySelection(feature, selectedValues).then((d) => {
-        dispatch(setSelectedFocusNodesUsingFeatureCategories(d));
+      fetchViolationValueCountsGivenSelection(selectedValues).then((d) => {
+        console.log('d', d);
+        // dispatch(setSelectedFocusNodesUsingFeatureCategories(d));
       });
     }
-    console.timeEnd('handleSelection');
   };
 
   return (
@@ -117,4 +114,4 @@ function BarPlotSample({ plotlyData, chiScore, featureName }) {
   );
 }
 
-export default BarPlotSample;
+export default ViolationsBarPlotSample;

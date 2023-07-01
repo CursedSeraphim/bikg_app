@@ -1,7 +1,8 @@
 // BarPlotList.tsx
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import BarPlotSample from './newBarPlotSample';
+import { BarLoader } from 'react-spinners';
+import BarPlotSample from './BarPlotSample';
 import { selectBarPlotData } from '../Store/CombinedSlice';
 import { fetchBarPlotDataGivenSelection } from '../../api';
 
@@ -23,17 +24,26 @@ function BarPlotList(): JSX.Element {
     });
   }, [data]);
   if (localBarPlotData.plotlyData.length === 0) {
-    return <div>Loading...</div>;
+    return <BarLoader color="steelblue" loading />;
   }
-  // Create array of keys sorted by chiScores in descending order
+  // Maximum number of values for a feature
+  const MAX_VALUES = 100;
+
+  // Create array of keys sorted by chiScores in descending order,
+  // excluding those listed in filteredFeatures and those with more than MAX_VALUES
   const sortedKeys = Object.keys(localBarPlotData.plotlyData)
-    .filter((key) => !filteredFeatures.includes(key))
+    .filter(
+      (key) =>
+        !filteredFeatures.includes(key) &&
+        localBarPlotData.plotlyData[key].overall.y.length <= MAX_VALUES &&
+        localBarPlotData.plotlyData[key].selected.y.length <= MAX_VALUES,
+    )
     .sort((a, b) => localBarPlotData.chiScores[b] - localBarPlotData.chiScores[a]);
 
   return (
     <div className="bar-plot-list-container">
       {sortedKeys.map((key) => (
-        <BarPlotSample key={key} plotlyData={localBarPlotData.plotlyData[key]} chiScore={localBarPlotData.chiScores[key]} featureName={key} />
+        <BarPlotSample key={key} plotlyData={localBarPlotData.plotlyData[key]} chiScore={localBarPlotData.chiScores[key]} feature={key} />
       ))}
     </div>
   );

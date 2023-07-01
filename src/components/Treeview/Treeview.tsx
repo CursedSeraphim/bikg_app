@@ -4,6 +4,7 @@ import { Treebeard } from 'react-treebeard';
 import { selectRdfData } from '../Store/CombinedSlice';
 import { getTreeDataFromN3Data } from './TreeviewGlue';
 import { lightTheme } from './lightTheme';
+import { BarLoader } from 'react-spinners';
 
 export default function Treeview() {
   const [treeData, setTreeData] = useState(null);
@@ -25,7 +26,7 @@ export default function Treeview() {
   };
 
   if (!treeData) {
-    return <div>Loading...</div>;
+    return <BarLoader color="steelblue" loading />;
   }
 
   // set root element to be default toggled

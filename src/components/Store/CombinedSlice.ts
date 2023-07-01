@@ -151,7 +151,7 @@ const combinedSlice = createSlice({
       state.selectedViolations = action.payload;
     },
     setSelectedTypes: (state, action) => {
-      console.log('setSelectedTypes');
+      console.time('setSelectedTypes');
       state.selectedTypes = action.payload;
 
       // if selectedTypes is empty, set selectedNodes to empty
@@ -188,6 +188,7 @@ const combinedSlice = createSlice({
           state.selectedViolations.push(key);
         }
       });
+      console.timeEnd('setSelectedTypes');
     },
     setRdfString: (state, action) => {
       console.log('setRdfString');

@@ -66,6 +66,7 @@
     "rdflib": "^2.2.26",
     "react-plotly.js": "^2.6.0",
     "react-redux": "^8.0.5",
+    "react-spinners": "^0.13.8",
     "react-treebeard": "^3.2.4",
     "react-vega-lite": "^6.1.0",
     "redux": "^4.2.1",
