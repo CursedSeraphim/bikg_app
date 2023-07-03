@@ -3,13 +3,13 @@ import * as React from 'react';
 import cytoscape from 'cytoscape';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
+import { BarLoader } from 'react-spinners';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectSelectedViolations,
   selectCytoData,
   setSelectedTypes,
   selectSelectedTypes,
-  setSelectedViolations,
   selectTypesViolationMap,
   selectViolationsTypeMap,
   selectViolations,
@@ -24,7 +24,7 @@ interface CytoscapeViewProps {
 
 const CY_LAYOUT = {
   name: 'cose-bilkent',
-  idealEdgeLength: 400,
+  idealEdgeLength: 500,
   nodeDimensionsIncludeLabels: true,
 };
 
@@ -34,13 +34,37 @@ const applyLayout = (violationNodes: any, otherNodes: any, typeNodes: any, cy: a
   otherNodes.unlock();
   typeNodes.unlock();
 
+  // Get the current bounding box of the graph
+  const currentBoundingBox = cy.nodes(':visible').boundingBox();
+
+  // Calculate the number of columns and rows
+  const numColumns = 3; // As per your position calculation logic
+  const numRows = Math.max(violationNodes.length, otherNodes.length, typeNodes.length);
+
+  // Define node size and padding
+  const nodeSize = 20; // Assume nodes are 80x80
+  const padding = 20; // Padding between nodes
+
+  // Calculate the size of the new layout
+  const layoutWidth = numColumns * (nodeSize + padding);
+  const layoutHeight = numRows * (nodeSize + padding);
+
+  // Calculate the new bounding box
+  const newBoundingBox = {
+    x1: currentBoundingBox.x2 + padding,
+    y1: currentBoundingBox.y2 + padding,
+    x2: currentBoundingBox.x2 + padding + layoutWidth,
+    y2: currentBoundingBox.y2 + padding + layoutHeight,
+  };
+
   const layout = cy.layout({
     name: 'grid',
     animate: true,
+    boundingBox: newBoundingBox,
     animationDuration: 1000,
     animationEasing: 'ease-in-out',
     avoidOverlap: true,
-    avoidOverlapPadding: 10,
+    avoidOverlapPadding: 1,
     nodeDimensionsIncludeLabels: true,
     position: (node) => {
       let col;
@@ -127,6 +151,8 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
   const violationsTypesMap = useSelector(selectViolationsTypeMap);
   const violations = useSelector(selectViolations);
   const dispatch = useDispatch();
+  const [loading, setLoading] = React.useState(true);
+  const initialNodePositions = React.useRef(new Map());
 
   // TODO can be implemented with hash map of selected nodes, and of type->node for efficiency
   React.useEffect(() => {
@@ -148,9 +174,26 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
   const listOfNodesThatHaveBeenMadeVisible = React.useRef([]);
 
   React.useEffect(() => {
-    console.log('selectedViolations', selectedViolations);
     if (cy && selectedViolations) {
       hideVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
+
+      const applyInitialPositions = (nodes: any) => {
+        let nodesToHide = cy.collection();
+        nodes.forEach((node: any) => {
+          const pos = initialNodePositions.current.get(node.id());
+          // if node is omics:Donor
+          if (pos) {
+            if (pos.x === 0 && pos.y === 0) {
+              nodesToHide = nodesToHide.union(node);
+            }
+            node.position(pos);
+          }
+        });
+        nodesToHide.style('display', 'none');
+        nodesToHide.data('visible', false);
+      };
+
+      applyInitialPositions(cy.nodes());
 
       const violationNodes = getNodesFromIds(selectedViolations, cy);
       const connectedNodesIds = selectedViolations.flatMap((violation) => violationsTypesMap[violation]);
@@ -203,6 +246,13 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
           cy.lassoSelectionEnabled(true);
           cy.fit();
           cy.layout({ ...CY_LAYOUT, eles: cy.elements(':visible') }).run();
+          cy.ready(() => {
+            setLoading(false);
+            cy.nodes().forEach((node) => {
+              const pos = node.position();
+              initialNodePositions.current.set(node.data('id'), { x: pos.x, y: pos.y });
+            });
+          });
         } else {
           const newCy = cytoscape({
             container: document.getElementById('cy'), // container to render in
