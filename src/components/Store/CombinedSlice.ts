@@ -4,7 +4,6 @@ import * as N3 from 'n3';
 import { NamedNode, Store } from 'n3';
 import { ScatterData, dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
 import { CsvData } from './types';
-import { fetchSelectedNodesAndValueCountsGivenFeatureCategorySelection as fetchFeatureCategorySelection } from '../../api';
 
 interface CytoNode {
   data: {
@@ -13,6 +12,7 @@ interface CytoNode {
     selected?: boolean;
     visible?: boolean;
     permanent?: boolean;
+    violation?: boolean;
   };
   position?: {
     x: number;
@@ -79,7 +79,6 @@ const combinedSlice = createSlice({
     setViolations: (state, action) => {
       console.log('setViolations');
       state.violations = JSON.parse(action.payload);
-      console.log('state.violations', state.violations);
     },
     setCsvData: (state, action) => {
       console.log('setCsvData');
@@ -170,6 +169,7 @@ const combinedSlice = createSlice({
       // if selectedTypes is empty, set selectedNodes to empty
       if (state.selectedTypes.length === 0) {
         state.selectedNodes = [];
+        state.selectedViolations = [];
         return;
       }
 

@@ -30,6 +30,7 @@ ReactDOM.render(
               {/* Navbar <br />
                 To be filled with settings, potentially an ontology tree view browser, etc */}
               <div className="treebeard-container">
+                Tree View
                 <Treeview />
               </div>
             </Navbar>

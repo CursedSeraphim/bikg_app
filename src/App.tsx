@@ -48,11 +48,8 @@ export function App() {
   React.useEffect(() => {
     fetchViolationPathNodesDict()
       .then((data) => {
-        console.log('Fetched violation path nodes dictionary', data);
         dispatch(setViolationTypesMap(data.property_class_d));
-        console.log('dispatched violation types map', data.property_class_d);
         dispatch(setTypesViolationMap(data.class_property_d));
-        console.log('dispatched types violation map', data.class_property_d);
       })
       .catch((error) => {
         console.error('Failed to fetch violation path nodes dictionary', error);

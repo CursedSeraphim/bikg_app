@@ -12,6 +12,7 @@ import {
   setSelectedViolations,
   selectTypesViolationMap,
   selectViolationsTypeMap,
+  selectViolations,
 } from './components/Store/CombinedSlice';
 
 cytoscape.use(cytoscapeLasso);
@@ -23,8 +24,48 @@ interface CytoscapeViewProps {
 
 const CY_LAYOUT = {
   name: 'cose-bilkent',
-  idealEdgeLength: 500,
+  idealEdgeLength: 400,
   nodeDimensionsIncludeLabels: true,
+};
+
+const applyLayout = (violationNodes: any, otherNodes: any, typeNodes: any, cy: any) => {
+  cy.nodes().lock();
+  violationNodes.unlock();
+  otherNodes.unlock();
+  typeNodes.unlock();
+
+  const layout = cy.layout({
+    name: 'grid',
+    animate: true,
+    animationDuration: 1000,
+    animationEasing: 'ease-in-out',
+    avoidOverlap: true,
+    avoidOverlapPadding: 10,
+    nodeDimensionsIncludeLabels: true,
+    position: (node) => {
+      let col;
+      let row;
+
+      if (typeNodes.has(node)) {
+        col = 0;
+        row = typeNodes.indexOf(node);
+      } else if (otherNodes.has(node)) {
+        col = 1;
+        row = otherNodes.indexOf(node);
+      } else if (violationNodes.has(node)) {
+        col = 2;
+        row = violationNodes.indexOf(node);
+      }
+
+      return { row, col };
+    },
+  });
+
+  layout.run();
+
+  layout.on('layoutstop', () => {
+    cy.nodes().unlock();
+  });
 };
 
 // Function to align nodes
@@ -44,15 +85,6 @@ function alignNodes(nodes, parentNodePosition, isChild) {
     }
   });
 }
-
-const hideNodes = (nodes) => {
-  nodes.forEach((node) => {
-    if (node.data('permanent') === false) {
-      node.data('visible', false);
-      node.style('display', 'none');
-    }
-  });
-};
 
 // Helper function to hide nodes
 const hideVisibleNodes = (nodeList) => {
@@ -91,8 +123,9 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
   const [cy, setCy] = React.useState<cytoscape.Core | null>(null);
   const selectedTypes = useSelector(selectSelectedTypes);
   const selectedViolations = useSelector(selectSelectedViolations);
-  const selectedTypesViolationsMap = useSelector(selectTypesViolationMap);
-  const selectedViolationsTypesMap = useSelector(selectViolationsTypeMap);
+  const typesViolationsMap = useSelector(selectTypesViolationMap);
+  const violationsTypesMap = useSelector(selectViolationsTypeMap);
+  const violations = useSelector(selectViolations);
   const dispatch = useDispatch();
 
   // TODO can be implemented with hash map of selected nodes, and of type->node for efficiency
@@ -103,6 +136,8 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
         const nodeType = node.data().id;
         if (selectedTypes.includes(nodeType)) {
           node.style('background-color', 'steelblue');
+        } else if (violations.includes(nodeType)) {
+          node.style('background-color', 'orange');
         } else {
           node.style('background-color', 'lightgrey');
         }
@@ -113,11 +148,12 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
   const listOfNodesThatHaveBeenMadeVisible = React.useRef([]);
 
   React.useEffect(() => {
+    console.log('selectedViolations', selectedViolations);
     if (cy && selectedViolations) {
       hideVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
 
       const violationNodes = getNodesFromIds(selectedViolations, cy);
-      const connectedNodesIds = selectedViolations.flatMap((violation) => selectedViolationsTypesMap[violation]);
+      const connectedNodesIds = selectedViolations.flatMap((violation) => violationsTypesMap[violation]);
 
       const typeNodeIds = connectedNodesIds.filter((node) => selectedTypes.includes(node));
       const otherNodeIds = connectedNodesIds.filter((node) => !selectedTypes.includes(node));
@@ -134,11 +170,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
       listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, typeNodes);
 
       // TODO apply layout to the entire cy graph using the CY_LAYOUT constant
-      cy.nodes().lock();
-      // typeNodes.unlock();
-      violationNodes.unlock();
-      otherNodes.unlock();
-      cy.layout({ ...CY_LAYOUT, eles: cy.elements(':visible') }).run();
+      applyLayout(violationNodes, otherNodes, typeNodes, cy);
 
       // Show connected edges
       const connectedEdges = violationNodes.edges().union(otherNodes.edges());
@@ -161,6 +193,9 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
     })
       .then((data) => {
         const newCytoData = data;
+        newCytoData.nodes.forEach((node) => {
+          node.data.violation = violations.includes(node.data.id);
+        });
         if (cy) {
           // Update the cytoData elements and layout
           cy.elements().remove();
@@ -186,6 +221,13 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
                 selector: 'node[?selected]', // previously 'node:selected' which works for the default selection
                 style: {
                   'background-color': 'steelblue',
+                  display: (ele) => (ele.data('visible') ? 'element' : 'none'),
+                },
+              },
+              {
+                selector: 'node[?violation]',
+                style: {
+                  'background-color': 'orange',
                   display: (ele) => (ele.data('visible') ? 'element' : 'none'),
                 },
               },
