@@ -8,24 +8,35 @@ import json
 import os
 from time import time
 from scipy.stats import chi2_contingency
+from collections import defaultdict
 
+SH = Namespace("http://www.w3.org/ns/shacl#")
+OWL = Namespace("http://www.w3.org/2002/07/owl#")
 
+# load the violations
 violations_file_path = os.path.join("bikg_app/json", "violation_list.json")
 assert os.path.exists(violations_file_path)
 with open(violations_file_path, "rb") as f:
-    violations_json = json.load(f)
+    violations_list = json.load(f)
 
+# load the tabularized data
 df = pd.read_csv("bikg_app/csv/study.csv", index_col=0)
 df = df.replace(np.nan, 'nan', regex=True)
 filtered_columns = [column for column in df.columns if column not in ['x', 'y']]
+
+# compute the overall value counts
 overall_value_counts = {}
 for column in filtered_columns:
     overall_value_counts[column] = df[column].value_counts().to_dict()
 
+# compute the overall violation value counts
 overall_violation_value_dict = {}
-violation_list = []
-for column in violations_json:
+for column in violations_list:
     overall_violation_value_dict[column] = df[column].value_counts().to_dict()
+
+# load the ontology
+g = Graph()
+g.parse("bikg_app/ttl/omics_model.ttl", format="ttl")
 
     
 overall_violation_value_counts = {violation: sum(key*value for key, value in counts.items()) for violation, counts in overall_violation_value_dict.items()}
@@ -99,8 +110,7 @@ async def get_violations_bar_plot_data_given_selected_nodes(request: Request):
 
     # Process the selected data: for each column, count the occurrences of each category
     selection_violation_value_counts = {}
-    violation_list = []
-    for column in violations_json:
+    for column in violations_list:
         selection_violation_value_counts[column] = selected_df[column].value_counts().to_dict()
     
     # Convert selection_value_counts into a dictionary where the key is the violation 
@@ -206,11 +216,65 @@ def get_ttl_file(response: Response):
     with open("bikg_app/ttl/omics_model.ttl", "r") as file:
         response.headers["Content-Disposition"] = "attachment; filename=omics_model.ttl"
         return Response(content=file.read(), media_type="text/turtle")
-        
+
+
+def uri_to_qname(graph, uri):
+    try:
+        return graph.namespace_manager.qname(uri)
+    except Exception:
+        return uri
+
+
+@router.get("/violation_path_nodes_dict")
+def get_violation_path_nodes_dict():
+    """
+    Uses the graph object to compute 2 dictionaries and returns them:
+    1. A dictionary with types (o2) as keys and the nodes (s1 and o1) as values that need to be visible to show the path to the violating violations.
+    2. A dictionary with violations (o1) as keys and the nodes (s1 and o2) as values that need to be visible to show the path to the types.
+
+    Returns:
+        dict: A dictionary with either types or violations as keys and corresponding nodes as values.
+    """
+
+    qres = g.query(
+        """
+        SELECT ?s1 ?o1 ?o2
+        WHERE {
+            ?s1 a sh:NodeShape .
+            ?s1 sh:property ?o1 .
+            ?s1 sh:targetClass ?o2 .
+            ?o1 a sh:PropertyShape .
+            ?o2 a owl:Class .
+        }
+        """
+    )
+
+    class_prop_d = defaultdict(set)
+    prop_class_d = defaultdict(set)
+
+    for row in qres:
+        ns, ps, c = row
+        ns_q = uri_to_qname(g, ns)
+        ps_q = uri_to_qname(g, ps)
+        c_q = uri_to_qname(g, c)
+
+        # Add elements to sets
+        class_prop_d[c_q].add(ns_q)
+        class_prop_d[c_q].add(ps_q)
+
+        prop_class_d[ps_q].add(ns_q)
+        prop_class_d[ps_q].add(c_q)
+
+    # Convert sets back to lists
+    class_prop_d = {key: list(val) for key, val in class_prop_d.items()}
+    prop_class_d = {key: list(val) for key, val in prop_class_d.items()}
+
+    return {'class_property_d': class_prop_d, 'property_class_d': prop_class_d}
+
 
 @router.get("/violation_list")
 async def get_violation_list():
-    return violations_json
+    return violations_list
 
 
 @router.get("/file/json/{file_path}")

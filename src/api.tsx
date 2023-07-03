@@ -6,6 +6,14 @@ export async function fetchCSVFile() {
   return data;
 }
 
+export async function fetchViolationPathNodesDict() {
+  const endpoint = `http://localhost:9000/violation_path_nodes_dict`;
+  const response = await fetch(endpoint);
+  const data = await response.json();
+  return data;
+}
+
+
 export async function fetchViolationValueCountsGivenSelection(selectedNodes) {
   // Changed endpoint to use a more appropriate one for fetching bar plot data
   const endpoint = `http://localhost:9000/plot/bar/violations`;

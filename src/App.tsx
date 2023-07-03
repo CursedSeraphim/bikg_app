@@ -1,14 +1,22 @@
 // App.tsx
 import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setRdfString, selectRdfData, setCsvData, selectCsvDataForPlotly, setViolations } from './components/Store/CombinedSlice';
+import {
+  setRdfString,
+  selectRdfData,
+  setCsvData,
+  selectCsvDataForPlotly,
+  setViolations,
+  setViolationTypesMap,
+  setTypesViolationMap,
+} from './components/Store/CombinedSlice';
 import InteractiveScatterPlot from './components/EmbeddingView/InteractiveScatterPlot';
 import BarPlotList from './components/FeatureDistributionView/BarPlotList';
 import FixedBarPlotList from './components/FeatureDistributionView/newFixedBarPlotList';
 import CytoscapeView from './CytoscapeView';
 
 import './styles.css';
-import { fetchOntology, fetchCSVFile, fetchJSONFile, fetchViolationList } from './api';
+import { fetchOntology, fetchCSVFile, fetchJSONFile, fetchViolationList, fetchViolationPathNodesDict } from './api';
 
 export function App() {
   const dispatch = useDispatch();
@@ -34,6 +42,20 @@ export function App() {
       })
       .catch((error) => {
         console.error('Failed to fetch ontology', error);
+      });
+  }, [dispatch]);
+
+  React.useEffect(() => {
+    fetchViolationPathNodesDict()
+      .then((data) => {
+        console.log('Fetched violation path nodes dictionary', data);
+        dispatch(setViolationTypesMap(data.property_class_d));
+        console.log('dispatched violation types map', data.property_class_d);
+        dispatch(setTypesViolationMap(data.class_property_d));
+        console.log('dispatched types violation map', data.class_property_d);
+      })
+      .catch((error) => {
+        console.error('Failed to fetch violation path nodes dictionary', error);
       });
   }, [dispatch]);
 

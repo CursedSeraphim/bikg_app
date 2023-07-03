@@ -4,7 +4,15 @@ import cytoscape from 'cytoscape';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
 import { useDispatch, useSelector } from 'react-redux';
-import { selectSelectedViolations, selectCytoData, setSelectedTypes, selectSelectedTypes } from './components/Store/CombinedSlice';
+import {
+  selectSelectedViolations,
+  selectCytoData,
+  setSelectedTypes,
+  selectSelectedTypes,
+  setSelectedViolations,
+  selectTypesViolationMap,
+  selectViolationsTypeMap,
+} from './components/Store/CombinedSlice';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(coseBilkent);
@@ -37,12 +45,57 @@ function alignNodes(nodes, parentNodePosition, isChild) {
   });
 }
 
+const hideNodes = (nodes) => {
+  nodes.forEach((node) => {
+    if (node.data('permanent') === false) {
+      node.data('visible', false);
+      node.style('display', 'none');
+    }
+  });
+};
+
+// Helper function to hide nodes
+const hideVisibleNodes = (nodeList) => {
+  nodeList.current.forEach((nodeCollection) => {
+    nodeCollection.forEach((node) => {
+      if (node.data('permanent') === false) {
+        node.style('display', 'none');
+        node.data('visible', false);
+      }
+    });
+  });
+
+  // Clear nodeList
+  nodeList.current = [];
+};
+
+// Helper function to apply styles to nodes
+const styleNodes = (nodes, display, color) => {
+  nodes.style({
+    display,
+    'background-color': color,
+  });
+  nodes.data('visible', true);
+};
+
+// Helper function to get nodes from ids
+const getNodesFromIds = (ids, cy) => {
+  let nodes = cy.collection();
+  ids.forEach((id) => {
+    nodes = nodes.union(cy.getElementById(id));
+  });
+  return nodes;
+};
+
 function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
   const [cy, setCy] = React.useState<cytoscape.Core | null>(null);
   const selectedTypes = useSelector(selectSelectedTypes);
   const selectedViolations = useSelector(selectSelectedViolations);
+  const selectedTypesViolationsMap = useSelector(selectTypesViolationMap);
+  const selectedViolationsTypesMap = useSelector(selectViolationsTypeMap);
   const dispatch = useDispatch();
 
+  // TODO can be implemented with hash map of selected nodes, and of type->node for efficiency
   React.useEffect(() => {
     if (cy && selectedTypes) {
       // Iterate over all nodes
@@ -57,8 +110,55 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
     }
   }, [cy, selectedTypes]);
 
+  const listOfNodesThatHaveBeenMadeVisible = React.useRef([]);
+
   React.useEffect(() => {
-    selectCytoData({ combined: { rdfString: rdfOntology, samples: [], selectedNodes: [], selectedViolations, selectedTypes, violations: [] } })
+    if (cy && selectedViolations) {
+      hideVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
+
+      const violationNodes = getNodesFromIds(selectedViolations, cy);
+      const connectedNodesIds = selectedViolations.flatMap((violation) => selectedViolationsTypesMap[violation]);
+
+      const typeNodeIds = connectedNodesIds.filter((node) => selectedTypes.includes(node));
+      const otherNodeIds = connectedNodesIds.filter((node) => !selectedTypes.includes(node));
+
+      const typeNodes = getNodesFromIds(typeNodeIds, cy);
+      const otherNodes = getNodesFromIds(otherNodeIds, cy);
+
+      // Style nodes
+      styleNodes(violationNodes, 'element', 'orange');
+      styleNodes(otherNodes, 'element', 'lightgrey');
+      styleNodes(typeNodes, 'element', 'steelblue');
+
+      // Add nodes to list of nodes that have been made visible
+      listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, typeNodes);
+
+      // TODO apply layout to the entire cy graph using the CY_LAYOUT constant
+      cy.nodes().lock();
+      // typeNodes.unlock();
+      violationNodes.unlock();
+      otherNodes.unlock();
+      cy.layout({ ...CY_LAYOUT, eles: cy.elements(':visible') }).run();
+
+      // Show connected edges
+      const connectedEdges = violationNodes.edges().union(otherNodes.edges());
+      styleNodes(connectedEdges, 'element', '#999'); // #999 is the default color for edges
+    }
+  }, [cy, selectedViolations]);
+
+  React.useEffect(() => {
+    selectCytoData({
+      combined: {
+        rdfString: rdfOntology,
+        samples: [],
+        selectedNodes: [],
+        selectedViolations,
+        selectedTypes,
+        violations: [],
+        violationTypesMap: {},
+        typesViolationMap: {},
+      },
+    })
       .then((data) => {
         const newCytoData = data;
         if (cy) {
@@ -138,7 +238,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
           });
 
           // Function to display nodes and their connections to sourceNode
-          const showNodes = (nodes, sourceNode) => {
+          const showNodesGivenSource = (nodes, sourceNode) => {
             nodes.style('display', 'element');
             nodes.data('visible', true);
 
@@ -149,7 +249,7 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
           };
 
           // Function to hide nodes and their connections to sourceNode
-          const hideNodes = (nodes, sourceNode) => {
+          const hideNodesGivenSource = (nodes, sourceNode) => {
             nodes.forEach((node) => {
               const connectedEdge = sourceNode.edgesWith(node);
 
@@ -182,12 +282,12 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
 
             // If ctrlKey is pressed, show nodes and align children
             if (event.originalEvent.ctrlKey) {
-              showNodes(children, node);
+              showNodesGivenSource(children, node);
               alignNodes(children, parentNodePosition, true);
             } else if (event.originalEvent.shiftKey) {
               // If shiftKey is pressed, show nodes and align parents
               const incomers = node.incomers();
-              showNodes(incomers, node);
+              showNodesGivenSource(incomers, node);
               alignNodes(incomers, parentNodePosition, false);
             }
           });
@@ -203,11 +303,11 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
 
             // Hide nodes based on key press events
             if (event.originalEvent.ctrlKey) {
-              hideNodes(children, node);
+              hideNodesGivenSource(children, node);
             } else if (event.originalEvent.shiftKey) {
-              hideNodes(node.incomers(), node);
+              hideNodesGivenSource(node.incomers(), node);
             } else {
-              hideNodes(node, node);
+              hideNodesGivenSource(node, node);
             }
           });
 

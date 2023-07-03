@@ -49,6 +49,8 @@ interface CombinedState {
   selectedViolations: string[];
   rdfString: string;
   violations: string[]; // list of possible violation source shapes
+  violationTypesMap: { [key: string]: string[] }; // map of violation sh:PropertyShapes to their corresponding owl:Class and the sh:NodeShapes in between
+  typesViolationMap: { [key: string]: string[] }; // map of owl:Classes to their corresponding sh:PropertyShapes and the sh:NodeShapes in between
 }
 
 const initialState: CombinedState = {
@@ -58,15 +60,26 @@ const initialState: CombinedState = {
   selectedViolations: [],
   rdfString: '',
   violations: [],
+  violationTypesMap: {},
+  typesViolationMap: {},
 };
 
 const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
+    setViolationTypesMap: (state, action) => {
+      console.log('setViolationTypesMap');
+      state.violationTypesMap = action.payload;
+    },
+    setTypesViolationMap: (state, action) => {
+      console.log('setTypesViolationMap');
+      state.typesViolationMap = action.payload;
+    },
     setViolations: (state, action) => {
       console.log('setViolations');
       state.violations = JSON.parse(action.payload);
+      console.log('state.violations', state.violations);
     },
     setCsvData: (state, action) => {
       console.log('setCsvData');
@@ -106,7 +119,7 @@ const combinedSlice = createSlice({
       state.selectedNodes = action.payload;
 
       // Convert state.samples into an object for O(1) lookup
-      const samplesMap = {};
+      const samplesMap = {};  
       state.samples.forEach((sample) => {
         samplesMap[sample.focus_node] = sample;
       });
@@ -197,6 +210,11 @@ const combinedSlice = createSlice({
   },
 });
 
+export const selectViolationsTypeMap = (state: { combined: CombinedState }) => state.combined.violationTypesMap;
+
+export const selectTypesViolationMap = (state: { combined: CombinedState }) => state.combined.typesViolationMap;
+
+// TODO investigate why we are returning everything here
 export const selectBarPlotData = (state: { combined: CombinedState }): CombinedState => {
   return {
     selectedNodes: state.combined.selectedNodes,
@@ -205,6 +223,8 @@ export const selectBarPlotData = (state: { combined: CombinedState }): CombinedS
     rdfString: state.combined.rdfString,
     violations: state.combined.violations,
     selectedViolations: state.combined.selectedViolations,
+    violationTypesMap: state.combined.violationTypesMap,
+    typesViolationMap: state.combined.typesViolationMap,
   };
 };
 
@@ -322,6 +342,76 @@ export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<
   });
 };
 
+export const selectAllClassesAndViolations = async (state: { combined: CombinedState }): Promise<any> => {
+  const { samples, selectedNodes, selectedTypes, selectedViolations, rdfString, violations } = state.combined;
+  const store: Store = new Store();
+  const parser: N3.Parser = new N3.Parser();
+  let prefixes: { [key: string]: string } = {};
+
+  await new Promise<void>((resolve, reject) => {
+    parser.parse(rdfString, (error, quad, _prefixes) => {
+      if (quad) {
+        store.addQuad(quad);
+      } else if (error) {
+        reject(error);
+      } else {
+        prefixes = _prefixes;
+        resolve();
+      }
+    });
+  });
+
+  // TODO wait for violations to be set
+  await new Promise<void>((resolve, reject) => {
+    // TODO
+  });
+
+  const subClassOfPredicate = new NamedNode(`${prefixes.rdfs}subClassOf`);
+  const shaclPropertyPredicate = new NamedNode(`${prefixes.sh}property`);
+  const tuples1 = store.getQuads(null, subClassOfPredicate, null);
+
+  const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null);
+  const targetClassTuples = store.getQuads(null, `${prefixes.sh}targetClass`, null);
+  console.log(`${prefixes.sh}targetClass`);
+  console.log('shaclPropertyTuples', targetClassTuples);
+
+  for (const tuple of targetClassTuples) {
+    const childrenPropertyPredicate = store.getQuads(tuple.subject, shaclPropertyPredicate, null);
+    const children = store.getQuads(tuple.subject, null, null);
+    //  if one of the objects is `${prefixes.omics}TranscriptOmicsSamplee` then add all children to `allVisibleTuples
+    for (const childTuple of children) {
+      if (childTuple.object === new NamedNode(`${prefixes.omics}Sample`)) {
+        console.log('yes');
+        allVisibleTuples.push(...childrenPropertyPredicate);
+        console.log('children', childrenPropertyPredicate);
+        break;
+      }
+    }
+  }
+
+  // append shaclPropertyTuples to allVisibleTuples
+  // allVisibleTuples.push(...targetClassTuples);
+
+  const allHiddenTuples = store.getQuads(null, null, null).filter((quad) => !allVisibleTuples.includes(quad));
+
+  // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
+  const visibleTriples = allVisibleTuples.map((quad) => {
+    return {
+      subject: shortenURI(quad.subject.id, prefixes),
+      predicate: shortenURI(quad.predicate.id, prefixes),
+      object: shortenURI(quad.object.id, prefixes),
+    };
+  });
+  const hiddenTriples = allHiddenTuples.map((quad) => {
+    return {
+      subject: shortenURI(quad.subject.id, prefixes),
+      predicate: shortenURI(quad.predicate.id, prefixes),
+      object: shortenURI(quad.object.id, prefixes),
+    };
+  });
+  return { visibleTriples, hiddenTriples };
+};
+
 export const selectAllTriples = async (state: { combined: CombinedState }): Promise<any> => {
   const { samples, selectedNodes, selectedTypes, selectedViolations, rdfString, violations } = state.combined;
   const store: Store = new Store();
@@ -340,6 +430,7 @@ export const selectAllTriples = async (state: { combined: CombinedState }): Prom
       }
     });
   });
+
   const subClassOfPredicate = new NamedNode(`${prefixes.rdfs}subClassOf`);
   const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null);
   const allHiddenTuples = store.getQuads(null, null, null).filter((quad) => !allVisibleTuples.includes(quad));
@@ -462,4 +553,6 @@ export const {
   setSelectedFocusNodes,
   setSelectedTypes,
   setRdfString,
+  setViolationTypesMap,
+  setTypesViolationMap,
 } = combinedSlice.actions;
