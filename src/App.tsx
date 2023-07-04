@@ -78,8 +78,6 @@ export function App() {
     // console.log('Data selected in App component', selectedData);
   };
 
-  console.log('csvData', csvData);
-
   return (
     <div className="container">
       <div className="Extended-Ontology-View">
