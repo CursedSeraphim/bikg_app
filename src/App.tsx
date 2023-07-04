@@ -89,7 +89,7 @@ export function App() {
         <InteractiveScatterPlot data={plotlyData} onDataSelected={handleDataSelected} />
       </div>
       <div className="Feature-Distribution-View">
-        Feature Distribution Viewpcss
+        Feature Distribution View
         <BarPlotList />
       </div>
       <div className="Fixed-Feature-Distribution-View">
