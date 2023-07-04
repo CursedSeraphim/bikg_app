@@ -316,7 +316,9 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
           });
 
           newCy.on('boxend', () => {
+            // TODO differentiate handling type nodes and violation nodes
             const selectedNodes = newCy.nodes(':selected');
+            console.log('selectedNodes', selectedNodes);
             const selectedNodeTypes = selectedNodes.map((node) => node.data().id);
 
             // Filter out duplicates
