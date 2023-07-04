@@ -247,6 +247,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
           cy.fit();
           cy.layout({ ...CY_LAYOUT, eles: cy.elements(':visible') }).run();
           cy.ready(() => {
+            console.log('Cytoscape ready');
             onLoaded();
             setLoading(false);
             cy.nodes().forEach((node) => {
