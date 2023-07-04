@@ -1,6 +1,7 @@
 // App.tsx
 import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { BarLoader } from 'react-spinners';
 import {
   setRdfString,
   selectRdfData,
@@ -72,18 +73,23 @@ export function App() {
     // console.log('Data selected in App component', selectedData);
   };
 
+  const [cytoscapeLoading, setCytoscapeLoading] = React.useState(true);
+
   return (
     <div className="container">
       <div className="Extended-Ontology-View">
         Extended Ontology View
-        <CytoscapeView rdfOntology={rdfOntology} />
+        <div style={{ display: cytoscapeLoading ? 'none' : 'block' }} className="cytoscape-container">
+          <CytoscapeView rdfOntology={rdfOntology} onLoaded={() => setCytoscapeLoading(false)} />
+        </div>
+        {cytoscapeLoading && <BarLoader color="steelblue" loading />}
       </div>
       <div className="Embedding-View">
         Embedding View
         <InteractiveScatterPlot data={plotlyData} onDataSelected={handleDataSelected} />
       </div>
       <div className="Feature-Distribution-View">
-        Feature Distribution View
+        Feature Distribution Viewpcss
         <BarPlotList />
       </div>
       <div className="Fixed-Feature-Distribution-View">

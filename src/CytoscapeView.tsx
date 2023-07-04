@@ -143,7 +143,7 @@ const getNodesFromIds = (ids, cy) => {
   return nodes;
 };
 
-function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
+function CytoscapeView({ rdfOntology, onLoaded }) {
   const [cy, setCy] = React.useState<cytoscape.Core | null>(null);
   const selectedTypes = useSelector(selectSelectedTypes);
   const selectedViolations = useSelector(selectSelectedViolations);
@@ -247,11 +247,15 @@ function CytoscapeView({ rdfOntology }: CytoscapeViewProps) {
           cy.fit();
           cy.layout({ ...CY_LAYOUT, eles: cy.elements(':visible') }).run();
           cy.ready(() => {
+            console.log('called ready');
+            onLoaded();
             setLoading(false);
             cy.nodes().forEach((node) => {
               const pos = node.position();
               initialNodePositions.current.set(node.data('id'), { x: pos.x, y: pos.y });
             });
+            // find a cleaner solution
+            setTimeout(() => cy.fit(cy.elements(), 50), 1000); // Add a delay of 1 second before fitting the view
           });
         } else {
           const newCy = cytoscape({
