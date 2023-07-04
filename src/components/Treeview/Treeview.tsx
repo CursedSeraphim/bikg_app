@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Treebeard, decorators } from 'react-treebeard';
 import { BarLoader } from 'react-spinners';
-import { selectRdfData, selectSelectedTypes } from '../Store/CombinedSlice';
+import { selectRdfData, selectSelectedTypes, setSelectedTypes } from '../Store/CombinedSlice';
 import { getTreeDataFromN3Data } from './TreeviewGlue';
 import { lightTheme } from './lightTheme';
 
@@ -61,6 +61,7 @@ function resetAllNodes(node) {
 }
 
 export default function Treeview() {
+  const dispatch = useDispatch();
   const [treeData, setTreeData] = useState(null);
   const ontology = useSelector(selectRdfData);
   const selectedTypes = useSelector(selectSelectedTypes);
@@ -90,15 +91,28 @@ export default function Treeview() {
   }, [selectedTypes]);
 
   const onToggle = (node, toggled) => {
+    // Get the current list of selected types
+    let newSelectedTypes = [...selectedTypes];
+
+    // If toggled, add the node to the list
+    if (toggled) {
+      newSelectedTypes.push(node.name);
+    } else {
+      newSelectedTypes = newSelectedTypes.filter((type) => type !== node.name);
+    }
+
+    // Update the selected types in the store
+    dispatch(setSelectedTypes(newSelectedTypes));
+
     if (node.children) {
       setTreeData((oldTreeData) => {
         const newTreeData = JSON.parse(JSON.stringify(oldTreeData));
         const traverseAndToggle = (n) => {
           if (n.children) {
             n.children.forEach(traverseAndToggle);
-            if (n.name === node.name) {
-              n.toggled = toggled;
-            }
+          }
+          if (n.name === node.name) {
+            n.toggled = toggled;
           }
         };
         traverseAndToggle(newTreeData);
