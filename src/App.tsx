@@ -1,12 +1,15 @@
 // App.tsx
 import * as React from 'react';
+import NewWindow from 'react-new-window';
 import { useDispatch, useSelector } from 'react-redux';
 import { BarLoader } from 'react-spinners';
+import { LineUp } from 'lineupjsx';
 import {
   setRdfString,
   selectRdfData,
   setCsvData,
   selectCsvDataForPlotly,
+  selectCsvData,
   setViolations,
   setViolationTypesMap,
   setTypesViolationMap,
@@ -23,6 +26,8 @@ export function App() {
   const dispatch = useDispatch();
   const plotlyData = useSelector(selectCsvDataForPlotly);
   const rdfOntology = useSelector(selectRdfData);
+  const csvData = useSelector(selectCsvData);
+  const [cytoscapeLoading, setCytoscapeLoading] = React.useState(true);
 
   // Fetch violation list
   React.useEffect(() => {
@@ -73,7 +78,7 @@ export function App() {
     // console.log('Data selected in App component', selectedData);
   };
 
-  const [cytoscapeLoading, setCytoscapeLoading] = React.useState(true);
+  console.log('csvData', csvData);
 
   return (
     <div className="container">
@@ -87,6 +92,13 @@ export function App() {
       <div className="Embedding-View">
         Embedding View
         <InteractiveScatterPlot data={plotlyData} onDataSelected={handleDataSelected} />
+        <div className="lineup-window">
+          <NewWindow>
+            <link href="https://unpkg.com/lineupjsx/build/LineUpJSx.css" rel="stylesheet" />
+            <script src="https://unpkg.com/lineupjsx/build/LineUpJSx.js" />
+            <LineUp data={csvData} defaultRanking />
+          </NewWindow>
+        </div>
       </div>
       <div className="Feature-Distribution-View">
         Feature Distribution View

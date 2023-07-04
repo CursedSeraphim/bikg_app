@@ -100,3 +100,21 @@ body {
 .cytoscape-container {
   height: 100%;
 }
+
+.lineup-window {
+  position: fixed; /* or 'absolute' */
+  z-index: 100; /* optional, in case you need to bring the window to front */
+}
+
+.lu {
+  clear: both;
+  position: absolute;
+  top: 1px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow-x: scroll;
+}
