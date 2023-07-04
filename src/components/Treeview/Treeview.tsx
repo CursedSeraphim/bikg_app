@@ -76,11 +76,9 @@ export default function Treeview() {
   useEffect(() => {
     setTreeData((oldTreeData) => {
       const newTreeData = JSON.parse(JSON.stringify(oldTreeData));
+      resetAllNodes(newTreeData);
 
-      if (selectedTypes.length === 0) {
-        // If no types are selected, reset all nodes.
-        resetAllNodes(newTreeData);
-      } else {
+      if (selectedTypes.length !== 0) {
         // If types are selected, toggle the paths to the selected nodes.
         for (const selectedType of selectedTypes) {
           togglePathToNode(newTreeData, selectedType);
