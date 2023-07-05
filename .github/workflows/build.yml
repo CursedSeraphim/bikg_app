@@ -8,9 +8,18 @@ on:
         required: false
         type: boolean
         default: false
+      build_docker_image:
+        description: 'Build docker image'
+        required: false
+        type: boolean
+        default: false
   push:
   schedule:
     - cron: '15 1 * * *'
+
+permissions:
+  contents: write
+  id-token: write
 
 jobs:
   build:
@@ -19,3 +28,48 @@ jobs:
     with:
       cypress_enable: true
       cypress_run_because_flag: ${{ inputs.cypress == true }}
+
+  build-docker:
+    # needs: [build]
+    if: inputs.build_docker_image == true
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up node version
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.16'
+      - name: Show node and npm version
+        run: |
+          corepack enable
+          node -v
+          npm -v
+        shell: bash
+      - name: Git config
+        run: |
+          git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+          git config --add --global url."https://github.com/".insteadOf git@github.com:
+      - name: Install dependencies
+        run: yarn install --no-immutable --inline-builds
+        shell: bash
+      - name: Webpack build
+        run: yarn run webpack:prod
+        shell: bash
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/CursedSeraphim/bikg_app
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
