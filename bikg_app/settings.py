@@ -3,7 +3,7 @@ from tdp_core import manager
 
 
 class AppSettings(BaseModel):
-    example_setting: str = "example"
+    bundles_dir: str | None = None
     """Example setting which can be overriden by the .env file via bikg_app__EXAMPLE_SETTING=..."""
 
 
