@@ -1,0 +1,25 @@
+version: '2.0'
+services:
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 9000:9000
+    # volumes:
+    #   - ./files/...:/
+  api_jupyter:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 9001:9001
+    command: jupyter lab --ip=0.0.0.0 --allow-root --port 9001
+    # volumes:
+    #   - ./files/...:/
+  # jupyter:
+  #   image: jupyter/datascience-notebook
+  #   ports:
+  #     - 8888:8888
+  #   volumes:
+  #     - ./bikg_app:/home/jovyan/work

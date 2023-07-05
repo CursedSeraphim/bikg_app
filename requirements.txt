@@ -2,3 +2,5 @@ visyn_core@git+https://github.com/datavisyn/visyn_core.git@develop#egg=visyn_cor
 rdflib==6.2.0
 pandas==1.5.3
 scipy==1.10.1
+# TODO: Add jupyterlab
+jupyterlab
