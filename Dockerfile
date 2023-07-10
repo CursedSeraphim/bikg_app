@@ -20,10 +20,15 @@ ENV VISYN_CORE__SECURITY__STORE__NO_SECURITY_STORE__USER anonymous
 # copy the pre-built front-end --> comment for development because we mount the volume anyway
 COPY bundles/ /app/bundles/
 
+# Copy start script
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 # expose default port
 EXPOSE 9000
 
-CMD ["uvicorn", "visyn_core.server.main:app", "--host", "0.0.0.0", "--port", "9000"]
+# CMD ["uvicorn", "visyn_core.server.main:app", "--host", "0.0.0.0", "--port", "9000"]
+CMD ["/app/start.sh"]
 
 # Running
 # docker build -f Dockerfile -t reaction_cime .
