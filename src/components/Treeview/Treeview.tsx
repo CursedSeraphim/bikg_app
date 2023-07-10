@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Treebeard, decorators } from 'react-treebeard';
 import { BarLoader } from 'react-spinners';
+import { remove } from 'vega-lite/build/src/compositemark';
 import { selectRdfData, selectSelectedTypes, setSelectedTypes } from '../Store/CombinedSlice';
 import { getTreeDataFromN3Data } from './TreeviewGlue';
 import { lightTheme } from './lightTheme';
@@ -94,11 +95,19 @@ export default function Treeview() {
     // Get the current list of selected types
     let newSelectedTypes = [...selectedTypes];
 
+    const removeNodeAndChildrenFromList = (n) => {
+      newSelectedTypes = newSelectedTypes.filter((type) => type !== n.name);
+
+      if (n.children) {
+        n.children.forEach(removeNodeAndChildrenFromList);
+      }
+    };
+
     // If toggled, add the node to the list
     if (toggled) {
       newSelectedTypes.push(node.name);
     } else {
-      newSelectedTypes = newSelectedTypes.filter((type) => type !== node.name);
+      removeNodeAndChildrenFromList(node);
     }
 
     // Update the selected types in the store
