@@ -43,7 +43,7 @@ function BarPlotList(): JSX.Element {
   return (
     <div className="bar-plot-list-container">
       {sortedKeys.map((key) => (
-        <BarPlotSample key={key} plotlyData={localBarPlotData.plotlyData[key]} chiScore={localBarPlotData.chiScores[key]} feature={key} />
+        <BarPlotSample key={key} plotlyData={localBarPlotData.plotlyData[key]} feature={key} /> // chiScore={localBarPlotData.chiScores[key]} feature={key} />
       ))}
     </div>
   );

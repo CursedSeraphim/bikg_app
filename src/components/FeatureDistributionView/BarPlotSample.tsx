@@ -13,7 +13,7 @@ const Plot = createPlotlyComponent(Plotly);
 
 const shouldShowTickLabels = (num: number) => num <= 6;
 
-function BarPlotSample({ plotlyData, chiScore, feature }) {
+function BarPlotSample({ plotlyData, feature }) {
   // TODO handle ifShowOverallDistribution
   const { selected, overall } = plotlyData;
   const [dragMode, setDragMode] = useState<'zoom' | 'pan' | 'select' | 'lasso' | 'orbit' | 'turntable' | false>('zoom');
@@ -21,12 +21,12 @@ function BarPlotSample({ plotlyData, chiScore, feature }) {
   const [xRange, setXRange] = useState([]);
   const [yRange, setYRange] = useState([]);
   const plotData = [overall, selected];
-  const numberOfTicks = (overall as any)?.y?.length || 0;
+  const numberOfTicks = overall?.y?.length || 0;
   const [showTickLabels, setShowTickLabels] = useState(shouldShowTickLabels(numberOfTicks));
 
   useEffect(() => {
     // const { plotData: newPlotData, chiSquareScore } = getBarPlotData(feature, data.selectedNodes, data.samples);
-    const newNumberOfTicks = (overall as any)?.y?.length || 0;
+    const newNumberOfTicks = overall?.y?.length || 0;
     setShowTickLabels(shouldShowTickLabels(newNumberOfTicks));
 
     const handleKeyDown = (event) => {

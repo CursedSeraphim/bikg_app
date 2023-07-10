@@ -7,15 +7,32 @@ import { selectBarPlotData } from '../Store/CombinedSlice';
 import { fetchBarPlotDataGivenSelection, fetchViolationValueCountsGivenSelection } from '../../api';
 
 interface IPlotlyData {
-  [key: string]: any; // Replace `any` with the expected data structure if known.
+  x: number[];
+  y: string[];
+  marker: {
+    color: string[];
+  };
+  type: string;
+  orientation: string;
+  name: string;
+}
+
+interface IPlotlyLayers {
+  [key: string]: {
+    overall: IPlotlyData;
+    selected: IPlotlyData;
+  };
 }
 
 interface IChiScore {
-  [key: string]: number;
+  [key: string]: {
+    overall: IPlotlyData;
+    selected: IPlotlyData;
+  };
 }
 
 interface IData {
-  plotlyData: IPlotlyData;
+  plotlyData: IPlotlyLayers;
   chiScores: IChiScore;
 }
 
@@ -39,6 +56,7 @@ function BarPlotList(): JSX.Element {
     fetchViolationValueCountsGivenSelection(data.selectedNodes).then((d) => {
       setLocalViolationValueCounts(d);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
   if (Object.keys(localBarPlotData.plotlyData).length === 0 || Object.keys(localViolationValueCounts.plotlyData).length === 0) {
@@ -53,11 +71,11 @@ function BarPlotList(): JSX.Element {
       <BarPlotSample
         key="violations"
         plotlyData={localViolationValueCounts.plotlyData.violations}
-        chiScore={localViolationValueCounts.chiScores.violations}
+        // chiScore={localViolationValueCounts.chiScores.violations}
         feature="violations"
       />
       {sortedKeys.map((key) => (
-        <BarPlotSample key={key} plotlyData={localBarPlotData.plotlyData[key]} chiScore={localBarPlotData.chiScores[key]} feature={key} />
+        <BarPlotSample key={key} plotlyData={localBarPlotData.plotlyData[key]} feature={key} /> // chiScore={localBarPlotData.chiScores[key]} feature={key} />
       ))}
     </div>
   );
