@@ -2,7 +2,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Store, Quad } from 'n3';
-import { ScatterData, dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
+import { createSelector } from 'reselect';
+import { dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
 import { CsvData } from './types';
 
 export interface CytoNode {
@@ -183,6 +184,7 @@ const combinedSlice = createSlice({
         return;
       }
 
+      console.time('fill violationMap');
       // Initiate an empty array to hold focus nodes of selected types
       state.selectedNodes = [];
 
@@ -204,13 +206,16 @@ const combinedSlice = createSlice({
           });
         }
       });
+      console.timeEnd('fill violationMap');
       // set state.selectedViolations to the keys of the map with value > 0
+      console.time('find selected violations');
       state.selectedViolations = [];
       violationMap.forEach((value, key) => {
         if (value > 0) {
           state.selectedViolations.push(key);
         }
       });
+      console.timeEnd('find selected violations');
       console.timeEnd('setSelectedTypes');
     },
     setRdfString: (state, action) => {
@@ -221,38 +226,47 @@ const combinedSlice = createSlice({
 });
 
 export const selectViolationsTypeMap = (state: { combined: CombinedState }) => state.combined.violationTypesMap;
-
+export const selectSelectedNodes = (state: { combined: CombinedState }) => state.combined.selectedNodes;
+export const selectSamples = (state: { combined: CombinedState }) => state.combined.samples;
+export const selectRdfString = (state: { combined: CombinedState }) => state.combined.rdfString;
+export const selectViolationTypesMap = (state: { combined: CombinedState }) => state.combined.violationTypesMap;
 export const selectTypesViolationMap = (state: { combined: CombinedState }) => state.combined.typesViolationMap;
+export const selectCombinedSamples = (state: { combined: CombinedState }) => state.combined.samples;
+export const selectSelectedViolations = (state: { combined: CombinedState }) => state.combined.selectedViolations;
+export const selectViolations = (state: { combined: CombinedState }) => state.combined.violations;
+export const selectCsvData = (state: { combined: CombinedState }) => state.combined.samples;
+export const selectSelectedFocusNodes = (state: { combined: CombinedState }) => state.combined.selectedNodes;
+export const selectSelectedTypes = (state: { combined: CombinedState }) => state.combined.selectedTypes;
+export const selectRdfData = (state: { combined: CombinedState }) => state.combined.rdfString;
 
 // TODO investigate why we are returning everything here
-export const selectBarPlotData = (state: { combined: CombinedState }): CombinedState => {
-  return {
-    selectedNodes: state.combined.selectedNodes,
-    selectedTypes: state.combined.selectedTypes,
-    samples: state.combined.samples,
-    rdfString: state.combined.rdfString,
-    violations: state.combined.violations,
-    selectedViolations: state.combined.selectedViolations,
-    violationTypesMap: state.combined.violationTypesMap,
-    typesViolationMap: state.combined.typesViolationMap,
-  };
-};
+// create memoized selector
+export const selectBarPlotData = createSelector(
+  selectSelectedNodes,
+  selectSelectedTypes,
+  selectSamples,
+  selectRdfString,
+  selectViolations,
+  selectSelectedViolations,
+  selectViolationTypesMap,
+  selectTypesViolationMap,
+  (selectedNodes, selectedTypes, samples, rdfString, violations, selectedViolations, violationTypesMap, typesViolationMap) => {
+    return {
+      selectedNodes,
+      selectedTypes,
+      samples,
+      rdfString,
+      violations,
+      selectedViolations,
+      violationTypesMap,
+      typesViolationMap,
+    };
+  },
+);
 
-export const selectCsvDataForPlotly = (state: { combined: CombinedState }): ScatterData[] => {
-  return dataToScatterDataArray(state.combined.samples);
-};
-
-export const selectSelectedViolations = (state: { combined: CombinedState }) => state.combined.selectedViolations;
-
-export const selectViolations = (state: { combined: CombinedState }) => state.combined.violations; // Add a selector for violations
-
-export const selectCsvData = (state: { combined: CombinedState }) => state.combined.samples;
-
-export const selectSelectedFocusNodes = (state: { combined: CombinedState }) => state.combined.selectedNodes;
-
-export const selectSelectedTypes = (state: { combined: CombinedState }) => state.combined.selectedTypes;
-
-export const selectRdfData = (state: { combined: CombinedState }) => state.combined.rdfString;
+export const selectCsvDataForPlotly = createSelector(selectCombinedSamples, (samples) => {
+  return dataToScatterDataArray(samples);
+});
 
 function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
   for (const [prefix, prefixURI] of Object.entries(prefixes)) {
