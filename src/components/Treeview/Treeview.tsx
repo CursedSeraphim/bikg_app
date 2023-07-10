@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Treebeard, decorators } from 'react-treebeard';
 import { BarLoader } from 'react-spinners';
-import { remove } from 'vega-lite/build/src/compositemark';
 import { selectRdfData, selectSelectedTypes, setSelectedTypes } from '../Store/CombinedSlice';
 import { getTreeDataFromN3Data } from './TreeviewGlue';
 import { lightTheme } from './lightTheme';
@@ -32,6 +31,9 @@ function CustomHeader({ style, node }) {
 
 decorators.Header = CustomHeader;
 
+// it would lead to problems with large objects if we created a new object for each node to solve the eslint error
+// this way we can keep an elegant recursive solution
+/* eslint-disable no-param-reassign */
 function togglePathToNode(node, targetName) {
   if (node.name === targetName) {
     node.toggled = true;
