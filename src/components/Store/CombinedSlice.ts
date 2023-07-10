@@ -1,7 +1,7 @@
 // CombinedSlice.ts
 import { createSlice } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
-import { NamedNode, Store } from 'n3';
+import { NamedNode, Store, Quad } from 'n3';
 import { ScatterData, dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
 import { CsvData } from './types';
 
@@ -51,6 +51,12 @@ export interface CombinedState {
   violations: string[]; // list of possible violation source shapes
   violationTypesMap: { [key: string]: string[] }; // map of violation sh:PropertyShapes to their corresponding owl:Class and the sh:NodeShapes in between
   typesViolationMap: { [key: string]: string[] }; // map of owl:Classes to their corresponding sh:PropertyShapes and the sh:NodeShapes in between
+}
+
+interface Triple {
+  s: string;
+  p: string;
+  o: string;
 }
 
 const initialState: CombinedState = {
@@ -108,10 +114,12 @@ const combinedSlice = createSlice({
       // Set state.selectedViolations to the new list (convert Set to Array)
       state.selectedViolations = Array.from(selectedViolations) as string[];
 
-      // convert valueCoutns['rdf:type'] from a dictionary of coutns per category, to a list of categories with > 1 counts
+      // convert valueCounts['rdf:type'] from a dictionary of counts per category, to a list of categories with > 1 counts
       const typeCounts = valueCounts['rdf:type'];
       state.selectedTypes = Object.entries(typeCounts)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .filter(([category, count]) => (count as number) > 1)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .map(([category, count]) => category);
     },
     setSelectedFocusNodes: (state, action) => {
@@ -154,7 +162,9 @@ const combinedSlice = createSlice({
 
       // set state.selectedViolations to the keys of the map with value > 0
       state.selectedViolations = Array.from(violationMap.entries())
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .filter(([key, value]) => value > 0)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .map(([key, value]) => key);
     },
 
@@ -253,7 +263,7 @@ function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
   return uri;
 }
 
-const mapQuadToShortenedResult = (quad: any, prefixes: { [key: string]: string }) => {
+const mapQuadToShortenedResult = (quad, prefixes: { [key: string]: string }) => {
   return {
     s: shortenURI(quad.subject.id, prefixes),
     p: shortenURI(quad.predicate.id, prefixes),
@@ -261,8 +271,8 @@ const mapQuadToShortenedResult = (quad: any, prefixes: { [key: string]: string }
   };
 };
 
-export const selectSubClassesAndViolations = async (state: { combined: CombinedState }): Promise<any[]> => {
-  const { samples, selectedNodes, selectedTypes, selectedViolations, rdfString, violations } = state.combined;
+export const selectSubClassesAndViolations = async (state: { combined: CombinedState }): Promise<Quad[]> => {
+  const { rdfString } = state.combined;
   const store: Store = new Store();
   const parser: N3.Parser = new N3.Parser();
 
@@ -311,7 +321,7 @@ export const selectSubClassesAndViolations = async (state: { combined: CombinedS
   return results;
 };
 
-export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<any[]> => {
+export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<Triple[]> => {
   const { rdfString } = state.rdf;
   const store: Store = new Store();
   const parser: N3.Parser = new N3.Parser();
@@ -342,8 +352,8 @@ export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<
   });
 };
 
-export const selectAllClassesAndViolations = async (state: { combined: CombinedState }): Promise<any> => {
-  const { samples, selectedNodes, selectedTypes, selectedViolations, rdfString, violations } = state.combined;
+export const selectAllClassesAndViolations = async (state: { combined: CombinedState }): Promise<{ visibleTriples: Triple[]; hiddenTriples: Triple[] }> => {
+  const { rdfString } = state.combined;
   const store: Store = new Store();
   const parser: N3.Parser = new N3.Parser();
   let prefixes: { [key: string]: string } = {};
@@ -361,14 +371,8 @@ export const selectAllClassesAndViolations = async (state: { combined: CombinedS
     });
   });
 
-  // TODO wait for violations to be set
-  await new Promise<void>((resolve, reject) => {
-    // TODO
-  });
-
   const subClassOfPredicate = new NamedNode(`${prefixes.rdfs}subClassOf`);
   const shaclPropertyPredicate = new NamedNode(`${prefixes.sh}property`);
-  const tuples1 = store.getQuads(null, subClassOfPredicate, null);
 
   const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null);
   const targetClassTuples = store.getQuads(null, `${prefixes.sh}targetClass`, null);
@@ -412,8 +416,8 @@ export const selectAllClassesAndViolations = async (state: { combined: CombinedS
   return { visibleTriples, hiddenTriples };
 };
 
-export const selectAllTriples = async (state: { combined: CombinedState }): Promise<any> => {
-  const { samples, selectedNodes, selectedTypes, selectedViolations, rdfString, violations } = state.combined;
+export const selectAllTriples = async (state: { combined: CombinedState }): Promise<{ visibleTriples: Triple[]; hiddenTriples: Triple[] }> => {
+  const { rdfString } = state.combined;
   const store: Store = new Store();
   const parser: N3.Parser = new N3.Parser();
   let prefixes: { [key: string]: string } = {};
@@ -454,12 +458,13 @@ export const selectAllTriples = async (state: { combined: CombinedState }): Prom
 };
 
 // TODO, if this is needed again add the prefix logic from selectSubClassOfTuples
-export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: RdfState }): Promise<any[]> => {
+export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: RdfState }): Promise<Triple[]> => {
   const { rdfString } = state.rdf;
   const store: Store = new N3.Store();
   const parser: N3.Parser = new N3.Parser();
   await new Promise<void>((resolve, reject) => {
-    parser.parse(rdfString, (error, quad, _prefixes) => {
+    // (error, quad, _prefixes)
+    parser.parse(rdfString, (error, quad) => {
       if (quad) {
         store.addQuad(quad);
       } else if (error) {
