@@ -1,3 +1,10 @@
+@prefix cns: <http://custom_node_shapes/> .
+@prefix cns: <http://custom_node_shapes/> .
+@prefix cns: <http://custom_node_shapes/> .
+@prefix cns: <http://custom_node_shapes/> .
+@prefix cns: <http://custom_node_shapes/> .
+@prefix cns: <http://custom_node_shapes/> .
+@prefix cns: <http://custom_node_shapes/> .
 <http://example.org/person/Mark_Twain>
    <http://example.org/relation/author>
    <http://example.org/books/Huckleberry_Finn> .
