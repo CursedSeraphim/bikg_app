@@ -19,7 +19,6 @@ interface InteractiveScatterPlotProps {
 }
 
 function InteractiveScatterPlot({ data }: InteractiveScatterPlotProps) {
-  console.log('data', data);
   const dispatch = useDispatch();
   const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
   const [localSelectedFocusNodes, setLocalSelectedFocusNodes] = useState<string[]>([]);
@@ -72,13 +71,6 @@ function InteractiveScatterPlot({ data }: InteractiveScatterPlotProps) {
   useEffect(() => {
     setLocalSelectedFocusNodes(selectedFocusNodes);
   }, [selectedFocusNodes]);
-
-  useEffect(() => {
-    console.log('useEffect triggered because of update of localSelectedFocusNodes', localSelectedFocusNodes);
-    if (localSelectedFocusNodes.length) {
-      console.log('localSelectedFocusNodes is not empty');
-    }
-  }, [localSelectedFocusNodes]);
 
   if (data.length === 0) {
     return <BarLoader color="steelblue" loading />;

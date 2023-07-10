@@ -1,12 +1,19 @@
 import { RdfState, selectSubClassOfTuples } from '../Store/CombinedSlice';
 
+interface OntologyNode {
+  name: string;
+  children: OntologyNode[];
+}
+
+type OntologyMap = { [key: string]: OntologyNode };
+
 /**
  * Glue that connects CombinedSlice selectSubClassOrObjectPropertyTuples return value to the Treebeard component
  * @param ontology The ontology data in N3 format
  * @returns The tree data in the format expected by Treebeard
  */
 export async function getTreeDataFromN3Data(ontology) {
-  const ontologyMap: { [key: string]: { name: string; children: any[] } } = {};
+  const ontologyMap: OntologyMap = {};
 
   const rdfOntologyState: RdfState = {
     rdfString: ontology,

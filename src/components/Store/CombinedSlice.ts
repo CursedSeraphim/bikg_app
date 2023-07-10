@@ -376,8 +376,6 @@ export const selectAllClassesAndViolations = async (state: { combined: CombinedS
 
   const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null);
   const targetClassTuples = store.getQuads(null, `${prefixes.sh}targetClass`, null);
-  console.log(`${prefixes.sh}targetClass`);
-  console.log('shaclPropertyTuples', targetClassTuples);
 
   for (const tuple of targetClassTuples) {
     const childrenPropertyPredicate = store.getQuads(tuple.subject, shaclPropertyPredicate, null);
@@ -385,9 +383,7 @@ export const selectAllClassesAndViolations = async (state: { combined: CombinedS
     //  if one of the objects is `${prefixes.omics}TranscriptOmicsSamplee` then add all children to `allVisibleTuples
     for (const childTuple of children) {
       if (childTuple.object === new NamedNode(`${prefixes.omics}Sample`)) {
-        console.log('yes');
         allVisibleTuples.push(...childrenPropertyPredicate);
-        console.log('children', childrenPropertyPredicate);
         break;
       }
     }
