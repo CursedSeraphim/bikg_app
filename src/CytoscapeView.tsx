@@ -121,8 +121,8 @@ const hideVisibleNodes = (nodeList) => {
     });
   });
 
-  // Clear nodeList
-  nodeList.current = [];
+  // return empty to clear nodeList.current
+  return [];
 };
 
 // Helper function to apply styles to nodes
@@ -175,7 +175,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
   React.useEffect(() => {
     if (cy && selectedViolations) {
-      hideVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
+      listOfNodesThatHaveBeenMadeVisible.current = hideVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
 
       const applyInitialPositions = (nodes: any) => {
         let nodesToHide = cy.collection();
