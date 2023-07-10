@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Plotly from 'plotly.js-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import { Layout } from 'plotly.js';
-import { useDispatch, } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { setSelectedFocusNodesUsingFeatureCategories } from '../Store/CombinedSlice';
 import { fetchSelectedNodesAndValueCountsGivenFeatureCategorySelection, fetchSelectedNodesAndValueCountsGivenViolationSelection } from '../../api';
 

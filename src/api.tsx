@@ -13,7 +13,6 @@ export async function fetchViolationPathNodesDict() {
   return data;
 }
 
-
 export async function fetchViolationValueCountsGivenSelection(selectedNodes) {
   // Changed endpoint to use a more appropriate one for fetching bar plot data
   const endpoint = `http://localhost:9000/plot/bar/violations`;
@@ -32,7 +31,6 @@ export async function fetchViolationValueCountsGivenSelection(selectedNodes) {
   const data = await response.json();
   return data;
 }
-
 
 export async function fetchBarPlotDataGivenSelection(selectedNodes) {
   // Changed endpoint to use a more appropriate one for fetching bar plot data

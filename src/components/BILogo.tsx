@@ -1,10 +1,10 @@
 import * as React from 'react';
 // TODO dynamically import the logos from the assets folder of the node_modules
 // TODO fix require error
-const datavisynLogoWhite = require('./datavisyn_white.svg');
-const datavisynLogoBlack = require('./datavisyn_black.svg');
-const biLogo = require('./BILogo.svg');
-const labLogo = require('./jku-vds-lab-logo.svg');
+import datavisynLogoWhite from './datavisyn_white.svg';
+import datavisynLogoBlack from './datavisyn_black.svg';
+import biLogo from './BILogo.svg';
+import labLogo from './jku-vds-lab-logo.svg';
 
 export function BILogo({ color }: { color: 'white' | 'black' }) {
   return (
