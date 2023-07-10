@@ -20,7 +20,7 @@ import FixedBarPlotList from './components/FeatureDistributionView/newFixedBarPl
 import CytoscapeView from './CytoscapeView';
 
 import './styles.css';
-import { fetchOntology, fetchCSVFile, fetchJSONFile, fetchViolationList, fetchViolationPathNodesDict } from './api';
+import { fetchOntology, fetchCSVFile, fetchViolationList, fetchViolationPathNodesDict } from './api';
 
 export function App() {
   const dispatch = useDispatch();
@@ -74,10 +74,6 @@ export function App() {
       });
   }, [dispatch]);
 
-  const handleDataSelected = (selectedData) => {
-    // console.log('Data selected in App component', selectedData);
-  };
-
   return (
     <div className="container">
       <div className="Extended-Ontology-View">
@@ -89,7 +85,7 @@ export function App() {
       </div>
       <div className="Embedding-View">
         Embedding View
-        <InteractiveScatterPlot data={plotlyData} onDataSelected={handleDataSelected} />
+        <InteractiveScatterPlot data={plotlyData} />
         <div className="lineup-window">
           <NewWindow>
             <link href="https://unpkg.com/lineupjsx/build/LineUpJSx.css" rel="stylesheet" />
