@@ -5,7 +5,7 @@ import { NamedNode, Store } from 'n3';
 import { ScatterData, dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
 import { CsvData } from './types';
 
-interface CytoNode {
+export interface CytoNode {
   data: {
     id: string;
     label?: string;

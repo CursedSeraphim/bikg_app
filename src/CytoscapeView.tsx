@@ -3,14 +3,12 @@ import * as React from 'react';
 import cytoscape from 'cytoscape';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
-import { BarLoader } from 'react-spinners';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectSelectedViolations,
   selectCytoData,
   setSelectedTypes,
   selectSelectedTypes,
-  selectTypesViolationMap,
   selectViolationsTypeMap,
   selectViolations,
 } from './components/Store/CombinedSlice';
@@ -18,17 +16,13 @@ import {
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(coseBilkent);
 
-interface CytoscapeViewProps {
-  rdfOntology: string;
-}
-
 const CY_LAYOUT = {
   name: 'cose-bilkent',
   idealEdgeLength: 500,
   nodeDimensionsIncludeLabels: true,
 };
 
-const applyLayout = (violationNodes: any, otherNodes: any, typeNodes: any, cy: any) => {
+const applyLayout = (violationNodes, otherNodes, typeNodes, cy) => {
   cy.nodes().lock();
   violationNodes.unlock();
   otherNodes.unlock();
@@ -147,11 +141,11 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   const [cy, setCy] = React.useState<cytoscape.Core | null>(null);
   const selectedTypes = useSelector(selectSelectedTypes);
   const selectedViolations = useSelector(selectSelectedViolations);
-  const typesViolationsMap = useSelector(selectTypesViolationMap);
   const violationsTypesMap = useSelector(selectViolationsTypeMap);
   const violations = useSelector(selectViolations);
   const dispatch = useDispatch();
-  const [loading, setLoading] = React.useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [loading, setLoading] = React.useState(true); // setLoading wouldn't work if we removed loading
   const initialNodePositions = React.useRef(new Map());
 
   // TODO can be implemented with hash map of selected nodes, and of type->node for efficiency
@@ -177,9 +171,9 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     if (cy && selectedViolations) {
       listOfNodesThatHaveBeenMadeVisible.current = hideVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
 
-      const applyInitialPositions = (nodes: any) => {
+      const applyInitialPositions = (nodes) => {
         let nodesToHide = cy.collection();
-        nodes.forEach((node: any) => {
+        nodes.forEach((node) => {
           const pos = initialNodePositions.current.get(node.id());
           // if node is omics:Donor
           if (pos) {
@@ -235,10 +229,14 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       },
     })
       .then((data) => {
-        const newCytoData = data;
-        newCytoData.nodes.forEach((node) => {
-          node.data.violation = violations.includes(node.data.id);
-        });
+        const newCytoData = { ...data };
+        newCytoData.nodes = newCytoData.nodes.map((node) => ({
+          ...node,
+          data: {
+            ...node.data,
+            violation: violations.includes(node.data.id),
+          },
+        }));
         if (cy) {
           console.log('cytodata', newCytoData);
           // Update the cytoData elements and layout
