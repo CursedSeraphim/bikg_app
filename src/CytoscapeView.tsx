@@ -169,7 +169,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
         }
       });
     }
-  }, [cy, selectedTypes]);
+  }, [cy, selectedTypes, violations]);
 
   const listOfNodesThatHaveBeenMadeVisible = React.useRef([]);
 
@@ -219,7 +219,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       const connectedEdges = violationNodes.edges().union(otherNodes.edges());
       styleNodes(connectedEdges, 'element', '#999'); // #999 is the default color for edges
     }
-  }, [cy, selectedViolations]);
+  }, [cy, selectedViolations, selectedTypes, violationsTypesMap, violations]);
 
   React.useEffect(() => {
     selectCytoData({
@@ -240,6 +240,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
           node.data.violation = violations.includes(node.data.id);
         });
         if (cy) {
+          console.log('cytodata', newCytoData);
           // Update the cytoData elements and layout
           cy.elements().remove();
           cy.add(newCytoData);
@@ -418,6 +419,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       .catch((error) => {
         console.error('Failed to generate Cytoscape data:', error);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rdfOntology]);
 
   return <div id="cy" />;

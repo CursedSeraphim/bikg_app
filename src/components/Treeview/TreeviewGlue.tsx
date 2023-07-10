@@ -15,9 +15,9 @@ export async function getTreeDataFromN3Data(ontology) {
   const quads = await selectSubClassOfTuples({ rdf: rdfOntologyState });
 
   quads.forEach((triple) => {
-    ontologyMap[triple.subject] = ontologyMap[triple.subject] || { name: triple.subject, children: [] };
-    ontologyMap[triple.object] = ontologyMap[triple.object] || { name: triple.object, children: [] };
-    ontologyMap[triple.object].children.push(ontologyMap[triple.subject]);
+    ontologyMap[triple.s] = ontologyMap[triple.s] || { name: triple.s, children: [] };
+    ontologyMap[triple.o] = ontologyMap[triple.o] || { name: triple.o, children: [] };
+    ontologyMap[triple.o].children.push(ontologyMap[triple.s]);
   });
 
   // Find nodes with no parents

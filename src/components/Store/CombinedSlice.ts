@@ -118,7 +118,7 @@ const combinedSlice = createSlice({
       state.selectedNodes = action.payload;
 
       // Convert state.samples into an object for O(1) lookup
-      const samplesMap = {};  
+      const samplesMap = {};
       state.samples.forEach((sample) => {
         samplesMap[sample.focus_node] = sample;
       });
@@ -255,9 +255,9 @@ function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
 
 const mapQuadToShortenedResult = (quad: any, prefixes: { [key: string]: string }) => {
   return {
-    subject: shortenURI(quad.subject.id, prefixes),
-    predicate: shortenURI(quad.predicate.id, prefixes),
-    object: shortenURI(quad.object.id, prefixes),
+    s: shortenURI(quad.subject.id, prefixes),
+    p: shortenURI(quad.predicate.id, prefixes),
+    o: shortenURI(quad.object.id, prefixes),
   };
 };
 
@@ -335,9 +335,9 @@ export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<
   // In selectSubClassOfTuples and selectSubClassOrObjectPropertyTuples functions
   return subClassOfTuples.map((quad) => {
     return {
-      subject: shortenURI(quad.subject.id, prefixes),
-      predicate: shortenURI(quad.predicate.id, prefixes),
-      object: shortenURI(quad.object.id, prefixes),
+      s: shortenURI(quad.subject.id, prefixes),
+      p: shortenURI(quad.predicate.id, prefixes),
+      o: shortenURI(quad.object.id, prefixes),
     };
   });
 };
@@ -397,16 +397,16 @@ export const selectAllClassesAndViolations = async (state: { combined: CombinedS
   // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
   const visibleTriples = allVisibleTuples.map((quad) => {
     return {
-      subject: shortenURI(quad.subject.id, prefixes),
-      predicate: shortenURI(quad.predicate.id, prefixes),
-      object: shortenURI(quad.object.id, prefixes),
+      s: shortenURI(quad.subject.id, prefixes),
+      p: shortenURI(quad.predicate.id, prefixes),
+      o: shortenURI(quad.object.id, prefixes),
     };
   });
   const hiddenTriples = allHiddenTuples.map((quad) => {
     return {
-      subject: shortenURI(quad.subject.id, prefixes),
-      predicate: shortenURI(quad.predicate.id, prefixes),
-      object: shortenURI(quad.object.id, prefixes),
+      s: shortenURI(quad.subject.id, prefixes),
+      p: shortenURI(quad.predicate.id, prefixes),
+      o: shortenURI(quad.object.id, prefixes),
     };
   });
   return { visibleTriples, hiddenTriples };
@@ -438,16 +438,16 @@ export const selectAllTriples = async (state: { combined: CombinedState }): Prom
   // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
   const visibleTriples = allVisibleTuples.map((quad) => {
     return {
-      subject: shortenURI(quad.subject.id, prefixes),
-      predicate: shortenURI(quad.predicate.id, prefixes),
-      object: shortenURI(quad.object.id, prefixes),
+      s: shortenURI(quad.subject.id, prefixes),
+      p: shortenURI(quad.predicate.id, prefixes),
+      o: shortenURI(quad.object.id, prefixes),
     };
   });
   const hiddenTriples = allHiddenTuples.map((quad) => {
     return {
-      subject: shortenURI(quad.subject.id, prefixes),
-      predicate: shortenURI(quad.predicate.id, prefixes),
-      object: shortenURI(quad.object.id, prefixes),
+      s: shortenURI(quad.subject.id, prefixes),
+      p: shortenURI(quad.predicate.id, prefixes),
+      o: shortenURI(quad.object.id, prefixes),
     };
   });
   return { visibleTriples, hiddenTriples };
@@ -475,9 +475,9 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: RdfStat
   const subClassOrObjectPropertyTuples = store.getQuads(null, subClassOfPredicate, null).concat(store.getQuads(null, null, objectPropertyPredicate));
   return subClassOrObjectPropertyTuples.map((quad) => {
     return {
-      subject: quad.subject.id,
-      predicate: quad.predicate.id,
-      object: quad.object.id,
+      s: quad.subject.id,
+      p: quad.predicate.id,
+      o: quad.object.id,
     };
   });
 };
@@ -508,15 +508,15 @@ export const selectCytoData = async (state: { combined: CombinedState }): Promis
 
   // Iterate over the hidden triples and add or update nodes
   hiddenTriples.forEach((t) => {
-    addOrUpdateNode(t.subject, false);
-    addOrUpdateNode(t.object, false);
+    addOrUpdateNode(t.s, false);
+    addOrUpdateNode(t.o, false);
 
     edges.push({
       data: {
-        id: `${t.subject}_${t.object}`,
-        source: t.subject,
-        target: t.object,
-        label: t.predicate,
+        id: `${t.s}_${t.o}`,
+        source: t.s,
+        target: t.o,
+        label: t.p,
         visible: false,
         permanent: false,
       },
@@ -525,15 +525,15 @@ export const selectCytoData = async (state: { combined: CombinedState }): Promis
 
   // Iterate over the visible triples and add or update nodes
   visibleTriples.forEach((t) => {
-    addOrUpdateNode(t.subject, true);
-    addOrUpdateNode(t.object, true);
+    addOrUpdateNode(t.s, true);
+    addOrUpdateNode(t.o, true);
 
     edges.push({
       data: {
-        id: `${t.subject}_${t.object}`,
-        source: t.subject,
-        target: t.object,
-        label: t.predicate,
+        id: `${t.s}_${t.o}`,
+        source: t.s,
+        target: t.o,
+        label: t.p,
         visible: true,
         permanent: true,
       },
