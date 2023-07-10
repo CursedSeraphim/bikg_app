@@ -42,7 +42,7 @@ export interface RdfState {
   rdfString: string;
 }
 
-interface CombinedState {
+export interface CombinedState {
   samples: CsvData[];
   selectedNodes: string[];
   selectedTypes: string[];
