@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { BarLoader } from 'react-spinners';
 import BarPlotSample from './BarPlotSample';
 import { selectBarPlotData } from '../Store/CombinedSlice';
-import { fetchBarPlotDataGivenSelection, fetchViolationList, fetchViolationValueCountsGivenSelection } from '../../api';
+import { fetchBarPlotDataGivenSelection, fetchViolationValueCountsGivenSelection } from '../../api';
 
 interface IPlotlyData {
   [key: string]: any; // Replace `any` with the expected data structure if known.

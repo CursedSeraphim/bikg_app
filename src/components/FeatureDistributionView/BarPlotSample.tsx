@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import Plotly from 'plotly.js-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
-import { Data, Layout } from 'plotly.js';
-import { useDispatch, useSelector } from 'react-redux';
-import { selectBarPlotData, setSelectedFocusNodesUsingFeatureCategories } from '../Store/CombinedSlice';
+import { Layout } from 'plotly.js';
+import { useDispatch, } from 'react-redux';
+import { setSelectedFocusNodesUsingFeatureCategories } from '../Store/CombinedSlice';
 import { fetchSelectedNodesAndValueCountsGivenFeatureCategorySelection, fetchSelectedNodesAndValueCountsGivenViolationSelection } from '../../api';
 
 const Plot = createPlotlyComponent(Plotly);
 // TODO control this with checkboxes and a data store
-const showOverallDistribution = true;
-const subSelection = false;
+// const showOverallDistribution = true;
+// const subSelection = false;
 
 const shouldShowTickLabels = (num: number) => num <= 6;
 
@@ -49,6 +49,7 @@ function BarPlotSample({ plotlyData, chiScore, feature }) {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // [feature, data, onChiSquareScoreChange]);
 
   const handleRelayout = (eventData) => {
