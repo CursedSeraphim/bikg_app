@@ -1,0 +1,23 @@
+@prefix rut:   <http://rdfunit.aksw.org/ns/core#> .
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+
+<urn:uuid:1>
+        a                             rut:TestCaseResult , sh:ValidationResult ;
+        sh:focusNode                  <http://example.org/person/Mark_Twain> ;
+        sh:sourceShape                <http://data.boehringer.com/ontology/omics/violation1> .
+
+<urn:uuid:2>
+        a                             rut:TestCaseResult , sh:ValidationResult ;
+        sh:focusNode                  <http://example.org/books/Huckleberry_Finn> ;
+        sh:sourceShape                <http://data.boehringer.com/ontology/omics/violation1> .
+
+<urn:uuid:3>
+        a                             rut:TestCaseResult , sh:ValidationResult ;
+        sh:focusNode                  <http://example.org/person/JRR_Tolkien> ;
+        sh:sourceShape                <http://data.boehringer.com/ontology/omics/violation2> .
+
+<urn:uuid:4>
+        a                             rut:TestCaseResult , sh:ValidationResult ;
+        sh:focusNode                  <http://example.org/books/LOTR> ;
+        sh:sourceShape                <http://data.boehringer.com/ontology/omics/violation2> .
+        
