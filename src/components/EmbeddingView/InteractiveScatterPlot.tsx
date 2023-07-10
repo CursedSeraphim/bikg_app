@@ -8,12 +8,18 @@ import { setSelectedFocusNodes, selectSelectedFocusNodes } from '../Store/Combin
 
 const Plot = createPlotlyComponent(Plotly);
 
-interface InteractiveScatterPlotProps {
-  data: any[];
-  onDataSelected?: (data: any[]) => void;
+interface ScatterNode {
+  text: string;
+  x: number;
+  y: number;
 }
 
-function InteractiveScatterPlot({ data, onDataSelected }: InteractiveScatterPlotProps) {
+interface InteractiveScatterPlotProps {
+  data: ScatterNode[];
+}
+
+function InteractiveScatterPlot({ data }: InteractiveScatterPlotProps) {
+  console.log('data', data);
   const dispatch = useDispatch();
   const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
   const [localSelectedFocusNodes, setLocalSelectedFocusNodes] = useState<string[]>([]);
@@ -68,13 +74,11 @@ function InteractiveScatterPlot({ data, onDataSelected }: InteractiveScatterPlot
   }, [selectedFocusNodes]);
 
   useEffect(() => {
+    console.log('useEffect triggered because of update of localSelectedFocusNodes', localSelectedFocusNodes);
     if (localSelectedFocusNodes.length) {
-      // Process the selected focus nodes or pass them to a callback function
-      if (onDataSelected) {
-        onDataSelected(localSelectedFocusNodes);
-      }
+      console.log('localSelectedFocusNodes is not empty');
     }
-  }, [localSelectedFocusNodes, onDataSelected]);
+  }, [localSelectedFocusNodes]);
 
   if (data.length === 0) {
     return <BarLoader color="steelblue" loading />;
