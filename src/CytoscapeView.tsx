@@ -238,7 +238,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
           },
         }));
         if (cy) {
-          console.log('cytodata', newCytoData);
           // Update the cytoData elements and layout
           cy.elements().remove();
           cy.add(newCytoData);

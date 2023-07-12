@@ -92,7 +92,7 @@ const combinedSlice = createSlice({
       state.samples = action.payload;
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
-      console.log('setSelectedFocusNodesUsingFeatureCategories');
+      console.log('setSelectedFocusNodesUsingFeatureCategories', action.payload);
       const { selectedNodes, valueCounts } = action.payload;
       state.selectedNodes = selectedNodes;
 
@@ -174,7 +174,7 @@ const combinedSlice = createSlice({
       state.selectedViolations = action.payload;
     },
     setSelectedTypes: (state, action) => {
-      console.time('setSelectedTypes');
+      console.log('selectedTypes', action.payload);
       state.selectedTypes = action.payload;
 
       // if selectedTypes is empty, set selectedNodes to empty
@@ -184,7 +184,6 @@ const combinedSlice = createSlice({
         return;
       }
 
-      console.time('fill violationMap');
       // Initiate an empty array to hold focus nodes of selected types
       state.selectedNodes = [];
 
@@ -206,17 +205,13 @@ const combinedSlice = createSlice({
           });
         }
       });
-      console.timeEnd('fill violationMap');
       // set state.selectedViolations to the keys of the map with value > 0
-      console.time('find selected violations');
       state.selectedViolations = [];
       violationMap.forEach((value, key) => {
         if (value > 0) {
           state.selectedViolations.push(key);
         }
       });
-      console.timeEnd('find selected violations');
-      console.timeEnd('setSelectedTypes');
     },
     setRdfString: (state, action) => {
       console.log('setRdfString');
