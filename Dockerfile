@@ -1,19 +1,10 @@
 # This Dockerfile is used as standalone container for simple deployments, it will be built and pushed to https://github.com/orgs/jku-vds-lab/packages?repo_name=reaction-cime automatically by GH Actions in the build.yml
 FROM python:3.10-buster
 
-# add Node.js
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash -
-
-# install Node.js and yarn
-RUN apt-get install -y nodejs && npm install --global yarn
-
 # copy everything from our backend to our app folder # need to copy backend because we have to install the python packages
 COPY bikg_app/ /app/bikg_app/
 COPY Makefile MANIFEST.in README.md setup.py setup.cfg package.json requirements.txt requirements_dev.txt /app/
 
-# Install Node.js dependencies
-WORKDIR /app/bikg_app
-RUN yarn install
 # define target folder
 WORKDIR /app/
 
@@ -29,15 +20,10 @@ ENV VISYN_CORE__SECURITY__STORE__NO_SECURITY_STORE__USER anonymous
 # copy the pre-built front-end --> comment for development because we mount the volume anyway
 COPY bundles/ /app/bundles/
 
-# Copy start script
-COPY start.sh /app/start.sh
-RUN chmod +x /app/start.sh
-
 # expose default port
 EXPOSE 9000
 
-# CMD ["uvicorn", "visyn_core.server.main:app", "--host", "0.0.0.0", "--port", "9000"]
-CMD ["/app/start.sh"]
+CMD ["uvicorn", "visyn_core.server.main:app", "--host", "0.0.0.0", "--port", "9000"]
 
 # Running
 # docker build -f Dockerfile -t reaction_cime .
