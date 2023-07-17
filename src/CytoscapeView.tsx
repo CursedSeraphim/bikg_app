@@ -238,6 +238,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
           },
         }));
         if (cy) {
+          console.log('cytodata', newCytoData);
           // Update the cytoData elements and layout
           cy.elements().remove();
           cy.add(newCytoData);
@@ -292,6 +293,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
                   'target-arrow-shape': 'triangle',
                   'curve-style': 'bezier',
                   // label: 'data(id)',
+                  label: (ele) => (ele.data('labelVisible') ? ele.data('label') : ''),
                 },
               },
             ],
@@ -300,6 +302,20 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
           });
 
           let lassoSelectionInProgress = false;
+
+          newCy.on('tap', 'edge', (event) => {
+            const edge = event.target;
+            const currentLabelVisible = edge.data('labelVisible');
+            console.log('edge', edge);
+
+            if (currentLabelVisible) {
+              // If the label is currently visible, hide it
+              edge.data('labelVisible', false);
+            } else {
+              // If the label is currently hidden, show it
+              edge.data('labelVisible', true);
+            }
+          });
 
           newCy.on('boxstart', () => {
             lassoSelectionInProgress = true;
