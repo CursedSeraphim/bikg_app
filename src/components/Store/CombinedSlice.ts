@@ -523,7 +523,7 @@ export const selectCytoData = async (state: { combined: CombinedState }): Promis
 
     edges.push({
       data: {
-        id: `${t.s}_${t.o}`,
+        id: `${t.s}_${t.p}_${t.o}`,
         source: t.s,
         target: t.o,
         label: t.p,
@@ -540,7 +540,7 @@ export const selectCytoData = async (state: { combined: CombinedState }): Promis
 
     edges.push({
       data: {
-        id: `${t.s}_${t.o}`,
+        id: `${t.s}_${t.p}_${t.o}`,
         source: t.s,
         target: t.o,
         label: t.p,
@@ -550,6 +550,11 @@ export const selectCytoData = async (state: { combined: CombinedState }): Promis
     });
   });
 
+  edges.forEach((edge) => {
+    if (edge.data.source === 'omics:Donor' && edge.data.target === 'omics:Thing') {
+      console.log('edge', edge);
+    }
+  });
   return { nodes, edges };
 };
 
