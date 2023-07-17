@@ -550,11 +550,6 @@ export const selectCytoData = async (state: { combined: CombinedState }): Promis
     });
   });
 
-  edges.forEach((edge) => {
-    if (edge.data.source === 'omics:Donor' && edge.data.target === 'omics:Thing') {
-      console.log('edge', edge);
-    }
-  });
   return { nodes, edges };
 };
 

@@ -306,7 +306,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
           newCy.on('tap', 'edge', (event) => {
             const edge = event.target;
             const currentLabelVisible = edge.data('labelVisible');
-            console.log('edge', edge);
 
             if (currentLabelVisible) {
               // If the label is currently visible, hide it
