@@ -85,7 +85,7 @@ function BarPlotSample({ plotlyData, feature }) {
       pad: 0,
     },
     showlegend: false,
-    barmode: 'stack',
+    barmode: 'overlay',
   };
 
   const handleSelection = (eventData) => {
