@@ -14,44 +14,42 @@ function CustomHeader({ onSelect, style, node }) {
   let newStyle = { ...style.base };
   if (node.selected) {
     // Check selected instead of toggled
-    newStyle = { ...newStyle, color: 'steelblue' };
+    newStyle = { ...newStyle, color: 'steelblue', fontweight: 'bold' };
   } else {
-    newStyle = { ...newStyle, color: 'lightgrey' };
+    newStyle = { ...newStyle, color: 'lightgrey', fontweight: 'normal' };
   }
   return (
     <div style={newStyle} onClick={onSelect}>
-      <div style={node.selected ? { ...style.title } : style.title}>
+      <div style={node.selected ? { ...style.title, fontWeight: 'bold' } : style.title}>
         <i className={iconClass} style={iconStyle} />
         {node.name}
       </div>
     </div>
   );
-
-  // return (
-  //   <div style={newStyle} className="row">
-  //     <div style={node.selected ? { ...style.title } : style.title}>
-  //       <i className={iconClass} style={iconStyle} />
-  //       {node.name}
-  //     </div>
-  //   </div>
-  // );
 }
 
-// function CustomToggle({ style, onClick }) {
+// function CustomToggle({ style, _ }) {
+//   const onClick = (e) => {
+//     console.log('toggle clicked', e);
+//   };
 //   const { height, width } = style;
 //   const midHeight = height * 0.5;
 //   const points = `0,0 0,${height} ${width},${midHeight}`;
-
 //   return (
 //     <div style={style.base} onClick={onClick}>
 //       <div style={style.wrapper}>
 //         <svg {...{ height, width }}>
-//           <Polygon points={points} style={style.arrow} />
+//           <polygon points={points} fill="blue" />
 //         </svg>
 //       </div>
 //     </div>
 //   );
 // }
+
+// const onClick = (node) => {
+//   console.log('node', node);
+//   node.toggled = !node.toggled;
+// };
 
 decorators.Header = CustomHeader;
 // decorators.Toggle = CustomToggle;
