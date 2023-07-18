@@ -6,30 +6,55 @@ import { selectRdfData, selectSelectedTypes, setSelectedTypes } from '../Store/C
 import { getTreeDataFromN3Data } from './TreeviewGlue';
 import { lightTheme } from './lightTheme';
 
-function CustomHeader({ style, node }) {
+function CustomHeader({ onSelect, style, node }) {
   // const iconType = node.children ? 'folder' : 'file-text';
   const iconClass = `fas fa-caret-right`;
   const iconStyle = { marginRight: '5px' };
 
-  let newStyle = { ...style };
+  let newStyle = { ...style.base };
   if (node.selected) {
     // Check selected instead of toggled
     newStyle = { ...newStyle, color: 'steelblue' };
   } else {
     newStyle = { ...newStyle, color: 'lightgrey' };
   }
-
   return (
-    <div style={newStyle} className="row">
-      <div className="col-11" style={{ ...style.title }}>
+    <div style={newStyle} onClick={onSelect}>
+      <div style={node.selected ? { ...style.title } : style.title}>
         <i className={iconClass} style={iconStyle} />
         {node.name}
       </div>
     </div>
   );
+
+  // return (
+  //   <div style={newStyle} className="row">
+  //     <div style={node.selected ? { ...style.title } : style.title}>
+  //       <i className={iconClass} style={iconStyle} />
+  //       {node.name}
+  //     </div>
+  //   </div>
+  // );
 }
 
+// function CustomToggle({ style, onClick }) {
+//   const { height, width } = style;
+//   const midHeight = height * 0.5;
+//   const points = `0,0 0,${height} ${width},${midHeight}`;
+
+//   return (
+//     <div style={style.base} onClick={onClick}>
+//       <div style={style.wrapper}>
+//         <svg {...{ height, width }}>
+//           <Polygon points={points} style={style.arrow} />
+//         </svg>
+//       </div>
+//     </div>
+//   );
+// }
+
 decorators.Header = CustomHeader;
+// decorators.Toggle = CustomToggle;
 
 // it would lead to problems with large objects if we created a new object for each node to solve the eslint error
 // this way we can keep an elegant recursive solution
