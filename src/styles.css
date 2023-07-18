@@ -94,6 +94,8 @@ body {
 
 .treebeard-container {
   height: 95%; /* set a fixed height for the container */
+  white-space: nowrap;
+  min-width: 30%;
   overflow-y: auto; /* add a vertical scrollbar */
 }
 
