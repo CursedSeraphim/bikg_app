@@ -1,9 +1,7 @@
 // App.tsx
 import * as React from 'react';
-import NewWindow from 'react-new-window';
 import { useDispatch, useSelector } from 'react-redux';
 import { BarLoader } from 'react-spinners';
-import * as LineUpJS from 'lineupjs';
 import {
   setRdfString,
   selectRdfData,
@@ -18,6 +16,7 @@ import InteractiveScatterPlot from './components/EmbeddingView/InteractiveScatte
 import BarPlotList from './components/FeatureDistributionView/BarPlotList';
 import FixedBarPlotList from './components/FeatureDistributionView/newFixedBarPlotList';
 import CytoscapeView from './CytoscapeView';
+import LineUpView from './components/LineUp/LineUpView';
 
 import './styles.css';
 import { fetchOntology, fetchCSVFile, fetchViolationList, fetchViolationPathNodesDict } from './api';
@@ -74,14 +73,6 @@ export function App() {
       });
   }, [dispatch]);
 
-  const lineupRef = React.useRef<any>();
-  React.useEffect(() => {
-    if (lineupRef.current) {
-      console.log('csvData', csvData);
-      const lineup = LineUpJS.asLineUp(lineupRef.current, csvData);
-    }
-  }, [lineupRef, csvData]);
-
   return (
     <div className="container">
       <div className="Extended-Ontology-View">
@@ -103,27 +94,7 @@ export function App() {
         Fixed Feature Distribution View
         <FixedBarPlotList />
       </div>
-      <div className="lineup-window">
-        <NewWindow>
-          <link href="https://unpkg.com/lineupjsx/build/LineUpJSx.css" rel="stylesheet" />
-          <script src="https://unpkg.com/lineupjsx/build/LineUpJSx.js" />
-          <div className="LineUpParent">
-            <div
-              style={{
-                clear: 'both',
-                position: 'absolute',
-                top: '1px',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                padding: 0,
-              }}
-              ref={lineupRef}
-              id="lineup_view"
-            />
-          </div>
-        </NewWindow>
-      </div>
+      <LineUpView />
     </div>
   );
 }
