@@ -25,7 +25,6 @@ export function App() {
   const dispatch = useDispatch();
   const plotlyData = useSelector(selectCsvDataForPlotly);
   const rdfOntology = useSelector(selectRdfData);
-  const csvData = useSelector(selectCsvData);
   const [cytoscapeLoading, setCytoscapeLoading] = React.useState(true);
 
   // Fetch violation list
