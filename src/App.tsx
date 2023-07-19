@@ -86,11 +86,11 @@ export function App() {
       </div>
       <div className="Feature-Distribution-View">
         Feature Distribution View
-        {/* <BarPlotList /> */}
+        <BarPlotList />
       </div>
       <div className="Fixed-Feature-Distribution-View">
         Fixed Feature Distribution View
-        {/* <FixedBarPlotList /> */}
+        <FixedBarPlotList />
       </div>
       <LineUpView />
     </div>
