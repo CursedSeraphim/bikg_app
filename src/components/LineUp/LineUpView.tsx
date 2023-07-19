@@ -15,14 +15,14 @@ export default function LineUpView() {
 
   useEffect(() => {
     if (lineupRef.current && csvData.length > 0) {
-      console.log('csvData', csvData);
+      console.time('create lineup instance');
       lineupInstanceRef.current = LineUpJS.asLineUp(lineupRef.current, csvData);
+      console.timeEnd('create lineup instance');
 
       lineupInstanceRef.current.on('selectionChanged', (selection) => {
-        console.log('selectionChanged', selection);
-        console.log('csvData', csvData);
+        console.time('selection map');
         const selectedNodes = selection.map((index) => csvData[index].focus_node);
-        console.log('selectedFocusNodes', selectedNodes);
+        console.timeEnd('selection map');
 
         setLocalSelectedFocusNodes(selectedNodes);
         dispatch(setSelectedFocusNodes(selectedNodes));
@@ -31,23 +31,31 @@ export default function LineUpView() {
   }, [lineupRef, csvData]);
 
   useEffect(() => {
-    lineupInstanceRef.current?.data.clearFilters();
     setLocalSelectedFocusNodes(selectedFocusNodes);
   }, [selectedFocusNodes, csvData]);
 
   if (lineupInstanceRef.current) {
     console.time('find indices');
-    const filteredCsvDataIndices = csvData.map((row, index) => (localSelectedFocusNodes.includes(row.focus_node) ? index : -1)).filter((index) => index !== -1);
+
+    // Create a set from localSelectedFocusNodes for faster lookup
+    const focusNodesSet = new Set(localSelectedFocusNodes);
+
+    // Use the set instead of the array for checking if a focus_node is included
+    const filteredCsvDataIndices = csvData.map((row, index) => (focusNodesSet.has(row.focus_node) ? index : -1)).filter((index) => index !== -1);
+
     console.timeEnd('find indices');
-    console.log('filteredCsvDataIndices', filteredCsvDataIndices);
     // setFilter needs a parameter of the shape setFilter(filter: ((row: IDataRow) => boolean) | null)
-    lineupInstanceRef.current.data.setFilter((row) => filteredCsvDataIndices.includes(row.i));
     if (filteredCsvDataIndices.length > 0) {
+      console.time('set selection');
       lineupInstanceRef.current.data.setSelection(filteredCsvDataIndices);
+      console.timeEnd('set selection');
     } else {
       lineupInstanceRef.current.data.clearSelection();
     }
-    lineupInstanceRef.current.data.setFilter((row) => filteredCsvDataIndices.includes(row.i));
+    const filteredCsvDataIndicesSet = new Set(filteredCsvDataIndices);
+    console.time('set filter');
+    lineupInstanceRef.current.data.setFilter((row) => filteredCsvDataIndicesSet.has(row.i));
+    console.timeEnd('set filter');
   }
 
   return (
