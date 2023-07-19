@@ -31,18 +31,24 @@ export default function LineUpView() {
   }, [lineupRef, csvData]);
 
   useEffect(() => {
-    if (lineupInstanceRef.current) {
-      console.time('find indices');
-      const filteredCsvDataIndices = csvData.map((row, index) => (selectedFocusNodes.includes(row.focus_node) ? index : -1)).filter((index) => index !== -1);
-      console.timeEnd('find indices');
-      console.log('filteredCsvDataIndices', filteredCsvDataIndices);
-      if (filteredCsvDataIndices.length > 0) {
-        lineupInstanceRef.current.data.selectAll(filteredCsvDataIndices);
-      } else {
-        lineupInstanceRef.current.data.clearSelection();
-      }
-    }
+    lineupInstanceRef.current?.data.clearFilters();
+    setLocalSelectedFocusNodes(selectedFocusNodes);
   }, [selectedFocusNodes, csvData]);
+
+  if (lineupInstanceRef.current) {
+    console.time('find indices');
+    const filteredCsvDataIndices = csvData.map((row, index) => (localSelectedFocusNodes.includes(row.focus_node) ? index : -1)).filter((index) => index !== -1);
+    console.timeEnd('find indices');
+    console.log('filteredCsvDataIndices', filteredCsvDataIndices);
+    // setFilter needs a parameter of the shape setFilter(filter: ((row: IDataRow) => boolean) | null)
+    lineupInstanceRef.current.data.setFilter((row) => filteredCsvDataIndices.includes(row.i));
+    if (filteredCsvDataIndices.length > 0) {
+      lineupInstanceRef.current.data.setSelection(filteredCsvDataIndices);
+    } else {
+      lineupInstanceRef.current.data.clearSelection();
+    }
+    lineupInstanceRef.current.data.setFilter((row) => filteredCsvDataIndices.includes(row.i));
+  }
 
   return (
     <div className="lineup-window">
