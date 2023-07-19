@@ -31,12 +31,16 @@ export default function LineUpView() {
   }, [lineupRef, csvData]);
 
   useEffect(() => {
-    if (lineupInstanceRef.current && selectedFocusNodes.length > 0) {
+    if (lineupInstanceRef.current) {
       console.time('find indices');
       const filteredCsvDataIndices = csvData.map((row, index) => (selectedFocusNodes.includes(row.focus_node) ? index : -1)).filter((index) => index !== -1);
       console.timeEnd('find indices');
       console.log('filteredCsvDataIndices', filteredCsvDataIndices);
-      lineupInstanceRef.current.data.selectAll(filteredCsvDataIndices); // Use ref instance to select
+      if (filteredCsvDataIndices.length > 0) {
+        lineupInstanceRef.current.data.selectAll(filteredCsvDataIndices);
+      } else {
+        lineupInstanceRef.current.data.clearSelection();
+      }
     }
   }, [selectedFocusNodes, csvData]);
 
