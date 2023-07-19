@@ -7,7 +7,6 @@ import {
   selectRdfData,
   setCsvData,
   selectCsvDataForPlotly,
-  selectCsvData,
   setViolations,
   setViolationTypesMap,
   setTypesViolationMap,

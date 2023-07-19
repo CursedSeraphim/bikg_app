@@ -1,20 +1,44 @@
-// LineUpView.tsx
-import * as React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import NewWindow from 'react-new-window';
-import { useSelector } from 'react-redux';
+
 import * as LineUpJS from 'lineupjs';
-import { selectCsvData } from '../Store/CombinedSlice';
+import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes } from '../Store/CombinedSlice'; // Import the necessary actions and selectors from CombinedSlice
 
 export default function LineUpView() {
+  const dispatch = useDispatch();
+  const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
+  const [localSelectedFocusNodes, setLocalSelectedFocusNodes] = useState<string[]>([]);
   const csvData = useSelector(selectCsvData);
-  const lineupRef = React.useRef<any>();
+  const lineupRef = useRef<any>();
+  const lineupInstanceRef = useRef<any>(); // Ref for lineup instance
 
-  React.useEffect(() => {
-    if (lineupRef.current) {
+  useEffect(() => {
+    if (lineupRef.current && csvData.length > 0) {
       console.log('csvData', csvData);
-      const lineup = LineUpJS.asLineUp(lineupRef.current, csvData);
+      lineupInstanceRef.current = LineUpJS.asLineUp(lineupRef.current, csvData);
+
+      lineupInstanceRef.current.on('selectionChanged', (selection) => {
+        console.log('selectionChanged', selection);
+        console.log('csvData', csvData);
+        const selectedNodes = selection.map((index) => csvData[index].focus_node);
+        console.log('selectedFocusNodes', selectedNodes);
+
+        setLocalSelectedFocusNodes(selectedNodes);
+        dispatch(setSelectedFocusNodes(selectedNodes));
+      });
     }
   }, [lineupRef, csvData]);
+
+  useEffect(() => {
+    if (lineupInstanceRef.current && selectedFocusNodes.length > 0) {
+      console.time('find indices');
+      const filteredCsvDataIndices = csvData.map((row, index) => (selectedFocusNodes.includes(row.focus_node) ? index : -1)).filter((index) => index !== -1);
+      console.timeEnd('find indices');
+      console.log('filteredCsvDataIndices', filteredCsvDataIndices);
+      lineupInstanceRef.current.data.selectAll(filteredCsvDataIndices); // Use ref instance to select
+    }
+  }, [selectedFocusNodes, csvData]);
 
   return (
     <div className="lineup-window">
