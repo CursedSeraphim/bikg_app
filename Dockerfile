@@ -24,9 +24,3 @@ COPY bundles/ /app/bundles/
 EXPOSE 9000
 
 CMD ["uvicorn", "visyn_core.server.main:app", "--host", "0.0.0.0", "--port", "9000"]
-
-# Running
-# docker build -f Dockerfile -t reaction_cime .
-# docker run --rm -it -p 9000:9000 reaction_cime
-# use this for development (file sharing); first -v contains the "backend" folder; second -v contains the "build" folder where the front-end gets compiled to
-# docker run --rm -it -p 9000:9000 -v "$PWD/reaction_cime/:/app/reaction_cime/" -v "$PWD/bundles/:/app/bundles/" reaction_cime
