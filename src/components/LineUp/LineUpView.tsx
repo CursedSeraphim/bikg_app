@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import NewWindow from 'react-new-window';
 
@@ -10,8 +10,9 @@ export default function LineUpView() {
   const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
   // const [localSelectedFocusNodes, setLocalSelectedFocusNodes] = useState<string[]>([]);
   const csvData = useSelector(selectCsvData);
-  const lineupRef = useRef<any>();
-  const lineupInstanceRef = useRef<any>(); // Ref for lineup instance
+  const lineupRef = useRef<HTMLDivElement>(null);
+  const lineupInstanceRef = useRef<LineUpJS.LineUp | null>(null);
+  // Ref for lineup instance
   // const allFocusNodes = csvData.map((row) => row.focus_node);
 
   // local selection changes -> update redux selection
@@ -20,18 +21,16 @@ export default function LineUpView() {
       lineupInstanceRef.current = LineUpJS.asLineUp(lineupRef.current, csvData);
 
       lineupInstanceRef.current.on('selectionChanged', (selection) => {
-        console.log('selection changed', selection);
         const selectedNodes = selection.map((index) => csvData[index].focus_node);
 
         // setLocalSelectedFocusNodes(selectedNodes);
         dispatch(setSelectedFocusNodes(selectedNodes));
       });
     }
-  }, [lineupRef, csvData]);
+  }, [lineupRef, csvData, dispatch]);
 
   // redux nodes change -> update local nodes
   useEffect(() => {
-    console.log('selectedFocusNodes changed', selectedFocusNodes);
     if (lineupInstanceRef.current) {
       // Create a set from localSelectedFocusNodes for faster lookup
       const focusNodesSet = new Set(selectedFocusNodes);
