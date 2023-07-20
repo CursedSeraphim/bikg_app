@@ -8,48 +8,46 @@ import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes } from '
 export default function LineUpView() {
   const dispatch = useDispatch();
   const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
-  const [localSelectedFocusNodes, setLocalSelectedFocusNodes] = useState<string[]>([]);
+  // const [localSelectedFocusNodes, setLocalSelectedFocusNodes] = useState<string[]>([]);
   const csvData = useSelector(selectCsvData);
   const lineupRef = useRef<any>();
   const lineupInstanceRef = useRef<any>(); // Ref for lineup instance
-  const allFocusNodes = csvData.map((row) => row.focus_node);
+  // const allFocusNodes = csvData.map((row) => row.focus_node);
 
+  // local selection changes -> update redux selection
   useEffect(() => {
     if (lineupRef.current && csvData.length > 0) {
       lineupInstanceRef.current = LineUpJS.asLineUp(lineupRef.current, csvData);
 
       lineupInstanceRef.current.on('selectionChanged', (selection) => {
+        console.log('selection changed', selection);
         const selectedNodes = selection.map((index) => csvData[index].focus_node);
 
-        setLocalSelectedFocusNodes(selectedNodes);
+        // setLocalSelectedFocusNodes(selectedNodes);
         dispatch(setSelectedFocusNodes(selectedNodes));
       });
     }
   }, [lineupRef, csvData]);
 
+  // redux nodes change -> update local nodes
   useEffect(() => {
-    setLocalSelectedFocusNodes(selectedFocusNodes);
-  }, [selectedFocusNodes, csvData]);
+    console.log('selectedFocusNodes changed', selectedFocusNodes);
+    if (lineupInstanceRef.current) {
+      // Create a set from localSelectedFocusNodes for faster lookup
+      const focusNodesSet = new Set(selectedFocusNodes);
 
-  if (lineupInstanceRef.current) {
-    // Create a set from localSelectedFocusNodes for faster lookup
-    const focusNodesSet = new Set(localSelectedFocusNodes);
+      // Use the set instead of the array for checking if a focus_node is included
+      const filteredCsvDataIndices = csvData.map((row, index) => (focusNodesSet.has(row.focus_node) ? index : -1)).filter((index) => index !== -1);
 
-    // Use the set instead of the array for checking if a focus_node is included
-    const filteredCsvDataIndices = csvData.map((row, index) => (focusNodesSet.has(row.focus_node) ? index : -1)).filter((index) => index !== -1);
-
-    // setFilter needs a parameter of the shape setFilter(filter: ((row: IDataRow) => boolean) | null)
-    if (filteredCsvDataIndices.length > 0) {
-      console.log('Setting selection');
-      lineupInstanceRef.current.data.setSelection(filteredCsvDataIndices);
-    } else {
-      console.log('Clearing selection');
-      lineupInstanceRef.current.data.clearSelection();
+      if (filteredCsvDataIndices.length > 0) {
+        lineupInstanceRef.current.data.setSelection(filteredCsvDataIndices);
+      } else {
+        lineupInstanceRef.current.data.clearSelection();
+      }
+      // const filteredCsvDataIndicesSet = new Set(filteredCsvDataIndices);
+      // lineupInstanceRef.current.data.setFilter((row) => filteredCsvDataIndicesSet.has(row.i));
     }
-    console.log('Setting filter');
-    const filteredCsvDataIndicesSet = new Set(filteredCsvDataIndices);
-    lineupInstanceRef.current.data.setFilter((row) => filteredCsvDataIndicesSet.has(row.i));
-  }
+  }, [selectedFocusNodes, csvData]);
 
   return (
     <div className="lineup-window">
