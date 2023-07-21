@@ -11,6 +11,7 @@ export default function LineUpView() {
   // const [localSelectedFocusNodes, setLocalSelectedFocusNodes] = useState<string[]>([]);
   const csvData = useSelector(selectCsvData);
   const lineupRef = useRef<HTMLDivElement>(null);
+  // const lineupInstanceRef = useRef<LineUpJS.Taggle | null>(null);
   const lineupInstanceRef = useRef<LineUpJS.LineUp | null>(null);
   // Ref for lineup instance
   // const allFocusNodes = csvData.map((row) => row.focus_node);
@@ -18,7 +19,18 @@ export default function LineUpView() {
   // local selection changes -> update redux selection
   useEffect(() => {
     if (lineupRef.current && csvData.length > 0) {
+      // TODO change to builder, look at builder.rowheight
       lineupInstanceRef.current = LineUpJS.asLineUp(lineupRef.current, csvData);
+      // lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, csvData);
+      // const builder = LineUpJS.builder(csvData); // .column(LineUpJS.buildCategoricalColumn('omics:hasCellType'));
+      // for column in csv
+      // for (const column of Object.keys(csvData[0])) {
+      //   if (column !== 'focus_node') {
+      //     builder.column(LineUpJS.buildCategoricalColumn(column));
+      //   }
+      // }
+
+      // lineupInstanceRef.current = builder.build(lineupRef.current);
 
       lineupInstanceRef.current.on('selectionChanged', (selection) => {
         const selectedNodes = selection.map((index) => csvData[index].focus_node);
