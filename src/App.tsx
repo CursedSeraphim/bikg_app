@@ -12,8 +12,8 @@ import {
   setTypesViolationMap,
 } from './components/Store/CombinedSlice';
 import InteractiveScatterPlot from './components/EmbeddingView/InteractiveScatterPlot';
-import BarPlotList from './components/FeatureDistributionView/BarPlotList';
-import FixedBarPlotList from './components/FeatureDistributionView/newFixedBarPlotList';
+// import BarPlotList from './components/FeatureDistributionView/BarPlotList';
+// import FixedBarPlotList from './components/FeatureDistributionView/newFixedBarPlotList';
 import CytoscapeView from './CytoscapeView';
 import LineUpView from './components/LineUp/LineUpView';
 
@@ -85,12 +85,12 @@ export function App() {
         <InteractiveScatterPlot data={plotlyData} />
       </div>
       <div className="Feature-Distribution-View">
-        Feature Distribution View
-        <BarPlotList />
+        {/* Feature Distribution View
+        <BarPlotList /> */}
       </div>
       <div className="Fixed-Feature-Distribution-View">
-        Fixed Feature Distribution View
-        <FixedBarPlotList />
+        {/* Fixed Feature Distribution View
+        <FixedBarPlotList /> */}
       </div>
       <LineUpView />
     </div>

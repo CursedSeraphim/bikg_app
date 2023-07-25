@@ -26,7 +26,7 @@ ReactDOM.render(
         <VisynApp
           loginMenu={null}
           navbar={
-            <Navbar width={{ base: 250 }} height="100%" p="xs">
+            <Navbar width={{ base: 250 }} height="100%" p="xs" style={{ border: '1px solid lightgrey' }}>
               {/* Navbar <br />
                 To be filled with settings, potentially an ontology tree view browser, etc */}
               <div className="treebeard-container">

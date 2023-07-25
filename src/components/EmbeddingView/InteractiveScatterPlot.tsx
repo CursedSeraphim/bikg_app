@@ -23,6 +23,19 @@ function InteractiveScatterPlot({ data }: InteractiveScatterPlotProps) {
   const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
   const [localSelectedFocusNodes, setLocalSelectedFocusNodes] = useState<string[]>([]);
 
+  // TODO find better solution by changing border of css and moving the text outside of the html element
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const dragElements = document.getElementsByClassName('nsewdrag');
+      for (let i = 0; i < dragElements.length; i++) {
+        const dragElement = dragElements[i] as HTMLElement;
+        dragElement.style.stroke = 'lightgrey'; // sets outline color
+        dragElement.style.strokeWidth = '1px'; // sets outline width
+      }
+    }, 1000); // delay needed to make sure plotly graph is fully rendered before accessing DOM elements
+    return () => clearTimeout(timer); // clear timeout if component unmounts before timeout
+  }, [data]); // re-run effect if `data` changes
+
   const plotData: Data[] = [
     {
       x: data.map((d) => d.x),
@@ -41,8 +54,16 @@ function InteractiveScatterPlot({ data }: InteractiveScatterPlotProps) {
   const plotLayout: Partial<Layout> = {
     hovermode: 'closest',
     dragmode: 'lasso',
+    autosize: true,
+    margin: {
+      l: 0, // left margin
+      r: 0, // right margin
+      b: 0, // bottom margin
+      t: 0, // top margin
+      pad: 0, // padding
+    },
     xaxis: {
-      title: 'Embedding Dimension 1',
+      // title: 'Embedding Dimension 1',
       showgrid: false,
       zeroline: false,
       showticklabels: false,
@@ -50,7 +71,7 @@ function InteractiveScatterPlot({ data }: InteractiveScatterPlotProps) {
       ticks: '',
     },
     yaxis: {
-      title: 'Embedding Dimension 2',
+      // title: 'Embedding Dimension 2',
       showgrid: false,
       zeroline: false,
       showticklabels: false,
@@ -84,7 +105,8 @@ function InteractiveScatterPlot({ data }: InteractiveScatterPlotProps) {
         onSelected={handleSelection}
         config={{ displayModeBar: false, responsive: true }}
         useResizeHandler
-        style={{ width: '100%', height: '100%' }}
+        // TODO find more dynamic solution for height. I think it has to be less than 100% because of the vision header
+        style={{ width: '100%', height: '95%' }}
       />
     </div>
   );

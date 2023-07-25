@@ -174,7 +174,6 @@ const combinedSlice = createSlice({
       state.selectedViolations = action.payload;
     },
     setSelectedTypes: (state, action) => {
-      console.log('selectedTypes', action.payload);
       state.selectedTypes = action.payload;
 
       // if selectedTypes is empty, set selectedNodes to empty

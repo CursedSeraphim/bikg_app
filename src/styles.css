@@ -78,7 +78,7 @@ body {
 }
 
 
-.Embedding-View { grid-area: Embedding-View; min-width: 0; min-height: 0; overflow: hidden; }
+.Embedding-View { grid-area: Embedding-View; min-width: 0; min-height: 0; overflow: hidden; } /* border: 1px solid lightgrey;  */
 
 .Feature-Distribution-View { grid-area: Feature-Distribution-View; min-width: 0; min-height: 0; overflow: hidden }
 
@@ -97,6 +97,7 @@ body {
   white-space: nowrap;
   min-width: 30%;
   overflow-y: auto; /* add a vertical scrollbar */
+  /* border: 1px solid lightgrey; */
 }
 
 .cytoscape-container {
