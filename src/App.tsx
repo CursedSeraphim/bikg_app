@@ -84,14 +84,6 @@ export function App() {
         Embedding View
         <InteractiveScatterPlot data={plotlyData} />
       </div>
-      <div className="Feature-Distribution-View">
-        {/* Feature Distribution View
-        <BarPlotList /> */}
-      </div>
-      <div className="Fixed-Feature-Distribution-View">
-        {/* Fixed Feature Distribution View
-        <FixedBarPlotList /> */}
-      </div>
       <LineUpView />
     </div>
   );

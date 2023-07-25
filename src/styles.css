@@ -57,16 +57,15 @@ body {
   position: relative;
 }
 
-.container {
-  height: 100%;
-  display: grid;
-  grid-template-columns: 1.5fr 0.5fr;
+.container {  display: grid;
+  grid-template-columns: 1fr;
   grid-template-rows: 1fr 1fr;
+  grid-auto-columns: 1fr;
   gap: 0px 0px;
   grid-auto-flow: row;
   grid-template-areas:
-    "Extended-Ontology-View Feature-Distribution-View"
-    "Embedding-View Fixed-Feature-Distribution-View";
+    "Extended-Ontology-View"
+    "Embedding-View";
 }
 
 
@@ -75,10 +74,11 @@ body {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+  height: 45vh;
 }
 
 
-.Embedding-View { grid-area: Embedding-View; min-width: 0; min-height: 0; overflow: hidden; } /* border: 1px solid lightgrey;  */
+.Embedding-View { grid-area: Embedding-View; min-width: 0; min-height: 0; overflow: hidden; height: 45vh; } /* border: 1px solid lightgrey;  */
 
 .Feature-Distribution-View { grid-area: Feature-Distribution-View; min-width: 0; min-height: 0; overflow: hidden }
 
