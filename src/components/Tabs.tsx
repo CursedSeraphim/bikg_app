@@ -36,7 +36,7 @@ function Tabs() {
   };
 
   return (
-    <div className="container">
+    <div className="tabsContainer">
       <div className="tabs">
         {tabs.map((tab) => (
           <button key={tab.id} id={tab.id.toString()} type="button" onClick={handleTabClick}>
