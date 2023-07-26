@@ -31,6 +31,7 @@ function InteractiveScatterPlot({ data }: InteractiveScatterPlotProps) {
         const dragElement = dragElements[i] as HTMLElement;
         dragElement.style.stroke = 'lightgrey'; // sets outline color
         dragElement.style.strokeWidth = '1px'; // sets outline width
+        dragElement.style.height = '100%';
       }
     }, 1000); // delay needed to make sure plotly graph is fully rendered before accessing DOM elements
     return () => clearTimeout(timer); // clear timeout if component unmounts before timeout
@@ -105,8 +106,7 @@ function InteractiveScatterPlot({ data }: InteractiveScatterPlotProps) {
         onSelected={handleSelection}
         config={{ displayModeBar: false, responsive: true }}
         useResizeHandler
-        // TODO find more dynamic solution for height. I think it has to be less than 100% because of the vision header
-        style={{ width: '100%', height: '95%' }}
+        style={{ width: '100%', height: '90%' }}
       />
     </div>
   );

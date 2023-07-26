@@ -41,46 +41,42 @@ export default function LineUpView() {
     }
   }, [lineupRef, csvData, dispatch]);
 
-  // redux nodes change -> update local nodes
   useEffect(() => {
+    // Update local nodes when redux nodes change
     if (lineupInstanceRef.current) {
-      // Create a set from localSelectedFocusNodes for faster lookup
       const focusNodesSet = new Set(selectedFocusNodes);
-
-      // Use the set instead of the array for checking if a focus_node is included
       const filteredCsvDataIndices = csvData.map((row, index) => (focusNodesSet.has(row.focus_node) ? index : -1)).filter((index) => index !== -1);
 
+      // Set selection based on filteredCsvDataIndices
       if (filteredCsvDataIndices.length > 0) {
         lineupInstanceRef.current.data.setSelection(filteredCsvDataIndices);
       } else {
         lineupInstanceRef.current.data.clearSelection();
       }
-      // const filteredCsvDataIndicesSet = new Set(filteredCsvDataIndices);
-      // lineupInstanceRef.current.data.setFilter((row) => filteredCsvDataIndicesSet.has(row.i));
     }
   }, [selectedFocusNodes, csvData]);
 
   return (
     <div className="lineup-window">
-      <NewWindow>
-        <link href="https://unpkg.com/lineupjsx/build/LineUpJSx.css" rel="stylesheet" />
-        <script src="https://unpkg.com/lineupjsx/build/LineUpJSx.js" />
-        <div className="LineUpParent">
-          <div
-            style={{
-              clear: 'both',
-              position: 'absolute',
-              top: '1px',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              padding: 0,
-            }}
-            ref={lineupRef}
-            id="lineup_view"
-          />
-        </div>
-      </NewWindow>
+      {/* <NewWindow> */}
+      <link href="https://unpkg.com/lineupjsx/build/LineUpJSx.css" rel="stylesheet" />
+      <script src="https://unpkg.com/lineupjsx/build/LineUpJSx.js" />
+      <div className="LineUpParent">
+        <div
+          style={{
+            clear: 'both',
+            position: 'absolute',
+            top: '1px',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: 0,
+          }}
+          ref={lineupRef}
+          id="lineup_view"
+        />
+      </div>
+      {/* </NewWindow> */}
     </div>
   );
 }

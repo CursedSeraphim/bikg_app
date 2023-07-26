@@ -2,6 +2,7 @@
 import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { BarLoader } from 'react-spinners';
+import Tabs from './components/Tabs';
 import {
   setRdfString,
   selectRdfData,
@@ -11,14 +12,14 @@ import {
   setViolationTypesMap,
   setTypesViolationMap,
 } from './components/Store/CombinedSlice';
-import InteractiveScatterPlot from './components/EmbeddingView/InteractiveScatterPlot';
+
 // import BarPlotList from './components/FeatureDistributionView/BarPlotList';
 // import FixedBarPlotList from './components/FeatureDistributionView/newFixedBarPlotList';
 import CytoscapeView from './CytoscapeView';
-import LineUpView from './components/LineUp/LineUpView';
 
 import './styles.css';
 import { fetchOntology, fetchCSVFile, fetchViolationList, fetchViolationPathNodesDict } from './api';
+import InteractiveScatterPlot from './components/EmbeddingView/InteractiveScatterPlot';
 
 export function App() {
   const dispatch = useDispatch();
@@ -73,18 +74,19 @@ export function App() {
 
   return (
     <div className="container">
+      <div className="Ontology-Title">Extended Ontology View</div>
       <div className="Extended-Ontology-View">
-        Extended Ontology View
         <div style={{ display: cytoscapeLoading ? 'none' : 'block' }} className="cytoscape-container">
           <CytoscapeView rdfOntology={rdfOntology} onLoaded={() => setCytoscapeLoading(false)} />
         </div>
         {cytoscapeLoading && <BarLoader color="steelblue" loading />}
       </div>
+      <div className="Embedding-Title">Embedding View</div>
       <div className="Embedding-View">
-        Embedding View
-        <InteractiveScatterPlot data={plotlyData} />
+        {/* <InteractiveScatterPlot data={plotlyData} /> */}
+        <Tabs />
       </div>
-      <LineUpView />
+      {/* <LineUpView /> */}
     </div>
   );
 }
