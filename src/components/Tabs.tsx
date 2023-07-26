@@ -34,17 +34,22 @@ function Tabs() {
   const handleTabClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     setCurrentTab(e.currentTarget.id);
   };
-
   return (
     <div className="tabsContainer">
-      <div className="tabs">
+      <div className="Embedding-Title">
         {tabs.map((tab) => (
-          <button key={tab.id} id={tab.id.toString()} type="button" onClick={handleTabClick}>
+          <button
+            key={tab.id}
+            id={tab.id.toString()}
+            type="button"
+            onClick={handleTabClick}
+            className={`tabButton ${currentTab === `${tab.id}` ? 'activeTab' : ''}`}
+          >
             {tab.title}
           </button>
         ))}
       </div>
-      <div className="content">
+      <div className="Embedding-View">
         {tabs.map((tab) => (
           <div key={tab.id} style={{ display: currentTab === `${tab.id}` ? 'block' : 'none' }}>
             {tab.content}

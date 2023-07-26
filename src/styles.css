@@ -62,6 +62,7 @@ body {
   grid-auto-columns: 1fr;
   gap: 0px 0px;
   grid-auto-flow: row;
+  max-height: 90vh;
 }
 
 .Ontology-Title { grid-area: 1 / 1 / 2 / 2; }
@@ -98,8 +99,7 @@ body {
 }
 
 .lineup-window {
-  position: fixed; /* or 'absolute' */
-  z-index: 100; /* optional, in case you need to bring the window to front */
+  position: relative; /* or 'absolute' */
 }
 
 .lu {
@@ -110,9 +110,29 @@ body {
   left: 0;
   right: 0;
   padding: 0;
-  width: 86vw;
-  max-width: 86vw;
+  width: 85vw;
+  max-width: 85vw;
   height: 47vh;
   max-height: 47vh;
   overflow-x: scroll;
+}
+
+.tabButton {
+  background-color: rgb(245, 245, 245); /* Set inactive tabs to light grey */
+  border: 1px solid lightgrey;
+  padding: 10px;
+  cursor: pointer;
+  box-sizing: border-box; /* Make the border be included in the button's dimensions */
+  color: lightgrey;
+}
+
+.tabButton + .tabButton { /* if there is a button preceding this button */
+  border-left: none; /* remove the left border to avoid double borders */
+}
+
+.activeTab {
+  background-color: white; /* Set active tab to white */
+  border: 1px solid lightgrey;
+  color: black;
+  /* border-bottom: none; Remove the bottom border */
 }
