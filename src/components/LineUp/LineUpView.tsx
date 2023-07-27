@@ -10,8 +10,8 @@ export default function LineUpView() {
   // const [localSelectedFocusNodes, setLocalSelectedFocusNodes] = useState<string[]>([]);
   const csvData = useSelector(selectCsvData);
   const lineupRef = useRef<HTMLDivElement>(null);
-  // const lineupInstanceRef = useRef<LineUpJS.Taggle | null>(null);
-  const lineupInstanceRef = useRef<LineUpJS.LineUp | null>(null);
+  const lineupInstanceRef = useRef<LineUpJS.Taggle | null>(null);
+  // const lineupInstanceRef = useRef<LineUpJS.LineUp | null>(null);
   // Ref for lineup instance
   // const allFocusNodes = csvData.map((row) => row.focus_node);
 

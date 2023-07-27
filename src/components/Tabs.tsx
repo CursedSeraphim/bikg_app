@@ -6,7 +6,6 @@ import LineUpView from './LineUp/LineUpView';
 
 function Tabs() {
   // Inside your Tabs component function
-  console.log('Tabs component rendered');
   const [currentTab, setCurrentTab] = useState('1');
   const plotlyData = useSelector(selectCsvDataForPlotly);
 

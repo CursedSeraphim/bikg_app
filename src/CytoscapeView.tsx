@@ -149,6 +149,22 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   const [loading, setLoading] = React.useState(true); // setLoading wouldn't work if we removed loading
   const initialNodePositions = React.useRef(new Map());
 
+  function handleNodeSelection(newCy: cytoscape.Core) {
+    const selectedNodes = newCy.nodes(':selected');
+    const selectedNodeTypes = selectedNodes.map((node) => node.data().id);
+
+    // Filter out duplicates
+    const uniqueSelectedNodeTypes = [...new Set(selectedNodeTypes)];
+
+    if (selectedNodes.length === 0) {
+      // If no nodes were selected in the lasso, deselect all types
+      dispatch(setSelectedTypes([]));
+    } else {
+      // Dispatch setSelectedTypes action with the new list of selected types
+      dispatch(setSelectedTypes(uniqueSelectedNodeTypes));
+    }
+  }
+
   // TODO can be implemented with hash map of selected nodes, and of type->node for efficiency
   React.useEffect(() => {
     if (cy && selectedTypes) {
@@ -332,15 +348,17 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
             const node = event.target;
             const currentColor = node.style('background-color');
 
-            // store the current color in the node's data so we can retrieve it later
-            node.data('original-color', currentColor);
+            if (!node.data('original-color')) {
+              // store the current color in the node's data so we can retrieve it later
+              node.data('original-color', currentColor);
+            }
 
             const darkerColor = chroma(currentColor).darken().hex(); // darken the current color
 
             node
               .animation({
                 style: { 'background-color': darkerColor },
-                duration: 150,
+                duration: 50,
               })
               .play();
           });
@@ -352,27 +370,14 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
             node
               .animation({
                 style: { 'background-color': originalColor },
-                duration: 150,
+                duration: 50,
               })
               .play();
           });
 
           newCy.on('boxend', () => {
             // TODO differentiate handling type nodes and violation nodes
-            const selectedNodes = newCy.nodes(':selected');
-            const selectedNodeTypes = selectedNodes.map((node) => node.data().id);
-
-            // Filter out duplicates
-            const uniqueSelectedNodeTypes = [...new Set(selectedNodeTypes)];
-
-            if (selectedNodes.length === 0) {
-              // If no nodes were selected in the lasso, deselect all types
-              dispatch(setSelectedTypes([]));
-            } else {
-              // Dispatch setSelectedTypes action with the new list of selected types
-              dispatch(setSelectedTypes(uniqueSelectedNodeTypes));
-            }
-
+            handleNodeSelection(newCy);
             lassoSelectionInProgress = false;
           });
 
@@ -428,6 +433,12 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
               const incomers = node.incomers();
               showNodesGivenSource(incomers, node);
               alignNodes(incomers, parentNodePosition, false);
+            } else {
+              node.stop();
+              node.removeData('original-color');
+              newCy.nodes().unselect();
+              node.select();
+              setTimeout(() => handleNodeSelection(newCy), 0);
             }
           });
 
