@@ -123,7 +123,8 @@ body {
   padding: 10px;
   cursor: pointer;
   box-sizing: border-box; /* Make the border be included in the button's dimensions */
-  color: lightgrey;
+  color: grey;
+  transition: 0.15s; /* Add transition effect to the button's background color and color */
 }
 
 .tabButton:hover {
