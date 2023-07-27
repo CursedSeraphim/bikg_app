@@ -23,20 +23,6 @@ function InteractiveScatterPlot({ data }: InteractiveScatterPlotProps) {
   const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
   const [localSelectedFocusNodes, setLocalSelectedFocusNodes] = useState<string[]>([]);
 
-  // TODO find better solution by changing border of css and moving the text outside of the html element
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const dragElements = document.getElementsByClassName('nsewdrag');
-      for (let i = 0; i < dragElements.length; i++) {
-        const dragElement = dragElements[i] as HTMLElement;
-        dragElement.style.stroke = 'lightgrey'; // sets outline color
-        dragElement.style.strokeWidth = '1px'; // sets outline width
-        dragElement.style.height = '100%';
-      }
-    }, 1000); // delay needed to make sure plotly graph is fully rendered before accessing DOM elements
-    return () => clearTimeout(timer); // clear timeout if component unmounts before timeout
-  }, [data]); // re-run effect if `data` changes
-
   const plotData: Data[] = [
     {
       x: data.map((d) => d.x),

@@ -19,8 +19,8 @@ export default function LineUpView() {
   useEffect(() => {
     if (lineupRef.current && csvData.length > 0) {
       // TODO change to builder, look at builder.rowheight
-      lineupInstanceRef.current = LineUpJS.asLineUp(lineupRef.current, csvData);
-      // lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, csvData);
+      // lineupInstanceRef.current = LineUpJS.asLineUp(lineupRef.current, csvData);
+      lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, csvData);
       // const builder = LineUpJS.builder(csvData); // .column(LineUpJS.buildCategoricalColumn('omics:hasCellType'));
       // for column in csv
       // for (const column of Object.keys(csvData[0])) {
