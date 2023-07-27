@@ -106,7 +106,7 @@ function InteractiveScatterPlot({ data }: InteractiveScatterPlotProps) {
         onSelected={handleSelection}
         config={{ displayModeBar: false, responsive: true }}
         useResizeHandler
-        style={{ width: '100%', height: '90%' }}
+        style={{ width: '100%', height: '100%' }}
       />
     </div>
   );

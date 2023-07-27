@@ -51,7 +51,7 @@ function Tabs() {
       </div>
       <div className="Embedding-View">
         {tabs.map((tab) => (
-          <div key={tab.id} style={{ display: currentTab === `${tab.id}` ? 'block' : 'none' }}>
+          <div key={tab.id} style={{ display: currentTab === `${tab.id}` ? 'block' : 'none', height: '100%', width: '100%' }}>
             {tab.content}
           </div>
         ))}
