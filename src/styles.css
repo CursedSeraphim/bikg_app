@@ -126,6 +126,15 @@ body {
   color: lightgrey;
 }
 
+.tabButton:hover {
+  background-color: #fff; /* Add a grey background color on hover */
+}
+
+.tabButton:active {
+  background-color: #ccc; /* Add a darker grey background color when clicking on a button */
+  color: black;
+}
+
 .tabButton + .tabButton { /* if there is a button preceding this button */
   border-left: none; /* remove the left border to avoid double borders */
 }
