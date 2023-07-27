@@ -7,19 +7,39 @@ import { getTreeDataFromN3Data } from './TreeviewGlue';
 import { lightTheme } from './lightTheme';
 
 function CustomHeader({ onSelect, style, node }) {
-  // const iconType = node.children ? 'folder' : 'file-text';
+  const [isHovered, setIsHovered] = useState(false);
+  const [isActive, setIsActive] = useState(false);
+
   const iconClass = `fas fa-caret-right`;
   const iconStyle = { marginRight: '5px' };
 
-  let newStyle = { ...style.base };
+  let newStyle = { ...style.base, transition: 'all 0.15s ease-in-out' };
+
   if (node.selected) {
     // Check selected instead of toggled
-    newStyle = { ...newStyle, color: 'steelblue', fontweight: 'bold' };
+    newStyle = { ...newStyle, color: 'steelblue', fontWeight: 'bold' };
   } else {
-    newStyle = { ...newStyle, color: 'lightgrey', fontweight: 'normal' };
+    newStyle = { ...newStyle, color: 'lightgrey', fontWeight: 'normal' };
   }
+
+  // Adding hover and active style
+  if (isHovered) {
+    newStyle = { ...newStyle, color: 'black' };
+  }
+  if (isActive) {
+    newStyle = { ...newStyle, backgroundColor: 'steelblue', color: 'white' };
+  }
+
   return (
-    <div style={newStyle} onClick={onSelect}>
+    <div
+      style={newStyle}
+      onClick={onSelect}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onMouseDown={() => setIsActive(true)}
+      onMouseUp={() => setIsActive(false)}
+      onBlur={() => setIsActive(false)}
+    >
       <div style={node.selected ? { ...style.title, fontWeight: 'bold' } : style.title}>
         <i className={iconClass} style={iconStyle} />
         {node.name}
@@ -28,31 +48,7 @@ function CustomHeader({ onSelect, style, node }) {
   );
 }
 
-// function CustomToggle({ style, _ }) {
-//   const onClick = (e) => {
-//     console.log('toggle clicked', e);
-//   };
-//   const { height, width } = style;
-//   const midHeight = height * 0.5;
-//   const points = `0,0 0,${height} ${width},${midHeight}`;
-//   return (
-//     <div style={style.base} onClick={onClick}>
-//       <div style={style.wrapper}>
-//         <svg {...{ height, width }}>
-//           <polygon points={points} fill="blue" />
-//         </svg>
-//       </div>
-//     </div>
-//   );
-// }
-
-// const onClick = (node) => {
-//   console.log('node', node);
-//   node.toggled = !node.toggled;
-// };
-
 decorators.Header = CustomHeader;
-// decorators.Toggle = CustomToggle;
 
 // it would lead to problems with large objects if we created a new object for each node to solve the eslint error
 // this way we can keep an elegant recursive solution
