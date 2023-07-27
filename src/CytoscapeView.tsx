@@ -4,6 +4,7 @@ import cytoscape from 'cytoscape';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
 import { useDispatch, useSelector } from 'react-redux';
+import chroma from 'chroma-js';
 import {
   selectSelectedViolations,
   selectCytoData,
@@ -325,6 +326,35 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
             if (lassoSelectionInProgress) {
               event.originalEvent.preventDefault();
             }
+          });
+
+          newCy.on('mouseover', 'node', (event) => {
+            const node = event.target;
+            const currentColor = node.style('background-color');
+
+            // store the current color in the node's data so we can retrieve it later
+            node.data('original-color', currentColor);
+
+            const darkerColor = chroma(currentColor).darken().hex(); // darken the current color
+
+            node
+              .animation({
+                style: { 'background-color': darkerColor },
+                duration: 150,
+              })
+              .play();
+          });
+
+          newCy.on('mouseout', 'node', (event) => {
+            const node = event.target;
+            const originalColor = node.data('original-color'); // get the original color from data
+
+            node
+              .animation({
+                style: { 'background-color': originalColor },
+                duration: 150,
+              })
+              .play();
           });
 
           newCy.on('boxend', () => {
