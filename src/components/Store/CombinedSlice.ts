@@ -71,6 +71,19 @@ const initialState: CombinedState = {
   typesViolationMap: {},
 };
 
+const preprocessData = (data: CsvData[]): CsvData[] => {
+  return data.map((sample: CsvData): CsvData => {
+    const { Id, ...rest } = sample;
+    // const filteredEntries = Object.entries(rest).filter(([key, value]) => value !== 'EdgeNotPresent');
+
+    // return { Id, ...Object.fromEntries(filteredEntries) };
+
+    const modifiedEntries = Object.entries(rest).map(([key, value]) => [key, value === 'EdgeNotPresent' ? '-' : value]);
+
+    return { Id, ...Object.fromEntries(modifiedEntries) };
+  });
+};
+
 const combinedSlice = createSlice({
   name: 'combined',
   initialState,
@@ -89,7 +102,7 @@ const combinedSlice = createSlice({
     },
     setCsvData: (state, action) => {
       console.log('setCsvData');
-      state.samples = action.payload;
+      state.samples = preprocessData(action.payload);
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
       console.log('setSelectedFocusNodesUsingFeatureCategories', action.payload);
