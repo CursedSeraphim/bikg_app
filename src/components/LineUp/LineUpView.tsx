@@ -5,16 +5,8 @@ import * as LineUpJS from 'lineupjs';
 import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes } from '../Store/CombinedSlice';
 import { CsvData } from '../Store/types';
 
-const preprocessAndFilterData = (data: CsvData[]): { filteredData: CsvData[]; removedColumns: string[] } => {
-  // Initially add all columns to the map
+const preprocessAndFilterData = (data: CsvData[]): CsvData[] => {
   const nonDashColumns = new Map<string, boolean>();
-  if (data.length > 0) {
-    Object.keys(data[0]).forEach((key) => {
-      if (key !== 'Id') {
-        nonDashColumns.set(key, true);
-      }
-    });
-  }
 
   // Preprocess data and track columns with non-dash values
   const preprocessedData = data.map((sample) => {
@@ -26,9 +18,9 @@ const preprocessAndFilterData = (data: CsvData[]): { filteredData: CsvData[]; re
 
         processedSample[key] = value;
 
-        // If the value is not "-", remove the column from the map
-        if (value !== '-' && nonDashColumns.get(key)) {
-          nonDashColumns.delete(key);
+        // If the value is not "-", mark the column as having non-dash values
+        if (value !== '-' && !nonDashColumns.get(key)) {
+          nonDashColumns.set(key, true);
         }
       }
     }
@@ -37,26 +29,17 @@ const preprocessAndFilterData = (data: CsvData[]): { filteredData: CsvData[]; re
   });
 
   // Filter out columns that only contain "-"
-  const filteredData = preprocessedData.map((sample) => {
+  return preprocessedData.map((sample) => {
     const filteredSample: CsvData = { Id: sample.Id };
 
     for (const key in sample) {
-      if (key !== 'Id' && !nonDashColumns.get(key)) {
+      if (key !== 'Id' && nonDashColumns.get(key)) {
         filteredSample[key] = sample[key];
       }
     }
 
     return filteredSample;
   });
-
-  // Get list of removed columns
-  const removedColumns = Array.from(nonDashColumns.keys());
-
-  // Return filtered data and removed columns
-  return {
-    filteredData,
-    removedColumns,
-  };
 };
 
 export default function LineUpView() {
@@ -67,26 +50,12 @@ export default function LineUpView() {
   // Local state to hold csvData
   const [csvData, setCsvData] = useState(reduxCsvData);
 
-  const removeColumnsByName = (lineupInstanceRef, colNames) => {
-    const ranking = lineupInstanceRef.current.data.getRankings()[0];
-    const cols = [];
-
-    console.time('find');
-    colNames.forEach((colName) => {
-      const col = lineupInstanceRef.current.data.find((c) => {
-        return c.desc.label.toLowerCase() === colName.toLowerCase();
-      });
-      if (col) cols.push(col);
+  const setupListener = (lineupInstanceRef): any => {
+    lineupInstanceRef.current.on('selectionChanged', (selection) => {
+      console.log('test selection changed', selection);
+      const selectedNodes = selection.map((index) => csvData[index].focus_node);
+      dispatch(setSelectedFocusNodes(selectedNodes));
     });
-    console.timeEnd('find');
-
-    console.log('cols before removing', cols);
-
-    console.time('remove');
-    cols.forEach((col) => {
-      ranking.remove(col);
-    });
-    console.timeEnd('remove');
   };
 
   useEffect(() => {
@@ -97,12 +66,11 @@ export default function LineUpView() {
   const lineupInstanceRef = useRef<LineUpJS.Taggle | null>(null);
 
   useEffect(() => {
+    console.log('lineup useeffect triggered');
     if (lineupRef.current && csvData.length > 0) {
       lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, csvData);
-      lineupInstanceRef.current.on('selectionChanged', (selection) => {
-        const selectedNodes = selection.map((index) => csvData[index].focus_node);
-        dispatch(setSelectedFocusNodes(selectedNodes));
-      });
+
+      setupListener(lineupInstanceRef);
     }
   }, [lineupRef, csvData, dispatch]);
 
@@ -114,40 +82,30 @@ export default function LineUpView() {
       const filteredCsvDataIndices = csvData.map((row, index) => (focusNodesSet.has(row.focus_node) ? index : -1)).filter((index) => index !== -1);
 
       if (filteredCsvDataIndices.length > 0) {
-        lineupInstanceRef.current.data.setSelection(filteredCsvDataIndices);
+        // lineupInstanceRef.current.data.setSelection(filteredCsvDataIndices);
+        console.log('filteredCsvDataIndices', filteredCsvDataIndices);
 
-        console.time('get filtered csv dat aindices');
-        const filteredData = filteredCsvDataIndices.map((index) => csvData[index]);
-        console.timeEnd('get filtered csv dat aindices');
-
-        console.time('preprocess and filter data');
-        const { filteredData: preprocessedData, removedColumns } = preprocessAndFilterData(filteredData);
-        console.timeEnd('preprocess and filter data');
-        console.log('preprocessedData', preprocessedData);
-        console.log('removedColumns', removedColumns);
-        console.time('remove columns');
-        removeColumnsByName(lineupInstanceRef, removedColumns);
-        console.timeEnd('remove columns');
+        const filteredCsvData = filteredCsvDataIndices.map((index) => csvData[index]);
+        const dataWithoutNanColumns = preprocessAndFilterData(filteredCsvData);
+        console.log('preprocessAndFilterData(filteredCsvData)', dataWithoutNanColumns);
+        // cleanup old lineup instance
+        if (lineupInstanceRef.current) {
+          lineupInstanceRef.current.destroy();
+        }
+        lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, dataWithoutNanColumns);
+        setupListener(lineupInstanceRef);
+        console.log('set new lineup instance');
       } else {
         lineupInstanceRef.current.data.clearSelection();
-        // Create a new lineup taggle instance using the original data
-        console.time('create new temp taggle');
-        const tempLineupInstance = LineUpJS.asTaggle(document.createElement('div'), reduxCsvData);
-        console.timeEnd('create new temp taggle');
-        // Get its ranking
-        console.time('get its ranking');
-        const tempRanking = tempLineupInstance.data.getRankings()[0];
-        console.timeEnd('get its ranking');
-        // Overwrite the current lineupinstanceref's ranking with that one
-        console.time('clear old rankings');
-        lineupInstanceRef.current.data.clearRankings();
-        console.timeEnd('clear old rankings');
-        console.time('push new ranking');
-        lineupInstanceRef.current.data.pushRanking(tempRanking);
-        console.timeEnd('push new ranking');
+        // cleanup old lineup instance
+        if (lineupInstanceRef.current) {
+          lineupInstanceRef.current.destroy();
+        }
+        lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, csvData);
+        setupListener(lineupInstanceRef);
       }
     }
-  }, [selectedFocusNodes, csvData, reduxCsvData]);
+  }, [selectedFocusNodes, csvData]);
 
   return (
     <div className="lineup-window">
