@@ -44,7 +44,7 @@ function NavBarTabs() {
             id={tab.id.toString()}
             type="button"
             onClick={handleTabClick}
-            className={`tabButton ${currentTab === `${tab.id}` ? 'activeTab' : ''}`}
+            className={`tab-button ${currentTab === `${tab.id}` ? 'activeTab' : ''}`}
           >
             {tab.title}
           </button>

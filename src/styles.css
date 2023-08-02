@@ -114,7 +114,7 @@ body {
   overflow-x: scroll;
 }
 
-.tabButton {
+.tab-button {
   background-color: rgb(245, 245, 245); /* Set inactive tabs to light grey */
   border: 1px solid lightgrey;
   padding: 10px;
@@ -124,16 +124,16 @@ body {
   transition: 0.15s; /* Add transition effect to the button's background color and color */
 }
 
-.tabButton:hover {
+.tab-button:hover {
   background-color: #fff; /* Add a grey background color on hover */
 }
 
-.tabButton:active {
+.tab-button:active {
   background-color: #ccc; /* Add a darker grey background color when clicking on a button */
   color: black;
 }
 
-.tabButton + .tabButton { /* if there is a button preceding this button */
+.tab-button + .tab-button { /* if there is a button preceding this button */
   border-left: none; /* remove the left border to avoid double borders */
 }
 
@@ -149,13 +149,6 @@ body {
   width: auto !important;
 } */
 
-.filter-buttons {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  z-index: 100; /* Ensures the buttons are displayed on top of other components */
-}
-
 .navbar-container {  display: grid;
   grid-template-columns: 1fr;
   grid-template-rows: 0.05fr 0.95fr;
@@ -163,8 +156,8 @@ body {
   gap: 0px 0px;
   grid-auto-flow: row;
   grid-template-areas:
-    "NavBarTabs-Title"
-    "treebeard-container";
+  "NavBarTabs-Title"
+  "treebeard-container";
   overflow-y: auto; /* add a vertical scrollbar */
   overflow-x: auto; /* add a horizontal scrollbar if necessary */
   height: 95%; /* set a fixed height for the container */
@@ -187,4 +180,54 @@ body {
 
 .mantine-Navbar-root {
   padding: 0 !important;
+}
+
+.settingsTab {
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  padding: 20px;
+}
+
+.settingsContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.filterButtonsContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.filterButtonsContainer button {
+  background-color: rgb(245, 245, 245); /* Set inactive tabs to light grey */
+  border: 1px solid lightgrey;
+  padding: 10px;
+  cursor: pointer;
+  box-sizing: border-box; /* Make the border be included in the button's dimensions */
+  color: grey;
+  transition: 0.15s; /* Add transition effect to the button's background color and color */
+}
+
+.filterButtonsContainer button:hover {
+  background-color: #fff; /* Add a grey background color on hover */
+}
+
+.filterButtonsContainer button:active {
+  background-color: #ccc; /* Add a darker grey background color when clicking on a button */
+  color: black;
+}
+
+.filterButtonsContainer button + .filterButtonsContainer button { /* if there is a button preceding this button */
+  border-left: none; /* remove the left border to avoid double borders */
+}
+
+.filterButtonsContainer button + button {
+  border-top: none;
 }

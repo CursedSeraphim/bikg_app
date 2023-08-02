@@ -8,7 +8,7 @@ export function FilterButtons() {
   const filterType = useSelector(selectFilterType);
 
   return (
-    <div className="filter-buttons">
+    <div className="filterButtonsContainer">
       <button type="button" onClick={() => dispatch(setFilterType('unimodal'))} disabled={filterType === 'unimodal'}>
         {filterType === 'unimodal' ? 'Unimodal Filtering Active' : 'Activate Unimodal Filtering'}
       </button>
