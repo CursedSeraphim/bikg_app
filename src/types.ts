@@ -5,12 +5,14 @@ export interface OntologyNode {
 
 export type OntologyMap = { [key: string]: OntologyNode };
 
+export type CsvCell = string | number | undefined;
+
 export interface CsvData {
   Id: string;
   x?: number;
   y?: number;
   focus_node?: string;
-  [key: string]: string | number | undefined;
+  [key: string]: CsvCell;
 }
 
 export interface CytoNode {

@@ -3,8 +3,55 @@ import { useDispatch, useSelector } from 'react-redux';
 import * as LineUpJS from 'lineupjs';
 
 import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes } from '../Store/CombinedSlice';
-import { CsvData } from '../../types';
+import { CsvData, CsvCell } from '../../types';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
+
+const filterAllUniModalColumns = (data: CsvData[]): CsvData[] => {
+  const uniqueValuesPerColumn = new Map<string, Set<CsvCell>>();
+  const isUnimodalColumn = new Map<string, boolean>();
+
+  // Iterate over all rows and columns
+  data.forEach((row) => {
+    for (const key in row) {
+      if (key !== 'Id') {
+        const value = row[key];
+        let uniqueValues = uniqueValuesPerColumn.get(key);
+
+        // if the unique values for this column hasn't been initialized, do so
+        if (!uniqueValues) {
+          uniqueValues = new Set();
+          uniqueValuesPerColumn.set(key, uniqueValues);
+          isUnimodalColumn.set(key, true);
+        }
+
+        // If the unique values set already has this value, continue to next column
+        if (uniqueValues.has(value)) {
+          continue;
+        }
+
+        // If the column is unimodal but a second unique value is found, mark as not unimodal
+        if (isUnimodalColumn.get(key) && uniqueValues.size === 1) {
+          isUnimodalColumn.set(key, false);
+        }
+
+        uniqueValues.add(value);
+      }
+    }
+  });
+
+  // Return a new array containing only rows with non-unimodal columns
+  return data.map((row) => {
+    const filteredRow: CsvData = { Id: row.Id };
+
+    for (const key in row) {
+      if (key !== 'Id' && !isUnimodalColumn.get(key)) {
+        filteredRow[key] = row[key];
+      }
+    }
+
+    return filteredRow;
+  });
+};
 
 const filterAllNanColumns = (data: CsvData[]): CsvData[] => {
   const nonDashColumns = new Map<string, boolean>();
@@ -92,13 +139,13 @@ export default function LineUpView() {
         console.log('filteredCsvDataIndices', filteredCsvDataIndices);
 
         const filteredCsvData = filteredCsvDataIndices.map((index) => csvData[index]);
-        const dataWithoutNanColumns = filterAllNanColumns(filteredCsvData);
-        console.log('preprocessAndFilterData(filteredCsvData)', dataWithoutNanColumns);
+        const dataWithoutUniModalColumns = filterAllUniModalColumns(filteredCsvData);
+        console.log('preprocessAndFilterData(filteredCsvData)', dataWithoutUniModalColumns);
         // cleanup old lineup instance
         if (lineupInstanceRef.current) {
           lineupInstanceRef.current.destroy();
         }
-        lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, dataWithoutNanColumns);
+        lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, dataWithoutUniModalColumns);
         setupListener(lineupInstanceRef);
         console.log('set new lineup instance');
       } else {
