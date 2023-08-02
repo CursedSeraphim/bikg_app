@@ -5,6 +5,7 @@ import { BarLoader } from 'react-spinners';
 import BarPlotSample from './BarPlotSample';
 import { selectBarPlotData } from '../Store/CombinedSlice';
 import { fetchBarPlotDataGivenSelection, fetchViolationValueCountsGivenSelection } from '../../api';
+import { SPINNER_COLOR } from '../../constants';
 
 interface IPlotlyData {
   x: number[];
@@ -60,7 +61,7 @@ function BarPlotList(): JSX.Element {
   }, [data]);
 
   if (Object.keys(localBarPlotData.plotlyData).length === 0 || Object.keys(localViolationValueCounts.plotlyData).length === 0) {
-    return <BarLoader color="steelblue" loading />;
+    return <BarLoader color={SPINNER_COLOR} loading />;
   }
 
   // Create array of keys sorted by chiScores in descending order

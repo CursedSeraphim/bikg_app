@@ -5,6 +5,7 @@ import { BarLoader } from 'react-spinners';
 import { selectRdfData, selectSelectedTypes, setSelectedTypes } from '../Store/CombinedSlice';
 import { getTreeDataFromN3Data } from './TreeviewGlue';
 import { lightTheme } from './lightTheme';
+import { SPINNER_COLOR } from '../../constants';
 
 function CustomHeader({ onSelect, style, node }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -153,7 +154,7 @@ export default function Treeview() {
   };
 
   if (!treeData) {
-    return <BarLoader color="steelblue" loading />;
+    return <BarLoader color={SPINNER_COLOR} loading />;
   }
 
   // set root element to be default toggled

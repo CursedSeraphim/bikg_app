@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { BarLoader } from 'react-spinners';
-import Tabs from './components/Tabs';
+import Tabs from './components/BottomTabs';
 import { setRdfString, selectRdfData, setCsvData, setViolations, setViolationTypesMap, setTypesViolationMap } from './components/Store/CombinedSlice';
 
 import CytoscapeView from './CytoscapeView';
@@ -10,6 +10,7 @@ import { FilterButtons } from './components/FilterButtons/FilterButtons';
 
 import './styles.css';
 import { fetchOntology, fetchCSVFile, fetchViolationList, fetchViolationPathNodesDict } from './api';
+import { SPINNER_COLOR } from './constants';
 
 export function App() {
   const dispatch = useDispatch();
@@ -68,7 +69,7 @@ export function App() {
         <div style={{ display: cytoscapeLoading ? 'none' : 'block' }} className="cytoscape-container">
           <CytoscapeView rdfOntology={rdfOntology} onLoaded={() => setCytoscapeLoading(false)} />
         </div>
-        {cytoscapeLoading && <BarLoader color="steelblue" loading />}
+        {cytoscapeLoading && <BarLoader color={SPINNER_COLOR} loading />}
       </div>
       <div className="TabsContainer">
         <Tabs />

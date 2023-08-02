@@ -5,6 +5,7 @@ import { Data, Layout } from 'plotly.js';
 import { BarLoader } from 'react-spinners';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSelectedFocusNodes, selectSelectedFocusNodes } from '../Store/CombinedSlice'; // Import the necessary actions and selectors from CombinedSlice
+import { SPINNER_COLOR } from '../../constants';
 
 const Plot = createPlotlyComponent(Plotly);
 
@@ -81,7 +82,7 @@ function InteractiveScatterPlot({ data }: InteractiveScatterPlotProps) {
   }, [selectedFocusNodes]);
 
   if (data.length === 0) {
-    return <BarLoader color="steelblue" loading />;
+    return <BarLoader color={SPINNER_COLOR} loading />;
   }
 
   return (

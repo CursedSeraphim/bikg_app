@@ -56,7 +56,7 @@ const applyLayout = (violationNodes, otherNodes, typeNodes, cy) => {
     name: 'grid',
     animate: true,
     boundingBox: newBoundingBox,
-    animationDuration: 1000,
+    animationDuration: 1500,
     animationEasing: 'ease-in-out',
     avoidOverlap: true,
     avoidOverlapPadding: 1,

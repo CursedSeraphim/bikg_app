@@ -5,6 +5,7 @@ import { BarLoader } from 'react-spinners';
 import BarPlotSample from './BarPlotSample';
 import { selectBarPlotData } from '../Store/CombinedSlice';
 import { fetchBarPlotDataGivenSelection } from '../../api';
+import { SPINNER_COLOR } from '../../constants';
 
 /**
  * This function takes the list of all features in the CSV and creates a list of JSX elements from the BarPlotSample one below the other to which it hands the feature name as a prop.
@@ -24,7 +25,7 @@ function BarPlotList(): JSX.Element {
     });
   }, [data]);
   if (localBarPlotData.plotlyData.length === 0) {
-    return <BarLoader color="steelblue" loading />;
+    return <BarLoader color={SPINNER_COLOR} loading />;
   }
   // Maximum number of values for a feature
   const MAX_VALUES = 100;
