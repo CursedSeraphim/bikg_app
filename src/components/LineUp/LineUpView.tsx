@@ -1,10 +1,10 @@
 // LineUpView.tsx
-import React, { useRef, useEffect, useState, createContext, useContext } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import * as LineUpJS from 'lineupjs';
 
-import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes } from '../Store/CombinedSlice';
-import { ICsvData, CsvCell, IFilterContext } from '../../types';
+import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes, selectFilterType } from '../Store/CombinedSlice';
+import { ICsvData, CsvCell } from '../../types';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
 /**
@@ -114,6 +114,7 @@ export default function LineUpView() {
   const dispatch = useDispatch();
   const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
   const reduxCsvData = useSelector(selectCsvData);
+  const filterType = useSelector(selectFilterType);
 
   // Local state to hold csvData
   const [csvData, setCsvData] = useState(reduxCsvData);
@@ -127,7 +128,6 @@ export default function LineUpView() {
    */
   const setupListener = (lineupInstanceRef): any => {
     lineupInstanceRef.current.on('selectionChanged', (selection) => {
-      console.log('test selection changed', selection);
       const selectedNodes = selection.map((index) => csvData[index].focus_node);
       dispatch(setSelectedFocusNodes(selectedNodes));
     });
@@ -155,16 +155,30 @@ export default function LineUpView() {
 
       if (filteredCsvDataIndices.length > 0) {
         // lineupInstanceRef.current.data.setSelection(filteredCsvDataIndices);
-        console.log('filteredCsvDataIndices', filteredCsvDataIndices);
 
-        const filteredCsvData = filteredCsvDataIndices.map((index) => csvData[index]);
-        const dataWithoutUniModalColumns = filterAllUniModalColumns(filteredCsvData);
-        console.log('preprocessAndFilterData(filteredCsvData)', dataWithoutUniModalColumns);
+        let filteredCsvData = filteredCsvDataIndices.map((index) => csvData[index]);
+        console.log('filterType', filterType);
+        // Apply filter based on the filterType
+        switch (filterType) {
+          case 'unimodal':
+            filteredCsvData = filterAllUniModalColumns(filteredCsvData);
+            break;
+          case 'nan':
+            filteredCsvData = filterAllNanColumns(filteredCsvData);
+            break;
+          case 'none':
+          default:
+            break;
+        }
+
+        console.log('preprocessAndFilterData(filteredCsvData)', filteredCsvData);
+
         // cleanup old lineup instance
         if (lineupInstanceRef.current) {
           lineupInstanceRef.current.destroy();
         }
-        lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, dataWithoutUniModalColumns);
+
+        lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, filteredCsvData);
         setupListener(lineupInstanceRef);
         console.log('set new lineup instance');
       } else {
@@ -177,7 +191,7 @@ export default function LineUpView() {
         setupListener(lineupInstanceRef);
       }
     }
-  }, [selectedFocusNodes, csvData]);
+  }, [selectedFocusNodes, csvData, filterType]); // add filterType to the dependencies
 
   return (
     <div className="lineup-window">

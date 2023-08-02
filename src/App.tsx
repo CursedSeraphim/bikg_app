@@ -5,9 +5,8 @@ import { BarLoader } from 'react-spinners';
 import Tabs from './components/Tabs';
 import { setRdfString, selectRdfData, setCsvData, setViolations, setViolationTypesMap, setTypesViolationMap } from './components/Store/CombinedSlice';
 
-// import BarPlotList from './components/FeatureDistributionView/BarPlotList';
-// import FixedBarPlotList from './components/FeatureDistributionView/newFixedBarPlotList';
 import CytoscapeView from './CytoscapeView';
+import { FilterButtons } from './components/FilterButtons/FilterButtons';
 
 import './styles.css';
 import { fetchOntology, fetchCSVFile, fetchViolationList, fetchViolationPathNodesDict } from './api';
@@ -73,6 +72,9 @@ export function App() {
       </div>
       <div className="TabsContainer">
         <Tabs />
+      </div>
+      <div className="FilterButtonsContainer">
+        <FilterButtons />
       </div>
     </div>
   );

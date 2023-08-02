@@ -156,3 +156,10 @@ body {
 /* [class*="le-th-lu-"] {
   width: auto !important;
 } */
+
+.filter-buttons {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 100; /* Ensures the buttons are displayed on top of other components */
+}

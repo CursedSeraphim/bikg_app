@@ -243,6 +243,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
         violations: [],
         violationTypesMap: {},
         typesViolationMap: {},
+        filterType: 'none',
       },
     })
       .then((data) => {

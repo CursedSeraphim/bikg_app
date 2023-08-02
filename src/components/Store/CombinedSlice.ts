@@ -1,10 +1,10 @@
 // CombinedSlice.ts
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Store, Quad } from 'n3';
 import { createSelector } from 'reselect';
 import { dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
-import { ICombinedState, IRdfState, ITriple, ICytoData, ICytoNode, ICytoEdge, ICsvData } from '../../types';
+import { ICombinedState, IRdfState, ITriple, ICytoData, ICytoNode, ICytoEdge, ICsvData, FilterType } from '../../types';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
 const initialState: ICombinedState = {
@@ -16,6 +16,7 @@ const initialState: ICombinedState = {
   violations: [],
   violationTypesMap: {},
   typesViolationMap: {},
+  filterType: 'none',
 };
 
 const removeNanEdges = (data: ICsvData[]): ICsvData[] => {
@@ -43,10 +44,14 @@ const renameNanEdges = (data: ICsvData[]): ICsvData[] => {
   });
 };
 
+// TODO set types of payloadaction for all reducers
 const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
+    setFilterType: (state, action: PayloadAction<FilterType>) => {
+      state.filterType = action.payload;
+    },
     setViolationTypesMap: (state, action) => {
       console.log('setViolationTypesMap');
       state.violationTypesMap = action.payload;
@@ -61,7 +66,8 @@ const combinedSlice = createSlice({
     },
     setCsvData: (state, action) => {
       console.log('setCsvData');
-      state.samples = removeNanEdges(action.payload);
+      // state.samples = removeNanEdges(action.payload);
+      state.samples = action.payload;
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
       console.log('setSelectedFocusNodesUsingFeatureCategories', action.payload);
@@ -191,6 +197,7 @@ const combinedSlice = createSlice({
   },
 });
 
+export const selectFilterType = (state: { combined: ICombinedState }) => state.combined.filterType;
 export const selectViolationsTypeMap = (state: { combined: ICombinedState }) => state.combined.violationTypesMap;
 export const selectSelectedNodes = (state: { combined: ICombinedState }) => state.combined.selectedNodes;
 export const selectSamples = (state: { combined: ICombinedState }) => state.combined.samples;
@@ -524,8 +531,6 @@ export const selectCytoData = async (state: { combined: ICombinedState }): Promi
   return { nodes, edges };
 };
 
-export default combinedSlice.reducer;
-
 export const {
   setSelectedViolations,
   setViolations,
@@ -536,4 +541,7 @@ export const {
   setRdfString,
   setViolationTypesMap,
   setTypesViolationMap,
+  setFilterType,
 } = combinedSlice.actions;
+
+export default combinedSlice.reducer;

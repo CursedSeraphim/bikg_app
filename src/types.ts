@@ -1,10 +1,3 @@
-export interface IFilterContext {
-  filterUnimodalColumns: boolean;
-  toggleUnimodalColumnsFilter: () => void;
-  filterNanColumns: boolean;
-  toggleNanColumnsFilter: () => void;
-}
-
 export interface IOntologyNode {
   name: string;
   children: IOntologyNode[];
@@ -57,6 +50,7 @@ export interface IRdfState {
   rdfString: string;
 }
 
+export type FilterType = 'none' | 'unimodal' | 'nan';
 export interface ICombinedState {
   samples: ICsvData[];
   selectedNodes: string[];
@@ -66,6 +60,7 @@ export interface ICombinedState {
   violations: string[]; // list of possible violation source shapes
   violationTypesMap: { [key: string]: string[] }; // map of violation sh:PropertyShapes to their corresponding owl:Class and the sh:NodeShapes in between
   typesViolationMap: { [key: string]: string[] }; // map of owl:Classes to their corresponding sh:PropertyShapes and the sh:NodeShapes in between
+  filterType: FilterType;
 }
 
 export interface ITriple {
