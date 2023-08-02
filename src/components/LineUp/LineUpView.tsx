@@ -3,9 +3,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import * as LineUpJS from 'lineupjs';
 
 import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes } from '../Store/CombinedSlice';
-import { CsvData } from '../Store/types';
+import { CsvData } from '../../types';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
-const preprocessAndFilterData = (data: CsvData[]): CsvData[] => {
+const filterAllNanColumns = (data: CsvData[]): CsvData[] => {
   const nonDashColumns = new Map<string, boolean>();
 
   // Preprocess data and track columns with non-dash values
@@ -14,12 +15,12 @@ const preprocessAndFilterData = (data: CsvData[]): CsvData[] => {
 
     for (const key in sample) {
       if (key !== 'Id') {
-        const value = sample[key] === 'EdgeNotPresent' ? '-' : sample[key];
+        const value = sample[key] === CSV_EDGE_NOT_IN_ONTOLOGY_STRING ? CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING : sample[key];
 
         processedSample[key] = value;
 
         // If the value is not "-", mark the column as having non-dash values
-        if (value !== '-' && !nonDashColumns.get(key)) {
+        if (value !== CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING && !nonDashColumns.get(key)) {
           nonDashColumns.set(key, true);
         }
       }
@@ -91,7 +92,7 @@ export default function LineUpView() {
         console.log('filteredCsvDataIndices', filteredCsvDataIndices);
 
         const filteredCsvData = filteredCsvDataIndices.map((index) => csvData[index]);
-        const dataWithoutNanColumns = preprocessAndFilterData(filteredCsvData);
+        const dataWithoutNanColumns = filterAllNanColumns(filteredCsvData);
         console.log('preprocessAndFilterData(filteredCsvData)', dataWithoutNanColumns);
         // cleanup old lineup instance
         if (lineupInstanceRef.current) {

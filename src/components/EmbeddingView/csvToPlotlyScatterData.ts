@@ -1,4 +1,4 @@
-import { CsvData } from '../Store/types';
+import { CsvData } from '../../types';
 
 export interface ScatterCsvData {
   x: number;

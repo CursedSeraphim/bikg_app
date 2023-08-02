@@ -1,11 +1,6 @@
-import { RdfState, selectSubClassOfTuples } from '../Store/CombinedSlice';
-
-interface OntologyNode {
-  name: string;
-  children: OntologyNode[];
-}
-
-type OntologyMap = { [key: string]: OntologyNode };
+import { selectSubClassOfTuples } from '../Store/CombinedSlice';
+import { RdfState } from '../Store/CombinedState';
+import { OntologyMap } from '../../types';
 
 /**
  * Glue that connects CombinedSlice selectSubClassOrObjectPropertyTuples return value to the Treebeard component

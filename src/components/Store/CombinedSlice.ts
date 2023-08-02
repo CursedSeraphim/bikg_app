@@ -4,61 +4,8 @@ import * as N3 from 'n3';
 import { NamedNode, Store, Quad } from 'n3';
 import { createSelector } from 'reselect';
 import { dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
-import { CsvData } from './types';
-
-export interface CytoNode {
-  data: {
-    id: string;
-    label?: string;
-    selected?: boolean;
-    visible?: boolean;
-    permanent?: boolean;
-    violation?: boolean;
-  };
-  position?: {
-    x: number;
-    y: number;
-  };
-  grabbable?: boolean;
-  locked?: boolean;
-}
-
-interface CytoEdge {
-  data: {
-    id: string;
-    source: string;
-    target: string;
-    label?: string;
-    visible?: boolean;
-    permanent?: boolean;
-  };
-}
-
-interface CytoData {
-  nodes: CytoNode[];
-  edges: CytoEdge[];
-}
-
-export interface RdfState {
-  rdfString: string;
-}
-
-export interface CombinedState {
-  samples: CsvData[];
-  selectedNodes: string[];
-  selectedTypes: string[];
-  selectedViolations: string[];
-  rdfString: string;
-  violations: string[]; // list of possible violation source shapes
-  violationTypesMap: { [key: string]: string[] }; // map of violation sh:PropertyShapes to their corresponding owl:Class and the sh:NodeShapes in between
-  typesViolationMap: { [key: string]: string[] }; // map of owl:Classes to their corresponding sh:PropertyShapes and the sh:NodeShapes in between
-}
-
-interface Triple {
-  s: string;
-  p: string;
-  o: string;
-}
+import { CombinedState, RdfState, Triple, CytoData, CytoNode, CytoEdge, CsvData } from '../../types';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
 const initialState: CombinedState = {
   samples: [],
@@ -71,14 +18,26 @@ const initialState: CombinedState = {
   typesViolationMap: {},
 };
 
-const preprocessData = (data: CsvData[]): CsvData[] => {
+const removeNanEdges = (data: CsvData[]): CsvData[] => {
   return data.map((sample: CsvData): CsvData => {
     const { Id, ...rest } = sample;
-    // const filteredEntries = Object.entries(rest).filter(([key, value]) => value !== 'EdgeNotPresent');
+    const filteredEntries = Object.entries(rest).filter(([key, value]) => value !== CSV_EDGE_NOT_IN_ONTOLOGY_STRING);
+
+    return { Id, ...Object.fromEntries(filteredEntries) };
+  });
+};
+
+const renameNanEdges = (data: CsvData[]): CsvData[] => {
+  return data.map((sample: CsvData): CsvData => {
+    const { Id, ...rest } = sample;
+    // const filteredEntries = Object.entries(rest).filter(([key, value]) => value !== CSV_EDGE_NOT_IN_ONTOLOGY_STRING);
 
     // return { Id, ...Object.fromEntries(filteredEntries) };
 
-    const modifiedEntries = Object.entries(rest).map(([key, value]) => [key, value === 'EdgeNotPresent' ? '-' : value]);
+    const modifiedEntries = Object.entries(rest).map(([key, value]) => [
+      key,
+      value === CSV_EDGE_NOT_IN_ONTOLOGY_STRING ? CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING : value,
+    ]);
 
     return { Id, ...Object.fromEntries(modifiedEntries) };
   });
@@ -102,7 +61,7 @@ const combinedSlice = createSlice({
     },
     setCsvData: (state, action) => {
       console.log('setCsvData');
-      state.samples = preprocessData(action.payload);
+      state.samples = removeNanEdges(action.payload);
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
       console.log('setSelectedFocusNodesUsingFeatureCategories', action.payload);

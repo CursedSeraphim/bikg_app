@@ -1,6 +1,7 @@
 // Store.ts
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
-import combinedReducer, { CombinedState } from './CombinedSlice';
+import combinedReducer from './CombinedSlice';
+import { CombinedState } from './CombinedState';
 
 const rootReducer = combineReducers({
   combined: combinedReducer,

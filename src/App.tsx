@@ -3,15 +3,7 @@ import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { BarLoader } from 'react-spinners';
 import Tabs from './components/Tabs';
-import {
-  setRdfString,
-  selectRdfData,
-  setCsvData,
-  selectCsvDataForPlotly,
-  setViolations,
-  setViolationTypesMap,
-  setTypesViolationMap,
-} from './components/Store/CombinedSlice';
+import { setRdfString, selectRdfData, setCsvData, setViolations, setViolationTypesMap, setTypesViolationMap } from './components/Store/CombinedSlice';
 
 // import BarPlotList from './components/FeatureDistributionView/BarPlotList';
 // import FixedBarPlotList from './components/FeatureDistributionView/newFixedBarPlotList';
@@ -19,11 +11,9 @@ import CytoscapeView from './CytoscapeView';
 
 import './styles.css';
 import { fetchOntology, fetchCSVFile, fetchViolationList, fetchViolationPathNodesDict } from './api';
-import InteractiveScatterPlot from './components/EmbeddingView/InteractiveScatterPlot';
 
 export function App() {
   const dispatch = useDispatch();
-  const plotlyData = useSelector(selectCsvDataForPlotly);
   const rdfOntology = useSelector(selectRdfData);
   const [cytoscapeLoading, setCytoscapeLoading] = React.useState(true);
 
