@@ -1,29 +1,31 @@
+// NavBarTabs.tsx
 import React, { useState, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { selectCsvDataForPlotly } from './Store/CombinedSlice';
-import InteractiveScatterPlot from './EmbeddingView/InteractiveScatterPlot';
-import LineUpView from './LineUp/LineUpView';
+import Treeview from './Treeview/Treeview';
+import SettingsTab from './SettingsTab/SettingsTab';
 
-function BottomTabs() {
+function NavBarTabs() {
   // Inside your Tabs component function
   const [currentTab, setCurrentTab] = useState('1');
   const plotlyData = useSelector(selectCsvDataForPlotly);
 
-  const MemoizedScatterPlot = React.memo(InteractiveScatterPlot);
+  const MemoizedTreeView = React.memo(Treeview);
+  const MemoizedSettingsTab = React.memo(SettingsTab);
 
   const tabs = useMemo(
     () => [
       {
         id: 1,
-        tabTitle: 'Embedding View',
-        title: 'Embedding View',
-        content: <MemoizedScatterPlot data={plotlyData} />,
+        tabTitle: 'Tree View',
+        title: 'Tree View',
+        content: <MemoizedTreeView />,
       },
       {
         id: 2,
-        tabTitle: 'LineUp',
-        title: 'LineUp',
-        content: <LineUpView />,
+        tabTitle: 'Settings',
+        title: 'Settings',
+        content: <MemoizedSettingsTab />,
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -35,7 +37,7 @@ function BottomTabs() {
   };
   return (
     <div className="tabsContainer">
-      <div className="Embedding-Title">
+      <div className="NavBarTabs-Title">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -48,7 +50,7 @@ function BottomTabs() {
           </button>
         ))}
       </div>
-      <div className="Embedding-View">
+      <div className="treebeard-container">
         {tabs.map((tab) => (
           <div key={tab.id} style={{ display: currentTab === `${tab.id}` ? 'block' : 'none', height: '100%', width: '100%' }}>
             {tab.content}
@@ -59,4 +61,4 @@ function BottomTabs() {
   );
 }
 
-export default BottomTabs;
+export default NavBarTabs;

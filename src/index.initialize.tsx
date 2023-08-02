@@ -6,17 +6,8 @@ import { Provider } from 'react-redux';
 import { VisynApp, VisynAppProvider, VisynHeader } from 'visyn_core/app';
 import { App } from './App';
 import store from './components/Store/Store';
-import Treeview from './components/Treeview/Treeview';
 import { BILogo } from './components/BILogo';
-
-// const consoleWarn = console.log;
-// const SUPPRESSED_WARNINGS = ['WARN: unrecognized GUI edit: selections'];
-
-// console.log = function filterWarnings(msg, ...args) {
-//   if (!SUPPRESSED_WARNINGS.some((entry) => msg.includes(entry))) {
-//     consoleWarn(msg, ...args);
-//   }
-// };
+import NavBarTabs from './components/NavBarTabs';
 
 ReactDOM.render(
   // <React.StrictMode> TODO doesn't work with treebeard due to depreacted finddomnode
@@ -27,11 +18,8 @@ ReactDOM.render(
           loginMenu={null}
           navbar={
             <Navbar width={{ base: 250 }} height="100%" p="xs" style={{ border: '1px solid lightgrey' }}>
-              {/* Navbar <br />
-                To be filled with settings, potentially an ontology tree view browser, etc */}
-              <div className="treebeard-container">
-                Tree View
-                <Treeview />
+              <div className="navbar-container">
+                <NavBarTabs />
               </div>
             </Navbar>
           }

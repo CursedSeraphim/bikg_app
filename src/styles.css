@@ -91,14 +91,6 @@ body {
   height: 100%;
 }
 
-.treebeard-container {
-  height: 95%; /* set a fixed height for the container */
-  white-space: nowrap;
-  min-width: 30%;
-  overflow-y: auto; /* add a vertical scrollbar */
-  /* border: 1px solid lightgrey; */
-}
-
 .cytoscape-container {
   height: 100%;
 }
@@ -162,4 +154,37 @@ body {
   bottom: 0;
   left: 0;
   z-index: 100; /* Ensures the buttons are displayed on top of other components */
+}
+
+.navbar-container {  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 0.05fr 0.95fr;
+  grid-auto-columns: 1fr;
+  gap: 0px 0px;
+  grid-auto-flow: row;
+  grid-template-areas:
+    "NavBarTabs-Title"
+    "treebeard-container";
+  overflow-y: auto; /* add a vertical scrollbar */
+  overflow-x: auto; /* add a horizontal scrollbar if necessary */
+  height: 95%; /* set a fixed height for the container */
+  min-width: 30%;
+}
+
+.NavBarTabs-Title {
+  grid-area: NavBarTabs-Title;
+  outline: 1px solid lightgrey !important;
+}
+
+.treebeard-container {
+  grid-area: treebeard-container;
+  height: 95%; /* set a fixed height for the container */
+  white-space: nowrap;
+  min-width: 30%;
+  overflow-y: auto; /* add a vertical scrollbar */
+  overflow-x: auto; /* add a horizontal scrollbar if necessary */
+}
+
+.mantine-Navbar-root {
+  padding: 0 !important;
 }

@@ -1,3 +1,4 @@
+// FilterButtons.tsx
 import { useDispatch, useSelector } from 'react-redux';
 import React from 'react';
 import { selectFilterType, setFilterType } from '../Store/CombinedSlice';
