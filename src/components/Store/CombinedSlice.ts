@@ -4,10 +4,10 @@ import * as N3 from 'n3';
 import { NamedNode, Store, Quad } from 'n3';
 import { createSelector } from 'reselect';
 import { dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
-import { CombinedState, RdfState, Triple, CytoData, CytoNode, CytoEdge, CsvData } from '../../types';
+import { ICombinedState, IRdfState, ITriple, ICytoData, ICytoNode, ICytoEdge, ICsvData } from '../../types';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
-const initialState: CombinedState = {
+const initialState: ICombinedState = {
   samples: [],
   selectedNodes: [],
   selectedTypes: [],
@@ -18,8 +18,8 @@ const initialState: CombinedState = {
   typesViolationMap: {},
 };
 
-const removeNanEdges = (data: CsvData[]): CsvData[] => {
-  return data.map((sample: CsvData): CsvData => {
+const removeNanEdges = (data: ICsvData[]): ICsvData[] => {
+  return data.map((sample: ICsvData): ICsvData => {
     const { Id, ...rest } = sample;
     const filteredEntries = Object.entries(rest).filter(([key, value]) => value !== CSV_EDGE_NOT_IN_ONTOLOGY_STRING);
 
@@ -27,8 +27,8 @@ const removeNanEdges = (data: CsvData[]): CsvData[] => {
   });
 };
 
-const renameNanEdges = (data: CsvData[]): CsvData[] => {
-  return data.map((sample: CsvData): CsvData => {
+const renameNanEdges = (data: ICsvData[]): ICsvData[] => {
+  return data.map((sample: ICsvData): ICsvData => {
     const { Id, ...rest } = sample;
     // const filteredEntries = Object.entries(rest).filter(([key, value]) => value !== CSV_EDGE_NOT_IN_ONTOLOGY_STRING);
 
@@ -191,19 +191,19 @@ const combinedSlice = createSlice({
   },
 });
 
-export const selectViolationsTypeMap = (state: { combined: CombinedState }) => state.combined.violationTypesMap;
-export const selectSelectedNodes = (state: { combined: CombinedState }) => state.combined.selectedNodes;
-export const selectSamples = (state: { combined: CombinedState }) => state.combined.samples;
-export const selectRdfString = (state: { combined: CombinedState }) => state.combined.rdfString;
-export const selectViolationTypesMap = (state: { combined: CombinedState }) => state.combined.violationTypesMap;
-export const selectTypesViolationMap = (state: { combined: CombinedState }) => state.combined.typesViolationMap;
-export const selectCombinedSamples = (state: { combined: CombinedState }) => state.combined.samples;
-export const selectSelectedViolations = (state: { combined: CombinedState }) => state.combined.selectedViolations;
-export const selectViolations = (state: { combined: CombinedState }) => state.combined.violations;
-export const selectCsvData = (state: { combined: CombinedState }) => state.combined.samples;
-export const selectSelectedFocusNodes = (state: { combined: CombinedState }) => state.combined.selectedNodes;
-export const selectSelectedTypes = (state: { combined: CombinedState }) => state.combined.selectedTypes;
-export const selectRdfData = (state: { combined: CombinedState }) => state.combined.rdfString;
+export const selectViolationsTypeMap = (state: { combined: ICombinedState }) => state.combined.violationTypesMap;
+export const selectSelectedNodes = (state: { combined: ICombinedState }) => state.combined.selectedNodes;
+export const selectSamples = (state: { combined: ICombinedState }) => state.combined.samples;
+export const selectRdfString = (state: { combined: ICombinedState }) => state.combined.rdfString;
+export const selectViolationTypesMap = (state: { combined: ICombinedState }) => state.combined.violationTypesMap;
+export const selectTypesViolationMap = (state: { combined: ICombinedState }) => state.combined.typesViolationMap;
+export const selectCombinedSamples = (state: { combined: ICombinedState }) => state.combined.samples;
+export const selectSelectedViolations = (state: { combined: ICombinedState }) => state.combined.selectedViolations;
+export const selectViolations = (state: { combined: ICombinedState }) => state.combined.violations;
+export const selectCsvData = (state: { combined: ICombinedState }) => state.combined.samples;
+export const selectSelectedFocusNodes = (state: { combined: ICombinedState }) => state.combined.selectedNodes;
+export const selectSelectedTypes = (state: { combined: ICombinedState }) => state.combined.selectedTypes;
+export const selectRdfData = (state: { combined: ICombinedState }) => state.combined.rdfString;
 
 // TODO investigate why we are returning everything here
 // create memoized selector
@@ -251,7 +251,7 @@ const mapQuadToShortenedResult = (quad, prefixes: { [key: string]: string }) => 
   };
 };
 
-export const selectSubClassesAndViolations = async (state: { combined: CombinedState }): Promise<Quad[]> => {
+export const selectSubClassesAndViolations = async (state: { combined: ICombinedState }): Promise<Quad[]> => {
   const { rdfString } = state.combined;
   const store: Store = new Store();
   const parser: N3.Parser = new N3.Parser();
@@ -301,7 +301,7 @@ export const selectSubClassesAndViolations = async (state: { combined: CombinedS
   return results;
 };
 
-export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<Triple[]> => {
+export const selectSubClassOfTuples = async (state: { rdf: IRdfState }): Promise<ITriple[]> => {
   const { rdfString } = state.rdf;
   const store: Store = new Store();
   const parser: N3.Parser = new N3.Parser();
@@ -332,7 +332,7 @@ export const selectSubClassOfTuples = async (state: { rdf: RdfState }): Promise<
   });
 };
 
-export const selectAllClassesAndViolations = async (state: { combined: CombinedState }): Promise<{ visibleTriples: Triple[]; hiddenTriples: Triple[] }> => {
+export const selectAllClassesAndViolations = async (state: { combined: ICombinedState }): Promise<{ visibleTriples: ITriple[]; hiddenTriples: ITriple[] }> => {
   const { rdfString } = state.combined;
   const store: Store = new Store();
   const parser: N3.Parser = new N3.Parser();
@@ -392,7 +392,7 @@ export const selectAllClassesAndViolations = async (state: { combined: CombinedS
   return { visibleTriples, hiddenTriples };
 };
 
-export const selectAllTriples = async (state: { combined: CombinedState }): Promise<{ visibleTriples: Triple[]; hiddenTriples: Triple[] }> => {
+export const selectAllTriples = async (state: { combined: ICombinedState }): Promise<{ visibleTriples: ITriple[]; hiddenTriples: ITriple[] }> => {
   const { rdfString } = state.combined;
   const store: Store = new Store();
   const parser: N3.Parser = new N3.Parser();
@@ -434,7 +434,7 @@ export const selectAllTriples = async (state: { combined: CombinedState }): Prom
 };
 
 // TODO, if this is needed again add the prefix logic from selectSubClassOfTuples
-export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: RdfState }): Promise<Triple[]> => {
+export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: IRdfState }): Promise<ITriple[]> => {
   const { rdfString } = state.rdf;
   const store: Store = new N3.Store();
   const parser: N3.Parser = new N3.Parser();
@@ -468,10 +468,10 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: RdfStat
  * @param state The Redux store state.
  * @returns The Cytoscape data.
  */
-export const selectCytoData = async (state: { combined: CombinedState }): Promise<CytoData> => {
+export const selectCytoData = async (state: { combined: ICombinedState }): Promise<ICytoData> => {
   const { visibleTriples, hiddenTriples } = await selectAllTriples(state);
-  const nodes: CytoNode[] = [];
-  const edges: CytoEdge[] = [];
+  const nodes: ICytoNode[] = [];
+  const edges: ICytoEdge[] = [];
 
   // Function to add or update a node
   const addOrUpdateNode = (id: string, visible: boolean) => {

@@ -1,10 +1,10 @@
 // LineUpView.tsx
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, createContext, useContext } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import * as LineUpJS from 'lineupjs';
 
 import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes } from '../Store/CombinedSlice';
-import { CsvData, CsvCell } from '../../types';
+import { ICsvData, CsvCell, IFilterContext } from '../../types';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
 /**
@@ -13,7 +13,7 @@ import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRI
  * @param data The CSV data to be filtered.
  * @returns The CSV data without columns containing one unique value.
  */
-const filterAllUniModalColumns = (data: CsvData[]): CsvData[] => {
+const filterAllUniModalColumns = (data: ICsvData[]): ICsvData[] => {
   const uniqueValuesPerColumn = new Map<string, Set<CsvCell>>();
   const isUnimodalColumn = new Map<string, boolean>();
 
@@ -48,7 +48,7 @@ const filterAllUniModalColumns = (data: CsvData[]): CsvData[] => {
 
   // Return a new array containing only rows with non-unimodal columns
   return data.map((row) => {
-    const filteredRow: CsvData = { Id: row.Id };
+    const filteredRow: ICsvData = { Id: row.Id };
 
     for (const key in row) {
       if (key !== 'Id' && !isUnimodalColumn.get(key)) {
@@ -66,12 +66,12 @@ const filterAllUniModalColumns = (data: CsvData[]): CsvData[] => {
  * @param data The CSV data to be filtered.
  * @returns The CSV data without columns containing only NaN values.
  */
-const filterAllNanColumns = (data: CsvData[]): CsvData[] => {
+const filterAllNanColumns = (data: ICsvData[]): ICsvData[] => {
   const nonDashColumns = new Map<string, boolean>();
 
   // Preprocess data and track columns with non-dash values
   const preprocessedData = data.map((sample) => {
-    const processedSample: CsvData = { Id: sample.Id };
+    const processedSample: ICsvData = { Id: sample.Id };
 
     for (const key in sample) {
       if (key !== 'Id') {
@@ -91,7 +91,7 @@ const filterAllNanColumns = (data: CsvData[]): CsvData[] => {
 
   // Filter out columns that only contain "-"
   return preprocessedData.map((sample) => {
-    const filteredSample: CsvData = { Id: sample.Id };
+    const filteredSample: ICsvData = { Id: sample.Id };
 
     for (const key in sample) {
       if (key !== 'Id' && nonDashColumns.get(key)) {

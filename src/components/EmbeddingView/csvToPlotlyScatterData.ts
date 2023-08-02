@@ -1,4 +1,4 @@
-import { CsvData } from '../../types';
+import { ICsvData } from '../../types';
 
 export interface ScatterCsvData {
   x: number;
@@ -12,7 +12,7 @@ export interface ScatterData {
   text: string;
 }
 
-export function dataToScatterDataArray(samples: CsvData[]): ScatterData[] {
+export function dataToScatterDataArray(samples: ICsvData[]): ScatterData[] {
   const scatterDataArray: ScatterData[] = [];
 
   if (samples) {

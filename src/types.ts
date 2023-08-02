@@ -1,13 +1,20 @@
-export interface OntologyNode {
-  name: string;
-  children: OntologyNode[];
+export interface IFilterContext {
+  filterUnimodalColumns: boolean;
+  toggleUnimodalColumnsFilter: () => void;
+  filterNanColumns: boolean;
+  toggleNanColumnsFilter: () => void;
 }
 
-export type OntologyMap = { [key: string]: OntologyNode };
+export interface IOntologyNode {
+  name: string;
+  children: IOntologyNode[];
+}
+
+export type OntologyMap = { [key: string]: IOntologyNode };
 
 export type CsvCell = string | number | undefined;
 
-export interface CsvData {
+export interface ICsvData {
   Id: string;
   x?: number;
   y?: number;
@@ -15,7 +22,7 @@ export interface CsvData {
   [key: string]: CsvCell;
 }
 
-export interface CytoNode {
+export interface ICytoNode {
   data: {
     id: string;
     label?: string;
@@ -31,7 +38,7 @@ export interface CytoNode {
   grabbable?: boolean;
   locked?: boolean;
 }
-export interface CytoEdge {
+export interface ICytoEdge {
   data: {
     id: string;
     source: string;
@@ -41,17 +48,17 @@ export interface CytoEdge {
     permanent?: boolean;
   };
 }
-export interface CytoData {
-  nodes: CytoNode[];
-  edges: CytoEdge[];
+export interface ICytoData {
+  nodes: ICytoNode[];
+  edges: ICytoEdge[];
 }
 
-export interface RdfState {
+export interface IRdfState {
   rdfString: string;
 }
 
-export interface CombinedState {
-  samples: CsvData[];
+export interface ICombinedState {
+  samples: ICsvData[];
   selectedNodes: string[];
   selectedTypes: string[];
   selectedViolations: string[];
@@ -61,7 +68,7 @@ export interface CombinedState {
   typesViolationMap: { [key: string]: string[] }; // map of owl:Classes to their corresponding sh:PropertyShapes and the sh:NodeShapes in between
 }
 
-export interface Triple {
+export interface ITriple {
   s: string;
   p: string;
   o: string;

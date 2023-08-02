@@ -1,4 +1,4 @@
-import { CsvData } from '../../types';
+import { ICsvData } from '../../types';
 
 
 export interface CytoNode {
@@ -37,7 +37,7 @@ export interface RdfState {
 }
 
 export interface CombinedState {
-  samples: CsvData[];
+  samples: ICsvData[];
   selectedNodes: string[];
   selectedTypes: string[];
   selectedViolations: string[];

@@ -1,4 +1,4 @@
-import { CsvData } from '../../types';
+import { ICsvData } from '../../types';
 
 export interface FeatureCsvData {
   Id: string;
@@ -19,7 +19,7 @@ export interface BarPlotData {
  * @param focus_nodes a list of strings that are the names of focus nodes as they appear after user selection in the csv slice
  * @param samples all the data in the csv slice
  */
-export function csvDataToBarPlotDataGivenFeature(feature: string, focus_nodes: string[], samples: CsvData[]): BarPlotData {
+export function csvDataToBarPlotDataGivenFeature(feature: string, focus_nodes: string[], samples: ICsvData[]): BarPlotData {
   const counts: Record<string, number> = {};
   // if undefined return empty
   if (samples === undefined) {
@@ -51,7 +51,7 @@ export function csvDataToBarPlotDataGivenFeature(feature: string, focus_nodes: s
  * @param feature a string that is the name of a feature as it appears in the csv in the csv slice
  * @param samples all the data in the csv slice
  */
-export function csvDataToBarPlotDataGivenFeatureOverallDistribution(feature: string, samples: CsvData[]): BarPlotData {
+export function csvDataToBarPlotDataGivenFeatureOverallDistribution(feature: string, samples: ICsvData[]): BarPlotData {
   const counts: Record<string, number> = {};
   // if undefined return empty
   if (samples === undefined) {
