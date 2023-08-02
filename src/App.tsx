@@ -81,12 +81,9 @@ export function App() {
         </div>
         {cytoscapeLoading && <BarLoader color="steelblue" loading />}
       </div>
-      {/* <div className="Embedding-Title">Embedding View</div> */}
       <div className="TabsContainer">
-        {/* <InteractiveScatterPlot data={plotlyData} /> */}
         <Tabs />
       </div>
-      {/* <LineUpView /> */}
     </div>
   );
 }

@@ -69,6 +69,11 @@ export default function LineUpView() {
     console.log('lineup useeffect triggered');
     if (lineupRef.current && csvData.length > 0) {
       lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, csvData);
+      // // iterate columns
+      // lineupInstanceRef.current.data.getColumns().forEach((column: any) => {
+      //   // print object type
+      //   console.log(column);
+      // });
 
       setupListener(lineupInstanceRef);
     }

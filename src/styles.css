@@ -151,3 +151,8 @@ body {
   color: black;
   /* border-bottom: none; Remove the bottom border */
 }
+
+/* TODO find out how to do this in a cleaner and intended way in the lineupjs library */
+/* [class*="le-th-lu-"] {
+  width: auto !important;
+} */
