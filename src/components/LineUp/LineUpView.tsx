@@ -1,3 +1,4 @@
+// LineUpView.tsx
 import React, { useRef, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import * as LineUpJS from 'lineupjs';
@@ -6,6 +7,12 @@ import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes } from '
 import { CsvData, CsvCell } from '../../types';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
+/**
+ * Filters out columns that only contain one unique value.
+ *
+ * @param data The CSV data to be filtered.
+ * @returns The CSV data without columns containing one unique value.
+ */
 const filterAllUniModalColumns = (data: CsvData[]): CsvData[] => {
   const uniqueValuesPerColumn = new Map<string, Set<CsvCell>>();
   const isUnimodalColumn = new Map<string, boolean>();
@@ -53,6 +60,12 @@ const filterAllUniModalColumns = (data: CsvData[]): CsvData[] => {
   });
 };
 
+/**
+ * Filters out columns that only contain NaN values.
+ *
+ * @param data The CSV data to be filtered.
+ * @returns The CSV data without columns containing only NaN values.
+ */
 const filterAllNanColumns = (data: CsvData[]): CsvData[] => {
   const nonDashColumns = new Map<string, boolean>();
 
@@ -90,6 +103,13 @@ const filterAllNanColumns = (data: CsvData[]): CsvData[] => {
   });
 };
 
+/**
+ * A LineUp view component for visualizing CSV data.
+ *
+ * Uses the redux state to select focus nodes and CSV data.
+ *
+ * @returns The LineUp view component.
+ */
 export default function LineUpView() {
   const dispatch = useDispatch();
   const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
@@ -98,6 +118,13 @@ export default function LineUpView() {
   // Local state to hold csvData
   const [csvData, setCsvData] = useState(reduxCsvData);
 
+  /**
+   * Sets up a listener for selection changes in the lineup instance.
+   *
+   * When a selection change event is triggered, it dispatches the selected nodes to the redux store.
+   *
+   * @param lineupInstanceRef Reference to the current lineup instance.
+   */
   const setupListener = (lineupInstanceRef): any => {
     lineupInstanceRef.current.on('selectionChanged', (selection) => {
       console.log('test selection changed', selection);
@@ -114,22 +141,14 @@ export default function LineUpView() {
   const lineupInstanceRef = useRef<LineUpJS.Taggle | null>(null);
 
   useEffect(() => {
-    console.log('lineup useeffect triggered');
     if (lineupRef.current && csvData.length > 0) {
       lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, csvData);
-      // // iterate columns
-      // lineupInstanceRef.current.data.getColumns().forEach((column: any) => {
-      //   // print object type
-      //   console.log(column);
-      // });
 
       setupListener(lineupInstanceRef);
     }
   }, [lineupRef, csvData, dispatch]);
 
   useEffect(() => {
-    console.log('lineup useeffect triggered');
-
     if (lineupInstanceRef.current) {
       const focusNodesSet = new Set(selectedFocusNodes);
       const filteredCsvDataIndices = csvData.map((row, index) => (focusNodesSet.has(row.focus_node) ? index : -1)).filter((index) => index !== -1);
