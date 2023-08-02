@@ -9,15 +9,23 @@ export function FilterButtons() {
 
   return (
     <div className="filterButtonsContainer">
-      <button type="button" onClick={() => dispatch(setFilterType('unimodal'))} disabled={filterType === 'unimodal'}>
-        {filterType === 'unimodal' ? 'Unimodal Filtering Active' : 'Activate Unimodal Filtering'}
-      </button>
-      <button type="button" onClick={() => dispatch(setFilterType('nan'))} disabled={filterType === 'nan'}>
-        {filterType === 'nan' ? 'NaN Filtering Active' : 'Activate NaN Filtering'}
-      </button>
-      <button type="button" onClick={() => dispatch(setFilterType('none'))} disabled={filterType === 'none'}>
-        {filterType === 'none' ? 'No Filtering Active' : 'Deactivate Filtering'}
-      </button>
+      <label className={`filterLabel ${filterType === 'unimodal' ? 'activeFilter' : ''}`}>
+        <input type="radio" value="unimodal" checked={filterType === 'unimodal'} onChange={() => dispatch(setFilterType('unimodal'))} />
+        {/* {filterType === 'unimodal' ? 'Unimodal Filtering Active' : 'Activate Unimodal Filtering'} */}
+        Unimodal Filtering
+      </label>
+
+      <label className={`filterLabel ${filterType === 'nan' ? 'activeFilter' : ''}`}>
+        <input type="radio" value="nan" checked={filterType === 'nan'} onChange={() => dispatch(setFilterType('nan'))} />
+        {/* {filterType === 'nan' ? 'NaN Filtering Active' : 'Activate NaN Filtering'} */}
+        NaN Filtering
+      </label>
+
+      <label className={`filterLabel ${filterType === 'none' ? 'activeFilter' : ''}`}>
+        <input type="radio" value="none" checked={filterType === 'none'} onChange={() => dispatch(setFilterType('none'))} />
+        {/* {filterType === 'none' ? 'No Filtering Active' : 'Deactivate Filtering'} */}
+        No Filtering
+      </label>
     </div>
   );
 }
