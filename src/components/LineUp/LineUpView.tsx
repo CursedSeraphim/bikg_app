@@ -135,7 +135,17 @@ export default function LineUpView() {
     });
   };
 
-  function createLineUpWithColumnFiltering(lineupInstanceRef, lineupRef, data) {
+  /**
+   * Create a new LineUp instance with an event listener for selection changes.
+   *
+   * This function first destroys the previous LineUp instance, if it exists, then creates a new one
+   * using the provided data. It also sets up a selection change listener for the new LineUp instance.
+   *
+   * @param {React.RefObject<LineUpJS.Taggle>} lineupInstanceRef - A reference to the current LineUp instance.
+   * @param {React.RefObject<HTMLDivElement>} lineupRef - A reference to the HTMLDivElement for the LineUp component.
+   * @param {ICsvData[]} data - The CSV data to be visualized in the LineUp instance.
+   */
+  function createLineUpWithListener(lineupInstanceRef, lineupRef, data) {
     // cleanup old lineup instance
     if (lineupInstanceRef.current) {
       lineupInstanceRef.current.destroy();
@@ -217,7 +227,7 @@ export default function LineUpView() {
     const filteredCsvData = filterColumns(csvDataFromFocusNodeSet, allData);
 
     // Set up the lineup instance with the filtered allData
-    createLineUpWithColumnFiltering(lineupInstanceRef, lineupRef, filteredCsvData);
+    createLineUpWithListener(lineupInstanceRef, lineupRef, filteredCsvData);
 
     // Precompute a map for focus_node to index mapping for fast lookup
     const csvDataIndexMap = new Map(allData.map((row, index) => [row.focus_node, index]));
@@ -237,7 +247,7 @@ export default function LineUpView() {
 
   useEffect(() => {
     if (lineupRef.current && csvData.length > 0) {
-      createLineUpWithColumnFiltering(lineupInstanceRef, lineupRef, csvData);
+      createLineUpWithListener(lineupInstanceRef, lineupRef, csvData);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lineupRef, csvData, dispatch]);
