@@ -119,6 +119,7 @@ export default function LineUpView() {
 
   // Local state to hold csvData
   const [csvData, setCsvData] = useState(reduxCsvData);
+  const [currentCsvData, setCurrentCsvData] = useState(reduxCsvData);
 
   /**
    * Sets up a listener for selection changes in the lineup instance.
@@ -129,7 +130,8 @@ export default function LineUpView() {
    */
   const setupListener = (lineupInstanceRef): void => {
     lineupInstanceRef.current.on('selectionChanged', (selection) => {
-      const selectedNodes = selection.map((index) => csvData[index].focus_node);
+      console.log('selectionChanged', selection);
+      const selectedNodes = selection.map((index) => currentCsvData[index].focus_node);
       dispatch(setSelectedFocusNodes(selectedNodes));
     });
   };
@@ -141,60 +143,100 @@ export default function LineUpView() {
   const lineupRef = useRef<HTMLDivElement>(null);
   const lineupInstanceRef = useRef<LineUpJS.Taggle | null>(null);
 
-  useEffect(() => {
-    if (lineupRef.current && csvData.length > 0) {
-      lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, csvData);
+  // useEffect(() => {
+  //   console.log('useEffect 1');
+  //   if (lineupRef.current && csvData.length > 0) {
+  //     setCurrentCsvData(csvData);
+  //     // lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, currentCsvData);
 
-      setupListener(lineupInstanceRef);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lineupRef, csvData, dispatch]);
+  //     setupListener(lineupInstanceRef);
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [lineupRef, csvData, dispatch]);
 
+  // React effect hook: Updates the LineUp instance whenever the selected focus nodes, csv data, filter type or missing edge option change
   useEffect(() => {
+    console.log('useEffect 2');
+    // Ensure a LineUp instance is available before proceeding
     if (lineupInstanceRef.current) {
+      // Create a Set of focus nodes for quick lookup
       const focusNodesSet = new Set(selectedFocusNodes);
+
+      // Map through the csv data to find the indices of rows where the focus node is in the set
       const filteredCsvDataIndices = csvData.map((row, index) => (focusNodesSet.has(row.focus_node) ? index : -1)).filter((index) => index !== -1);
 
+      // Only proceed if there are rows matching the focus nodes
       if (filteredCsvDataIndices.length > 0) {
-        // lineupInstanceRef.current.data.setSelection(filteredCsvDataIndices);
+        // Extract the rows from csv data that match the focus nodes
+        // let filteredCsvData = filteredCsvDataIndices.map((index) => csvData[index]);
 
-        let filteredCsvData = filteredCsvDataIndices.map((index) => csvData[index]);
-        console.log('filterType', filterType);
-        // Apply filter based on the filterType
+        // Apply filter to the data based on the filterType
         switch (filterType) {
           case 'unimodal':
-            filteredCsvData = filterAllUniModalColumns(filteredCsvData);
+            // Filters out columns that only contain one unique value
+            setCurrentCsvData(filterAllUniModalColumns(filteredCsvDataIndices.map((index) => csvData[index])));
             break;
           case 'nan':
-            filteredCsvData = filterAllNanColumns(filteredCsvData);
+            // Filters out columns that only contain NaN values
+            setCurrentCsvData(filterAllNanColumns(filteredCsvDataIndices.map((index) => csvData[index])));
             break;
           case 'none':
           default:
+            // No filtering is applied
+            setCurrentCsvData(filteredCsvDataIndices.map((index) => csvData[index]));
             break;
         }
 
-        console.log('preprocessAndFilterData(filteredCsvData)', filteredCsvData);
+        // Log the filtered data for debugging
+        console.log('currentCsvData', currentCsvData);
 
-        // cleanup old lineup instance
+        // Cleanup: Destroy the old LineUp instance before creating a new one
         if (lineupInstanceRef.current) {
           lineupInstanceRef.current.destroy();
         }
 
-        lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, filteredCsvData);
+        // Create a new LineUp instance with the filtered data
+        lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, currentCsvData);
+
+        // Set up listener on the new LineUp instance
         setupListener(lineupInstanceRef);
+
         console.log('set new lineup instance');
       } else {
+        // If no rows match the focus nodes, clear the selection and setup a LineUp instance with the original csv data
         lineupInstanceRef.current.data.clearSelection();
-        // cleanup old lineup instance
+
+        // Cleanup: Destroy the old LineUp instance before creating a new one
         if (lineupInstanceRef.current) {
           lineupInstanceRef.current.destroy();
         }
-        lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, csvData);
+
+        setCurrentCsvData(csvData);
+        console.log('currentCsvData', currentCsvData);
+        // Create a new LineUp instance with the original csv data
+        // lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, currentCsvData);
+
+        // Set up listener on the new LineUp instance
         setupListener(lineupInstanceRef);
       }
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFocusNodes, csvData, filterType, missingEdgeOption]); // add filterType to the dependencies
+  }, [selectedFocusNodes, csvData, filterType, missingEdgeOption]); // Depend on these values to re-run the effect
+
+  useEffect(() => {
+    if (lineupRef.current && currentCsvData.length > 0) {
+      if (lineupInstanceRef.current) {
+        lineupInstanceRef.current.destroy();
+      }
+      lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, currentCsvData);
+      setupListener(lineupInstanceRef);
+    } else {
+      lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, csvData);
+      setupListener(lineupInstanceRef);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCsvData, csvData]);
 
   return (
     <div className="lineup-window">
