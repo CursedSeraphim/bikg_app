@@ -51,8 +51,10 @@ export interface IRdfState {
 }
 
 export type FilterType = 'none' | 'unimodal' | 'nan';
+export type MissingEdgeOptionType = 'remove' | 'keep';
 export interface ICombinedState {
   samples: ICsvData[];
+  originalSamples: ICsvData[];
   selectedNodes: string[];
   selectedTypes: string[];
   selectedViolations: string[];
@@ -61,6 +63,7 @@ export interface ICombinedState {
   violationTypesMap: { [key: string]: string[] }; // map of violation sh:PropertyShapes to their corresponding owl:Class and the sh:NodeShapes in between
   typesViolationMap: { [key: string]: string[] }; // map of owl:Classes to their corresponding sh:PropertyShapes and the sh:NodeShapes in between
   filterType: FilterType;
+  missingEdgeOption: MissingEdgeOptionType;
 }
 
 export interface ITriple {

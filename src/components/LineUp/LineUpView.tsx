@@ -3,7 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import * as LineUpJS from 'lineupjs';
 
-import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes, selectFilterType } from '../Store/CombinedSlice';
+import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes, selectFilterType, selectMissingEdgeOption } from '../Store/CombinedSlice';
 import { ICsvData, CsvCell } from '../../types';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
@@ -115,6 +115,7 @@ export default function LineUpView() {
   const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
   const reduxCsvData = useSelector(selectCsvData);
   const filterType = useSelector(selectFilterType);
+  const missingEdgeOption = useSelector(selectMissingEdgeOption);
 
   // Local state to hold csvData
   const [csvData, setCsvData] = useState(reduxCsvData);
@@ -126,7 +127,7 @@ export default function LineUpView() {
    *
    * @param lineupInstanceRef Reference to the current lineup instance.
    */
-  const setupListener = (lineupInstanceRef): any => {
+  const setupListener = (lineupInstanceRef): void => {
     lineupInstanceRef.current.on('selectionChanged', (selection) => {
       const selectedNodes = selection.map((index) => csvData[index].focus_node);
       dispatch(setSelectedFocusNodes(selectedNodes));
@@ -146,6 +147,7 @@ export default function LineUpView() {
 
       setupListener(lineupInstanceRef);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lineupRef, csvData, dispatch]);
 
   useEffect(() => {
@@ -191,7 +193,8 @@ export default function LineUpView() {
         setupListener(lineupInstanceRef);
       }
     }
-  }, [selectedFocusNodes, csvData, filterType]); // add filterType to the dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFocusNodes, csvData, filterType, missingEdgeOption]); // add filterType to the dependencies
 
   return (
     <div className="lineup-window">

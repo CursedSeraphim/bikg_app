@@ -4,11 +4,13 @@ import * as N3 from 'n3';
 import { NamedNode, Store, Quad } from 'n3';
 import { createSelector } from 'reselect';
 import { dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
-import { ICombinedState, IRdfState, ITriple, ICytoData, ICytoNode, ICytoEdge, ICsvData, FilterType } from '../../types';
-import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
+import { ICombinedState, IRdfState, ITriple, ICytoData, ICytoNode, ICytoEdge, ICsvData, FilterType, MissingEdgeOptionType } from '../../types';
+// import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
 const initialState: ICombinedState = {
   samples: [],
+  originalSamples: [],
   selectedNodes: [],
   selectedTypes: [],
   selectedViolations: [],
@@ -17,38 +19,49 @@ const initialState: ICombinedState = {
   violationTypesMap: {},
   typesViolationMap: {},
   filterType: 'none',
+  missingEdgeOption: 'keep',
 };
 
 const removeNanEdges = (data: ICsvData[]): ICsvData[] => {
   return data.map((sample: ICsvData): ICsvData => {
     const { Id, ...rest } = sample;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const filteredEntries = Object.entries(rest).filter(([key, value]) => value !== CSV_EDGE_NOT_IN_ONTOLOGY_STRING);
 
     return { Id, ...Object.fromEntries(filteredEntries) };
   });
 };
 
-const renameNanEdges = (data: ICsvData[]): ICsvData[] => {
-  return data.map((sample: ICsvData): ICsvData => {
-    const { Id, ...rest } = sample;
-    // const filteredEntries = Object.entries(rest).filter(([key, value]) => value !== CSV_EDGE_NOT_IN_ONTOLOGY_STRING);
+// const renameNanEdges = (data: ICsvData[]): ICsvData[] => {
+//   return data.map((sample: ICsvData): ICsvData => {
+//     const { Id, ...rest } = sample;
+//     // const filteredEntries = Object.entries(rest).filter(([key, value]) => value !== CSV_EDGE_NOT_IN_ONTOLOGY_STRING);
 
-    // return { Id, ...Object.fromEntries(filteredEntries) };
+//     // return { Id, ...Object.fromEntries(filteredEntries) };
 
-    const modifiedEntries = Object.entries(rest).map(([key, value]) => [
-      key,
-      value === CSV_EDGE_NOT_IN_ONTOLOGY_STRING ? CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING : value,
-    ]);
+//     const modifiedEntries = Object.entries(rest).map(([key, value]) => [
+//       key,
+//       value === CSV_EDGE_NOT_IN_ONTOLOGY_STRING ? CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING : value,
+//     ]);
 
-    return { Id, ...Object.fromEntries(modifiedEntries) };
-  });
-};
+//     return { Id, ...Object.fromEntries(modifiedEntries) };
+//   });
+// };
 
 // TODO set types of payloadaction for all reducers
 const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
+    setMissingEdgeOption: (state, action: PayloadAction<MissingEdgeOptionType>) => {
+      console.log('setMissingEdgeOption', action.payload);
+      state.missingEdgeOption = action.payload;
+      if (state.missingEdgeOption === 'remove') {
+        state.samples = removeNanEdges(state.originalSamples);
+      } else if (state.missingEdgeOption === 'keep') {
+        state.samples = [...state.originalSamples];
+      }
+    },
     setFilterType: (state, action: PayloadAction<FilterType>) => {
       state.filterType = action.payload;
     },
@@ -66,8 +79,12 @@ const combinedSlice = createSlice({
     },
     setCsvData: (state, action) => {
       console.log('setCsvData');
-      // state.samples = removeNanEdges(action.payload);
-      state.samples = action.payload;
+      state.originalSamples = action.payload;
+      if (state.missingEdgeOption === 'remove') {
+        state.samples = removeNanEdges(action.payload);
+      } else if (state.missingEdgeOption === 'keep') {
+        state.samples = action.payload;
+      }
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
       console.log('setSelectedFocusNodesUsingFeatureCategories', action.payload);
@@ -197,6 +214,7 @@ const combinedSlice = createSlice({
   },
 });
 
+export const selectMissingEdgeOption = (state: { combined: ICombinedState }) => state.combined.missingEdgeOption;
 export const selectFilterType = (state: { combined: ICombinedState }) => state.combined.filterType;
 export const selectViolationsTypeMap = (state: { combined: ICombinedState }) => state.combined.violationTypesMap;
 export const selectSelectedNodes = (state: { combined: ICombinedState }) => state.combined.selectedNodes;
@@ -542,6 +560,7 @@ export const {
   setViolationTypesMap,
   setTypesViolationMap,
   setFilterType,
+  setMissingEdgeOption,
 } = combinedSlice.actions;
 
 export default combinedSlice.reducer;

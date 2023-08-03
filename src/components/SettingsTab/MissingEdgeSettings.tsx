@@ -1,14 +1,14 @@
-// AdditionalSettings.tsx
+// MissingEdgeSettings.tsx
 import React from 'react';
-import { FilterButtons } from './FilterButtons/FilterButtons';
+import { MissingEdgeOptionButtons } from './FilterButtons/MissingEdgeOptionButtons';
 
-function AdditionalSettings() {
+function MissingEdgeSettings() {
   return (
     <div className="settingsSectionContainer">
-      <div className="settingsTitle">Additional Settings</div>
-      work in progress...
+      <div className="settingsTitle">Missing Edge Settings</div>
+      <MissingEdgeOptionButtons />
     </div>
   );
 }
 
-export default AdditionalSettings;
+export default MissingEdgeSettings;

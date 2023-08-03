@@ -237,6 +237,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       combined: {
         rdfString: rdfOntology,
         samples: [],
+        originalSamples: [],
         selectedNodes: [],
         selectedViolations,
         selectedTypes,
@@ -244,6 +245,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
         violationTypesMap: {},
         typesViolationMap: {},
         filterType: 'none',
+        missingEdgeOption: 'keep',
       },
     })
       .then((data) => {
