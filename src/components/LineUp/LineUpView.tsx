@@ -10,8 +10,8 @@ import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRI
 /**
  * Filters out columns that only contain one unique value.
  *
- * @param data The CSV data to be filtered.
- * @returns The CSV data without columns containing one unique value.
+ * @param data - The CSV data to be filtered.
+ * @returns - The CSV data with columns containing more than one unique value.
  */
 const filterAllUniModalColumns = (data: ICsvData[]): ICsvData[] => {
   const uniqueValuesPerColumn = new Map<string, Set<CsvCell>>();
@@ -63,8 +63,8 @@ const filterAllUniModalColumns = (data: ICsvData[]): ICsvData[] => {
 /**
  * Filters out columns that only contain NaN values.
  *
- * @param data The CSV data to be filtered.
- * @returns The CSV data without columns containing only NaN values.
+ * @param data - The CSV data to be filtered.
+ * @returns - The CSV data with columns containing at least one non-NaN value.
  */
 const filterAllNanColumns = (data: ICsvData[]): ICsvData[] => {
   const nonDashColumns = new Map<string, boolean>();
@@ -108,7 +108,7 @@ const filterAllNanColumns = (data: ICsvData[]): ICsvData[] => {
  *
  * Uses the redux state to select focus nodes and CSV data.
  *
- * @returns The LineUp view component.
+ * @returns - The rendered LineUp view component.
  */
 export default function LineUpView() {
   const dispatch = useDispatch();
@@ -126,7 +126,7 @@ export default function LineUpView() {
    *
    * When a selection change event is triggered, it dispatches the selected nodes to the redux store.
    *
-   * @param lineupInstanceRef Reference to the current lineup instance.
+   * @param lineupInstanceRef - Reference to the current lineup instance.
    */
   const setupListener = (lineupInstanceRef): void => {
     lineupInstanceRef.current.on('selectionChanged', (selection) => {
@@ -203,6 +203,7 @@ export default function LineUpView() {
 
         console.log('set new lineup instance');
       } else {
+        console.log('else');
         // If no rows match the focus nodes, clear the selection and setup a LineUp instance with the original csv data
         lineupInstanceRef.current.data.clearSelection();
 
@@ -211,13 +212,10 @@ export default function LineUpView() {
           lineupInstanceRef.current.destroy();
         }
 
-        setCurrentCsvData(csvData);
-        console.log('currentCsvData', currentCsvData);
+        console.log('calling setCurrentCsvData');
+        setCurrentCsvData([...csvData]); // TODO why does this not triggre the below useEffect when it is called twice in a row?
         // Create a new LineUp instance with the original csv data
         // lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, currentCsvData);
-
-        // Set up listener on the new LineUp instance
-        setupListener(lineupInstanceRef);
       }
     }
 
@@ -225,17 +223,20 @@ export default function LineUpView() {
   }, [selectedFocusNodes, csvData, filterType, missingEdgeOption]); // Depend on these values to re-run the effect
 
   useEffect(() => {
+    console.log('currentCsvData.length', currentCsvData.length);
     if (lineupRef.current && currentCsvData.length > 0) {
+      console.log('useeffect with currentCsvData and lineupRef');
       if (lineupInstanceRef.current) {
         lineupInstanceRef.current.destroy();
       }
       lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, currentCsvData);
       setupListener(lineupInstanceRef);
     } else {
+      console.log('useeffect where currentCsvData is empty');
       lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, csvData);
       setupListener(lineupInstanceRef);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentCsvData, csvData]);
 
   return (
