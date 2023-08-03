@@ -186,38 +186,41 @@ body {
   display: flex;
   flex-direction: column;
   align-items: left;
-  padding: 20px;
+  padding-top: 0;
+  padding-left: 0px;
+  padding-right: 0px;
+  padding-bottom: 20px;
   outline: 1px solid lightgrey;
   padding-bottom: 0px;
   box-sizing: border-box;
 }
 
-.filterSettingsTitle {
-  border-bottom: 1px solid lightgrey; 
+.filterSettingsContainer {
+  width: 100%;
+}
+
+.settingsTitle {
+  position: relative;
   margin-bottom: 10px; 
   padding-bottom: 10px; 
-  width: 100%;
   text-align: center;
-  /* font-size: 1.2em;  Increase the font size */
-  color: #333;  /* Change the color */
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.15);  /* Add a text shadow */
-  /* letter-spacing: 1px;  Increase the letter spacing */
+  color: #333;  
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.15);
 }
 
-
-
-.settingsContent {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
+.settingsTitle::after {
+  content: "";
+  position: absolute;
+  left: 10%; /* Adjust as needed */
+  right: 10%; /* Adjust as needed */
+  bottom: 0;
+  border-bottom: 1px solid lightgrey;
 }
+
 
 .filterButtonsContainer {
   display: flex;
   flex-direction: column;
-  /* margin-top: 20px; */
 }
 
 .filterButtonsContainer .filterLabel {
@@ -225,16 +228,16 @@ body {
   color: grey;
   margin-bottom: 10px;
   padding: 10px;
-  transition: all 0.3s ease;  /* add transition for smoother color change */
+  transition: all 0.3s ease;
 }
 
 .filterButtonsContainer .filterLabel:hover,
-.filterButtonsContainer .filterLabel:active {  /* add active pseudoclass */
+.filterButtonsContainer .filterLabel:active {
   color: black;
-  background-color: steelblue; /* add background color change */
+  background-color: steelblue;
 }
 
-.filterButtonsContainer .filterLabel:active { /* override color change on active state */
+.filterButtonsContainer .filterLabel:active {
   color: white;
 }
 
@@ -244,6 +247,12 @@ body {
 
 .filterButtonsContainer input[type="radio"] {
   margin-right: 10px;
+}
+
+.settingsSectionContainer {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid lightgrey;
 }
 
 /* .imageOverlay {

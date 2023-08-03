@@ -1,18 +1,16 @@
 // SettingsTab.tsx
 import React from 'react';
-import { FilterButtons } from '../FilterButtons/FilterButtons';
+import FilterSettings from './FilterSettings';
+import MissingEdgeSettings from './MissingEdgeSettings';
 
 function SettingsTab() {
   return (
     <div className="settingsTab">
-      <div className="filterSettingsTitle">LineUp Filter Settings</div>
-      <div className="settingsContent">
-        <div className="filterButtonsContainer">
-          <FilterButtons />
-        </div>
-      </div>
+      <FilterSettings />
+      <MissingEdgeSettings />
     </div>
   );
 }
+
 
 export default SettingsTab;
