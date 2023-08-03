@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="20.00037mm"
+   height="33.000366mm"
+   viewBox="0 0 20.00037 33.000366"
+   version="1.1"
+   id="svg5"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-99.999997)">
+    <rect
+       style="fill:#2283c6;fill-opacity:1;stroke:#b2b2b2;stroke-width:0;stroke-linecap:square;stroke-linejoin:bevel;stroke-dasharray:none"
+       id="rect184-6-1"
+       width="19.999998"
+       height="4.9999995"
+       x="5e-07"
+       y="106.00037" />
+    <rect
+       style="fill:#2283c6;fill-opacity:1;stroke:#b2b2b2;stroke-width:0;stroke-linecap:square;stroke-linejoin:bevel;stroke-dasharray:none"
+       id="rect184-5-9-3-4"
+       width="19.999998"
+       height="4.9999995"
+       x="5e-07"
+       y="122.50037" />
+    <rect
+       style="fill:#ff8d29;fill-opacity:1;stroke:#b2b2b2;stroke-width:0;stroke-linecap:square;stroke-linejoin:bevel;stroke-dasharray:none"
+       id="rect184-5-8-9-6"
+       width="19.999998"
+       height="4.9999995"
+       x="5e-07"
+       y="111.50037" />
+    <rect
+       style="fill:#ff8d29;fill-opacity:1;stroke:#b2b2b2;stroke-width:0;stroke-linecap:square;stroke-linejoin:bevel;stroke-dasharray:none"
+       id="rect184-5-8-2-8-1"
+       width="19.999998"
+       height="4.9999995"
+       x="5e-07"
+       y="128.00037" />
+    <path
+       id="rect184-5-5-2-8-8"
+       style="fill:#30b030;fill-opacity:1;stroke:#b2b2b2;stroke-width:0;stroke-linecap:square;stroke-linejoin:bevel"
+       d="M 9.165039e-7,117.00037 H 20 v 5 H 9.165039e-7 Z" />
+    <g
+       id="g11412-6-8"
+       transform="translate(-8.3496094e-8,100.00037)">
+      <rect
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.0987602;stroke-linecap:square;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+         id="rect184-5-83-03-8-2"
+         width="19.901237"
+         height="4.90099"
+         x="0.049752999"
+         y="0.049009934" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.78723px;line-height:1.25;font-family:Roboto;-inkscape-font-specification:Roboto;stroke-width:0.156025"
+         x="9.1906805"
+         y="3.4802239"
+         id="text9649-38-9-7"
+         transform="scale(0.98590451,1.014297)"><tspan
+           sodipodi:role="line"
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:2.78723px;font-family:Roboto;-inkscape-font-specification:Roboto;stroke-width:0.156025"
+           x="9.1906805"
+           y="3.4802239"
+           id="tspan9651-1-2-3">A</tspan></text>
+    </g>
+  </g>
+</svg>

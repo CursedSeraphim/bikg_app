@@ -6,7 +6,6 @@ import BottomTabs from './components/BottomTabs';
 import { setRdfString, selectRdfData, setCsvData, setViolations, setViolationTypesMap, setTypesViolationMap } from './components/Store/CombinedSlice';
 
 import CytoscapeView from './CytoscapeView';
-import { FilterButtons } from './components/FilterButtons/FilterButtons';
 
 import './styles.css';
 import { fetchOntology, fetchCSVFile, fetchViolationList, fetchViolationPathNodesDict } from './api';
@@ -73,9 +72,6 @@ export function App() {
       </div>
       <div className="TabsContainer">
         <BottomTabs />
-      </div>
-      <div className="FilterButtonsContainer">
-        <FilterButtons />
       </div>
     </div>
   );
