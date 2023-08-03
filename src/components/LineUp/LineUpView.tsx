@@ -2,16 +2,15 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import * as LineUpJS from 'lineupjs';
-
 import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes, selectFilterType, selectMissingEdgeOption } from '../Store/CombinedSlice';
 import { ICsvData, CsvCell } from '../../types';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
 /**
- * Filters out columns that only contain one unique value.
+ * Filter out columns that only contain a single unique value.
  *
- * @param data - The CSV data to be filtered.
- * @returns - The CSV data with columns containing more than one unique value.
+ * @param {ICsvData[]} data - The CSV data to be processed.
+ * @returns {ICsvData[]} The CSV data without columns containing a single unique value.
  */
 const filterAllUniModalColumns = (data: ICsvData[]): ICsvData[] => {
   const uniqueValuesPerColumn = new Map<string, Set<CsvCell>>();
@@ -61,13 +60,13 @@ const filterAllUniModalColumns = (data: ICsvData[]): ICsvData[] => {
 };
 
 /**
- * Filters out columns that only contain NaN values.
+ * Filter out columns that exclusively contain NaN values.
  *
- * @param data - The CSV data to be filtered.
- * @returns - The CSV data with columns containing at least one non-NaN value.
+ * @param {ICsvData[]} data - The CSV data to be processed.
+ * @returns {ICsvData[]} The CSV data with columns exclusively containing NaN values removed.
  */
 const filterAllNanColumns = (data: ICsvData[]): ICsvData[] => {
-  const nonDashColumns = new Map<string, boolean>();
+  const notMissingEdgeColumns = new Map<string, boolean>();
 
   // Preprocess data and track columns with non-dash values
   const preprocessedData = data.map((sample) => {
@@ -80,8 +79,8 @@ const filterAllNanColumns = (data: ICsvData[]): ICsvData[] => {
         processedSample[key] = value;
 
         // If the value is not "-", mark the column as having non-dash values
-        if (value !== CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING && !nonDashColumns.get(key)) {
-          nonDashColumns.set(key, true);
+        if (value !== CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING && !notMissingEdgeColumns.get(key)) {
+          notMissingEdgeColumns.set(key, true);
         }
       }
     }
@@ -89,12 +88,12 @@ const filterAllNanColumns = (data: ICsvData[]): ICsvData[] => {
     return processedSample;
   });
 
-  // Filter out columns that only contain "-"
+  // Filter out columns that only contain missing edges
   return preprocessedData.map((sample) => {
     const filteredSample: ICsvData = { Id: sample.Id };
 
     for (const key in sample) {
-      if (key !== 'Id' && nonDashColumns.get(key)) {
+      if (key !== 'Id' && notMissingEdgeColumns.get(key)) {
         filteredSample[key] = sample[key];
       }
     }
@@ -104,11 +103,10 @@ const filterAllNanColumns = (data: ICsvData[]): ICsvData[] => {
 };
 
 /**
- * A LineUp view component for visualizing CSV data.
+ * LineUpView component for visualizing CSV data.
+ * It uses the Redux state to select focus nodes and to retrieve CSV data.
  *
- * Uses the redux state to select focus nodes and CSV data.
- *
- * @returns - The rendered LineUp view component.
+ * @returns {React.Element} A rendered LineUp view component.
  */
 export default function LineUpView() {
   const dispatch = useDispatch();
@@ -119,22 +117,110 @@ export default function LineUpView() {
 
   // Local state to hold csvData
   const [csvData, setCsvData] = useState(reduxCsvData);
-  const [currentCsvData, setCurrentCsvData] = useState(reduxCsvData);
 
-  /**
-   * Sets up a listener for selection changes in the lineup instance.
+   /**
+   * Set up a listener for selection changes in the lineup instance.
+   * On triggering a selection change event, it dispatches the selected nodes to the redux store.
    *
-   * When a selection change event is triggered, it dispatches the selected nodes to the redux store.
-   *
-   * @param lineupInstanceRef - Reference to the current lineup instance.
+   * @param {LineUpJS.Taggle} lineupInstanceRef - Reference to the current lineup instance.
    */
   const setupListener = (lineupInstanceRef): void => {
     lineupInstanceRef.current.on('selectionChanged', (selection) => {
-      console.log('selectionChanged', selection);
-      const selectedNodes = selection.map((index) => currentCsvData[index].focus_node);
+      const selectedNodes = selection.map((index) => csvData[index].focus_node);
       dispatch(setSelectedFocusNodes(selectedNodes));
     });
   };
+
+  function createLineUpWithColumnFiltering(lineupInstanceRef, lineupRef, data) {
+    // cleanup old lineup instance
+    if (lineupInstanceRef.current) {
+      lineupInstanceRef.current.destroy();
+    }
+
+    lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, data);
+    setupListener(lineupInstanceRef);
+  }
+
+  /**
+   * Filter columns from the provided CSV data based on the selected filter type.
+   *
+   * @param {ICsvData[]} csvFromFocusNodes - The CSV data containing only focus nodes.
+   * @param {ICsvData[]} allData - The complete CSV data set.
+   * @returns {ICsvData[]} Filtered CSV data based on the selected filter type.
+   */
+  function filterColumns(csvFromFocusNodes: ICsvData[], allData: ICsvData[]): ICsvData[] {
+    let filteredCsvData = [...allData]; // copy the csvData to avoid mutating the original
+
+    switch (filterType) {
+      case 'unimodal': {
+        // get unimodal columns
+        const unimodalData = filterAllUniModalColumns(csvFromFocusNodes);
+        const unimodalColumns = new Set(Object.keys(unimodalData[0]));
+
+        filteredCsvData = filteredCsvData.map((row) => {
+          const filteredRow: ICsvData = { Id: row.Id };
+
+          for (const key in row) {
+            if (unimodalColumns.has(key)) {
+              filteredRow[key] = row[key]; // remove unimodal columns
+            }
+          }
+
+          return filteredRow;
+        });
+        break;
+      }
+      case 'nan': {
+        // get nan columns
+        const nanData = filterAllNanColumns(csvFromFocusNodes);
+        const nanColumns = new Set(Object.keys(nanData[0]));
+
+        filteredCsvData = filteredCsvData.map((row) => {
+          const filteredRow: ICsvData = { Id: row.Id };
+
+          for (const key in row) {
+            if (nanColumns.has(key)) {
+              filteredRow[key] = row[key]; // remove nan columns
+            }
+          }
+
+          return filteredRow;
+        });
+        break;
+      }
+      default:
+        break; // if filterType is 'none', return the csvData as is
+    }
+
+    return filteredCsvData;
+  }
+
+  /**
+   * Create LineUp instance after filtering out unnecessary columns and focus nodes.
+   *
+   * @param {LineUpJS.Taggle} lineupInstanceRef - Reference to the current lineup instance.
+   * @param {HTMLDivElement} lineupRef - HTMLDivElement for the LineUp component.
+   * @param {string[]} focusNodes - Selected focus nodes.
+   * @param {ICsvData[]} allData - Complete CSV data set.
+   */
+  function createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, focusNodes, allData) {
+    const focusNodesSet = new Set(focusNodes);
+    const csvDataFromFocusNodeSet = allData.filter((row) => focusNodesSet.has(row.focus_node));
+
+    // Call a function that takes the allDataFromFocusNodeSet and the allData, and returns allData without the columns based on column filter criteria in csvDataFromFocusNodeSet
+    const filteredCsvData = filterColumns(csvDataFromFocusNodeSet, allData);
+
+    // Set up the lineup instance with the filtered allData
+    createLineUpWithColumnFiltering(lineupInstanceRef, lineupRef, filteredCsvData);
+
+    // Precompute a map for focus_node to index mapping for fast lookup
+    const csvDataIndexMap = new Map(allData.map((row, index) => [row.focus_node, index]));
+    const filteredCsvDataIndices = csvDataFromFocusNodeSet.map((row) => csvDataIndexMap.get(row.focus_node));
+    const filteredCsvDataIndicesSet = new Set(filteredCsvDataIndices);
+
+    // Set the filter to subselect the focus nodes
+    lineupInstanceRef.current.data.setFilter((row) => filteredCsvDataIndicesSet.has(row.i));
+  }
 
   useEffect(() => {
     setCsvData(reduxCsvData);
@@ -143,101 +229,26 @@ export default function LineUpView() {
   const lineupRef = useRef<HTMLDivElement>(null);
   const lineupInstanceRef = useRef<LineUpJS.Taggle | null>(null);
 
-  // useEffect(() => {
-  //   console.log('useEffect 1');
-  //   if (lineupRef.current && csvData.length > 0) {
-  //     setCurrentCsvData(csvData);
-  //     // lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, currentCsvData);
-
-  //     setupListener(lineupInstanceRef);
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [lineupRef, csvData, dispatch]);
-
-  // React effect hook: Updates the LineUp instance whenever the selected focus nodes, csv data, filter type or missing edge option change
   useEffect(() => {
-    console.log('useEffect 2');
-    // Ensure a LineUp instance is available before proceeding
+    console.log('wrong useffect');
+    if (lineupRef.current && csvData.length > 0) {
+      createLineUpWithColumnFiltering(lineupInstanceRef, lineupRef, csvData);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lineupRef, csvData, dispatch]);
+
+  useEffect(() => {
     if (lineupInstanceRef.current) {
-      // Create a Set of focus nodes for quick lookup
-      const focusNodesSet = new Set(selectedFocusNodes);
-
-      // Map through the csv data to find the indices of rows where the focus node is in the set
-      const filteredCsvDataIndices = csvData.map((row, index) => (focusNodesSet.has(row.focus_node) ? index : -1)).filter((index) => index !== -1);
-
-      // Only proceed if there are rows matching the focus nodes
-      if (filteredCsvDataIndices.length > 0) {
-        // Extract the rows from csv data that match the focus nodes
-        // let filteredCsvData = filteredCsvDataIndices.map((index) => csvData[index]);
-
-        // Apply filter to the data based on the filterType
-        switch (filterType) {
-          case 'unimodal':
-            // Filters out columns that only contain one unique value
-            setCurrentCsvData(filterAllUniModalColumns(filteredCsvDataIndices.map((index) => csvData[index])));
-            break;
-          case 'nan':
-            // Filters out columns that only contain NaN values
-            setCurrentCsvData(filterAllNanColumns(filteredCsvDataIndices.map((index) => csvData[index])));
-            break;
-          case 'none':
-          default:
-            // No filtering is applied
-            setCurrentCsvData(filteredCsvDataIndices.map((index) => csvData[index]));
-            break;
-        }
-
-        // Log the filtered data for debugging
-        console.log('currentCsvData', currentCsvData);
-
-        // Cleanup: Destroy the old LineUp instance before creating a new one
-        if (lineupInstanceRef.current) {
-          lineupInstanceRef.current.destroy();
-        }
-
-        // Create a new LineUp instance with the filtered data
-        lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, currentCsvData);
-
-        // Set up listener on the new LineUp instance
-        setupListener(lineupInstanceRef);
-
-        console.log('set new lineup instance');
+      if (selectedFocusNodes.length > 0) {
+        createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, selectedFocusNodes, csvData)
       } else {
-        console.log('else');
-        // If no rows match the focus nodes, clear the selection and setup a LineUp instance with the original csv data
-        lineupInstanceRef.current.data.clearSelection();
-
-        // Cleanup: Destroy the old LineUp instance before creating a new one
-        if (lineupInstanceRef.current) {
-          lineupInstanceRef.current.destroy();
-        }
-
-        console.log('calling setCurrentCsvData');
-        setCurrentCsvData([...csvData]); // TODO why does this not triggre the below useEffect when it is called twice in a row?
-        // Create a new LineUp instance with the original csv data
-        // lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, currentCsvData);
+        // create fake list of focusnodes where everything is selected from the csvData
+        const allFocusNodes = csvData.map((row) => row.focus_node);
+        createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, allFocusNodes, csvData)
       }
     }
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFocusNodes, csvData, filterType, missingEdgeOption]); // Depend on these values to re-run the effect
-
-  useEffect(() => {
-    console.log('currentCsvData.length', currentCsvData.length);
-    if (lineupRef.current && currentCsvData.length > 0) {
-      console.log('useeffect with currentCsvData and lineupRef');
-      if (lineupInstanceRef.current) {
-        lineupInstanceRef.current.destroy();
-      }
-      lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, currentCsvData);
-      setupListener(lineupInstanceRef);
-    } else {
-      console.log('useeffect where currentCsvData is empty');
-      lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, csvData);
-      setupListener(lineupInstanceRef);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentCsvData, csvData]);
+  }, [selectedFocusNodes, csvData, filterType, missingEdgeOption]); // add filterType to the dependencies
 
   return (
     <div className="lineup-window">
