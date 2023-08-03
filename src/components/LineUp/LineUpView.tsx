@@ -18,29 +18,31 @@ const filterAllUniModalColumns = (data: ICsvData[]): ICsvData[] => {
 
   // Iterate over all rows and columns
   data.forEach((row) => {
-    for (const key in row) {
-      if (key !== 'Id') {
-        const value = row[key];
-        let uniqueValues = uniqueValuesPerColumn.get(key);
+    if (row.Id !== null) {
+      for (const key in row) {
+        if (key !== 'Id') {
+          const value = row[key];
+          let uniqueValues = uniqueValuesPerColumn.get(key);
 
-        // if the unique values for this column hasn't been initialized, do so
-        if (!uniqueValues) {
-          uniqueValues = new Set();
-          uniqueValuesPerColumn.set(key, uniqueValues);
-          isUnimodalColumn.set(key, true);
+          // if the unique values for this column hasn't been initialized, do so
+          if (!uniqueValues) {
+            uniqueValues = new Set();
+            uniqueValuesPerColumn.set(key, uniqueValues);
+            isUnimodalColumn.set(key, true);
+          }
+
+          // If the unique values set already has this value, continue to next column
+          if (uniqueValues.has(value)) {
+            continue;
+          }
+
+          // If the column is unimodal but a second unique value is found, mark as not unimodal
+          if (isUnimodalColumn.get(key) && uniqueValues.size === 1) {
+            isUnimodalColumn.set(key, false);
+          }
+
+          uniqueValues.add(value);
         }
-
-        // If the unique values set already has this value, continue to next column
-        if (uniqueValues.has(value)) {
-          continue;
-        }
-
-        // If the column is unimodal but a second unique value is found, mark as not unimodal
-        if (isUnimodalColumn.get(key) && uniqueValues.size === 1) {
-          isUnimodalColumn.set(key, false);
-        }
-
-        uniqueValues.add(value);
       }
     }
   });
@@ -73,14 +75,16 @@ const filterAllNanColumns = (data: ICsvData[]): ICsvData[] => {
     const processedSample: ICsvData = { Id: sample.Id };
 
     for (const key in sample) {
-      if (key !== 'Id') {
-        const value = sample[key] === CSV_EDGE_NOT_IN_ONTOLOGY_STRING ? CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING : sample[key];
+      if (sample.Id !== null) {
+        if (key !== 'Id') {
+          const value = sample[key] === CSV_EDGE_NOT_IN_ONTOLOGY_STRING ? CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING : sample[key];
 
-        processedSample[key] = value;
+          processedSample[key] = value;
 
-        // If the value is not "-", mark the column as having non-dash values
-        if (value !== CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING && !notMissingEdgeColumns.get(key)) {
-          notMissingEdgeColumns.set(key, true);
+          // If the value is not "-", mark the column as having non-dash values
+          if (value !== CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING && !notMissingEdgeColumns.get(key)) {
+            notMissingEdgeColumns.set(key, true);
+          }
         }
       }
     }
@@ -118,7 +122,7 @@ export default function LineUpView() {
   // Local state to hold csvData
   const [csvData, setCsvData] = useState(reduxCsvData);
 
-   /**
+  /**
    * Set up a listener for selection changes in the lineup instance.
    * On triggering a selection change event, it dispatches the selected nodes to the redux store.
    *
@@ -137,6 +141,8 @@ export default function LineUpView() {
       lineupInstanceRef.current.destroy();
     }
 
+    // creating a new one and returning it would be too expensive
+    // eslint-disable-next-line no-param-reassign
     lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, data);
     setupListener(lineupInstanceRef);
   }
@@ -230,7 +236,6 @@ export default function LineUpView() {
   const lineupInstanceRef = useRef<LineUpJS.Taggle | null>(null);
 
   useEffect(() => {
-    console.log('wrong useffect');
     if (lineupRef.current && csvData.length > 0) {
       createLineUpWithColumnFiltering(lineupInstanceRef, lineupRef, csvData);
     }
@@ -240,11 +245,11 @@ export default function LineUpView() {
   useEffect(() => {
     if (lineupInstanceRef.current) {
       if (selectedFocusNodes.length > 0) {
-        createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, selectedFocusNodes, csvData)
+        createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, selectedFocusNodes, csvData);
       } else {
         // create fake list of focusnodes where everything is selected from the csvData
         const allFocusNodes = csvData.map((row) => row.focus_node);
-        createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, allFocusNodes, csvData)
+        createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, allFocusNodes, csvData);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
