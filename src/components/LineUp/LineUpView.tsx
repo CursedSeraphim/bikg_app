@@ -146,7 +146,6 @@ export default function LineUpView() {
   /**
    * Infers the data type for the provided column.
    * If a column contains NaN or other non-parsable values, it doesn't affect the type of the column.
-   * TODO: also check for link and set type to 'link' if applicable.
    *
    * @param {Object[]} data - The data set.
    * @param {string} column - The column from the data set.
@@ -166,6 +165,13 @@ export default function LineUpView() {
 
     if (allBooleans) {
       return 'boolean';
+    }
+
+    // Check if all non-null values are links
+    const allLinks = columnValues.every((value) => typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://')));
+
+    if (allLinks) {
+      return 'link';
     }
 
     // Check if all non-null values can be parsed as numbers
