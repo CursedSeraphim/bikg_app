@@ -259,6 +259,7 @@ export default function LineUpView() {
       const label = removePrefix(column);
       builder.column(LineUpJS.buildColumn(type, column).label(label).width(width));
     });
+    builder.rowHeight(21);
     return builder;
   }
 
