@@ -6,6 +6,8 @@ import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes, selectF
 import { ICsvData, CsvCell } from '../../types';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
+const columnTypes = {};
+
 /**
  * Filter out columns that only contain a single unique value.
  *
@@ -135,6 +137,151 @@ export default function LineUpView() {
     });
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  function createLineUpAsTaggle(lineupInstanceRef, lineupRef, data) {
+    // eslint-disable-next-line no-param-reassign
+    lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, data);
+  }
+
+  /**
+   * Infers the data type for the provided column.
+   * If a column contains NaN or other non-parsable values, it doesn't affect the type of the column.
+   * TODO: also check for link and set type to 'link' if applicable.
+   *
+   * @param {Object[]} data - The data set.
+   * @param {string} column - The column from the data set.
+   * @returns {string} - The inferred data type for the column.
+   */
+  function inferType(data, column) {
+    const columnValues = data.map((row) => row[column]);
+    const uniqueValues = [...new Set(columnValues)];
+
+    // Check if all non-null values are boolean (true, false, 0, or 1)
+    const allBooleans = columnValues.every(
+      (value) =>
+        value === CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING ||
+        (typeof value === 'string' && (value.toLowerCase() === 'true' || value.toLowerCase() === 'false')) ||
+        (Number.isInteger(value) && (value === 0 || value === 1)),
+    );
+
+    if (allBooleans) {
+      return 'boolean';
+    }
+
+    // Check if all non-null values can be parsed as numbers
+    const allNumbers = columnValues.every((value) => value === CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING || !Number.isNaN(Number(value)));
+    if (allNumbers && uniqueValues.length > 2) {
+      return 'number';
+    }
+
+    // Check if all non-null values can be parsed as dates
+    const allDates = columnValues.every((value) => value === CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING || !Number.isNaN(new Date(value).getTime()));
+    if (allDates) {
+      return 'date';
+    }
+
+    // Check if the values are categorical (all can be parsed as strings, and number of unique values is low)
+    if (uniqueValues.length <= 10) {
+      return 'categorical';
+    }
+
+    // If the column values are none of the above, assume string type
+    return 'string';
+  }
+
+  interface CanvasOwner {
+    canvas?: HTMLCanvasElement;
+  }
+
+  /**
+   * Measures the width of a text string when rendered in a certain font, using a canvas element.
+   * The canvas element is created once and then re-used for subsequent measurements for better performance.
+   *
+   * @param {string} text - The text string to measure.
+   * @param {string} font - The CSS font property to use for text measurement.
+   * @returns {number} The measured width of the text.
+   */
+  function getTextWidthFromCanvas(text: string, font: string): number {
+    const canvasOwner = getTextWidthFromCanvas as CanvasOwner;
+
+    if (!canvasOwner.canvas) {
+      canvasOwner.canvas = document.createElement('canvas');
+    }
+
+    const context = canvasOwner.canvas.getContext('2d');
+    context.font = font;
+    const metrics = context.measureText(text);
+    return metrics.width;
+  }
+
+  /**
+   * Calculates the pixel width for the provided column.
+   *
+   * @param {string} column - The column from the data set.
+   * @returns {number} - The calculated pixel width for the column.
+   */
+  function calculatePixelWidthFromLabel(column) {
+    const padding = 50;
+    return getTextWidthFromCanvas(column, '16px Roboto') + padding;
+  }
+
+  /**
+   * Removes the prefix before a colon in the provided column name.
+   *
+   * @param {string} column - The column from the data set.
+   * @returns {string} - The column name without the prefix.
+   */
+  function removePrefix(column) {
+    // Remove any prefix before a colon
+    const parts = column.split(':');
+    if (parts.length > 1) {
+      // If there's a colon, return the part after the colon
+      return parts[1].trim();
+    }
+    // If there's no colon, return the column as is
+    return column;
+  }
+
+  /**
+   * This function constructs a LineUpJS builder with columns built according to the provided data.
+   * For each column, it infers the type, calculates the pixel width based on the label, removes any prefix from the label,
+   * and finally adds a column to the builder with the processed column data.
+   *
+   * @param {Object[]} data - An array of objects that represents the data for the LineUpJS builder. Each object should correspond to a row.
+   * @returns {Object} A LineUpJS builder with the constructed columns.
+   */
+  function buildColumns(data) {
+    const builder = LineUpJS.builder(data);
+    const columns = Object.keys(data[0]);
+    columns.forEach((column) => {
+      const type = inferType(data, column);
+      const width = calculatePixelWidthFromLabel(column);
+      const label = removePrefix(column);
+      builder.column(LineUpJS.buildColumn(type, column).label(label).width(width));
+    });
+    return builder;
+  }
+
+  /**
+   * This function creates a LineUp instance with a builder built from the provided data.
+   * After building the columns, it constructs a ranking and sets it as the default ranking for the builder.
+   * The constructed builder is then used to build a LineUp instance at the provided DOM element.
+   *
+   * @param {Object} lineupInstanceRef - A reference to the LineUp instance to be created.
+   * @param {Object} lineupRef - A reference to the DOM element where the LineUp instance will be created.
+   * @param {Object[]} data - An array of objects that represents the data for the LineUpJS builder. Each object should correspond to a row.
+   */
+  function createLineUpWithBuilder(lineupInstanceRef, lineupRef, data) {
+    // builder.column(LineUpJS.buildStringColumn('focus_node').label('Focus Node').width(150));
+    const builder = buildColumns(data);
+    // const ranking = LineUpJS.buildRanking().supportTypes(); // .allColumns();
+    // builder.defaultRanking().ranking(ranking);
+    // creating a new one and returning it would be too expensive
+    // eslint-disable-next-line no-param-reassign
+    lineupInstanceRef.current = builder.buildTaggle(lineupRef.current);
+    console.log('built');
+  }
+
   /**
    * Create a new LineUp instance with an event listener for selection changes.
    *
@@ -149,11 +296,10 @@ export default function LineUpView() {
     // cleanup old lineup instance
     if (lineupInstanceRef.current) {
       lineupInstanceRef.current.destroy();
+      console.log('destroyed');
     }
 
-    // creating a new one and returning it would be too expensive
-    // eslint-disable-next-line no-param-reassign
-    lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, data);
+    createLineUpWithBuilder(lineupInstanceRef, lineupRef, data);
     setupListener(lineupInstanceRef);
   }
 
@@ -238,8 +384,21 @@ export default function LineUpView() {
     lineupInstanceRef.current.data.setFilter((row) => filteredCsvDataIndicesSet.has(row.i));
   }
 
+  function preprocessColumnTypes(data) {
+    const firstRow = data[0];
+    const columns = Object.keys(firstRow);
+
+    columns.forEach((column) => {
+      columnTypes[column] = inferType(data, column);
+    });
+  }
+
   useEffect(() => {
-    setCsvData(reduxCsvData);
+    if (reduxCsvData && reduxCsvData.length > 0) {
+      setCsvData(reduxCsvData);
+      preprocessColumnTypes(reduxCsvData);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduxCsvData]);
 
   const lineupRef = useRef<HTMLDivElement>(null);

@@ -18,7 +18,7 @@ function NavBarTabs() {
       {
         id: 1,
         tabTitle: 'Tree View',
-        title: 'Tree View',
+        title: 'Ontology Tree',
         content: <MemoizedTreeView />,
       },
       {

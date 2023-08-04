@@ -16,13 +16,13 @@ function BottomTabs() {
       {
         id: 1,
         tabTitle: 'Embedding View',
-        title: 'Embedding View',
+        title: 'Embedding of Violating Shapes',
         content: <MemoizedScatterPlot data={plotlyData} />,
       },
       {
         id: 2,
         tabTitle: 'LineUp',
-        title: 'LineUp',
+        title: 'Tabular View of Joined Violation and Instance Data',
         content: <LineUpView />,
       },
     ],
