@@ -2,13 +2,15 @@
 import json
 import os
 from collections import defaultdict
-from time import time
+import time
 
 import numpy as np
 import pandas as pd
 from fastapi import APIRouter, Request, Response
 from rdflib import Graph, Namespace
 from scipy.stats import chi2_contingency
+
+from bikg_app.routers.utils import get_violation_report_exemplars
 
 SH = Namespace("http://www.w3.org/ns/shacl#")
 OWL = Namespace("http://www.w3.org/2002/07/owl#")
@@ -37,6 +39,16 @@ for column in violations_list:
 # load the ontology
 g = Graph()
 g.parse("bikg_app/ttl/omics_model.ttl", format="ttl")
+
+g_v = Graph()
+g_v.parse("bikg_app/ttl/violation_report.ttl", format="ttl")
+
+print('starting to union the graphs...')
+start_time = time.time()
+g, _ = get_violation_report_exemplars(g, g_v)
+end_time = time.time()
+
+print("Execution time of get_violation_report_exemplars:", end_time - start_time, "seconds")
 
 overall_violation_value_counts = {
     violation: sum(key * value for key, value in counts.items()) for violation, counts in overall_violation_value_dict.items()
@@ -136,7 +148,7 @@ async def get_bar_plot_data_given_selected_nodes(request: Request):
     Computes the number of occurrences of each category of each feature.
     returns: A dictionary where each key is a feature and each value is a dictionary of the form {category: count}
     """
-    time()
+    time.time()
     selected_nodes = await request.json()  # selected_nodes is a dictionary here
     selected_nodes = selected_nodes.get("selectedNodes", [])  # Extracting the list from the dictionary
 
@@ -161,7 +173,7 @@ async def get_bar_plot_data_given_selected_nodes(request: Request):
             "overall": value_counts_to_plotly_data(overall_value_counts[column], "Overall Distribution", "lightgrey"),
         }
 
-    time()
+    time.time()
     # Send the processed data to the client
     return {"plotlyData": plotly_data, "chiScores": chi_scores}
 
@@ -217,9 +229,11 @@ def get_ttl_file(response: Response):
     """
     sends the contents of the ttl file serialized to the client
     """
-    with open("bikg_app/ttl/omics_model.ttl") as file:
-        response.headers["Content-Disposition"] = "attachment; filename=omics_model.ttl"
-        return Response(content=file.read(), media_type="text/turtle")
+    global g
+    ttl_data = g.serialize(format="turtle")
+
+    response.headers["Content-Disposition"] = "attachment; filename=omics_model.ttl"
+    return Response(content=ttl_data, media_type="text/turtle")
 
 
 def uri_to_qname(graph, uri):
