@@ -38,7 +38,6 @@ for column in violations_list:
 g = Graph()
 g.parse("bikg_app/ttl/omics_model.ttl", format="ttl")
 
-
 overall_violation_value_counts = {
     violation: sum(key * value for key, value in counts.items()) for violation, counts in overall_violation_value_dict.items()
 }

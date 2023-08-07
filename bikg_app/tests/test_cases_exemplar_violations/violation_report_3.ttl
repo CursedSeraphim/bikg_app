@@ -1,0 +1,38 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rut:   <http://rdfunit.aksw.org/ns/core#> .
+
+sh:violation1
+        a                             sh:ValidationResult , rut:TestCaseResult ;
+        sh:sourceShape                sh:shape1 ;
+        sh:edge1                       sh:object1 ;
+        sh:edge2                       sh:object2 .
+
+sh:violation2
+        a                             sh:ValidationResult , rut:TestCaseResult ;
+        sh:sourceShape                sh:shape1 ;
+        sh:edge1                       sh:object1 ;
+        sh:edge2                       sh:object2 .
+
+sh:violation3
+        a                             sh:ValidationResult , rut:TestCaseResult ;
+        sh:sourceShape                sh:shape1 ;
+        sh:edge1                       sh:object1 ;
+        sh:edge2                       sh:object2 .
+
+sh:violation4
+        a                             sh:ValidationResult , rut:TestCaseResult ;
+        sh:sourceShape                sh:shape1 ;
+        sh:edge3                       sh:object3 ;
+        sh:edge4                       sh:object4 .
+
+sh:violation5
+        a                             sh:ValidationResult , rut:TestCaseResult ;
+        sh:sourceShape                sh:shape1 ;
+        sh:edge3                       sh:object3 ;
+        sh:edge4                       sh:object4 .
+
+sh:violation6
+        a                             sh:ValidationResult , rut:TestCaseResult ;
+        sh:sourceShape                sh:shape1 ;
+        sh:edge3                       sh:object3 ;
+        sh:edge4                       sh:object4 .
