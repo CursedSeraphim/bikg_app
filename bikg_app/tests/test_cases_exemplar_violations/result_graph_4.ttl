@@ -1,0 +1,37 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rut: <http://rdfunit.aksw.org/ns/core#> .
+
+sh:shape1 a
+    sh:PropertyShape;
+  sh:path sh:hasDisease;
+  sh:class sh:Disease .
+
+sh:shape2 a
+    sh:PropertyShape;
+  sh:path sh:hasCellType;
+  sh:class sh:cellType .
+
+<http://www.w3.org/ns/shacl#shape1_exemplar_1> a
+        sh:ValidationResult, rut:TestCaseResult ;
+        sh:sourceShape sh:shape1 ;
+        sh:edge1 sh:object1 ;
+        sh:edge2 sh:object2 .
+
+<http://www.w3.org/ns/shacl#shape1_exemplar_2> a
+        sh:ValidationResult, rut:TestCaseResult ;
+        sh:sourceShape sh:shape1 ;
+        sh:edge1 sh:object1 ;
+        sh:edge2 sh:object2 ;
+        sh:edge3 sh:object3 .
+
+<http://www.w3.org/ns/shacl#shape2_exemplar_3> a
+        sh:ValidationResult, rut:TestCaseResult ;
+        sh:sourceShape sh:shape2 ;
+        sh:edge1 sh:object1 ;
+        sh:edge4 sh:object4 .
+
+<http://www.w3.org/ns/shacl#shape2_exemplar_4> a
+        sh:ValidationResult, rut:TestCaseResult ;
+        sh:sourceShape sh:shape2 ;
+        sh:edge1 sh:object1 ;
+        sh:edge5 sh:object5 .

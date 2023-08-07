@@ -21,26 +21,18 @@ def print_defaultdict_human_readable(d):
     print('\n'.join(sorted(lines)))
 
 
-def unittest_verbosity():
-        """Return the verbosity setting of the currently running unittest program, or 0 if none is running."""
-        frame = inspect.currentframe()
-        while frame:
-            self = frame.f_locals.get('self')
-            if isinstance(self, unittest.TestProgram):
-                return self.verbosity
-            frame = frame.f_back
-        return 0
-
-
 class TestGetViolationReportExemplars(unittest.TestCase):
-
-    verbosity = unittest_verbosity()
 
     SH = Namespace("http://www.w3.org/ns/shacl#")
     RDFS = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
     RUT = Namespace("http://rdfunit.aksw.org/ns/core#")
 
+    shape1_exemplar_1 = URIRef("http://www.w3.org/ns/shacl#shape1_exemplar_1")
+    shape1_exemplar_2 = URIRef("http://www.w3.org/ns/shacl#shape1_exemplar_2")
+    shape2_exemplar_3 = URIRef("http://www.w3.org/ns/shacl#shape2_exemplar_3")
+    shape2_exemplar_4 = URIRef("http://www.w3.org/ns/shacl#shape2_exemplar_4")
     shape1 = URIRef(SH.shape1)
+    shape2 = URIRef(SH.shape2)
     edge1 = URIRef(SH.edge1)
     object1 = URIRef(SH.object1)
     edge2 = URIRef(SH.edge2)
@@ -49,10 +41,13 @@ class TestGetViolationReportExemplars(unittest.TestCase):
     object3 = URIRef(SH.object3)
     edge4 = URIRef(SH.edge4)
     object4 = URIRef(SH.object4)
+    edge5 = URIRef(SH.edge5)
+    object5 = URIRef(SH.object5)
 
     base_dir = 'bikg_app/bikg_app/tests/test_cases_exemplar_violations/'
 
     test_cases = [
+        # test case for one exemplar and only one occurrence of the violation
         {
             'ontology_file': base_dir + 'ontology_1.ttl',
             'violation_report_file': base_dir + 'violation_report_1.ttl',
@@ -60,7 +55,7 @@ class TestGetViolationReportExemplars(unittest.TestCase):
             'expected_edge_count_dict': defaultdict(
                 lambda: defaultdict(int),
                 {
-                    shape1: {
+                    shape1_exemplar_1: {
                         (RDFS.type, SH.ValidationResult): 1,
                         (RDFS.type, RUT.TestCaseResult): 1,
                         (SH.sourceShape, shape1): 1,
@@ -70,38 +65,84 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                 }
             )
         },
+        # test case for one exemplar and multiple occurrences of the violation
         {
             'ontology_file': base_dir + 'ontology_1.ttl',
             'violation_report_file': base_dir + 'violation_report_2.ttl',
+            'result_graph_file': base_dir + 'result_graph_2.ttl',
+            'expected_edge_count_dict': defaultdict(
+                lambda: defaultdict(int),
+                {
+                    shape1_exemplar_1: {
+                        (RDFS.type, SH.ValidationResult): 2,
+                        (RDFS.type, RUT.TestCaseResult): 2,
+                        (SH.sourceShape, shape1): 2,
+                        (edge1, object1): 2,
+                        (edge2, object2): 2
+                    },
+                    shape1_exemplar_2: {
+                        (RDFS.type, SH.ValidationResult): 1,
+                        (RDFS.type, RUT.TestCaseResult): 1,
+                        (SH.sourceShape, shape1): 1,
+                        (edge1, object1): 1
+                    }
+                }
+            )
+        },
+        # test case for ignored edges
+        {
+            'ontology_file': base_dir + 'ontology_1.ttl',
+            'violation_report_file': base_dir + 'violation_report_3.ttl',
             'result_graph_file': base_dir + 'result_graph_1.ttl',
             'expected_edge_count_dict': defaultdict(
                 lambda: defaultdict(int),
                 {
-                    shape1: {
-                        (RDFS.type, SH.ValidationResult): 3,
-                        (RDFS.type, RUT.TestCaseResult): 3,
-                        (SH.sourceShape, shape1): 3,
-                        (edge1, object1): 3,
+                    shape1_exemplar_1: {
+                        (RDFS.type, SH.ValidationResult): 2,
+                        (RDFS.type, RUT.TestCaseResult): 2,
+                        (SH.sourceShape, shape1): 2,
+                        (edge1, object1): 2,
                         (edge2, object2): 2
                     }
                 }
             )
         },
+        # test case for multiple shapes with multiple exemplars and multiple occurrences of the violation and ignored edges
         {
-            'ontology_file': base_dir + 'ontology_1.ttl',
-            'violation_report_file': base_dir + 'violation_report_3.ttl',
-            'result_graph_file': base_dir + 'result_graph_2.ttl',
+            'ontology_file': base_dir + 'ontology_4.ttl',
+            'violation_report_file': base_dir + 'violation_report_4.ttl',
+            'result_graph_file': base_dir + 'result_graph_4.ttl',
             'expected_edge_count_dict': defaultdict(
                 lambda: defaultdict(int),
                 {
-                    shape1: {
-                        (RDFS.type, SH.ValidationResult): 6,
-                        (RDFS.type, RUT.TestCaseResult): 6,
-                        (SH.sourceShape, shape1): 6,
-                        (edge1, object1): 3,
-                        (edge2, object2): 3,
-                        (edge3, object3): 3,
-                        (edge4, object4): 3,
+                    shape1_exemplar_1: {
+                        (RDFS.type, SH.ValidationResult): 1,
+                        (RDFS.type, RUT.TestCaseResult): 1,
+                        (SH.sourceShape, shape1): 1,
+                        (edge1, object1): 1,
+                        (edge2, object2): 1
+                    },
+                    shape1_exemplar_2: {
+                        (RDFS.type, SH.ValidationResult): 2,
+                        (RDFS.type, RUT.TestCaseResult): 2,
+                        (SH.sourceShape, shape1): 2,
+                        (edge1, object1): 2,
+                        (edge2, object2): 2,
+                        (edge3, object3): 2
+                    },
+                    shape2_exemplar_3: {
+                        (RDFS.type, SH.ValidationResult): 1,
+                        (RDFS.type, RUT.TestCaseResult): 1,
+                        (SH.sourceShape, shape2): 1,
+                        (edge1, object1): 1,
+                        (edge4, object4): 1
+                    },
+                    shape2_exemplar_4: {
+                        (RDFS.type, SH.ValidationResult): 2,
+                        (RDFS.type, RUT.TestCaseResult): 2,
+                        (SH.sourceShape, shape2): 2,
+                        (edge1, object1): 2,
+                        (edge5, object5): 2
                     }
                 }
             )
@@ -116,11 +157,10 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                     test_case['violation_report_file'])
                 expected_graph = Graph()
                 expected_graph.parse(test_case['result_graph_file'], format="turtle")
-                if self.verbosity > 1:
-                    print('\nresult_graph')
-                    print_graph_human_readable(result_graph)
-                    print('\nexpected_graph')
-                    print_graph_human_readable(expected_graph)
+                print('\nresult_graph')
+                print_graph_human_readable(result_graph)
+                print('\nexpected_graph')
+                print_graph_human_readable(expected_graph)
                 assert isomorphic(result_graph, expected_graph)
 
     def test_edge_count(self):
@@ -130,11 +170,10 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                     test_case['ontology_file'],
                     test_case['violation_report_file'])
                 expected_edge_count_dict = test_case['expected_edge_count_dict']
-                if self.verbosity > 1:
-                    print('\nsorted(edge_count_dict)')
-                    print_defaultdict_human_readable(edge_count_dict)
-                    print('\nsorted(expected_edge_count_dict)')
-                    print_defaultdict_human_readable(expected_edge_count_dict)
+                print('\nsorted(edge_count_dict)')
+                print_defaultdict_human_readable(edge_count_dict)
+                print('\nsorted(expected_edge_count_dict)')
+                print_defaultdict_human_readable(expected_edge_count_dict)
                 self.assertEqual(edge_count_dict, expected_edge_count_dict)
 
 

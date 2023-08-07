@@ -1,0 +1,11 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+sh:shape1 a
+    sh:PropertyShape;
+  sh:path sh:hasDisease;
+  sh:class sh:Disease .
+
+sh:shape2 a
+    sh:PropertyShape;
+  sh:path sh:hasCellType;
+  sh:class sh:cellType .

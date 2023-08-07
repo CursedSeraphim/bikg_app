@@ -1,7 +1,7 @@
 # utils.py
 import numpy as np
 from collections import defaultdict
-from rdflib import Graph, Namespace
+from rdflib import Graph, Namespace, URIRef
 
 
 def get_symmetric_graph_matrix(graph):
@@ -17,7 +17,8 @@ def get_symmetric_graph_matrix(graph):
         matrix[node_indices[o], node_indices[s]] = 1
     return matrix
 
-
+# TODO instead of counting the edge object pairs we should count the exemplar occurrences
+# TODO or keep track of ignored edges as well
 def get_violation_report_exemplars(ontology_file, violation_report_file):
     """
     Takes the property shapes from the ontology.
@@ -32,30 +33,32 @@ def get_violation_report_exemplars(ontology_file, violation_report_file):
 
     returns: the extended graph and the dictionary
     """
-    # Load the ontology
     g = Graph()
     g.parse(ontology_file, format="turtle")
-    
-    # Load the violation report
+
     g_v = Graph()
     g_v.parse(violation_report_file, format="turtle")
 
-    # Define the namespaces
     SH = Namespace("http://www.w3.org/ns/shacl#")
+    DCTERMS = Namespace("http://purl.org/dc/terms/")
+    EXEMPLAR_NS = Namespace("http://www.example.org/ns/shacl-exemplar#")
     g.namespace_manager.bind("sh", SH)
+    g.namespace_manager.bind("dcterms", DCTERMS)
 
-    # Get a list of all property shapes by executing a SPARQL query on the ontology graph
-    property_shapes_query = """
-    SELECT ?shape WHERE {
-        ?shape a sh:PropertyShape.
-    }
-    """
-    property_shapes = [row[0] for row in g.query(property_shapes_query)] # type: ignore
+    # property_shapes_query = """
+    # SELECT ?shape WHERE {
+    #     ?shape a sh:PropertyShape.
+    # }
+    # """
+    violations_query = """
+    SELECT ?violation ?p ?o WHERE {
+        ?violation a sh:ValidationResult .
+        }
+        """
+    # TODO instead get each individual violation
+    # property_shapes = [row[0] for row in g.query(property_shapes_query)] # type: ignore
+    violations = [row[0] for row in g_v.query(violations_query)] # type: ignore
 
-    # Create a dictionary for each property shape
-    edge_count_dict = defaultdict(lambda: defaultdict(int))
-
-    # TODO
     # this needs to be changed in such a way that we first define a set of edges that should be ignored ignored_edges for the following approach
     # we look at a query result for the given shape and determine the set of edges object pairs (which are not ignored) that are present
     # we store this subgraph structure as <sourceShape>_exemplar_n - this will also be the key to store the edge object counts in the dictionary
@@ -68,20 +71,49 @@ def get_violation_report_exemplars(ontology_file, violation_report_file):
     # where <sourceShape> is the URI of the shape and this is the nth exemplar we found and stored
     # and we return the new graph and the dictionary all counts. since the key in the dictionary would also be <sourceShape>_exemplar_n handling all exemplars individually should be solved automatically
 
-    # Iterate through property shapes
-    for shape in property_shapes:
+    # Dictionary to keep track of exemplars and their counts
+    edge_count_dict = defaultdict(lambda: defaultdict(int))
+
+    # Define ignored predicates here (modify as needed)
+    ignored_edges = set([DCTERMS.date, SH.focusNode])
+
+    # Dictionary to keep track of the sets of edge object pairs and corresponding exemplar keys
+    exemplar_sets = {}
+
+    # TODO the problem here is that what I want to do is process each occurrence of each shape
+    # but property shapes will only contain each shape once
+    for violation in violations:
         violations_query = """
-        SELECT ?violation ?p ?o WHERE {
-            ?violation sh:sourceShape <%s>.
-            ?violation ?p ?o.
+        SELECT ?s ?p ?o WHERE {
+            <%s> ?p ?o.
         }
-        """ % shape
+        """ % violation
+
+        edge_object_pairs = []
+        shape = None
         for row in g_v.query(violations_query):
-            v, p, o = row  # type: ignore
-            # Add the (p, o) pair only once to the ontology graph if it's a new one for this shape
-            if edge_count_dict[shape][(p, o)] == 0:
-                g.add((v, p, o)) # type: ignore
-            # Increment the count for the (shape, p, o) triplet
-            edge_count_dict[shape][(p, o)] += 1
+            _, p, o = row # type: ignore
+            if p == SH.sourceShape:
+                shape = o
+            elif p in ignored_edges:
+                continue
+            edge_object_pairs.append((p, o))
+
+        # Check if this set of edge object pairs matches any of the previously found exemplars
+        local_shape_name = shape.split('#')[-1] # type: ignore
+        exemplar_name = exemplar_sets.get(frozenset(edge_object_pairs))
+
+
+        # If the exemplar does not exist, create a new one
+        if exemplar_name is None:
+            exemplar_name = URIRef(f"{shape}_exemplar_{len(exemplar_sets)+1}")
+            exemplar_sets[frozenset(edge_object_pairs)] = exemplar_name
+
+        # Add the exemplar edges to the graph and update counts
+        for p, o in edge_object_pairs:
+            # Add to graph if new for this exemplar
+            if edge_count_dict[exemplar_name][(p, o)] == 0:
+                g.add((exemplar_name, p, o)) # type: ignore
+            edge_count_dict[exemplar_name][(p, o)] += 1
 
     return g, edge_count_dict
