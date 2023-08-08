@@ -11,12 +11,6 @@ sh:violation1
 sh:violation2
         a                             sh:ValidationResult , rut:TestCaseResult ;
         sh:sourceShape                sh:shape1 ;
-        sh:edge1                       sh:object1 ;
-        sh:edge2                       sh:object2 ;
-        sh:focusNode                   sh:fn2 .
-
-sh:violation3
-        a                             sh:ValidationResult , rut:TestCaseResult ;
-        sh:sourceShape                sh:shape1 ;
-        sh:edge1                       sh:object1 ;
-        sh:focusNode                   sh:fn3 .
+        sh:edge3                       sh:object3 ;
+        sh:edge4                       sh:object4 ;
+        sh:focusNode                   sh:fn1 .

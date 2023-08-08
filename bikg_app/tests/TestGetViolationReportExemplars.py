@@ -1,7 +1,7 @@
 import inspect
 import unittest
 from rdflib import Graph, Namespace, URIRef
-from rdflib.compare import isomorphic
+from rdflib.compare import isomorphic, to_isomorphic, graph_diff
 from collections import defaultdict
 from bikg_app.routers.utils import get_violation_report_exemplars
 
@@ -43,11 +43,17 @@ class TestGetViolationReportExemplars(unittest.TestCase):
     object4 = URIRef(SH.object4)
     edge5 = URIRef(SH.edge5)
     object5 = URIRef(SH.object5)
+    fn1 = URIRef(SH.fn1)
+    fn2 = URIRef(SH.fn2)
+    fn3 = URIRef(SH.fn3)
+    fn4 = URIRef(SH.fn4)
+    fn5 = URIRef(SH.fn5)
+    fn6 = URIRef(SH.fn6)
 
     base_dir = 'bikg_app/bikg_app/tests/test_cases_exemplar_violations/'
 
     test_cases = [
-        # test case for one exemplar and only one occurrence of the violation
+        # test case for one exemplar and only one occurrence of the violation, now including focus node as well
         {
             'ontology_file': base_dir + 'ontology_1.ttl',
             'violation_report_file': base_dir + 'violation_report_1.ttl',
@@ -63,7 +69,23 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                         (edge2, object2): 1
                     }
                 }
-            )
+            ),
+            'expected_exemplar_focus_node_dict': defaultdict(
+                lambda: defaultdict(set),
+                {
+                    shape1_exemplar_1: {
+                        fn1
+                    }
+                }
+            ),
+            'expected_focus_node_exemplar_dict': defaultdict(
+                lambda: defaultdict(set),
+                {
+                    fn1: {
+                        shape1_exemplar_1
+                    }
+                }
+            ),
         },
         # test case for one exemplar and multiple occurrences of the violation
         {
@@ -87,7 +109,32 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                         (edge1, object1): 1
                     }
                 }
-            )
+            ), # Missing comma was added here
+            'expected_exemplar_focus_node_dict': defaultdict(
+                lambda: defaultdict(set),
+                {
+                    shape1_exemplar_1: {
+                        fn1, fn2
+                    },
+                    shape1_exemplar_2: {
+                        fn3
+                    }
+                }
+            ),
+            'expected_focus_node_exemplar_dict': defaultdict(
+                lambda: defaultdict(set),
+                {
+                    fn1: {
+                        shape1_exemplar_1
+                    },
+                    fn2: {
+                        shape1_exemplar_1
+                    },
+                    fn3: {
+                        shape1_exemplar_2
+                    }
+                }
+            ),
         },
         # test case for ignored edges
         {
@@ -105,7 +152,26 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                         (edge2, object2): 2
                     }
                 }
-            )
+            ),
+            'expected_exemplar_focus_node_dict': defaultdict(
+                lambda: defaultdict(set),
+                {
+                    shape1_exemplar_1: {
+                        fn1, fn2
+                    }
+                }
+            ),
+            'expected_focus_node_exemplar_dict': defaultdict(
+                lambda: defaultdict(set),
+                {
+                    fn1: {
+                        shape1_exemplar_1
+                    },
+                    fn2: {
+                        shape1_exemplar_1
+                    }
+                }
+            ),
         },
         # test case for multiple shapes with multiple exemplars and multiple occurrences of the violation and ignored edges
         {
@@ -145,37 +211,172 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                         (edge5, object5): 2
                     }
                 }
-            )
+            ),
+            'expected_exemplar_focus_node_dict': defaultdict(
+                lambda: defaultdict(set),
+                {
+                    shape1_exemplar_1: {
+                        fn1
+                    },
+                    shape1_exemplar_2: {
+                        fn2, fn5
+                    },
+                    shape2_exemplar_3: {
+                        fn3
+                    },
+                    shape2_exemplar_4: {
+                        fn4, fn6
+                    }
+                }
+            ),
+            'expected_focus_node_exemplar_dict': defaultdict(
+                lambda: defaultdict(set),
+                {
+                    fn1: {
+                        shape1_exemplar_1
+                    },
+                    fn2: {
+                        shape1_exemplar_2
+                    },
+                    fn3: {
+                        shape2_exemplar_3
+                    },
+                    fn4: {
+                        shape2_exemplar_4
+                    },
+                    fn5: {
+                        shape1_exemplar_2
+                    },
+                    fn6: {
+                        shape2_exemplar_4
+                    },
+                }
+            ),
         },
+        # fn has multiple exemplars
+        {
+            'ontology_file': base_dir + 'ontology_5.ttl',
+            'violation_report_file': base_dir + 'violation_report_5.ttl',
+            'result_graph_file': base_dir + 'result_graph_5.ttl',
+            'expected_edge_count_dict': defaultdict(
+                lambda: defaultdict(int),
+                {
+                    shape1_exemplar_1: {
+                        (RDFS.type, SH.ValidationResult): 1,
+                        (RDFS.type, RUT.TestCaseResult): 1,
+                        (SH.sourceShape, shape1): 1,
+                        (edge1, object1): 1,
+                        (edge2, object2): 1
+                    },
+                    shape1_exemplar_2: {
+                        (RDFS.type, SH.ValidationResult): 1,
+                        (RDFS.type, RUT.TestCaseResult): 1,
+                        (SH.sourceShape, shape1): 1,
+                        (edge3, object3): 1,
+                        (edge4, object4): 1
+                    }
+                }
+            ),
+            'expected_exemplar_focus_node_dict': defaultdict(
+                lambda: defaultdict(set),
+                {
+                    shape1_exemplar_1: {
+                        fn1
+                    },
+                    shape1_exemplar_2: {
+                        fn1
+                    }
+                }
+            ),
+            'expected_focus_node_exemplar_dict': defaultdict(
+                lambda: defaultdict(set),
+                {
+                    fn1: {
+                        shape1_exemplar_1, shape1_exemplar_2
+                    }
+                }
+            ),
+        }
     ]
 
     def test_graph_structure(self):
         for test_case in self.test_cases:
             with self.subTest(test_case=test_case):
-                result_graph, _ = get_violation_report_exemplars(
-                    test_case['ontology_file'],
-                    test_case['violation_report_file'])
+                g = Graph()
+                g.parse(test_case['ontology_file'], format="ttl")
+
+                g_v = Graph()
+                g_v.parse(test_case['violation_report_file'], format="ttl")
+                result_graph, _, _, _ = get_violation_report_exemplars(g, g_v)
                 expected_graph = Graph()
                 expected_graph.parse(test_case['result_graph_file'], format="turtle")
-                print('\nresult_graph')
-                print_graph_human_readable(result_graph)
-                print('\nexpected_graph')
-                print_graph_human_readable(expected_graph)
-                assert isomorphic(result_graph, expected_graph)
+                if not isomorphic(result_graph, expected_graph):
+                    iso1 = to_isomorphic(result_graph)
+                    iso2 = to_isomorphic(expected_graph)
+                    in_both, in_first, in_second = graph_diff(iso1, iso2)
+
+                    print(f"Test case {test_case} failed:")
+                    print("In both:")
+                    print(in_both.serialize(format="turtle"))
+                    print("In result only:")
+                    print(in_first.serialize(format="turtle"))
+                    print("In expected only:")
+                    print(in_second.serialize(format="turtle"))
+
+                    self.fail("Graphs are not isomorphic; see details above.")
+
 
     def test_edge_count(self):
         for test_case in self.test_cases:
             with self.subTest(test_case=test_case):
-                _, edge_count_dict = get_violation_report_exemplars(
-                    test_case['ontology_file'],
-                    test_case['violation_report_file'])
-                expected_edge_count_dict = test_case['expected_edge_count_dict']
-                print('\nsorted(edge_count_dict)')
-                print_defaultdict_human_readable(edge_count_dict)
-                print('\nsorted(expected_edge_count_dict)')
-                print_defaultdict_human_readable(expected_edge_count_dict)
-                self.assertEqual(edge_count_dict, expected_edge_count_dict)
+                g = Graph()
+                g.parse(test_case['ontology_file'], format="ttl")
 
+                g_v = Graph()
+                g_v.parse(test_case['violation_report_file'], format="ttl")
+                _, edge_count_dict, _, _ = get_violation_report_exemplars(g, g_v)
+                expected_edge_count_dict = test_case['expected_edge_count_dict']
+                # print('\nsorted(edge_count_dict)')
+                # print_defaultdict_human_readable(edge_count_dict)
+                # print('\nsorted(expected_edge_count_dict)')
+                # print_defaultdict_human_readable(expected_edge_count_dict)
+                self.assertEqual(edge_count_dict, expected_edge_count_dict)
+            
+    def test_focus_node_exemplar_dict(self):
+        for test_case in self.test_cases:
+            with self.subTest(test_case=test_case):
+                g = Graph()
+                g.parse(test_case['ontology_file'], format="ttl")
+
+                g_v = Graph()
+                g_v.parse(test_case['violation_report_file'], format="ttl")
+                _, _, focus_node_exemplar_dict, _ = get_violation_report_exemplars(g, g_v)
+                exepected_focus_node_exemplar_dict = test_case['expected_focus_node_exemplar_dict']
+                # print('\n tcprint focus_node_exemplar_dict')
+                # [print(k,v) for k,v in focus_node_exemplar_dict.items()]
+                # print()
+                # print('\n tcprint exepected_focus_node_exemplar_dict')
+                # [print(k,v) for k,v in exepected_focus_node_exemplar_dict.items()]
+                # print()
+                self.assertEqual(focus_node_exemplar_dict, exepected_focus_node_exemplar_dict)
+
+    def test_expected_exemplar_focus_node_dict(self):
+        for test_case in self.test_cases:
+            with self.subTest(test_case=test_case):
+                g = Graph()
+                g.parse(test_case['ontology_file'], format="ttl")
+
+                g_v = Graph()
+                g_v.parse(test_case['violation_report_file'], format="ttl")
+                _, _, _, exemplar_focus_node_dict = get_violation_report_exemplars(g, g_v)
+                expected_exemplar_focus_node_dict = test_case['expected_exemplar_focus_node_dict']
+                # print('\n tcprint exemplar_focus_node_dict')
+                # [print(k,v) for k,v in exemplar_focus_node_dict.items()]
+                # print()
+                # print('\n tcprint expected_exemplar_focus_node_dict')
+                # [print(k,v) for k,v in expected_exemplar_focus_node_dict.items()]
+                # print()
+                self.assertEqual(exemplar_focus_node_dict, expected_exemplar_focus_node_dict)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -45,7 +45,9 @@ g_v.parse("bikg_app/ttl/violation_report.ttl", format="ttl")
 
 print('starting to union the graphs...')
 start_time = time.time()
-g, _ = get_violation_report_exemplars(g, g_v)
+g, edge_count_dict, focus_node_exemplar_dict, exemplar_focus_node_dict = get_violation_report_exemplars(g, g_v)
+[print(f"{key}: {len(val)}") for key, val in edge_count_dict.items()]
+
 end_time = time.time()
 
 print("Execution time of get_violation_report_exemplars:", end_time - start_time, "seconds")
@@ -224,6 +226,7 @@ def value_counts_to_plotly_data(value_counts, distribution_name, marker_color):
     }
 
 
+# TODO: execute this in preprocessing already
 @router.get("/file/ontology")
 def get_ttl_file(response: Response):
     """

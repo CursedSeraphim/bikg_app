@@ -5,4 +5,5 @@ sh:violation1
         a                             sh:ValidationResult , rut:TestCaseResult ;
         sh:sourceShape                sh:shape1 ;
         sh:edge1                       sh:object1 ;
-        sh:edge2                       sh:object2 .
+        sh:edge2                       sh:object2 ;
+        sh:focusNode                   sh:fn1 .
