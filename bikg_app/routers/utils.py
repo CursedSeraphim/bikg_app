@@ -3,7 +3,14 @@ import numpy as np
 from collections import defaultdict
 from rdflib import Graph, Namespace, URIRef
 import time
-from tqdm import tqdm
+from tqdm.auto import tqdm
+import sys
+
+if 'ipykernel' in sys.modules:
+    from tqdm.notebook import tqdm as tqdm_notebook
+    tqdm_instance = tqdm_notebook
+else:
+    tqdm_instance = tqdm
 
 def get_symmetric_graph_matrix(graph):
     """Takes a rdflib graph and returns a symmetric adjacency matrix"""
@@ -34,9 +41,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
         ?violation a sh:ValidationResult .
         }
         """
-    start_time = time.time()
     violations = [row[0] for row in violation_report_g.query(violations_query)] # type: ignore
-    end_time = time.time()
 
     edge_count_dict = defaultdict(lambda: defaultdict(int))
     focus_node_exemplar_dict = defaultdict(set)
@@ -46,7 +51,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
 
     exemplar_sets = {}
 
-    for violation in tqdm(violations, desc="Processing violations"):
+    for violation in tqdm_instance(violations, desc="Processing violations"):
         violations_query = """
         SELECT ?s ?p ?o WHERE {
             <%s> ?p ?o.
@@ -78,7 +83,6 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
         for p, o in edge_object_pairs:
             if edge_count_dict[exemplar_name][(p, o)] == 0:
                 ontology_g.add((exemplar_name, p, o)) # type: ignore
-                print(f"Adding edge {exemplar_name} {p} {o}")
             edge_count_dict[exemplar_name][(p, o)] += 1
 
     return ontology_g, edge_count_dict, focus_node_exemplar_dict, exemplar_focus_node_dict

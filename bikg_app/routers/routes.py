@@ -38,19 +38,7 @@ for column in violations_list:
 
 # load the ontology
 g = Graph()
-g.parse("bikg_app/ttl/omics_model.ttl", format="ttl")
-
-g_v = Graph()
-g_v.parse("bikg_app/ttl/violation_report.ttl", format="ttl")
-
-print('starting to union the graphs...')
-start_time = time.time()
-g, edge_count_dict, focus_node_exemplar_dict, exemplar_focus_node_dict = get_violation_report_exemplars(g, g_v)
-[print(f"{key}: {len(val)}") for key, val in edge_count_dict.items()]
-
-end_time = time.time()
-
-print("Execution time of get_violation_report_exemplars:", end_time - start_time, "seconds")
+g.parse("bikg_app/ttl/omics_model_union_violation_exemplar.ttl", format="ttl")
 
 overall_violation_value_counts = {
     violation: sum(key * value for key, value in counts.items()) for violation, counts in overall_violation_value_dict.items()
