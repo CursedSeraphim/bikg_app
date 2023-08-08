@@ -114,7 +114,6 @@ export default function Treeview() {
   }, [selectedTypes]);
 
   const onToggle = (node, toggled) => {
-    console.log('toggle', node, toggled);
     // Get the current list of selected types
     let newSelectedTypes = [...selectedTypes];
 

@@ -458,8 +458,7 @@ export const selectAllClassesAndViolations = async (state: { combined: ICombined
   return { visibleTriples, hiddenTriples };
 };
 
-export const selectAllTriples = async (state: { combined: ICombinedState }): Promise<{ visibleTriples: ITriple[]; hiddenTriples: ITriple[] }> => {
-  const { rdfString } = state.combined;
+export const selectAllTriples = async (rdfString: string): Promise<{ visibleTriples: ITriple[]; hiddenTriples: ITriple[] }> => {
   const store: Store = new Store();
   const parser: N3.Parser = new N3.Parser();
   let prefixes: { [key: string]: string } = {};
@@ -534,8 +533,8 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: IRdfSta
  * @param state The Redux store state.
  * @returns The Cytoscape data.
  */
-export const selectCytoData = async (state: { combined: ICombinedState }): Promise<ICytoData> => {
-  const { visibleTriples, hiddenTriples } = await selectAllTriples(state);
+export const selectCytoData = async (rdfString: string): Promise<ICytoData> => {
+  const { visibleTriples, hiddenTriples } = await selectAllTriples(rdfString);
   const nodes: ICytoNode[] = [];
   const edges: ICytoEdge[] = [];
 

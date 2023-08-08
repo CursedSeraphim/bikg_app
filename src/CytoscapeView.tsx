@@ -233,25 +233,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   }, [cy, selectedViolations, selectedTypes, violationsTypesMap, violations]);
 
   React.useEffect(() => {
-    selectCytoData({
-      combined: {
-        rdfString: rdfOntology,
-        samples: [],
-        originalSamples: [],
-        selectedNodes: [],
-        selectedViolations,
-        selectedTypes,
-        violations: [],
-        violationTypesMap: {},
-        typesViolationMap: {},
-        filterType: 'none',
-        missingEdgeOption: 'keep',
-        edgeCountDict: {},
-        focusNodeExemplarDict: {},
-        exemplarFocusNodeDict: {},
-        selectedViolationExemplars: [],
-      },
-    })
+    selectCytoData(rdfOntology)
       .then((data) => {
         const newCytoData = { ...data };
         newCytoData.nodes = newCytoData.nodes.map((node) => ({
