@@ -5,12 +5,14 @@ from rdflib import Graph, Namespace, URIRef
 import time
 from tqdm.auto import tqdm
 import sys
+import json
 
 if 'ipykernel' in sys.modules:
     from tqdm.notebook import tqdm as tqdm_notebook
     tqdm_instance = tqdm_notebook
 else:
     tqdm_instance = tqdm
+
 
 def get_symmetric_graph_matrix(graph):
     """Takes a rdflib graph and returns a symmetric adjacency matrix"""
@@ -24,6 +26,69 @@ def get_symmetric_graph_matrix(graph):
         matrix[node_indices[s], node_indices[o]] = 1
         matrix[node_indices[o], node_indices[s]] = 1
     return matrix
+
+
+def serialize_edge_count_dict(d):
+    serialized_dict = {}
+    for outer_key, outer_value in d.items():
+        inner_dict = {}
+        for inner_key, inner_value in dict(outer_value).items():
+            inner_key_str = tuple(map(str, inner_key))
+            inner_dict[json.dumps(inner_key_str)] = inner_value
+        serialized_dict[str(outer_key)] = inner_dict
+    return serialized_dict
+
+
+def serialize_focus_node_exemplar_dict(d):
+    serialized_dict = {}
+    for key, value in d.items():
+        serialized_key = str(key)
+        serialized_value = [str(item) for item in value]
+        serialized_dict[serialized_key] = serialized_value
+    return serialized_dict
+
+
+def deserialize_edge_count_dict(d):
+    deserialized_dict = {}
+    for outer_key, inner_dict in d.items():
+        inner_value = {}
+        for inner_key, value in inner_dict.items():
+            inner_key_tuple = tuple(json.loads(inner_key))
+            inner_value[inner_key_tuple] = value
+        deserialized_dict[outer_key] = inner_value
+    return deserialized_dict
+
+
+def load_edge_count_json(path):
+    with open(path, 'r') as f:
+        data = json.load(f)
+    return deserialize_edge_count_dict(data)
+
+
+def deserialize_focus_node_exemplar_dict(d):
+    deserialized_dict = {}
+    for key, value in d.items():
+        deserialized_key = key
+        deserialized_value = [item for item in value]
+        deserialized_dict[deserialized_key] = deserialized_value
+    return deserialized_dict
+
+
+def load_uri_set_of_uris_dict(path):
+    with open(path, 'r') as f:
+        data = json.load(f)
+    return deserialize_focus_node_exemplar_dict(data)
+
+
+def save_edge_count_json(data, path):
+    with open(path, 'w') as f:
+        json.dump(serialize_edge_count_dict(dict(data)), f)
+
+
+def save_uri_set_of_uris_dict(data, path):
+    with open(path, 'w') as f:
+        json.dump(serialize_focus_node_exemplar_dict(dict(data)), f)
+
 
 # TODO instead of counting the edge object pairs we should count the exemplar occurrences
 # TODO or keep track of ignored edges as well
