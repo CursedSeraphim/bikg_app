@@ -81,6 +81,39 @@ const removeNanEdges = (data: ICsvData[]): ICsvData[] => {
 //   });
 // };
 
+const updateSelectedViolations = (state, valueCounts) => {
+  const selectedViolations = new Set();
+
+  state.violations.forEach((violation) => {
+    const violationValues = valueCounts[violation];
+    if (violationValues) {
+      for (const key in violationValues) {
+        if (key !== '0.0') {
+          selectedViolations.add(violation);
+          break; // Exit the loop as soon as a non-zero value is found
+        }
+      }
+    }
+  });
+
+  state.selectedViolations = Array.from(selectedViolations) as string[];
+};
+
+// Helper function to update selected types
+const updateSelectedTypes = (state, valueCounts) => {
+  const typeCounts = valueCounts['rdf:type'];
+  state.selectedTypes = Object.entries(typeCounts)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    .filter(([category, count]) => (count as number) > 1)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    .map(([category, count]) => category);
+};
+
+// Helper function to update selected violation exemplars
+const updateSelectedViolationExemplars = (state) => {
+  state.selectedViolationExemplars = state.selectedViolations.flatMap((violation) => state.exemplarFocusNodeDict[violation] || []);
+};
+
 // TODO set types of payloadaction for all reducers
 const combinedSlice = createSlice({
   name: 'combined',
@@ -92,15 +125,12 @@ const combinedSlice = createSlice({
     },
     setEdgeCountDict: (state, action: PayloadAction<EdgeCountDict>) => {
       state.edgeCountDict = action.payload;
-      console.log('setEdgeCountDict', action.payload);
     },
     setFocusNodeExemplarDict: (state, action: PayloadAction<FocusNodeExemplarDict>) => {
       state.focusNodeExemplarDict = action.payload;
-      console.log('setFocusNodeExemplarDict', action.payload);
     },
     setExemplarFocusNodeDict: (state, action: PayloadAction<ExemplarFocusNodeDict>) => {
       state.exemplarFocusNodeDict = action.payload;
-      console.log('setExemplarFocusNodeDict', action.payload);
     },
     setMissingEdgeOption: (state, action: PayloadAction<MissingEdgeOptionType>) => {
       console.log('setMissingEdgeOption', action.payload);
@@ -140,34 +170,9 @@ const combinedSlice = createSlice({
       const { selectedNodes, valueCounts } = action.payload;
       state.selectedNodes = selectedNodes;
 
-      // Use a Set to store keys with value > 1
-      const selectedViolations = new Set();
-
-      // Iterate through violations and check if any of their corresponding values in valueCounts is non-zero
-      state.violations.forEach((violation) => {
-        const violationValues = valueCounts[violation];
-        if (violationValues) {
-          for (const key in violationValues) {
-            if (key !== '0.0') {
-              selectedViolations.add(violation);
-              break; // Exit the loop as soon as a non-zero value is found
-            }
-          }
-        }
-      });
-
-      // Set state.selectedViolations to the new list (convert Set to Array)
-      state.selectedViolations = Array.from(selectedViolations) as string[];
-
-      // convert valueCounts['rdf:type'] from a dictionary of counts per category, to a list of categories with > 1 counts
-      const typeCounts = valueCounts['rdf:type'];
-      state.selectedTypes = Object.entries(typeCounts)
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .filter(([category, count]) => (count as number) > 1)
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .map(([category, count]) => category);
-
-      state.selectedViolationExemplars = state.selectedViolations.flatMap((violation) => state.exemplarFocusNodeDict[violation] || []);
+      updateSelectedViolations(state, valueCounts);
+      updateSelectedTypes(state, valueCounts);
+      updateSelectedViolationExemplars(state);
     },
     setSelectedFocusNodes: (state, action) => {
       state.selectedNodes = action.payload;
@@ -184,12 +189,14 @@ const combinedSlice = createSlice({
         violationMap.set(violation, 0);
       });
 
-      // Use reduce() method to iterate over selected nodes
-      const selectedTypes = new Set(); // use Set to avoid duplicates
-      state.selectedNodes.reduce((acc, selectedNode) => {
+      // Use a Set to store selected types
+      const selectedTypes = new Set();
+
+      // Iterate over selected nodes
+      state.selectedNodes.forEach((selectedNode) => {
         const correspondingSample = samplesMap[selectedNode];
 
-        if (!correspondingSample) return acc; // if no corresponding sample is found, skip
+        if (!correspondingSample) return; // if no corresponding sample is found, skip
 
         state.violations.forEach((violation) => {
           if (correspondingSample[violation]) {
@@ -200,21 +207,19 @@ const combinedSlice = createSlice({
         // If the sample has a type, add it to the selectedTypes set
         const sampleType = String(correspondingSample['rdf:type']);
         if (sampleType) selectedTypes.add(sampleType);
+      });
 
-        return acc;
-      }, {});
-
-      // convert selectedTypes set back to array
+      // Convert selectedTypes set back to array
       state.selectedTypes = Array.from(selectedTypes) as string[];
 
-      // set state.selectedViolations to the keys of the map with value > 0
+      // Set state.selectedViolations to the keys of the map with value > 0
       state.selectedViolations = Array.from(violationMap.entries())
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .filter(([key, value]) => value > 0)
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .map(([key, value]) => key);
 
-      state.selectedViolationExemplars = state.selectedViolations.flatMap((violation) => state.exemplarFocusNodeDict[violation] || []);
+      updateSelectedViolationExemplars(state);
     },
     setSelectedViolations: (state, action) => {
       console.log('setSelectedViolations');

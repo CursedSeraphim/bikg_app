@@ -64,7 +64,6 @@ export type ExemplarFocusNodeDict = {
   [exemplarUrl: string]: string[];
 };
 
-
 export type FilterType = 'none' | 'unimodal' | 'nan';
 
 export type MissingEdgeOptionType = 'remove' | 'keep';

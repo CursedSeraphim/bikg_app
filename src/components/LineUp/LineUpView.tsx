@@ -279,14 +279,9 @@ export default function LineUpView() {
    * @param {Object[]} data - An array of objects that represents the data for the LineUpJS builder. Each object should correspond to a row.
    */
   function createLineUpWithBuilder(lineupInstanceRef, lineupRef, data) {
-    // builder.column(LineUpJS.buildStringColumn('focus_node').label('Focus Node').width(150));
     const builder = buildColumns(data);
-    // const ranking = LineUpJS.buildRanking().supportTypes(); // .allColumns();
-    // builder.defaultRanking().ranking(ranking);
-    // creating a new one and returning it would be too expensive
     // eslint-disable-next-line no-param-reassign
     lineupInstanceRef.current = builder.buildTaggle(lineupRef.current);
-    console.log('built');
   }
 
   /**
@@ -303,7 +298,6 @@ export default function LineUpView() {
     // cleanup old lineup instance
     if (lineupInstanceRef.current) {
       lineupInstanceRef.current.destroy();
-      console.log('destroyed');
     }
 
     createLineUpWithBuilder(lineupInstanceRef, lineupRef, data);

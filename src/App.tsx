@@ -3,7 +3,17 @@ import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { BarLoader } from 'react-spinners';
 import BottomTabs from './components/BottomTabs';
-import { setRdfString, selectRdfData, setCsvData, setViolations, setViolationTypesMap, setTypesViolationMap, setEdgeCountDict, setFocusNodeExemplarDict, setExemplarFocusNodeDict } from './components/Store/CombinedSlice';
+import {
+  setRdfString,
+  selectRdfData,
+  setCsvData,
+  setViolations,
+  setViolationTypesMap,
+  setTypesViolationMap,
+  setEdgeCountDict,
+  setFocusNodeExemplarDict,
+  setExemplarFocusNodeDict,
+} from './components/Store/CombinedSlice';
 
 import CytoscapeView from './CytoscapeView';
 
