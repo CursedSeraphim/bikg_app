@@ -246,6 +246,10 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
         typesViolationMap: {},
         filterType: 'none',
         missingEdgeOption: 'keep',
+        edgeCountDict: {},
+        focusNodeExemplarDict: {},
+        exemplarFocusNodeDict: {},
+        selectedViolationExemplars: [],
       },
     })
       .then((data) => {

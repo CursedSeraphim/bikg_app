@@ -3,18 +3,59 @@ import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { BarLoader } from 'react-spinners';
 import BottomTabs from './components/BottomTabs';
-import { setRdfString, selectRdfData, setCsvData, setViolations, setViolationTypesMap, setTypesViolationMap } from './components/Store/CombinedSlice';
+import { setRdfString, selectRdfData, setCsvData, setViolations, setViolationTypesMap, setTypesViolationMap, setEdgeCountDict, setFocusNodeExemplarDict, setExemplarFocusNodeDict } from './components/Store/CombinedSlice';
 
 import CytoscapeView from './CytoscapeView';
 
 import './styles.css';
-import { fetchOntology, fetchCSVFile, fetchViolationList, fetchViolationPathNodesDict } from './api';
+import {
+  fetchOntology,
+  fetchCSVFile,
+  fetchViolationList,
+  fetchViolationPathNodesDict,
+  fetchEdgeCountDict,
+  fetchFocusNodeExemplarDict,
+  fetchExemplarFocusNodeDict,
+} from './api';
 import { SPINNER_COLOR } from './constants';
 
 export function App() {
   const dispatch = useDispatch();
   const rdfOntology = useSelector(selectRdfData);
   const [cytoscapeLoading, setCytoscapeLoading] = React.useState(true);
+
+  // Fetch edge count dictionary and print
+  React.useEffect(() => {
+    fetchEdgeCountDict()
+      .then((data) => {
+        dispatch(setEdgeCountDict(data));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch edge count dictionary', error);
+      });
+  }, [dispatch]);
+
+  // Fetch edge count dictionary and print
+  React.useEffect(() => {
+    fetchFocusNodeExemplarDict()
+      .then((data) => {
+        dispatch(setFocusNodeExemplarDict(data));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch focus node exemplar dictionary', error);
+      });
+  }, [dispatch]);
+
+  // Fetch edge count dictionary and print
+  React.useEffect(() => {
+    fetchExemplarFocusNodeDict()
+      .then((data) => {
+        dispatch(setExemplarFocusNodeDict(data));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch exemplar focus node dictionary', error);
+      });
+  }, [dispatch]);
 
   // Fetch violation list
   React.useEffect(() => {

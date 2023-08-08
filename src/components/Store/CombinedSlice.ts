@@ -4,7 +4,20 @@ import * as N3 from 'n3';
 import { NamedNode, Store, Quad } from 'n3';
 import { createSelector } from 'reselect';
 import { dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
-import { ICombinedState, IRdfState, ITriple, ICytoData, ICytoNode, ICytoEdge, ICsvData, FilterType, MissingEdgeOptionType } from '../../types';
+import {
+  ICombinedState,
+  IRdfState,
+  ITriple,
+  ICytoData,
+  ICytoNode,
+  ICytoEdge,
+  ICsvData,
+  FilterType,
+  MissingEdgeOptionType,
+  EdgeCountDict,
+  FocusNodeExemplarDict,
+  ExemplarFocusNodeDict,
+} from '../../types';
 // import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
@@ -20,6 +33,26 @@ const initialState: ICombinedState = {
   typesViolationMap: {},
   filterType: 'none',
   missingEdgeOption: 'keep',
+  edgeCountDict: {},
+  focusNodeExemplarDict: {},
+  exemplarFocusNodeDict: {},
+  selectedViolationExemplars: [],
+};
+
+function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
+  for (const [prefix, prefixURI] of Object.entries(prefixes)) {
+    if (uri.startsWith(prefixURI)) {
+      return uri.replace(prefixURI, `${prefix}:`);
+    }
+  }
+  return uri;
+}
+const mapQuadToShortenedResult = (quad, prefixes: { [key: string]: string }) => {
+  return {
+    s: shortenURI(quad.subject.id, prefixes),
+    p: shortenURI(quad.predicate.id, prefixes),
+    o: shortenURI(quad.object.id, prefixes),
+  };
 };
 
 const removeNanEdges = (data: ICsvData[]): ICsvData[] => {
@@ -53,6 +86,22 @@ const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
+    setSelectedViolationExemplars: (state, action: PayloadAction<string[]>) => {
+      state.selectedViolationExemplars = action.payload;
+      console.log('setSelectedViolationExemplars', action.payload);
+    },
+    setEdgeCountDict: (state, action: PayloadAction<EdgeCountDict>) => {
+      state.edgeCountDict = action.payload;
+      console.log('setEdgeCountDict', action.payload);
+    },
+    setFocusNodeExemplarDict: (state, action: PayloadAction<FocusNodeExemplarDict>) => {
+      state.focusNodeExemplarDict = action.payload;
+      console.log('setFocusNodeExemplarDict', action.payload);
+    },
+    setExemplarFocusNodeDict: (state, action: PayloadAction<ExemplarFocusNodeDict>) => {
+      state.exemplarFocusNodeDict = action.payload;
+      console.log('setExemplarFocusNodeDict', action.payload);
+    },
     setMissingEdgeOption: (state, action: PayloadAction<MissingEdgeOptionType>) => {
       console.log('setMissingEdgeOption', action.payload);
       state.missingEdgeOption = action.payload;
@@ -117,6 +166,8 @@ const combinedSlice = createSlice({
         .filter(([category, count]) => (count as number) > 1)
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .map(([category, count]) => category);
+
+      state.selectedViolationExemplars = state.selectedViolations.flatMap((violation) => state.exemplarFocusNodeDict[violation] || []);
     },
     setSelectedFocusNodes: (state, action) => {
       state.selectedNodes = action.payload;
@@ -162,8 +213,9 @@ const combinedSlice = createSlice({
         .filter(([key, value]) => value > 0)
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .map(([key, value]) => key);
-    },
 
+      state.selectedViolationExemplars = state.selectedViolations.flatMap((violation) => state.exemplarFocusNodeDict[violation] || []);
+    },
     setSelectedViolations: (state, action) => {
       console.log('setSelectedViolations');
       state.selectedViolations = action.payload;
@@ -229,6 +281,7 @@ export const selectCsvData = (state: { combined: ICombinedState }) => state.comb
 export const selectSelectedFocusNodes = (state: { combined: ICombinedState }) => state.combined.selectedNodes;
 export const selectSelectedTypes = (state: { combined: ICombinedState }) => state.combined.selectedTypes;
 export const selectRdfData = (state: { combined: ICombinedState }) => state.combined.rdfString;
+export const selectSelectedViolationExemplars = (state: { combined: ICombinedState }) => state.combined.selectedViolationExemplars;
 
 // TODO investigate why we are returning everything here
 // create memoized selector
@@ -258,23 +311,6 @@ export const selectBarPlotData = createSelector(
 export const selectCsvDataForPlotly = createSelector(selectCombinedSamples, (samples) => {
   return dataToScatterDataArray(samples);
 });
-
-function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
-  for (const [prefix, prefixURI] of Object.entries(prefixes)) {
-    if (uri.startsWith(prefixURI)) {
-      return uri.replace(prefixURI, `${prefix}:`);
-    }
-  }
-  return uri;
-}
-
-const mapQuadToShortenedResult = (quad, prefixes: { [key: string]: string }) => {
-  return {
-    s: shortenURI(quad.subject.id, prefixes),
-    p: shortenURI(quad.predicate.id, prefixes),
-    o: shortenURI(quad.object.id, prefixes),
-  };
-};
 
 export const selectSubClassesAndViolations = async (state: { combined: ICombinedState }): Promise<Quad[]> => {
   const { rdfString } = state.combined;
@@ -561,6 +597,10 @@ export const {
   setTypesViolationMap,
   setFilterType,
   setMissingEdgeOption,
+  setEdgeCountDict,
+  setFocusNodeExemplarDict,
+  setExemplarFocusNodeDict,
+  setSelectedViolationExemplars,
 } = combinedSlice.actions;
 
 export default combinedSlice.reducer;

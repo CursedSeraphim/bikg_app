@@ -10,7 +10,7 @@ from fastapi import APIRouter, Request, Response
 from rdflib import Graph, Namespace
 from scipy.stats import chi2_contingency
 
-from bikg_app.routers.utils import get_violation_report_exemplars
+from bikg_app.routers.utils import get_violation_report_exemplars, load_edge_count_json, load_uri_set_of_uris_dict, serialize_edge_count_dict, serialize_focus_node_exemplar_dict
 
 SH = Namespace("http://www.w3.org/ns/shacl#")
 OWL = Namespace("http://www.w3.org/2002/07/owl#")
@@ -44,7 +44,29 @@ overall_violation_value_counts = {
     violation: sum(key * value for key, value in counts.items()) for violation, counts in overall_violation_value_dict.items()
 }
 
+# load the edge_count_dict that gives edge counts within each exemplar
+edge_count_dict = load_edge_count_json('bikg_app/json/exemplar_edge_count_dict.json')
+# load the focus_node_exemplar_dict that gives the exemplars for each focus node
+focus_node_exemplar_dict = load_uri_set_of_uris_dict('bikg_app/json/focus_node_exemplar_dict.json')
+# exemplar_focus_node_dict that gives the focus node for each exemplar
+exemplar_focus_node_dict = load_uri_set_of_uris_dict('bikg_app/json/exemplar_focus_node_dict.json')
+
 router = APIRouter()
+
+
+@router.get("/file/edge_count_dict", response_model=dict)
+async def get_edge_count_dict():
+    return serialize_edge_count_dict(edge_count_dict)
+
+
+@router.get("/file/focus_node_exemplar_dict", response_model=dict)
+async def get_focus_node_exemplar_dict():
+    return serialize_focus_node_exemplar_dict(focus_node_exemplar_dict)
+
+
+@router.get("/file/exemplar_focus_node_dict", response_model=dict)
+async def get_exemplar_focus_node_dict():
+    return serialize_focus_node_exemplar_dict(exemplar_focus_node_dict)
 
 
 @router.get("/file/study")

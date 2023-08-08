@@ -111,3 +111,24 @@ export async function fetchOntology() {
   const data = await response.text();
   return data;
 }
+
+export async function fetchEdgeCountDict() {
+  const endpoint = `http://localhost:9000/file/edge_count_dict`;
+  const response = await fetch(endpoint);
+  const data = await response.json();
+  return data;
+}
+
+export async function fetchFocusNodeExemplarDict() {
+  const endpoint = `http://localhost:9000/file/focus_node_exemplar_dict`;
+  const response = await fetch(endpoint);
+  const data = await response.json();
+  return data;
+}
+
+export async function fetchExemplarFocusNodeDict() {
+  const endpoint = `http://localhost:9000/file/exemplar_focus_node_dict`;
+  const response = await fetch(endpoint);
+  const data = await response.json();
+  return data;
+}

@@ -50,8 +50,25 @@ export interface IRdfState {
   rdfString: string;
 }
 
+export type EdgeCountDict = {
+  [url: string]: {
+    [edgeString: string]: number;
+  };
+};
+
+export type FocusNodeExemplarDict = {
+  [focusNodeUrl: string]: string[];
+};
+
+export type ExemplarFocusNodeDict = {
+  [exemplarUrl: string]: string[];
+};
+
+
 export type FilterType = 'none' | 'unimodal' | 'nan';
+
 export type MissingEdgeOptionType = 'remove' | 'keep';
+
 export interface ICombinedState {
   samples: ICsvData[];
   originalSamples: ICsvData[];
@@ -64,6 +81,10 @@ export interface ICombinedState {
   typesViolationMap: { [key: string]: string[] }; // map of owl:Classes to their corresponding sh:PropertyShapes and the sh:NodeShapes in between
   filterType: FilterType;
   missingEdgeOption: MissingEdgeOptionType;
+  edgeCountDict: EdgeCountDict;
+  focusNodeExemplarDict: FocusNodeExemplarDict;
+  exemplarFocusNodeDict: ExemplarFocusNodeDict;
+  selectedViolationExemplars: string[];
 }
 
 export interface ITriple {
