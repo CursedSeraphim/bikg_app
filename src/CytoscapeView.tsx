@@ -13,6 +13,7 @@ import {
   selectViolationsTypeMap,
   selectViolations,
   selectSelectedViolationExemplars,
+  setSelectedViolationExemplars,
 } from './components/Store/CombinedSlice';
 
 cytoscape.use(cytoscapeLasso);
@@ -113,6 +114,7 @@ const hideVisibleNodes = (nodeList) => {
       if (node.data('permanent') === false) {
         node.style('display', 'none');
         node.data('visible', false);
+        console.log('hiding', node.id(), node);
       }
     });
   });
@@ -161,6 +163,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     if (selectedNodes.length === 0) {
       // If no nodes were selected in the lasso, deselect all types
       dispatch(setSelectedTypes([]));
+      dispatch(setSelectedViolationExemplars([]));
     } else {
       // Dispatch setSelectedTypes action with the new list of selected types
       dispatch(setSelectedTypes(uniqueSelectedNodeTypes));
@@ -189,6 +192,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   React.useEffect(() => {
     if (cy && selectedViolations) {
       // hide everything again
+      console.log('hiding these:', listOfNodesThatHaveBeenMadeVisible.current);
       listOfNodesThatHaveBeenMadeVisible.current = hideVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
 
       // reset positions
@@ -220,6 +224,8 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       const otherNodes = getNodesFromIds(otherNodeIds, cy);
 
       const exemplarNodes = getNodesFromIds(selectedViolationExemplars, cy);
+
+      console.log('selected exemplars', selectedViolationExemplars);
 
       // color nodes, make selection visible
       styleNodes(violationNodes, 'element', 'orange');
@@ -416,8 +422,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
             if (lassoSelectionInProgress) {
               return;
             }
-            console.log('tapped node', event.target);
-
             const node = event.target;
             const edges = node.connectedEdges();
             const children = edges.targets().filter((child) => child.id() !== node.id());
@@ -435,14 +439,9 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
             } else {
               // Check if there is a predecessor with an edge having the label 'rdfs:subClassOf' to this node. If not, return
               const successors = node.successors();
-              console.log('successors.edges()', successors.edges());
-              const hasPredecessorWithSubClassOf = successors.edges().some((edge) => {
-                console.log('edge', edge);
-                console.log('edge.data(label)', edge.data('label'));
-                console.log('edge.data(source)', edge.data('source'));
-                console.log('node.id()', node.id());
-                return edge.data('label') === 'rdfs:subClassOf' && edge.data('source') === node.id();
-              });
+              const hasPredecessorWithSubClassOf = successors
+                .edges()
+                .some((edge) => edge.data('label') === 'rdfs:subClassOf' && edge.data('source') === node.id());
               if (!hasPredecessorWithSubClassOf) {
                 return;
               }
