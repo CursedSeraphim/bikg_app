@@ -12,6 +12,7 @@ import {
   selectSelectedTypes,
   selectViolationsTypeMap,
   selectViolations,
+  selectSelectedViolationExemplars,
 } from './components/Store/CombinedSlice';
 
 cytoscape.use(cytoscapeLasso);
@@ -141,6 +142,7 @@ const getNodesFromIds = (ids, cy) => {
 function CytoscapeView({ rdfOntology, onLoaded }) {
   const [cy, setCy] = React.useState<cytoscape.Core | null>(null);
   const selectedTypes = useSelector(selectSelectedTypes);
+  const selectedViolationExemplars = useSelector(selectSelectedViolationExemplars);
   const selectedViolations = useSelector(selectSelectedViolations);
   const violationsTypesMap = useSelector(selectViolationsTypeMap);
   const violations = useSelector(selectViolations);
@@ -206,6 +208,22 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       applyInitialPositions(cy.nodes());
 
+      const exemplarNodes = getNodesFromIds(selectedViolationExemplars, cy);
+      // exemplarNodes is a collection, iterate and print it
+      exemplarNodes.forEach((node) => {
+        const pos = node.position();
+        console.log('exemplarNodes', node.id(), pos.x, pos.y);
+      });
+
+      // print each node in the entire cy graph
+      cy.nodes().forEach((node) => {
+        // if it contains the string 'exemplar'
+        if (node.id().includes('exemplar')) {
+          const pos = node.position();
+          console.log('cy.nodes', node.id(), pos.x, pos.y);
+        }
+      });
+
       const violationNodes = getNodesFromIds(selectedViolations, cy);
       const connectedNodesIds = selectedViolations.flatMap((violation) => violationsTypesMap[violation]);
 
@@ -222,6 +240,8 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       // Add nodes to list of nodes that have been made visible
       listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, typeNodes);
+
+      console.log('selectedExemplars in cyto', selectedViolationExemplars);
 
       // TODO apply layout to the entire cy graph using the CY_LAYOUT constant
       applyLayout(violationNodes, otherNodes, typeNodes, cy);

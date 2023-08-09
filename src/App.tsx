@@ -13,6 +13,7 @@ import {
   setEdgeCountDict,
   setFocusNodeExemplarDict,
   setExemplarFocusNodeDict,
+  // setPrefixes
 } from './components/Store/CombinedSlice';
 
 import CytoscapeView from './CytoscapeView';
@@ -26,6 +27,7 @@ import {
   fetchEdgeCountDict,
   fetchFocusNodeExemplarDict,
   fetchExemplarFocusNodeDict,
+  // fetchPrefixes,
 } from './api';
 import { SPINNER_COLOR } from './constants';
 
@@ -44,6 +46,17 @@ export function App() {
         console.error('Failed to fetch edge count dictionary', error);
       });
   }, [dispatch]);
+
+  // // Fetch prefixes'
+  // React.useEffect(() => {
+  //   fetchPrefixes()
+  //     .then((data) => {
+  //       dispatch(setPrefixes(data));
+  //     })
+  //     .catch((error) => {
+  //       console.error('Failed to fetch prefixes', error);
+  //     });
+  // }, []);'
 
   // Fetch edge count dictionary and print
   React.useEffect(() => {

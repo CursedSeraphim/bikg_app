@@ -3,7 +3,6 @@ import json
 import os
 from collections import defaultdict
 import time
-
 import numpy as np
 import pandas as pd
 from fastapi import APIRouter, Request, Response
@@ -15,14 +14,21 @@ from bikg_app.routers.utils import get_violation_report_exemplars, load_edge_cou
 SH = Namespace("http://www.w3.org/ns/shacl#")
 OWL = Namespace("http://www.w3.org/2002/07/owl#")
 
+# File paths
+VIOLATIONS_FILE_PATH = os.path.join("bikg_app/json", "violation_list.json")
+STUDY_CSV_FILE_PATH = "bikg_app/csv/study.csv"
+ONTOLOGY_TTL_FILE_PATH = "bikg_app/ttl/omics_model_union_violation_exemplar.ttl"
+EXEMPLAR_EDGE_COUNT_JSON_PATH = 'bikg_app/json/exemplar_edge_count_dict.json'
+FOCUS_NODE_EXEMPLAR_DICT_JSON_PATH = 'bikg_app/json/focus_node_exemplar_dict.json'
+EXEMPLAR_FOCUS_NODE_DICT_JSON_PATH = 'bikg_app/json/exemplar_focus_node_dict.json'
+
 # load the violations
-violations_file_path = os.path.join("bikg_app/json", "violation_list.json")
-assert os.path.exists(violations_file_path)
-with open(violations_file_path, "rb") as f:
+assert os.path.exists(VIOLATIONS_FILE_PATH)
+with open(VIOLATIONS_FILE_PATH, "rb") as f:
     violations_list = json.load(f)
 
 # load the tabularized data
-df = pd.read_csv("bikg_app/csv/study.csv", index_col=0)
+df = pd.read_csv(STUDY_CSV_FILE_PATH, index_col=0)
 df = df.replace(np.nan, "nan", regex=True)
 filtered_columns = [column for column in df.columns if column not in ["x", "y"]]
 
@@ -38,35 +44,82 @@ for column in violations_list:
 
 # load the ontology
 g = Graph()
-g.parse("bikg_app/ttl/omics_model_union_violation_exemplar.ttl", format="ttl")
+g.parse(ONTOLOGY_TTL_FILE_PATH, format="ttl")
 
 overall_violation_value_counts = {
     violation: sum(key * value for key, value in counts.items()) for violation, counts in overall_violation_value_dict.items()
 }
 
 # load the edge_count_dict that gives edge counts within each exemplar
-edge_count_dict = load_edge_count_json('bikg_app/json/exemplar_edge_count_dict.json')
+edge_count_dict = load_edge_count_json(EXEMPLAR_EDGE_COUNT_JSON_PATH)
 # load the focus_node_exemplar_dict that gives the exemplars for each focus node
-focus_node_exemplar_dict = load_uri_set_of_uris_dict('bikg_app/json/focus_node_exemplar_dict.json')
+focus_node_exemplar_dict = load_uri_set_of_uris_dict(FOCUS_NODE_EXEMPLAR_DICT_JSON_PATH)
 # exemplar_focus_node_dict that gives the focus node for each exemplar
-exemplar_focus_node_dict = load_uri_set_of_uris_dict('bikg_app/json/exemplar_focus_node_dict.json')
+exemplar_focus_node_dict = load_uri_set_of_uris_dict(EXEMPLAR_FOCUS_NODE_DICT_JSON_PATH)
 
 router = APIRouter()
+
+# @router.get("/prefixes")
+# def get_prefixes():
+#     """
+#     Retrieves all the namespace prefixes used in the ontology
+#     """
+#     # Using the graph's namespace manager to get all the namespace bindings
+#     namespace_bindings = list(g.namespace_manager.namespaces())
+#     # Converting to dictionary where the keys are prefix strings and values are the corresponding URIs
+#     prefixes_dict = {prefix: str(namespace) for prefix, namespace in namespace_bindings}
+
+#     return prefixes_dict
+
+
+def get_prefixes(graph: Graph):
+    return {prefix: str(namespace) for prefix, namespace in graph.namespaces()}
+
+
+def shortenDictURIs(d, prefixes):
+    def shorten(uri):
+        try:
+            # Check if the uri is a tuple and shorten each element of the tuple
+            if isinstance(uri, tuple):
+                return tuple(shorten(elem) for elem in uri)
+            for prefix, namespace in prefixes.items():
+                if uri.startswith(namespace):
+                    return uri.replace(namespace, f"{prefix}:")
+            return uri
+        except Exception as e:
+            print("Error shortening URI:", uri, "Error:", str(e))
+            return uri
+
+    def process_item(item):
+        if isinstance(item, dict):
+            return {shorten(key): process_item(value) for key, value in item.items()}
+        elif isinstance(item, list):
+            return [process_item(value) for value in item]
+        elif isinstance(item, str):
+            return shorten(item)
+        else:
+            return item
+
+    return process_item(d)
 
 
 @router.get("/file/edge_count_dict", response_model=dict)
 async def get_edge_count_dict():
-    return serialize_edge_count_dict(edge_count_dict)
+    prefixes = get_prefixes(g) # Get the prefixes from the graph
+    return serialize_edge_count_dict(shortenDictURIs(edge_count_dict, prefixes))
 
 
 @router.get("/file/focus_node_exemplar_dict", response_model=dict)
 async def get_focus_node_exemplar_dict():
-    return serialize_focus_node_exemplar_dict(focus_node_exemplar_dict)
+    # TODO shorten uris with shortenDictURIs then return serialized shortened dict
+    prefixes = get_prefixes(g) # Get the prefixes from the graph
+    return serialize_focus_node_exemplar_dict(shortenDictURIs(focus_node_exemplar_dict, prefixes))
 
 
 @router.get("/file/exemplar_focus_node_dict", response_model=dict)
 async def get_exemplar_focus_node_dict():
-    return serialize_focus_node_exemplar_dict(exemplar_focus_node_dict)
+    prefixes = get_prefixes(g) # Get the prefixes from the graph
+    return serialize_focus_node_exemplar_dict(shortenDictURIs(exemplar_focus_node_dict, prefixes))
 
 
 @router.get("/file/study")

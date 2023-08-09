@@ -68,6 +68,10 @@ export type FilterType = 'none' | 'unimodal' | 'nan';
 
 export type MissingEdgeOptionType = 'remove' | 'keep';
 
+// export interface IPrefixes {
+//   [key: string]: string; // The key is the prefix, and the value is the corresponding URI
+// }
+
 export interface ICombinedState {
   samples: ICsvData[];
   originalSamples: ICsvData[];
@@ -84,6 +88,7 @@ export interface ICombinedState {
   focusNodeExemplarDict: FocusNodeExemplarDict;
   exemplarFocusNodeDict: ExemplarFocusNodeDict;
   selectedViolationExemplars: string[];
+  // prefixes: IPrefixes;
 }
 
 export interface ITriple {

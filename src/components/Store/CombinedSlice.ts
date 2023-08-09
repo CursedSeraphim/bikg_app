@@ -12,6 +12,7 @@ import {
   ICytoNode,
   ICytoEdge,
   ICsvData,
+  // IPrefixes,
   FilterType,
   MissingEdgeOptionType,
   EdgeCountDict,
@@ -37,6 +38,7 @@ const initialState: ICombinedState = {
   focusNodeExemplarDict: {},
   exemplarFocusNodeDict: {},
   selectedViolationExemplars: [],
+  // prefixes: {},
 };
 
 function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
@@ -53,6 +55,87 @@ const mapQuadToShortenedResult = (quad, prefixes: { [key: string]: string }) => 
     p: shortenURI(quad.predicate.id, prefixes),
     o: shortenURI(quad.object.id, prefixes),
   };
+};
+
+/**
+ * TODO
+ * @param dict a dict where both keys could be URIs and values could be arrays of URIs thashortenURI http://data.boehringer.com/ontology/omics/ece15faa-30b3-471c-ae51-2d6d1f80e3a9_exemplar_5 t should be
+ * // hsortenedand expects the result
+ * @param prefixes list of prefixes extracted from a graph using rdflib and the served to this client
+ */
+const shortenDictURIs = (dict, prefixes) => {
+  const result = {};
+  for (const key in dict) {
+    if (Object.prototype.hasOwnProperty.call(dict, key)) {
+      // print type of key
+      const newKey = shortenURI(key, prefixes);
+      if (Array.isArray(dict[key])) {
+        result[newKey] = dict[key].map((uri) => shortenURI(uri, prefixes));
+      } else {
+        result[newKey] = shortenURI(dict[key], prefixes);
+        // result[newKey] = dict[key];
+      }
+    }
+  }
+  return result;
+};
+
+function testPrefixes1(prefixes: any) {
+  console.log('prefixes', prefixes);
+  const result = shortenURI('http://data.boehringer.com/ontology/omics/ece15faa-30b3-471c-ae51-2d6d1f80e3a9_exemplar_5', prefixes);
+  if (result !== 'omics:ece15faa-30b3-471c-ae51-2d6d1f80e3a9_exemplar_5') {
+    throw new Error('Test failed');
+  } else {
+    console.log('Test passed');
+  }
+}
+
+function testPrefixes2(prefixes: any) {
+  const result = shortenURI('http://data.boehringer.com/ontology/asdasdasdomics/ece15faa-30b3-471c-ae51-2d6d1f80e3a9_exemplar_5', prefixes);
+  if (result !== 'http://data.boehringer.com/ontology/asdasdasdomics/ece15faa-30b3-471c-ae51-2d6d1f80e3a9_exemplar_5') {
+    throw new Error('Test failed');
+  } else {
+    console.log('Test passed');
+  }
+}
+
+function testPrefixes3(prefixes: any) {
+  const result = shortenURI('http://data.boehringer.com/ontology/omics/abc', prefixes);
+  if (result !== 'omics:abc') {
+    throw new Error('Test failed');
+  } else {
+    console.log('Test passed');
+  }
+}
+
+/**
+ * TODO
+ * @param dict a nexted dict where keys are uris that should be shortened. in the value dicts the keys are predicate object pairs that need to be json parsed to be recognized as arrays, then both predicate and object shoudl be shortened if possible, and the value is simply a number
+ * @param prefixes list of prefixes extracted from a graph using rdflib and the served to this client
+ */
+const shortenEdgeCountDictURIs = (dict, prefixes) => {
+  const result = {};
+  for (const key in dict) {
+    if (Object.prototype.hasOwnProperty.call(dict, key)) {
+      const newKey = shortenURI(key, prefixes);
+      const valueDict = dict[key];
+      const newValueDict = {};
+      for (const innerKey in valueDict) {
+        if (Object.prototype.hasOwnProperty.call(valueDict, innerKey)) {
+          let parsedInnerKey;
+          try {
+            parsedInnerKey = JSON.parse(innerKey);
+          } catch (e) {
+            parsedInnerKey = null;
+          }
+          const newInnerKey = parsedInnerKey ? parsedInnerKey.map((uri) => shortenURI(uri, prefixes)).toString() : shortenURI(innerKey, prefixes);
+          newValueDict[newInnerKey] = valueDict[innerKey];
+        }
+      }
+      result[newKey] = newValueDict;
+    }
+  }
+  return result;
 };
 
 const removeNanEdges = (data: ICsvData[]): ICsvData[] => {
@@ -111,7 +194,12 @@ const updateSelectedTypes = (state, valueCounts) => {
 
 // Helper function to update selected violation exemplars
 const updateSelectedViolationExemplars = (state) => {
-  state.selectedViolationExemplars = state.selectedViolations.flatMap((violation) => state.exemplarFocusNodeDict[violation] || []);
+  const selectedViolationExemplarsSet = new Set();
+  state.selectedNodes.forEach((node) => {
+    const exemplars = state.focusNodeExemplarDict[node] || [];
+    exemplars.forEach((exemplar) => selectedViolationExemplarsSet.add(exemplar));
+  });
+  state.selectedViolationExemplars = Array.from(selectedViolationExemplarsSet);
 };
 
 // TODO set types of payloadaction for all reducers
@@ -119,21 +207,26 @@ const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
+    // setPrefixes: (state, action: PayloadAction<IPrefixes>) => {
+    //   state.prefixes = action.payload;
+    //   console.log('setPrefixes', action.payload);
+    // },
     setSelectedViolationExemplars: (state, action: PayloadAction<string[]>) => {
       state.selectedViolationExemplars = action.payload;
-      console.log('setSelectedViolationExemplars', action.payload);
     },
     setEdgeCountDict: (state, action: PayloadAction<EdgeCountDict>) => {
       state.edgeCountDict = action.payload;
+      console.log('setEdgeCountDict', action.payload);
     },
     setFocusNodeExemplarDict: (state, action: PayloadAction<FocusNodeExemplarDict>) => {
       state.focusNodeExemplarDict = action.payload;
+      console.log('setFocusNodeExemplarDict', action.payload);
     },
     setExemplarFocusNodeDict: (state, action: PayloadAction<ExemplarFocusNodeDict>) => {
       state.exemplarFocusNodeDict = action.payload;
+      console.log('setExemplarFocusNodeDict', action.payload);
     },
     setMissingEdgeOption: (state, action: PayloadAction<MissingEdgeOptionType>) => {
-      console.log('setMissingEdgeOption', action.payload);
       state.missingEdgeOption = action.payload;
       if (state.missingEdgeOption === 'remove') {
         state.samples = removeNanEdges(state.originalSamples);
@@ -175,6 +268,7 @@ const combinedSlice = createSlice({
       updateSelectedViolationExemplars(state);
     },
     setSelectedFocusNodes: (state, action) => {
+      console.log('setSelectedFocusNodes', action.payload);
       state.selectedNodes = action.payload;
 
       // Convert state.samples into an object for O(1) lookup
@@ -219,6 +313,7 @@ const combinedSlice = createSlice({
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .map(([key, value]) => key);
 
+      console.log('udpating selected violation exemplars');
       updateSelectedViolationExemplars(state);
     },
     setSelectedViolations: (state, action) => {
@@ -263,6 +358,8 @@ const combinedSlice = createSlice({
           state.selectedViolations.push(key);
         }
       });
+
+      updateSelectedViolationExemplars(state);
     },
     setRdfString: (state, action) => {
       console.log('setRdfString');
@@ -287,6 +384,7 @@ export const selectSelectedFocusNodes = (state: { combined: ICombinedState }) =>
 export const selectSelectedTypes = (state: { combined: ICombinedState }) => state.combined.selectedTypes;
 export const selectRdfData = (state: { combined: ICombinedState }) => state.combined.rdfString;
 export const selectSelectedViolationExemplars = (state: { combined: ICombinedState }) => state.combined.selectedViolationExemplars;
+// export const selectPrefixes = (state: { combined: ICombinedState }): IPrefixes => state.combined.prefixes;
 
 // TODO investigate why we are returning everything here
 // create memoized selector
@@ -605,6 +703,7 @@ export const {
   setFocusNodeExemplarDict,
   setExemplarFocusNodeDict,
   setSelectedViolationExemplars,
+  // setPrefixes,
 } = combinedSlice.actions;
 
 export default combinedSlice.reducer;
