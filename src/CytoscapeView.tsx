@@ -209,23 +209,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       };
       applyInitialPositions(cy.nodes());
 
-      const exemplarNodes = getNodesFromIds(selectedViolationExemplars, cy);
-      // exemplarNodes is a collection, iterate and print it
-      exemplarNodes.forEach((node) => {
-        const pos = node.position();
-        console.log('exemplarNodes', node.id(), pos.x, pos.y);
-      });
-
-      // print each node in the entire cy graph
-      cy.nodes().forEach((node) => {
-        // if it contains the string 'exemplar'
-        if (node.id().includes('exemplar')) {
-          const pos = node.position();
-          console.log('cy.nodes', node.id(), pos.x, pos.y);
-        }
-      });
-
-      // select violationNodes, typeNodes, and otherNodes
+      // select violationNodes, typeNodes, exemplarNodes, and otherNodes
       const violationNodes = getNodesFromIds(selectedViolations, cy);
       const connectedNodesIds = selectedViolations.flatMap((violation) => violationsTypesMap[violation]);
 
@@ -235,24 +219,28 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       const typeNodes = getNodesFromIds(typeNodeIds, cy);
       const otherNodes = getNodesFromIds(otherNodeIds, cy);
 
+      const exemplarNodes = getNodesFromIds(selectedViolationExemplars, cy);
+
       // color nodes, make selection visible
       styleNodes(violationNodes, 'element', 'orange');
       styleNodes(otherNodes, 'element', 'lightgrey');
       styleNodes(typeNodes, 'element', 'steelblue');
+      styleNodes(exemplarNodes, 'element', 'purple');
 
       // Add nodes to list of nodes that have been made visible
-      listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, typeNodes);
+      listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes);
 
       console.log('selectedExemplars in cyto', selectedViolationExemplars);
 
-      // TODO apply layout to the entire cy graph using the CY_LAYOUT constant
-      applyLayout(violationNodes, otherNodes, typeNodes, cy);
+      // TODO at the moment this is a cheap solution to show exemplare nodes in the center column. next we want to show attribute nodes for each node, rather than a single connected attribute. then we can do this differently altogether
+      applyLayout(violationNodes, otherNodes.union(exemplarNodes), typeNodes, cy);
 
       // Show connected edges
-      const connectedEdges = violationNodes.edges().union(otherNodes.edges());
+      // TODO same here with the union between otherNodes and exemplarNodes as in the above TODO
+      const connectedEdges = violationNodes.edges().union(otherNodes.union(exemplarNodes).edges());
       styleNodes(connectedEdges, 'element', '#999'); // #999 is the default color for edges
     }
-  }, [cy, selectedViolations, selectedTypes, violationsTypesMap, violations]);
+  }, [cy, selectedViolations, selectedTypes, violationsTypesMap, violations, selectedViolationExemplars]);
 
   React.useEffect(() => {
     selectCytoData(rdfOntology)
@@ -424,11 +412,11 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
             });
           };
 
-          // Event handlers for tap and cxttap events
           newCy.on('tap', 'node', (event) => {
             if (lassoSelectionInProgress) {
               return;
             }
+            console.log('tapped node', event.target);
 
             const node = event.target;
             const edges = node.connectedEdges();
@@ -441,11 +429,24 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
               alignNodes(children, parentNodePosition, true);
             } else if (event.originalEvent.shiftKey) {
               // If shiftKey is pressed, show nodes and align parents
-              const incomers = node.incomers();
+              const incomers = node.incomers().sources();
               showNodesGivenSource(incomers, node);
               alignNodes(incomers, parentNodePosition, false);
             } else {
-              node.stop();
+              // Check if there is a predecessor with an edge having the label 'rdfs:subClassOf' to this node. If not, return
+              const successors = node.successors();
+              console.log('successors.edges()', successors.edges());
+              const hasPredecessorWithSubClassOf = successors.edges().some((edge) => {
+                console.log('edge', edge);
+                console.log('edge.data(label)', edge.data('label'));
+                console.log('edge.data(source)', edge.data('source'));
+                console.log('node.id()', node.id());
+                return edge.data('label') === 'rdfs:subClassOf' && edge.data('source') === node.id();
+              });
+              if (!hasPredecessorWithSubClassOf) {
+                return;
+              }
+              node.stop(); // Stop any animation that is currently running
               node.removeData('original-color');
               newCy.nodes().unselect();
               node.select();
