@@ -538,9 +538,24 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: IRdfSta
   });
 };
 
+const findObjectProperties = (visibleTriples, hiddenTriples) => {
+  const objectProperties = new Set();
+  const typesToInclude = ['owl:ObjectProperty', 'owl:Class'];
+
+  [...visibleTriples, ...hiddenTriples].forEach((t) => {
+    if (typesToInclude.includes(t.o)) {
+      objectProperties.add(t.s);
+    }
+  });
+
+  return objectProperties;
+};
+
 /**
+ * TODO differentiate whether an object is explicitly defined as an owl:ObjectProperty. if it is not, then we assume it is an owl:DatatypeProperty
+ * TODO if it is a datatype property, we want to create a copy of to make sure it is not treated as a link in the cytoscape graph
  * Function that serves as glue between the Cytoscape component and the N3 data from the CombinedSlice Redux store.
- * @param state The Redux store state.
+ * @param rdfString The N3 data.
  * @returns The Cytoscape data.
  */
 export const selectCytoData = async (rdfString: string): Promise<ICytoData> => {
@@ -548,53 +563,56 @@ export const selectCytoData = async (rdfString: string): Promise<ICytoData> => {
   const nodes: ICytoNode[] = [];
   const edges: ICytoEdge[] = [];
 
-  // Function to add or update a node
+  // Find all properties defined as owl:ObjectProperty
+  const objectProperties = findObjectProperties(visibleTriples, hiddenTriples);
+
   const addOrUpdateNode = (id: string, visible: boolean) => {
     const node = nodes.find((n) => n.data.id === id);
 
     if (node) {
-      // If the node already exists, update its visible property
       node.data.visible = visible;
       node.data.permanent = visible;
     } else {
-      // If the node does not exist, create it
       nodes.push({ data: { id, visible, permanent: visible } });
     }
   };
+  const processTriples = (triples, visible) => {
+    triples.forEach((t) => {
+      addOrUpdateNode(t.s, visible);
 
-  // Iterate over the hidden triples and add or update nodes
-  hiddenTriples.forEach((t) => {
-    addOrUpdateNode(t.s, false);
-    addOrUpdateNode(t.o, false);
-
-    edges.push({
-      data: {
-        id: `${t.s}_${t.p}_${t.o}`,
-        source: t.s,
-        target: t.o,
-        label: t.p,
-        visible: false,
-        permanent: false,
-      },
+      if (objectProperties.has(t.o)) {
+        addOrUpdateNode(t.o, visible);
+        edges.push({
+          data: {
+            id: `${t.s}_${t.p}_${t.o}`,
+            source: t.s,
+            target: t.o,
+            label: t.p,
+            visible,
+            permanent: visible,
+          },
+        });
+      } else {
+        // Create a unique copy of the node for each subject-property pair (treat as a datatype property)
+        // TODO check whether this is actualyl unique, create an actual counter for an id, etc
+        const copiedNodeID = `${t.s}_${t.p}_${t.o}_copy`;
+        addOrUpdateNode(copiedNodeID, visible);
+        edges.push({
+          data: {
+            id: `${t.s}_${t.p}_${copiedNodeID}`,
+            source: t.s,
+            target: copiedNodeID,
+            label: t.p,
+            visible,
+            permanent: visible,
+          },
+        });
+      }
     });
-  });
+  };
 
-  // Iterate over the visible triples and add or update nodes
-  visibleTriples.forEach((t) => {
-    addOrUpdateNode(t.s, true);
-    addOrUpdateNode(t.o, true);
-
-    edges.push({
-      data: {
-        id: `${t.s}_${t.p}_${t.o}`,
-        source: t.s,
-        target: t.o,
-        label: t.p,
-        visible: true,
-        permanent: true,
-      },
-    });
-  });
+  processTriples(hiddenTriples, false);
+  processTriples(visibleTriples, true);
 
   return { nodes, edges };
 };
