@@ -132,10 +132,3 @@ export async function fetchExemplarFocusNodeDict() {
   const data = await response.json();
   return data;
 }
-
-// export async function fetchPrefixes() {
-//   const endpoint = `http://localhost:9000/prefixes`;
-//   const response = await fetch(endpoint);
-//   const data = await response.json();
-//   return data;
-// }

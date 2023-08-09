@@ -34,7 +34,7 @@ const applyLayout = (violationNodes, otherNodes, typeNodes, cy) => {
   const currentBoundingBox = cy.nodes(':visible').boundingBox();
 
   // Calculate the number of columns and rows
-  const numColumns = 3; // As per your position calculation logic
+  const numColumns = 3;
   const numRows = Math.max(violationNodes.length, otherNodes.length, typeNodes.length);
 
   // Define node size and padding
@@ -188,8 +188,10 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
   React.useEffect(() => {
     if (cy && selectedViolations) {
+      // hide everything again
       listOfNodesThatHaveBeenMadeVisible.current = hideVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
 
+      // reset positions
       const applyInitialPositions = (nodes) => {
         let nodesToHide = cy.collection();
         nodes.forEach((node) => {
@@ -205,7 +207,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
         nodesToHide.style('display', 'none');
         nodesToHide.data('visible', false);
       };
-
       applyInitialPositions(cy.nodes());
 
       const exemplarNodes = getNodesFromIds(selectedViolationExemplars, cy);
@@ -224,6 +225,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
         }
       });
 
+      // select violationNodes, typeNodes, and otherNodes
       const violationNodes = getNodesFromIds(selectedViolations, cy);
       const connectedNodesIds = selectedViolations.flatMap((violation) => violationsTypesMap[violation]);
 
@@ -233,7 +235,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       const typeNodes = getNodesFromIds(typeNodeIds, cy);
       const otherNodes = getNodesFromIds(otherNodeIds, cy);
 
-      // Style nodes
+      // color nodes, make selection visible
       styleNodes(violationNodes, 'element', 'orange');
       styleNodes(otherNodes, 'element', 'lightgrey');
       styleNodes(typeNodes, 'element', 'steelblue');

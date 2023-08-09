@@ -12,7 +12,6 @@ import {
   ICytoNode,
   ICytoEdge,
   ICsvData,
-  // IPrefixes,
   FilterType,
   MissingEdgeOptionType,
   EdgeCountDict,
@@ -38,7 +37,6 @@ const initialState: ICombinedState = {
   focusNodeExemplarDict: {},
   exemplarFocusNodeDict: {},
   selectedViolationExemplars: [],
-  // prefixes: {},
 };
 
 function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
@@ -207,10 +205,6 @@ const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
-    // setPrefixes: (state, action: PayloadAction<IPrefixes>) => {
-    //   state.prefixes = action.payload;
-    //   console.log('setPrefixes', action.payload);
-    // },
     setSelectedViolationExemplars: (state, action: PayloadAction<string[]>) => {
       state.selectedViolationExemplars = action.payload;
     },
@@ -384,7 +378,6 @@ export const selectSelectedFocusNodes = (state: { combined: ICombinedState }) =>
 export const selectSelectedTypes = (state: { combined: ICombinedState }) => state.combined.selectedTypes;
 export const selectRdfData = (state: { combined: ICombinedState }) => state.combined.rdfString;
 export const selectSelectedViolationExemplars = (state: { combined: ICombinedState }) => state.combined.selectedViolationExemplars;
-// export const selectPrefixes = (state: { combined: ICombinedState }): IPrefixes => state.combined.prefixes;
 
 // TODO investigate why we are returning everything here
 // create memoized selector
@@ -703,7 +696,6 @@ export const {
   setFocusNodeExemplarDict,
   setExemplarFocusNodeDict,
   setSelectedViolationExemplars,
-  // setPrefixes,
 } = combinedSlice.actions;
 
 export default combinedSlice.reducer;
