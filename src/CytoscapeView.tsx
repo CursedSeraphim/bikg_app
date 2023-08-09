@@ -233,16 +233,50 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       styleNodes(typeNodes, 'element', 'steelblue');
       styleNodes(exemplarNodes, 'element', 'purple');
 
+      // const allNodes = violationNodes.union(otherNodes.union(exemplarNodes.union(typeNodes)));
+
+      // const connectedNodesOfInterest = violationNodes.successors();
+      // // styleNodes(oneHopDescendants, 'display', 'element');
+      // connectedNodesOfInterest.style('display', 'element');
+      // connectedNodesOfInterest.data('visible', true);
+
       // Add nodes to list of nodes that have been made visible
-      listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes);
+      listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes); // , connectedNodesOfInterest);
 
       console.log('selectedExemplars in cyto', selectedViolationExemplars);
 
-      // TODO at the moment this is a cheap solution to show exemplare nodes in the center column. next we want to show attribute nodes for each node, rather than a single connected attribute. then we can do this differently altogether
+      // at the moment this is a cheap solution to show exemplare nodes in the center column. next we want to show attribute nodes for each node, rather than a single connected attribute. then we can do this differently altogether
       applyLayout(violationNodes, otherNodes.union(exemplarNodes), typeNodes, cy);
 
+      // cy.layout({ ...CY_LAYOUT, eles: allNodes }).run(); // .union(connectedNodesOfInterest) }).run();
+      // Get the current bounding box of visible nodes
+      const currentBoundingBox = cy.nodes(':visible').boundingBox();
+
+      // Define a custom layout that translates nodes to the bottom right of the bounding box
+      // const layout = cy.layout({
+      //   name: 'preset',
+      //   positions: (node) => {
+      //     // Retrieve the current position of the node
+      //     const currentPosition = node.position();
+      //     // Calculate the new position by translating to the bottom right of the bounding box
+      //     const newPosition = {
+      //       x: currentPosition.x - currentBoundingBox.w,
+      //       y: currentPosition.y - currentBoundingBox.h,
+      //     };
+      //     return newPosition;
+      //   },
+      //   animate: true,
+      // });
+
+      // // Run the layout
+      // layout.run();
+
+      // layout.on('layoutstop', () => {
+      //   cy.nodes().unlock();
+      // });
+
       // Show connected edges
-      // TODO same here with the union between otherNodes and exemplarNodes as in the above TODO
+      // same here with the union between otherNodes and exemplarNodes as in the above
       const connectedEdges = violationNodes.edges().union(otherNodes.union(exemplarNodes).edges());
       styleNodes(connectedEdges, 'element', '#999'); // #999 is the default color for edges
     }
