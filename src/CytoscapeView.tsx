@@ -250,7 +250,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       // cy.layout({ ...CY_LAYOUT, eles: allNodes }).run(); // .union(connectedNodesOfInterest) }).run();
       // Get the current bounding box of visible nodes
-      const currentBoundingBox = cy.nodes(':visible').boundingBox();
+      // const currentBoundingBox = cy.nodes(':visible').boundingBox();
 
       // Define a custom layout that translates nodes to the bottom right of the bounding box
       // const layout = cy.layout({
