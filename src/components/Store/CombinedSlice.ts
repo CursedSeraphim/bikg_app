@@ -3,6 +3,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Store, Quad } from 'n3';
 import { createSelector } from 'reselect';
+import { v4 as uuidv4 } from 'uuid';
 import { dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
 import {
   ICombinedState,
@@ -538,13 +539,20 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: IRdfSta
   });
 };
 
-const findObjectProperties = (visibleTriples, hiddenTriples) => {
-  const objectProperties = new Set();
-  const typesToInclude = ['owl:ObjectProperty', 'owl:Class'];
+/**
+ * Calculate object properties from the visible and hidden triples.
+ *
+ * @param {Array} visibleTriples - Array of visible triples.
+ * @param {Array} hiddenTriples - Array of hidden triples.
+ * @returns {Map} objectProperties - Returns a map containing object properties.
+ */
+const calculateObjectProperties = (visibleTriples, hiddenTriples) => {
+  const objectProperties = new Map();
+  const typesToInclude = new Set(['owl:ObjectProperty', 'owl:Class']);
 
   [...visibleTriples, ...hiddenTriples].forEach((t) => {
-    if (typesToInclude.includes(t.o)) {
-      objectProperties.add(t.s);
+    if (typesToInclude.has(t.o)) {
+      objectProperties.set(t.s, t.o);
     }
   });
 
@@ -552,67 +560,65 @@ const findObjectProperties = (visibleTriples, hiddenTriples) => {
 };
 
 /**
- * TODO differentiate whether an object is explicitly defined as an owl:ObjectProperty. if it is not, then we assume it is an owl:DatatypeProperty
- * TODO if it is a datatype property, we want to create a copy of to make sure it is not treated as a link in the cytoscape graph
- * Function that serves as glue between the Cytoscape component and the N3 data from the CombinedSlice Redux store.
- * @param rdfString The N3 data.
- * @returns The Cytoscape data.
+ * Process the triples and create nodes and edges based on triples and its visibility.
+ *
+ * @param {Array} triples - Array of triples.
+ * @param {boolean} visible - Boolean value representing the visibility of the node.
+ * @param {Array} nodes - Array of Nodes.
+ * @param {Array} edges - Array of Edges.
+ * @param {Map} objectProperties - Map containing object properties.
  */
-export const selectCytoData = async (rdfString: string): Promise<ICytoData> => {
-  const { visibleTriples, hiddenTriples } = await selectAllTriples(rdfString);
-  const nodes: ICytoNode[] = [];
-  const edges: ICytoEdge[] = [];
-
-  // Find all properties defined as owl:ObjectProperty
-  const objectProperties = findObjectProperties(visibleTriples, hiddenTriples);
-
-  const addOrUpdateNode = (id: string, visible: boolean) => {
-    const node = nodes.find((n) => n.data.id === id);
-
-    if (node) {
-      node.data.visible = visible;
-      node.data.permanent = visible;
-    } else {
-      nodes.push({ data: { id, visible, permanent: visible } });
-    }
-  };
-  const processTriples = (triples, visible) => {
-    triples.forEach((t) => {
-      addOrUpdateNode(t.s, visible);
-
-      if (objectProperties.has(t.o)) {
-        addOrUpdateNode(t.o, visible);
-        edges.push({
-          data: {
-            id: `${t.s}_${t.p}_${t.o}`,
-            source: t.s,
-            target: t.o,
-            label: t.p,
-            visible,
-            permanent: visible,
-          },
-        });
-      } else {
-        // Create a unique copy of the node for each subject-property pair (treat as a datatype property)
-        // TODO check whether this is actualyl unique, create an actual counter for an id, etc
-        const copiedNodeID = `${t.s}_${t.p}_${t.o}_copy`;
-        addOrUpdateNode(copiedNodeID, visible);
-        edges.push({
-          data: {
-            id: `${t.s}_${t.p}_${copiedNodeID}`,
-            source: t.s,
-            target: copiedNodeID,
-            label: t.p,
-            visible,
-            permanent: visible,
-          },
-        });
+const processTriples = (triples, visible, nodes, edges, objectProperties) => {
+  triples.forEach((t) => {
+    const findOrAddNode = (id, label) => {
+      let node = nodes.find((n) => n.data.id === id);
+      if (!node) {
+        node = { data: { id, label, visible, permanent: visible } };
+        nodes.push(node);
+      } else if (visible) {
+        node.data.visible = node.data.permanent = visible;
       }
-    });
-  };
+    };
 
-  processTriples(hiddenTriples, false);
-  processTriples(visibleTriples, true);
+    findOrAddNode(t.s, t.s);
+
+    if (objectProperties.has(t.o)) {
+      findOrAddNode(t.o, t.o);
+    }
+
+    const uniqueId = objectProperties.has(t.o) ? t.o : `${t.s}_${t.p}_${t.o}_copy_${uuidv4()}`;
+    findOrAddNode(uniqueId, t.o);
+
+    edges.push({
+      data: {
+        id: `${t.s}_${t.p}_${uniqueId}`,
+        source: t.s,
+        target: uniqueId,
+        label: t.p,
+        visible,
+        permanent: visible,
+      },
+    });
+  });
+};
+
+/**
+ * Method to select and create CytoData based on the provided rdfString.
+ * This function creates Nodes and Edges based on visible and hidden triples and returns.
+ *
+ * @param {string} rdfString string in Resource Description Framework format.
+ * @returns {Object} An object containing array of Nodes and Edges.
+ */
+export const selectCytoData = async (rdfString) => {
+  const { visibleTriples, hiddenTriples } = await selectAllTriples(rdfString);
+
+  const nodes = [];
+  const edges = [];
+
+  const objectProperties = calculateObjectProperties(visibleTriples, hiddenTriples);
+
+  processTriples(hiddenTriples, false, nodes, edges, objectProperties);
+  processTriples(visibleTriples, true, nodes, edges, objectProperties);
 
   return { nodes, edges };
 };

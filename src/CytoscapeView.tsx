@@ -114,7 +114,6 @@ const hideVisibleNodes = (nodeList) => {
       if (node.data('permanent') === false) {
         node.style('display', 'none');
         node.data('visible', false);
-        console.log('hiding', node.id(), node);
       }
     });
   });
@@ -192,7 +191,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   React.useEffect(() => {
     if (cy && selectedViolations) {
       // hide everything again
-      console.log('hiding these:', listOfNodesThatHaveBeenMadeVisible.current);
       listOfNodesThatHaveBeenMadeVisible.current = hideVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
 
       // reset positions
@@ -225,8 +223,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       const exemplarNodes = getNodesFromIds(selectedViolationExemplars, cy);
 
-      console.log('selected exemplars', selectedViolationExemplars);
-
       // color nodes, make selection visible
       styleNodes(violationNodes, 'element', 'orange');
       styleNodes(otherNodes, 'element', 'lightgrey');
@@ -242,8 +238,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       // Add nodes to list of nodes that have been made visible
       listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes); // , connectedNodesOfInterest);
-
-      console.log('selectedExemplars in cyto', selectedViolationExemplars);
 
       // at the moment this is a cheap solution to show exemplare nodes in the center column. next we want to show attribute nodes for each node, rather than a single connected attribute. then we can do this differently altogether
       applyLayout(violationNodes, otherNodes.union(exemplarNodes), typeNodes, cy);
@@ -294,7 +288,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
           },
         }));
         if (cy) {
-          console.log('cytodata', newCytoData);
           // Update the cytoData elements and layout
           cy.elements().remove();
           cy.add(newCytoData);
@@ -321,7 +314,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
                 selector: 'node',
                 style: {
                   'background-color': 'lightgrey', // previously #666
-                  label: 'data(id)',
+                  label: 'data(label)',
                   display: (ele) => (ele.data('visible') ? 'element' : 'none'),
                 },
               },
