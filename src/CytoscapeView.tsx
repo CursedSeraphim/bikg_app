@@ -123,12 +123,12 @@ const hideVisibleNodes = (nodeList) => {
 };
 
 // Helper function to apply styles to nodes
-const styleNodes = (nodes, display, color) => {
-  nodes.style({
+const styleCytoElements = (element, display, color) => {
+  element.style({
     display,
     'background-color': color,
   });
-  nodes.data('visible', true);
+  element.data('visible', true);
 };
 
 // Helper function to get nodes from ids
@@ -198,7 +198,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
         let nodesToHide = cy.collection();
         nodes.forEach((node) => {
           const pos = initialNodePositions.current.get(node.id());
-          // if node is omics:Donor
           if (pos) {
             if (pos.x === 0 && pos.y === 0) {
               nodesToHide = nodesToHide.union(node);
@@ -224,17 +223,10 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       const exemplarNodes = getNodesFromIds(selectedViolationExemplars, cy);
 
       // color nodes, make selection visible
-      styleNodes(violationNodes, 'element', 'orange');
-      styleNodes(otherNodes, 'element', 'lightgrey');
-      styleNodes(typeNodes, 'element', 'steelblue');
-      styleNodes(exemplarNodes, 'element', 'purple');
-
-      // const allNodes = violationNodes.union(otherNodes.union(exemplarNodes.union(typeNodes)));
-
-      // const connectedNodesOfInterest = violationNodes.successors();
-      // // styleNodes(oneHopDescendants, 'display', 'element');
-      // connectedNodesOfInterest.style('display', 'element');
-      // connectedNodesOfInterest.data('visible', true);
+      styleCytoElements(violationNodes, 'element', 'orange');
+      styleCytoElements(otherNodes, 'element', 'lightgrey');
+      styleCytoElements(typeNodes, 'element', 'steelblue');
+      styleCytoElements(exemplarNodes, 'element', 'purple');
 
       // Add nodes to list of nodes that have been made visible
       listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes); // , connectedNodesOfInterest);
@@ -242,37 +234,8 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       // at the moment this is a cheap solution to show exemplare nodes in the center column. next we want to show attribute nodes for each node, rather than a single connected attribute. then we can do this differently altogether
       applyLayout(violationNodes, otherNodes.union(exemplarNodes), typeNodes, cy);
 
-      // cy.layout({ ...CY_LAYOUT, eles: allNodes }).run(); // .union(connectedNodesOfInterest) }).run();
-      // Get the current bounding box of visible nodes
-      // const currentBoundingBox = cy.nodes(':visible').boundingBox();
-
-      // Define a custom layout that translates nodes to the bottom right of the bounding box
-      // const layout = cy.layout({
-      //   name: 'preset',
-      //   positions: (node) => {
-      //     // Retrieve the current position of the node
-      //     const currentPosition = node.position();
-      //     // Calculate the new position by translating to the bottom right of the bounding box
-      //     const newPosition = {
-      //       x: currentPosition.x - currentBoundingBox.w,
-      //       y: currentPosition.y - currentBoundingBox.h,
-      //     };
-      //     return newPosition;
-      //   },
-      //   animate: true,
-      // });
-
-      // // Run the layout
-      // layout.run();
-
-      // layout.on('layoutstop', () => {
-      //   cy.nodes().unlock();
-      // });
-
-      // Show connected edges
-      // same here with the union between otherNodes and exemplarNodes as in the above
-      const connectedEdges = violationNodes.edges().union(otherNodes.union(exemplarNodes).edges());
-      styleNodes(connectedEdges, 'element', '#999'); // #999 is the default color for edges
+      const connectedEdges = violationNodes.edges().union(otherNodes.edges());
+      styleCytoElements(connectedEdges, 'element', '#999'); // #999 is the default color for edges
     }
   }, [cy, selectedViolations, selectedTypes, violationsTypesMap, violations, selectedViolationExemplars]);
 

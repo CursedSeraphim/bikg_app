@@ -1,7 +1,7 @@
 # utils.py
 import numpy as np
 from collections import defaultdict
-from rdflib import Graph, Namespace, URIRef
+from rdflib import Graph, Namespace, URIRef, RDF
 import time
 from tqdm.auto import tqdm
 import sys
@@ -96,6 +96,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
 
     SH = Namespace("http://www.w3.org/ns/shacl#")
     DCTERMS = Namespace("http://purl.org/dc/terms/")
+    OWL = Namespace("http://www.w3.org/2002/07/owl#")
     ontology_g.namespace_manager.bind("sh", SH)
     ontology_g.namespace_manager.bind("dcterms", DCTERMS)
     violation_report_g.namespace_manager.bind("sh", SH)
@@ -148,6 +149,8 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
         for p, o in edge_object_pairs:
             if edge_count_dict[exemplar_name][(p, o)] == 0:
                 ontology_g.add((exemplar_name, p, o)) # type: ignore
+                # TODO create custom URI instead of object property
+                ontology_g.add((exemplar_name, RDF.type, SH.PropertyShape))
             edge_count_dict[exemplar_name][(p, o)] += 1
 
     return ontology_g, edge_count_dict, focus_node_exemplar_dict, exemplar_focus_node_dict

@@ -548,7 +548,7 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: IRdfSta
  */
 const calculateObjectProperties = (visibleTriples, hiddenTriples) => {
   const objectProperties = new Map();
-  const typesToInclude = new Set(['owl:ObjectProperty', 'owl:Class']);
+  const typesToInclude = new Set(['owl:ObjectProperty', 'owl:Class', 'sh:PropertyShape']);
 
   [...visibleTriples, ...hiddenTriples].forEach((t) => {
     if (typesToInclude.has(t.o)) {
@@ -586,7 +586,7 @@ const processTriples = (triples, visible, nodes, edges, objectProperties) => {
       findOrAddNode(t.o, t.o);
     }
 
-    const uniqueId = objectProperties.has(t.o) ? t.o : `${t.s}_${t.p}_${t.o}_copy_${uuidv4()}`;
+    const uniqueId = objectProperties.has(t.o) ? t.o : `${t.o}_${uuidv4()}`;
     findOrAddNode(uniqueId, t.o);
 
     edges.push({
