@@ -148,7 +148,10 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
 
         for p, o in edge_object_pairs:
             if edge_count_dict[exemplar_name][(p, o)] == 0:
-                ontology_g.add((exemplar_name, p, o)) # type: ignore
+                if p == SH.sourceShape:
+                    ontology_g.add((o, URIRef("http://customnamespace.com/hasExemplar"), exemplar_name)) # type: ignore
+                else:
+                    ontology_g.add((exemplar_name, p, o)) # type: ignore
                 # TODO create custom URI instead of object property
                 ontology_g.add((exemplar_name, RDF.type, SH.PropertyShape))
             edge_count_dict[exemplar_name][(p, o)] += 1

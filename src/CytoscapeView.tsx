@@ -457,6 +457,30 @@ function positionCollection(collection, x, y) {
 //   // positionNodes(nodes, parentNodePosition, distanceBetweenNodesY, totalHeight);
 // }
 
+function positionNodes(root) {
+  const spacing = {
+    x: 100,
+    y: 50,
+  };
+
+  function recurse(node, level = 0) {
+    const children = getChildren(node);
+    children.forEach((child, index) => {
+      const x = spacing.x * index;
+      const y = spacing.y * level;
+
+      // Adjust children's position in the layout.
+      child.position({ x, y });
+
+      // Recursive call per level
+      recurse(child, level + 1);
+    });
+  }
+
+  recurse(root);
+  return root;
+}
+
 // Helper function to hide nodes
 const hideVisibleNodes = (nodeList) => {
   nodeList.current.forEach((nodeCollection) => {
