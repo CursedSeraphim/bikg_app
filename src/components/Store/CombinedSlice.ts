@@ -173,7 +173,7 @@ const combinedSlice = createSlice({
       }
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
-      console.log('setSelectedFocusNodesUsingFeatureCategories', action.payload);
+      console.log('setSelectedFocusNodesUsingFeatureCategories');
       const { selectedNodes, valueCounts } = action.payload;
       state.selectedNodes = selectedNodes;
 
@@ -182,7 +182,7 @@ const combinedSlice = createSlice({
       updateSelectedViolationExemplars(state);
     },
     setSelectedFocusNodes: (state, action) => {
-      console.log('setSelectedFocusNodes', action.payload);
+      console.log('setSelectedFocusNodes',);
       state.selectedNodes = action.payload;
 
       // Convert state.samples into an object for O(1) lookup

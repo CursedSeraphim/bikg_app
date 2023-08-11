@@ -2,6 +2,7 @@
 import * as React from 'react';
 import cytoscape from 'cytoscape';
 import coseBilkent from 'cytoscape-cose-bilkent';
+import dagre from 'cytoscape-dagre';
 import cytoscapeLasso from 'cytoscape-lasso';
 import { useDispatch, useSelector } from 'react-redux';
 import chroma from 'chroma-js';
@@ -17,12 +18,221 @@ import {
 } from './components/Store/CombinedSlice';
 
 cytoscape.use(cytoscapeLasso);
+cytoscape.use(dagre);
 cytoscape.use(coseBilkent);
 
 const CY_LAYOUT = {
   name: 'cose-bilkent',
   idealEdgeLength: 500,
   nodeDimensionsIncludeLabels: true,
+};
+
+const TREE_LAYOUT = {
+  name: 'dagre',
+  nodeSep: 20,
+  rankSep: 10,
+  acyclicer: 'greedy',
+  animationDuration: 1000,
+};
+
+/**
+ * Gets the children of a given node based on specific criteria.
+ * If incoming edges include an edge with id 'sh:targetClass',
+ * then return all source nodes of that edge. Otherwise,
+ * return all outgoing target nodes.
+ *
+ * @param {Object} node - The node for which to find the children.
+ * @return {Array} The children nodes based on the criteria.
+ */
+const getChildren = (node) => {
+  let targetClassNode = false;
+  node
+    .incomers()
+    .edges()
+    .forEach((edge) => {
+      if (edge.data('id') === 'sh:targetClass') {
+        targetClassNode = true;
+      }
+    });
+  if (targetClassNode) {
+    return node.outgoers().sources();
+  }
+  return node.outgoers().targets();
+};
+
+/**
+ * Coordinates a recursive layout for hierarchical nodes in a Cytoscape instance.
+ * Each node and its child nodes are positioned into columns recursively.
+ * Nodes are first moved down their child tree until leaf nodes are found. These nodes become
+ * the rightmost column with their parent node centralized in the left column.
+ *
+ * Parental node positioning continues leftward, with their accumulated child
+ * bounding boxes stacking to their right.
+ *
+ * At the final top level, nodes receive additional offsetX and offsetY alterations
+ * to translate the entire layout in the x and y direction respectively.
+ *
+ * @param {number} originX - Layout translation amount in the x-axis.
+ * @param {number} originY - Layout translation amount in the y-axis.
+ * @param {Array} topLevelNodes - Top-level nodes in our graph hierarchy. Each node must have children.
+ * @param {Object} cy - The Cytoscape instance in which the visualisation is happening.
+ * @return {Object} Computed bounding box for the layout recursively.
+ * @throws {Error} If a top-level node does not have any children.
+ */
+const recursiveLayout = (originX, originY, topLevelNodes, cy) => {
+  if (!cy) {
+    throw new Error('Cytoscape instance must be defined.');
+  }
+
+  if (!topLevelNodes || topLevelNodes.length === 0) {
+    return;
+  }
+
+  const defaultSeparation = { x: 200, y: 50 };
+  const layout = { nodes: {} };
+  const processed = new Set();
+
+  const layoutSubgraph = (node, level) => {
+    if (processed.has(node.data('id'))) return null;
+
+    processed.add(node.data('id'));
+
+    const children = getChildren(node);
+    if (children.length === 0) {
+      // leaf node
+      const xPos = defaultSeparation.x * level;
+      layout.nodes[node.data('id')] = { x: xPos + originX, y: originY };
+      return { width: level * defaultSeparation.x, height: defaultSeparation.y, nodes: [node] };
+    }
+    // parent node
+    let totalHeight = 0;
+
+    const listOfChildYPositions = [];
+
+    let nodes = [node];
+    // add all children
+    nodes = nodes.concat(children);
+
+    children.forEach((childNode) => {
+      const childReturn = layoutSubgraph(childNode, level + 1);
+      if (childReturn === null) return;
+      const childHeight = childReturn.height;
+      for (let i = 0; i < childReturn.nodes.length; i++) {
+        const child = childReturn.nodes[i];
+        const childPosition = child.position();
+        child.position({ x: childPosition.x, y: childPosition.y + totalHeight });
+        totalHeight += childHeight;
+      }
+      nodes = nodes.concat(childReturn.nodes);
+    });
+
+    const xPos = defaultSeparation.x * level;
+    const yPos = listOfChildYPositions.sort()[Math.floor(listOfChildYPositions.length / 2)];
+    layout.nodes[node.data('id')] = { x: xPos + level * defaultSeparation.x, y: yPos, nodes };
+
+    return { width: xPos, height: totalHeight - defaultSeparation.y, nodes };
+  };
+
+  topLevelNodes.forEach((node) => {
+    layoutSubgraph(node, 0);
+  });
+
+  cy.batch(() => {
+    Object.entries(layout.nodes).forEach(([nodeId, position]) => {
+      const node = cy.getElementById(nodeId);
+      node.position(position);
+    });
+  });
+
+  cy.style().update();
+};
+
+/**
+ * Coordinates a recursive layout for hierarchical nodes in a Cytoscape instance.
+ * Each node and its child nodes are positioned into columns recursively.
+ * Nodes are first moved down their child tree until leaf nodes are found. These nodes become
+ * the rightmost column with their parent node centralized in the left column.
+ *
+ * Parental node positioning continues leftward, with their accumulated child
+ * bounding boxes stacking to their right.
+ *
+ * At the final top level, nodes receive additional offsetX and offsetY alterations
+ * to translate the entire layout in the x and y direction respectively.
+ *
+ * @param {number} originX - Layout translation amount in the x-axis.
+ * @param {number} originY - Layout translation amount in the y-axis.
+ * @param {Array} topLevelNodes - Top-level nodes in our graph hierarchy. Each node must have children.
+ * @param {Object} cy - The Cytoscape instance in which the visualisation is happening.
+ * @return {Object} Computed bounding box for the layout recursively.
+ * @throws {Error} If a top-level node does not have any children.
+ */
+const oldRecursiveLayout = (originX, originY, topLevelNodes, cy) => {
+  if (!cy) {
+    throw new Error('Cytoscape instance must be defined.');
+  }
+
+  if (!topLevelNodes || topLevelNodes.length === 0) {
+    return;
+  }
+
+  const defaultSeparation = { x: 200, y: 50 };
+  const layout = { nodes: {} };
+  const processed = new Set();
+
+  const layoutSubgraph = (node, level) => {
+    if (processed.has(node.data('id'))) return;
+    const indent = '      '.repeat(level);
+
+    processed.add(node.data('id'));
+
+    if (!node.children || node.children.length === 0) {
+      layout.nodes[node.data('id')] = { x: originX + level * defaultSeparation.x, y: originY };
+      return;
+    }
+
+    let offsetY = (-defaultSeparation.y * (node.children.length - 1)) / 2;
+
+    let targetClassNode = false;
+
+    node
+      .incomers()
+      .edges()
+      .forEach((edge) => {
+        if (edge.data('id') === 'sh:targetClass') {
+          targetClassNode = true;
+          edge.sources().forEach((sourceNode) => {
+            layout.nodes[sourceNode.data('id')] = { x: originX + level * defaultSeparation.x, y: originY + offsetY };
+            offsetY += defaultSeparation.y;
+            layoutSubgraph(sourceNode, level + 1);
+          });
+        }
+      });
+    if (!targetClassNode) {
+      node
+        .outgoers()
+        .edges()
+        .forEach((edge) => {
+          edge.targets().forEach((targetNode) => {
+            layout.nodes[targetNode.data('id')] = { x: originX + level * defaultSeparation.x, y: originY + offsetY };
+            offsetY += defaultSeparation.y;
+            layoutSubgraph(targetNode, level + 1);
+          });
+        });
+    }
+  };
+
+  topLevelNodes.forEach((node) => {
+    layoutSubgraph(node, 0);
+  });
+
+  cy.batch(() => {
+    Object.entries(layout.nodes).forEach(([nodeId, position]) => {
+      const node = cy.getElementById(nodeId);
+      node.position(position);
+    });
+  });
+
+  cy.style().update();
 };
 
 const applyLayout = (violationNodes, otherNodes, typeNodes, cy) => {
@@ -106,6 +316,146 @@ function alignNodes(nodes, parentNodePosition, isChild) {
     }
   });
 }
+
+function getNameOfCollection(collection) {
+  return collection.map((node) => node.data('id')).join(', ');
+}
+
+/**
+ * Moves a collection of nodes to a specific position, translating them such that the top left corner
+ * of their bounding box aligns with the specified x/y coordinates. The relative distances between the nodes
+ * within the collection are preserved.
+ *
+ * @param {Collection} collection - A Cytoscape collection containing the nodes to be moved. This can be a group
+ *                                  of nodes such as children, descendants, etc., of a particular node or a custom
+ *                                  collection of nodes.
+ * @param {number} x - The x-coordinate for the new top left corner of the collection's bounding box.
+ * @param {number} y - The y-coordinate for the new top left corner of the collection's bounding box.
+ *
+ * @example
+ * var targetCollection = cy.nodes("#n1").descendants();
+ * moveToPosition(targetCollection, 100, 200);
+ */
+function moveBoundingBoxToPosition(collection, x, y) {
+  // Get the bounding box of the collection
+  const boundingBox = collection.boundingBox();
+
+  // Determine the difference between the current position and the desired position
+  const deltaX = x - boundingBox.x1;
+  const deltaY = y - boundingBox.y1;
+
+  // Apply the translation to each node in the collection
+  collection.positions(function (ele) {
+    return {
+      x: ele.position('x') + deltaX,
+      y: ele.position('y') + deltaY,
+    };
+  });
+}
+
+// Dummy function to check if the collection only has one node
+function collectionOnlyHasOneNode(collection) {
+  // TODO: Implement logic to check if collection contains only one node
+  const children = getChildren(collection);
+  // children.data('visible', true);
+  return children.length === 0;
+}
+
+/**
+ * Moves a collection of nodes to a specific position, translating them such that the top left corner
+ * of their bounding box aligns with the specified x/y coordinates. The relative distances between the nodes
+ * within the collection are preserved.
+ *
+ * @param {Collection} collection - A Cytoscape collection containing the nodes to be moved. This can be a group
+ *                                  of nodes such as children, descendants, etc., of a particular node or a custom
+ *                                  collection of nodes.
+ * @param {number} x - The x-coordinate for the new top left corner of the collection's bounding box.
+ * @param {number} y - The y-coordinate for the new top left corner of the collection's bounding box.
+ *
+ * @example
+ * var targetCollection = cy.nodes("#n1").descendants();
+ * moveToPosition(targetCollection, 100, 200);
+ */
+function moveToPosition(collection, x, y) {
+  let x1;
+  let y1;
+  if (collectionOnlyHasOneNode(collection)) {
+    x1 = collection.position('x');
+    y1 = collection.position('y');
+  } else {
+    // Get the bounding box of the collection
+    const boundingBox = collection.boundingBox();
+    x1 = boundingBox.x1;
+    y1 = boundingBox.y2;
+  }
+
+  // Determine the difference between the current position and the desired position
+  const deltaX = x - x1;
+  const deltaY = y - y1;
+
+  // Apply the translation to each node in the collection
+  collection.positions(function (ele) {
+    return {
+      x: ele.position('x') + deltaX,
+      y: ele.position('y') + deltaY,
+    };
+  });
+}
+
+const offsetY = 50;
+const offsetX = 500;
+
+// Dummy function to translate a bounding box below the last one
+function translateBoundingBoxBelowTheLastBoundingBox(collection, boundingBox, x, y) {
+  moveToPosition(collection, x, y);
+}
+
+function positionCollection(collection, x, y) {
+  if (collectionOnlyHasOneNode(collection)) {
+    return { w: 50, h: 50 };
+  }
+
+  let lastHeight = 0;
+  let totalHeight = 0;
+  collection.forEach((child) => {
+    lastHeight = totalHeight;
+    const boundingBox = positionCollection(getChildren(child), x + offsetX, y + offsetY + totalHeight);
+    translateBoundingBoxBelowTheLastBoundingBox(child, boundingBox, x, y + totalHeight);
+    console.log('child position', child.position());
+    console.log('bouinding box', boundingBox);
+    totalHeight += boundingBox.h;
+    // const childPosition = child.position();
+    // child.position({ x: childPosition.x, y: lastHeight });
+  });
+
+  return collection.boundingBox(); // Returning the bounding box of the collection
+}
+
+//   return [width, totalHeight - offsetY2]; // Subtracting offsetY2 to account for the last child's offset
+// }
+
+// function alignNodes2(nodes, parentNodePosition, nodeLayoutOffsetX = 250, distanceBetweenNodesY = 50) {
+//   if (!nodes || nodes.length === 0) {
+//     return;
+//   }
+//   let totalHeight = 0;
+//   if (nodes[0].isNode()) {
+//     totalHeight = distanceBetweenNodesY * (nodes.length - 1);
+//   } else {
+//     for (let i = 0; i < nodes.length; i += 1) {
+//       const bb = nodes[i];
+//       totalHeight += bb.h + distanceBetweenNodesY;
+//     }
+//   }
+//   const positionX = parentNodePosition.x + nodeLayoutOffsetX;
+
+//   nodes.data('visible', true);
+//   nodes.forEach((node, index) => {
+//     moveToPosition(node, positionX, distanceBetweenNodesY * index);
+//   });
+//   moveToPosition(nodes.descendants(), positionX, parentNodePosition.y - totalHeight / 2);
+//   // positionNodes(nodes, parentNodePosition, distanceBetweenNodesY, totalHeight);
+// }
 
 // Helper function to hide nodes
 const hideVisibleNodes = (nodeList) => {
@@ -222,20 +572,75 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       const exemplarNodes = getNodesFromIds(selectedViolationExemplars, cy);
 
+      const allElementsBoundingBox = cy.elements().boundingBox();
+
       // color nodes, make selection visible
       styleCytoElements(violationNodes, 'element', 'orange');
       styleCytoElements(otherNodes, 'element', 'lightgrey');
       styleCytoElements(typeNodes, 'element', 'steelblue');
       styleCytoElements(exemplarNodes, 'element', 'purple');
+      exemplarNodes.outgoers().targets().data('visible', true);
+      exemplarNodes.outgoers().targets().style('display', 'element');
 
       // Add nodes to list of nodes that have been made visible
       listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes); // , connectedNodesOfInterest);
 
       // at the moment this is a cheap solution to show exemplare nodes in the center column. next we want to show attribute nodes for each node, rather than a single connected attribute. then we can do this differently altogether
-      applyLayout(violationNodes, otherNodes.union(exemplarNodes), typeNodes, cy);
+      // applyLayout(violationNodes, otherNodes.union(exemplarNodes), typeNodes, cy);
+      // get bounding box of all nodes
+      // const boundingBox = cy.elements().boundingBox();
+      // recursiveLayout(boundingBox.w, boundingBox.h, typeNodes.union(exemplarNodes), cy);
 
-      const connectedEdges = violationNodes.edges().union(otherNodes.edges());
-      styleCytoElements(connectedEdges, 'element', '#999'); // #999 is the default color for edges
+      // const connectedEdges = violationNodes.edges().union(otherNodes.edges());
+
+      positionCollection(exemplarNodes, 0, 0);
+      moveToPosition(exemplarNodes.union(exemplarNodes.outgoers().targets()), allElementsBoundingBox.x2 + 100, allElementsBoundingBox.y2);
+
+      const collectionIntoColumn = (collection) => {
+        for (let i = 0; i < collection.length; i += 1) {
+          // translate node down by 50px
+          const n = collection[i];
+          const nPos = n.position();
+          n.position({ x: nPos.x, y: nPos.y + i * 50 });
+        }
+      };
+
+      typeNodes.position({ x: allElementsBoundingBox.x2, y: allElementsBoundingBox.y2 });
+      otherNodes.position({ x: allElementsBoundingBox.x2 + 100, y: allElementsBoundingBox.y2 });
+      violationNodes.position({ x: allElementsBoundingBox.x2 + 200, y: allElementsBoundingBox.y2 });
+      // exemplarNodes.position({ x: allElementsBoundingBox.x2 + 300, y: allElementsBoundingBox.y2 });
+      collectionIntoColumn(typeNodes);
+      collectionIntoColumn(violationNodes);
+      collectionIntoColumn(otherNodes);
+      // collectionIntoColumn(exemplarNodes);
+
+      const boundingBox = typeNodes.union(otherNodes).union(violationNodes).boundingBox();
+      console.log('bounding box', boundingBox);
+
+      // moveToPosition(exemplarNodes.union(exemplarNodes.outgoers().targets()), boundingBox.x2, boundingBox.y2);
+
+      // // define offset between groups
+      // const offset = 100;
+      // // counter to keep track of how far we've moved all the already processed groups
+      // let totalH = 0;
+      // exemplarNodes.forEach((node) => {
+      //   // align exemplpar node and its children
+      //   const nodePos = node.position();
+      //   alignNodes2(node.outgoers().targets(), nodePos);
+      //   for (let i = 0; i < node.outgoers().targets().length; i += 1) {
+      //     // move children down by current totalH
+      //     const n = node.outgoers().targets()[i];
+      //     const nPos = n.position();
+      //     n.position({ x: nPos.x, y: nPos.y + totalH + offset });
+      //   }
+      //   // move exemplar node down by current totalH
+      //   node.position({ x: nodePos.x, y: nodePos.y + totalH + offset });
+      //   // compute bounding box of this group
+      //   const bb = node.union(node.outgoers().targets()).boundingBox();
+      //   // add it to the totalH
+      //   totalH += bb.h + offset;
+      // });
+      cy.style().update();
     }
   }, [cy, selectedViolations, selectedTypes, violationsTypesMap, violations, selectedViolationExemplars]);
 
