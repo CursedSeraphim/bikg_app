@@ -1,24 +1,5 @@
 // CytoscapeNodeFactory.tsx
-type Node = {
-  group: 'nodes';
-  data: {
-    id: string;
-    label: string;
-    visible: true;
-  };
-};
-
-type Edge = {
-  group: 'edges';
-  data: {
-    id: string;
-    source: string;
-    target: string;
-    visible: true;
-  };
-};
-
-type Element = Node | Edge;
+import { ICytoNode, ICytoEdge } from './types';
 
 /**
  * Node Factory for creating Cytoscape nodes and edges in a tree structure.
@@ -36,16 +17,14 @@ export class CytoscapeNodeFactory {
    * @param parent - The parent node (optional).
    * @returns An array containing the created node and optionally an edge.
    */
-  createNode(label: string, parent?: Node): [Node, Edge?] {
+  createNode(label?: string, parent?: ICytoNode): [ICytoNode, ICytoEdge?] {
     const id = `node-${this.idCounter++}`;
-    const node: Node = {
-      group: 'nodes',
+    const node: ICytoNode = {
       data: { id, label, visible: true },
     };
 
     if (parent) {
-      const edge: Edge = {
-        group: 'edges',
+      const edge: ICytoEdge = {
         data: { id: `edge-${this.idCounter++}`, source: parent.data.id, target: id, visible: true },
       };
       return [node, edge];
@@ -61,15 +40,15 @@ export class CytoscapeNodeFactory {
    * @param labelProvider - A function that provides labels for nodes, defaulting to "Node {index}".
    * @returns An array of elements representing the tree structure.
    */
-  createTree(depth: number, childrenPerNode: number, labelProvider: (index: number) => string = (index) => `Node ${index}`): Element[] {
-    const elements: Element[] = [];
-    const buildTree = (parent: Node, currentDepth: number): void => {
+  createTree(depth: number, childrenPerNode: number, labelProvider: (index: number) => string = (index) => `Node ${index}`): ICytoNode[] {
+    const elements: ICytoNode[] = [];
+    const buildTree = (parent: ICytoNode, currentDepth: number): void => {
       if (currentDepth === depth) return;
 
       for (let i = 0; i < childrenPerNode; i++) {
         const [node, edge] = this.createNode(labelProvider(this.idCounter), parent);
         elements.push(node);
-        if (edge) elements.push(edge);
+        if (edge) elements.push(edge as ICytoNode); // Since edge has a different structure, it needs to be casted if you intend to keep it in the same array
 
         buildTree(node, currentDepth + 1);
       }
