@@ -16,7 +16,7 @@ import {
   selectSelectedViolationExemplars,
   setSelectedViolationExemplars,
 } from './components/Store/CombinedSlice';
-import { CytoscapeNodeFactory } from './CytoscapeNodeFactory';
+import { getChildren, CytoscapeNodeFactory, getNodePositions } from './CytoscapeNodeFactory';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(dagre);
@@ -36,30 +36,7 @@ const TREE_LAYOUT = {
   animationDuration: 1000,
 };
 
-/**
- * Gets the children of a given node based on specific criteria.
- * If incoming edges include an edge with id 'sh:targetClass',
- * then return all source nodes of that edge. Otherwise,
- * return all outgoing target nodes.
- *
- * @param {Object} node - The node for which to find the children.
- * @return {Array} The children nodes based on the criteria.
- */
-const getChildren = (node) => {
-  let targetClassNode = false;
-  node
-    .incomers()
-    .edges()
-    .forEach((edge) => {
-      if (edge.data('id') === 'sh:targetClass') {
-        targetClassNode = true;
-      }
-    });
-  if (targetClassNode) {
-    return node.outgoers().sources();
-  }
-  return node.outgoers().targets();
-};
+
 
 /**
  * Coordinates a recursive layout for hierarchical nodes in a Cytoscape instance.
@@ -608,7 +585,14 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       // add tree to cytoscape object
       cy.add(tree);
-      console.log('added tree:', tree);
+
+      const root = cy.getElementById('node-0');
+
+      console.log('getNodePositions(root)', getNodePositions(root));
+
+      // TODO code to select the tree nodes
+
+      positionCollection(root, 0, 0);
 
       // color nodes, make selection visible
       styleCytoElements(violationNodes, 'element', 'orange');

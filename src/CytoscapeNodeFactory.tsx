@@ -1,4 +1,6 @@
 // CytoscapeNodeFactory.tsx
+import cytoscape from 'cytoscape';
+
 import { ICytoNode, ICytoEdge } from './types';
 
 /**
@@ -60,4 +62,52 @@ export class CytoscapeNodeFactory {
 
     return elements;
   }
+}
+
+/**
+ * Gets the children of a given node based on specific criteria.
+ * If incoming edges include an edge with id 'sh:targetClass',
+ * then return all source nodes of that edge. Otherwise,
+ * return all outgoing target nodes.
+ *
+ * @param {Object} node - The node for which to find the children.
+ * @return {Array} The children nodes based on the criteria.
+ */
+export const getChildren = (node) => {
+  let targetClassNode = false;
+  node
+    .incomers()
+    .edges()
+    .forEach((edge) => {
+      if (edge.data('id') === 'sh:targetClass') {
+        targetClassNode = true;
+      }
+    });
+  if (targetClassNode) {
+    return node.outgoers().sources();
+  }
+  return node.outgoers().targets();
+};
+
+/**
+ * Traverses the children of the given root node and returns a map where the keys are the IDs of the nodes, and the values are their positions.
+ * @param root - The root node of the tree.
+ * @returns A map object with node IDs and their corresponding positions.
+ */
+export function getNodePositions(root: cytoscape.NodeSingular): Map<string, cytoscape.Position> {
+  const positions = new Map<string, cytoscape.Position>();
+
+  // Recursive function to traverse children
+  const traverseChildren = (node: cytoscape.NodeSingular) => {
+    positions.set(node.id(), node.position());
+    console.log('traversing children: ', node.id());
+    getChildren(node).forEach((child) => {
+      console.log('traversre...');
+      traverseChildren(child);
+    });
+  };
+
+  traverseChildren(root);
+
+  return positions;
 }
