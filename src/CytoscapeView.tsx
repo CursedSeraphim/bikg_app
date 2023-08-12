@@ -16,6 +16,7 @@ import {
   selectSelectedViolationExemplars,
   setSelectedViolationExemplars,
 } from './components/Store/CombinedSlice';
+import { CytoscapeNodeFactory } from './CytoscapeNodeFactory';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(dagre);
@@ -598,6 +599,17 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       const allElementsBoundingBox = cy.elements().boundingBox();
 
+      // unittesting
+      // ------------------------------------------
+
+      // factory code to create test fixture
+      const factory = new CytoscapeNodeFactory();
+      const tree = factory.createTree(3, 2);
+
+      // add tree to cytoscape object
+      cy.add(tree);
+      console.log('added tree:', tree);
+
       // color nodes, make selection visible
       styleCytoElements(violationNodes, 'element', 'orange');
       styleCytoElements(otherNodes, 'element', 'lightgrey');
@@ -900,6 +912,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       .catch((error) => {
         console.error('Failed to generate Cytoscape data:', error);
       });
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rdfOntology]);
 
