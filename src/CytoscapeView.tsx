@@ -16,7 +16,7 @@ import {
   selectSelectedViolationExemplars,
   setSelectedViolationExemplars,
 } from './components/Store/CombinedSlice';
-import { getChildren, CytoscapeNodeFactory, getNodePositions } from './CytoscapeNodeFactory';
+import { treeLayout, getChildren, CytoscapeNodeFactory, getNodePositions } from './CytoscapeNodeFactory';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(dagre);
@@ -35,8 +35,6 @@ const TREE_LAYOUT = {
   acyclicer: 'greedy',
   animationDuration: 1000,
 };
-
-
 
 /**
  * Coordinates a recursive layout for hierarchical nodes in a Cytoscape instance.
@@ -435,30 +433,6 @@ function positionCollection(collection, x, y) {
 //   // positionNodes(nodes, parentNodePosition, distanceBetweenNodesY, totalHeight);
 // }
 
-function positionNodes(root) {
-  const spacing = {
-    x: 100,
-    y: 50,
-  };
-
-  function recurse(node, level = 0) {
-    const children = getChildren(node);
-    children.forEach((child, index) => {
-      const x = spacing.x * index;
-      const y = spacing.y * level;
-
-      // Adjust children's position in the layout.
-      child.position({ x, y });
-
-      // Recursive call per level
-      recurse(child, level + 1);
-    });
-  }
-
-  recurse(root);
-  return root;
-}
-
 // Helper function to hide nodes
 const hideVisibleNodes = (nodeList) => {
   nodeList.current.forEach((nodeCollection) => {
@@ -581,7 +555,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       // factory code to create test fixture
       const factory = new CytoscapeNodeFactory();
-      const tree = factory.createTree(3, 2);
+      const tree = factory.createTree(0, 0);
 
       // add tree to cytoscape object
       cy.add(tree);
@@ -592,7 +566,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       // TODO code to select the tree nodes
 
-      positionCollection(root, 0, 0);
+      treeLayout(root);
 
       // color nodes, make selection visible
       styleCytoElements(violationNodes, 'element', 'orange');

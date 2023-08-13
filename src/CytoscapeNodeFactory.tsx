@@ -100,9 +100,7 @@ export function getNodePositions(root: cytoscape.NodeSingular): Map<string, cyto
   // Recursive function to traverse children
   const traverseChildren = (node: cytoscape.NodeSingular) => {
     positions.set(node.id(), node.position());
-    console.log('traversing children: ', node.id());
     getChildren(node).forEach((child) => {
-      console.log('traversre...');
       traverseChildren(child);
     });
   };
@@ -110,4 +108,33 @@ export function getNodePositions(root: cytoscape.NodeSingular): Map<string, cyto
   traverseChildren(root);
 
   return positions;
+}
+
+export function treeLayout(
+  root,
+  spacing = {
+    x: 100,
+    y: 50,
+  },
+) {
+  function recurse(node, level = 0) {
+    console.log('');
+    console.log('node', node.data('id'), 'level', level);
+    const children = getChildren(node);
+    children.forEach((child, index) => {
+      console.log('child', child.data('id'), 'index', index);
+      const x = spacing.x * index;
+      const y = spacing.y * (level + 1);
+
+      // Adjust children's position in the layout.
+      child.position({ x, y });
+      console.log('child', child.data('id'), 'x', x, 'y', y);
+
+      // Recursive call per level
+      recurse(child, level + 1);
+    });
+  }
+
+  recurse(root);
+  return root;
 }
