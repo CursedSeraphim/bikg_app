@@ -1,7 +1,7 @@
 // treePositioning.tests.ts
-// TODO create more test cases, update factory code to allow for creation of trees that don't have same amount of nodes at each level, create test cases for these
+// TODO test cases center align, update factory code to allow for creation of trees that don't have same amount of nodes at each level, test these
 import cytoscape, { Position } from 'cytoscape';
-import { treeLayout, CytoscapeNodeFactory, getNodePositions } from '../src/CytoscapeNodeFactory';
+import { treeLayout, treeLayoutLeftAlign, CytoscapeNodeFactory, getNodePositions } from '../src/CytoscapeNodeFactory';
 
 // Define test cases with different trees and expected outcomes
 const testCases = [
@@ -103,7 +103,7 @@ describe('Tree layout of nodes test suite', () => {
     // Get the collection that contains the root node
     const root = cy.getElementById('node-0');
     // Call the layout method
-    treeLayout(root, testCase.spacing);
+    treeLayoutLeftAlign(root, testCase.spacing);
 
     // Call getNodePositions to get the resulting positions
     const actualPositions = getNodePositions(root);
@@ -123,16 +123,11 @@ describe('Tree layout of nodes test suite', () => {
       // Get the collection that contains the root node
       const root = cy.getElementById('node-0');
       // Call the layout method
-      treeLayout(root, testCase.spacing);
+      treeLayoutLeftAlign(root, testCase.spacing);
 
       // Call getNodePositions to get the resulting positions
       const actualPositions = getNodePositions(root);
 
-      // Check the resulting positions with the expected positions from the test case
-      // actualPositions.forEach((value, key) => {
-      //   // console.log('key: ', key, 'value: ', value);
-      //   expect(value).toEqual(testCase.expectedPositions.get(key));
-      // });
       expect(actualPositions).toEqual(testCase.expectedPositions);
     },
   );

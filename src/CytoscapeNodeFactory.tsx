@@ -114,7 +114,7 @@ export function getNodePositions(root: cytoscape.NodeSingular): Map<string, cyto
   return positions;
 }
 
-export function treeLayout(
+export function treeLayoutLeftAlign(
   root,
   spacing = {
     x: 100,
@@ -123,19 +123,6 @@ export function treeLayout(
 ) {
   function recurse(node, level = 0, offsetX = 0) {
     const children = getChildren(node);
-    // let currentX = offsetX;
-    // console.log('just set the x of node', node.id(), 'to', currentX);
-
-    // children.forEach((child, index) => {
-    //   const x = currentX + (index === 0 ? 0 : spacing.x);
-    //   const y = spacing.y * (level + 1);
-
-    //   // Adjust children's position in the layout.
-    //   child.position({ x, y });
-
-    //   // Recursive call per level
-    //   currentX = recurse(child, level + 1, currentX);
-    // });
     let lastRecursionX = offsetX;
     children.forEach((child, index) => {
       // unless first child node, position at the last returned position of the recursive call. if first child node call with position of parent which is offsetX
@@ -146,6 +133,45 @@ export function treeLayout(
     });
 
     return lastRecursionX;
+  }
+
+  recurse(root);
+  return root;
+}
+
+export function treeLayout(
+  root,
+  spacing = {
+    x: 100,
+    y: 50,
+  },
+) {
+  function recurse(node, level = 0, offsetX = 0) {
+    const children = getChildren(node);
+    const childrenPositions = [];
+
+    let lastRecursionX = offsetX;
+    children.forEach((child, index) => {
+      const x = index === 0 ? offsetX : lastRecursionX + spacing.x;
+      const y = spacing.y * (level + 1);
+      child.position({ x, y });
+      childrenPositions.push(x);
+      lastRecursionX = recurse(child, level + 1, x);
+    });
+
+    const averageChildPositionX =
+      children.length === 0
+        ? node.position().x // If no children, use the current x-position
+        : childrenPositions.reduce((a, b) => a + b, 0) / childrenPositions.length;
+
+    node.position({ x: averageChildPositionX, y: node.position().y });
+
+    // After the recursion, explicitly set the root's x-position based on its children's average x-positions.
+    const rootChildren = getChildren(root);
+    const averageRootChildPositionX = rootChildren.reduce((acc, child) => acc + child.position().x, 0) / rootChildren.length;
+    root.position({ x: averageRootChildPositionX, y: root.position().y });
+
+    return averageChildPositionX + (children.length > 0 ? spacing.x : 0);
   }
 
   recurse(root);
