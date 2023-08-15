@@ -587,8 +587,8 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       // const connectedEdges = violationNodes.edges().union(otherNodes.edges());
 
-      positionCollection(exemplarNodes, 0, 0);
-      moveToPosition(exemplarNodes.union(exemplarNodes.outgoers().targets()), allElementsBoundingBox.x2 + 100, allElementsBoundingBox.y2);
+      // positionCollection(exemplarNodes, 0, 0);
+      // moveToPosition(exemplarNodes.union(exemplarNodes.outgoers().targets()), allElementsBoundingBox.x2 + 100, allElementsBoundingBox.y2);
 
       const collectionIntoColumn = (collection) => {
         for (let i = 0; i < collection.length; i += 1) {
@@ -610,6 +610,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       const boundingBox = typeNodes.union(otherNodes).union(violationNodes).boundingBox();
       console.log('bounding box', boundingBox);
+      treeLayout(violationNodes, { x: 50, y: 500 });
 
       // moveToPosition(exemplarNodes.union(exemplarNodes.outgoers().targets()), boundingBox.x2, boundingBox.y2);
 

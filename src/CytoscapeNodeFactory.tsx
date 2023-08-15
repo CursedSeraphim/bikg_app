@@ -139,6 +139,13 @@ export function treeLayoutLeftAlign(
   return root;
 }
 
+/**
+ * Lays out the nodes of a tree in a structured manner. The parent nodes will be centered above their children.
+ *
+ * @param {Object} root - The root node of the tree.
+ * @param {Object} spacing - The spacing between nodes in x and y directions. Default: { x: 100, y: 50 }.
+ * @returns {Object} - The root node with updated position values for itself and all child nodes.
+ */
 export function treeLayout(
   root,
   spacing = {
@@ -146,38 +153,70 @@ export function treeLayout(
     y: 50,
   },
 ) {
-  if (getChildren(root).length === 0) {
+  /**
+   * Helper function to check if a node has children.
+   *
+   * @param {Object} node - The node to check.
+   * @returns {boolean} - True if the node has children, false otherwise.
+   */
+  function hasChildren(node) {
+    return getChildren(node).length > 0;
+  }
+
+  // Early exit if no children for root node. Set its position to (0, 0) and return.
+  if (!hasChildren(root)) {
+    root.position({ x: 0, y: 0 });
     return root;
   }
-  function recurse(node, level = 0, offsetX = 0) {
+
+  /**
+   * Computes the average x-position of a node's children.
+   * If the node has no children, returns the node's current x-position.
+   *
+   * @param {Object} node - The node whose children's average x-position is to be computed.
+   * @returns {number} - The average x-position value.
+   */
+  function averageChildXPosition(node) {
     const children = getChildren(node);
-    const childrenPositions = [];
+    if (!children.length) return node.position().x;
 
-    let lastRecursionX = offsetX;
-    children.forEach((child, index) => {
-      const x = index === 0 ? offsetX : lastRecursionX + spacing.x;
-      const y = spacing.y * (level + 1);
-      child.position({ x, y });
-      childrenPositions.push(x);
-      lastRecursionX = recurse(child, level + 1, x);
-    });
-
-    const averageChildPositionX =
-      children.length === 0
-        ? node.position().x // If no children, use the current x-position
-        : childrenPositions.reduce((a, b) => a + b, 0) / childrenPositions.length;
-
-    node.position({ x: averageChildPositionX, y: node.position().y });
-
-    return averageChildPositionX + (children.length > 0 ? spacing.x : 0);
+    const totalX = children.reduce((acc, child) => acc + child.position().x, 0);
+    return totalX / children.length;
   }
 
-  // set initial position for root
+  /**
+   * Recursive function to layout a node and its children in the tree.
+   * It updates each node's x and y position based on spacing and the average position of its children.
+   *
+   * @param {Object} node - The current node to layout.
+   * @param {number} level - The depth of the node in the tree (root is level 0).
+   * @param {number} offsetX - The x-position offset for the node.
+   * @returns {number} - The x-position value where the next sibling of this node should be placed.
+   */
+  function layoutNodeAndChildren(node, level = 0, offsetX = 0) {
+    const children = getChildren(node);
+    let lastChildX = offsetX;
+
+    children.forEach((child, index) => {
+      const x = index === 0 ? offsetX : lastChildX + spacing.x;
+      const y = spacing.y * (level + 1);
+      child.position({ x, y });
+      lastChildX = layoutNodeAndChildren(child, level + 1, x);
+    });
+
+    const nodeXPosition = averageChildXPosition(node);
+    node.position({ x: nodeXPosition, y: node.position().y });
+    return nodeXPosition + (hasChildren(node) ? spacing.x : 0);
+  }
+
+  // Set the initial position for root node
   root.position({ x: 0, y: 0 });
-  recurse(root);
-  // After the recursion, explicitly set the root's x-position based on its children's average x-positions.
-  const rootChildren = getChildren(root);
-  const averageRootChildPositionX = rootChildren.reduce((acc, child) => acc + child.position().x, 0) / rootChildren.length;
-  root.position({ x: averageRootChildPositionX, y: root.position().y });
+  // Start the layout from the root node
+  layoutNodeAndChildren(root);
+
+  // Adjust root's x-position after the recursion to be centered above its children
+  const rootXPosition = averageChildXPosition(root);
+  root.position({ x: rootXPosition, y: root.position().y });
+
   return root;
 }
