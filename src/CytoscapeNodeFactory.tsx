@@ -146,6 +146,9 @@ export function treeLayout(
     y: 50,
   },
 ) {
+  if (getChildren(root).length === 0) {
+    return root;
+  }
   function recurse(node, level = 0, offsetX = 0) {
     const children = getChildren(node);
     const childrenPositions = [];

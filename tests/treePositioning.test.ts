@@ -3,8 +3,62 @@
 import cytoscape, { Position } from 'cytoscape';
 import { treeLayout, treeLayoutLeftAlign, CytoscapeNodeFactory, getNodePositions } from '../src/CytoscapeNodeFactory';
 
+const testCasesCenterAlign = [
+  {
+    depth: 0,
+    childrenPerNode: 0,
+    spacing: {
+      x: 10,
+      y: 20,
+    },
+    expectedPositions: new Map<string, Position>([['node-0', { x: 0, y: 0 }]]),
+  },
+  {
+    depth: 1,
+    childrenPerNode: 1,
+    spacing: {
+      x: 10,
+      y: 20,
+    },
+    expectedPositions: new Map<string, Position>([
+      ['node-0', { x: 0, y: 0 }],
+      ['node-1', { x: 0, y: 20 }],
+    ]),
+  },
+  {
+    depth: 2,
+    childrenPerNode: 1,
+    spacing: {
+      x: 10,
+      y: 20,
+    },
+    expectedPositions: new Map<string, Position>([
+      ['node-0', { x: 0, y: 0 }],
+      ['node-1', { x: 0, y: 20 }],
+      ['node-2', { x: 0, y: 40 }],
+    ]),
+  },
+  {
+    depth: 2,
+    childrenPerNode: 2,
+    spacing: {
+      x: 10,
+      y: 20,
+    },
+    expectedPositions: new Map<string, Position>([
+      ['node-0', { x: 17.5, y: 0 }],
+      ['node-1', { x: 5, y: 20 }],
+      ['node-2', { x: 0, y: 40 }],
+      ['node-3', { x: 10, y: 40 }],
+      ['node-4', { x: 30, y: 20 }],
+      ['node-5', { x: 25, y: 40 }],
+      ['node-6', { x: 35, y: 40 }],
+    ]),
+  },
+];
+
 // Define test cases with different trees and expected outcomes
-const testCases = [
+const testCasesLeftAlign = [
   {
     depth: 0,
     childrenPerNode: 0,
@@ -94,25 +148,28 @@ describe('Tree layout of nodes test suite', () => {
     expect(true).toBe(true);
   });
 
-  test.each(testCases)('should have same amount of nodes as expected for a tree of depth $depth with $childrenPerNode children per node', (testCase) => {
-    const tree = factory.createTree(testCase.depth, testCase.childrenPerNode);
-    const cy = cytoscape({
-      elements: tree,
-    });
+  test.each(testCasesLeftAlign)(
+    'should have same amount of nodes as expected for a tree of depth $depth with $childrenPerNode children per node',
+    (testCase) => {
+      const tree = factory.createTree(testCase.depth, testCase.childrenPerNode);
+      const cy = cytoscape({
+        elements: tree,
+      });
 
-    // Get the collection that contains the root node
-    const root = cy.getElementById('node-0');
-    // Call the layout method
-    treeLayoutLeftAlign(root, testCase.spacing);
+      // Get the collection that contains the root node
+      const root = cy.getElementById('node-0');
+      // Call the layout method
+      treeLayoutLeftAlign(root, testCase.spacing);
 
-    // Call getNodePositions to get the resulting positions
-    const actualPositions = getNodePositions(root);
+      // Call getNodePositions to get the resulting positions
+      const actualPositions = getNodePositions(root);
 
-    // Check whether the resulting positions map has as many entries as the expected positions map
-    expect(actualPositions.size).toEqual(testCase.expectedPositions.size);
-  });
+      // Check whether the resulting positions map has as many entries as the expected positions map
+      expect(actualPositions.size).toEqual(testCase.expectedPositions.size);
+    },
+  );
 
-  test.each(testCases)(
+  test.each(testCasesLeftAlign)(
     'should correctly position nodes for a tree of depth $depth with $childrenPerNode children per node with spacing $spacing',
     (testCase) => {
       const tree = factory.createTree(testCase.depth, testCase.childrenPerNode);
@@ -124,6 +181,26 @@ describe('Tree layout of nodes test suite', () => {
       const root = cy.getElementById('node-0');
       // Call the layout method
       treeLayoutLeftAlign(root, testCase.spacing);
+
+      // Call getNodePositions to get the resulting positions
+      const actualPositions = getNodePositions(root);
+
+      expect(actualPositions).toEqual(testCase.expectedPositions);
+    },
+  );
+
+  test.each(testCasesCenterAlign)(
+    'should correctly position nodes for a tree of depth $depth with $childrenPerNode children per node with spacing $spacing',
+    (testCase) => {
+      const tree = factory.createTree(testCase.depth, testCase.childrenPerNode);
+      const cy = cytoscape({
+        elements: tree,
+      });
+
+      // Get the collection that contains the root node
+      const root = cy.getElementById('node-0');
+      // Call the layout method
+      treeLayout(root, testCase.spacing);
 
       // Call getNodePositions to get the resulting positions
       const actualPositions = getNodePositions(root);
