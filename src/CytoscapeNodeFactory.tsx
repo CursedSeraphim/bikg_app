@@ -166,14 +166,15 @@ export function treeLayout(
 
     node.position({ x: averageChildPositionX, y: node.position().y });
 
-    // After the recursion, explicitly set the root's x-position based on its children's average x-positions.
-    const rootChildren = getChildren(root);
-    const averageRootChildPositionX = rootChildren.reduce((acc, child) => acc + child.position().x, 0) / rootChildren.length;
-    root.position({ x: averageRootChildPositionX, y: root.position().y });
-
     return averageChildPositionX + (children.length > 0 ? spacing.x : 0);
   }
 
+  // set initial position for root
+  root.position({ x: 0, y: 0 });
   recurse(root);
+  // After the recursion, explicitly set the root's x-position based on its children's average x-positions.
+  const rootChildren = getChildren(root);
+  const averageRootChildPositionX = rootChildren.reduce((acc, child) => acc + child.position().x, 0) / rootChildren.length;
+  root.position({ x: averageRootChildPositionX, y: root.position().y });
   return root;
 }
