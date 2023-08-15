@@ -206,7 +206,7 @@ export function treeLayout(
 
     const nodeXPosition = averageChildXPosition(node);
     node.position({ x: nodeXPosition, y: node.position().y });
-    return nodeXPosition + (hasChildren(node) ? spacing.x : 0);
+    return lastChildX + (hasChildren(node) ? spacing.x : 0);
   }
 
   // Set the initial position for root node

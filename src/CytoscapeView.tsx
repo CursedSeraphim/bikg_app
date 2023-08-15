@@ -555,7 +555,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       // factory code to create test fixture
       const factory = new CytoscapeNodeFactory();
-      const tree = factory.createTree(2, 2);
+      const tree = factory.createTree(4, 2);
 
       // add tree to cytoscape object
       cy.add(tree);
