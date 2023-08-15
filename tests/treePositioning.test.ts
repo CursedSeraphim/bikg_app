@@ -1,5 +1,5 @@
 // treePositioning.tests.ts
-// TODO this file is brand new: create more test cases, update factory code to allow for creation of trees that don't have same amount of nodes at each level, create test cases for these
+// TODO create more test cases, update factory code to allow for creation of trees that don't have same amount of nodes at each level, create test cases for these
 import cytoscape, { Position } from 'cytoscape';
 import { treeLayout, CytoscapeNodeFactory, getNodePositions } from '../src/CytoscapeNodeFactory';
 
@@ -24,7 +24,59 @@ const testCases = [
     expectedPositions: new Map<string, Position>([
       ['node-0', { x: 0, y: 0 }],
       ['node-1', { x: 0, y: 20 }],
-      ['node-2', { x: 10, y: 20 }],
+    ]),
+  },
+  {
+    depth: 2,
+    childrenPerNode: 1,
+    spacing: {
+      x: 10,
+      y: 20,
+    },
+    expectedPositions: new Map<string, Position>([
+      ['node-0', { x: 0, y: 0 }],
+      ['node-1', { x: 0, y: 20 }],
+      ['node-2', { x: 0, y: 40 }],
+    ]),
+  },
+  {
+    depth: 2,
+    childrenPerNode: 2,
+    spacing: {
+      x: 10,
+      y: 20,
+    },
+    expectedPositions: new Map<string, Position>([
+      ['node-0', { x: 0, y: 0 }],
+      ['node-1', { x: 0, y: 20 }],
+      ['node-2', { x: 0, y: 40 }],
+      ['node-3', { x: 10, y: 40 }],
+      ['node-4', { x: 20, y: 20 }],
+      ['node-5', { x: 20, y: 40 }],
+      ['node-6', { x: 30, y: 40 }],
+    ]),
+  },
+  {
+    depth: 2,
+    childrenPerNode: 3,
+    spacing: {
+      x: 10,
+      y: 10,
+    },
+    expectedPositions: new Map<string, Position>([
+      ['node-0', { x: 0, y: 0 }],
+      ['node-1', { x: 0, y: 10 }],
+      ['node-2', { x: 0, y: 20 }],
+      ['node-3', { x: 10, y: 20 }],
+      ['node-4', { x: 20, y: 20 }],
+      ['node-5', { x: 30, y: 10 }],
+      ['node-6', { x: 30, y: 20 }],
+      ['node-7', { x: 40, y: 20 }],
+      ['node-8', { x: 50, y: 20 }],
+      ['node-9', { x: 60, y: 10 }],
+      ['node-10', { x: 60, y: 20 }],
+      ['node-11', { x: 70, y: 20 }],
+      ['node-12', { x: 80, y: 20 }],
     ]),
   },
   // Add more test cases...
@@ -40,6 +92,24 @@ describe('Tree layout of nodes test suite', () => {
 
   it('passes', () => {
     expect(true).toBe(true);
+  });
+
+  test.each(testCases)('should have same amount of nodes as expected for a tree of depth $depth with $childrenPerNode children per node', (testCase) => {
+    const tree = factory.createTree(testCase.depth, testCase.childrenPerNode);
+    const cy = cytoscape({
+      elements: tree,
+    });
+
+    // Get the collection that contains the root node
+    const root = cy.getElementById('node-0');
+    // Call the layout method
+    treeLayout(root, testCase.spacing);
+
+    // Call getNodePositions to get the resulting positions
+    const actualPositions = getNodePositions(root);
+
+    // Check whether the resulting positions map has as many entries as the expected positions map
+    expect(actualPositions.size).toEqual(testCase.expectedPositions.size);
   });
 
   test.each(testCases)(
@@ -59,10 +129,11 @@ describe('Tree layout of nodes test suite', () => {
       const actualPositions = getNodePositions(root);
 
       // Check the resulting positions with the expected positions from the test case
-      actualPositions.forEach((value, key) => {
-        console.log('key: ', key, 'value: ', value);
-        expect(value).toEqual(testCase.expectedPositions.get(key));
-      });
+      // actualPositions.forEach((value, key) => {
+      //   // console.log('key: ', key, 'value: ', value);
+      //   expect(value).toEqual(testCase.expectedPositions.get(key));
+      // });
+      expect(actualPositions).toEqual(testCase.expectedPositions);
     },
   );
 });

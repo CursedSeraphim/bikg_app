@@ -7,10 +7,13 @@ import { ICytoNode, ICytoEdge } from './types';
  * Node Factory for creating Cytoscape nodes and edges in a tree structure.
  */
 export class CytoscapeNodeFactory {
-  private idCounter = 0;
+  private nodeIdCounter = 0;
+
+  private edgeIdCounter = 0;
 
   constructor() {
-    this.idCounter = 0;
+    this.nodeIdCounter = 0;
+    this.edgeIdCounter = 0;
   }
 
   /**
@@ -20,14 +23,14 @@ export class CytoscapeNodeFactory {
    * @returns An array containing the created node and optionally an edge.
    */
   createNode(label?: string, parent?: ICytoNode): [ICytoNode, ICytoEdge?] {
-    const id = `node-${this.idCounter++}`;
+    const id = `node-${this.nodeIdCounter++}`;
     const node: ICytoNode = {
       data: { id, label, visible: true },
     };
 
     if (parent) {
       const edge: ICytoEdge = {
-        data: { id: `edge-${this.idCounter++}`, source: parent.data.id, target: id, visible: true },
+        data: { id: `edge-${this.edgeIdCounter++}`, source: parent.data.id, target: id, visible: true },
       };
       return [node, edge];
     }
@@ -45,10 +48,11 @@ export class CytoscapeNodeFactory {
   createTree(depth: number, childrenPerNode: number, labelProvider: (index: number) => string = (index) => `Node ${index}`): ICytoNode[] {
     const elements: ICytoNode[] = [];
     const buildTree = (parent: ICytoNode, currentDepth: number): void => {
+      console.log('called with depth', currentDepth, 'and parent', parent.data.id);
       if (currentDepth === depth) return;
 
       for (let i = 0; i < childrenPerNode; i++) {
-        const [node, edge] = this.createNode(labelProvider(this.idCounter), parent);
+        const [node, edge] = this.createNode(labelProvider(this.nodeIdCounter), parent);
         elements.push(node);
         if (edge) elements.push(edge as ICytoNode); // Since edge has a different structure, it needs to be casted if you intend to keep it in the same array
 
@@ -56,7 +60,7 @@ export class CytoscapeNodeFactory {
       }
     };
 
-    const [rootNode] = this.createNode(labelProvider(this.idCounter));
+    const [rootNode] = this.createNode(labelProvider(this.nodeIdCounter));
     elements.push(rootNode);
     buildTree(rootNode, 0);
 
@@ -117,22 +121,31 @@ export function treeLayout(
     y: 50,
   },
 ) {
-  function recurse(node, level = 0) {
-    console.log('');
-    console.log('node', node.data('id'), 'level', level);
+  function recurse(node, level = 0, offsetX = 0) {
     const children = getChildren(node);
+    // let currentX = offsetX;
+    // console.log('just set the x of node', node.id(), 'to', currentX);
+
+    // children.forEach((child, index) => {
+    //   const x = currentX + (index === 0 ? 0 : spacing.x);
+    //   const y = spacing.y * (level + 1);
+
+    //   // Adjust children's position in the layout.
+    //   child.position({ x, y });
+
+    //   // Recursive call per level
+    //   currentX = recurse(child, level + 1, currentX);
+    // });
+    let lastRecursionX = offsetX;
     children.forEach((child, index) => {
-      console.log('child', child.data('id'), 'index', index);
-      const x = spacing.x * index;
+      // unless first child node, position at the last returned position of the recursive call. if first child node call with position of parent which is offsetX
+      const x = index === 0 ? offsetX : lastRecursionX + spacing.x;
       const y = spacing.y * (level + 1);
-
-      // Adjust children's position in the layout.
       child.position({ x, y });
-      console.log('child', child.data('id'), 'x', x, 'y', y);
-
-      // Recursive call per level
-      recurse(child, level + 1);
+      lastRecursionX = recurse(child, level + 1, x);
     });
+
+    return lastRecursionX;
   }
 
   recurse(root);
