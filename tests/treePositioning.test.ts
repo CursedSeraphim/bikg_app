@@ -1,5 +1,9 @@
 // treePositioning.tests.ts
-// TODO last test case center align, update factory code to allow for creation of trees that don't have same amount of nodes at each level, test these
+// TODO
+// * fix test cases center align after having fixed that we don't return the average parent position but the pos but the last chid node pos
+// * last test case center align
+// * update factory code to allow for creation of trees that don't have same amount of nodes at each level
+// * test these
 import cytoscape, { Position } from 'cytoscape';
 import { treeLayout, treeLayoutLeftAlign, CytoscapeNodeFactory, getNodePositions } from '../src/CytoscapeNodeFactory';
 
