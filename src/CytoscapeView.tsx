@@ -16,7 +16,7 @@ import {
   selectSelectedViolationExemplars,
   setSelectedViolationExemplars,
 } from './components/Store/CombinedSlice';
-import { treeLayout, getChildren, CytoscapeNodeFactory, getNodePositions } from './CytoscapeNodeFactory';
+import { treeLayout, getChildren, CytoscapeNodeFactory, getNodePositions, deleteNodes } from './CytoscapeNodeFactory';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(dagre);
@@ -561,6 +561,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       cy.add(tree);
 
       const root = cy.getElementById('node-0');
+      deleteNodes(root, ['node-9', 'node-21']);
 
       console.log('getNodePositions(root)', getNodePositions(root));
 

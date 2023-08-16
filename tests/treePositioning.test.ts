@@ -1,9 +1,4 @@
 // treePositioning.tests.ts
-// TODO
-// * fix test cases center align after having fixed that we don't return the average parent position but the pos but the last chid node pos
-// * last test case center align
-// * update factory code to allow for creation of trees that don't have same amount of nodes at each level
-// * test these
 import cytoscape, { Position } from 'cytoscape';
 import { treeLayout, treeLayoutLeftAlign, CytoscapeNodeFactory, getNodePositions } from '../src/CytoscapeNodeFactory';
 
@@ -50,41 +45,15 @@ const testCasesCenterAlign = [
       y: 20,
     },
     expectedPositions: new Map<string, Position>([
-      ['node-0', { x: 17.5, y: 0 }],
+      ['node-0', { x: 20, y: 0 }],
       ['node-1', { x: 5, y: 20 }],
       ['node-2', { x: 0, y: 40 }],
       ['node-3', { x: 10, y: 40 }],
-      ['node-4', { x: 30, y: 20 }],
-      ['node-5', { x: 25, y: 40 }],
-      ['node-6', { x: 35, y: 40 }],
+      ['node-4', { x: 35, y: 20 }],
+      ['node-5', { x: 30, y: 40 }],
+      ['node-6', { x: 40, y: 40 }],
     ]),
   },
-  // TODO fix node positions for deeper tree test case
-  // {
-  //   depth: 3,
-  //   childrenPerNode: 2,
-  //   spacing: {
-  //     x: 10,
-  //     y: 20,
-  //   },
-  //   expectedPositions: new Map<string, Position>([
-  //     ['node-0', { x: 17.5, y: 0 }],
-  //     ['node-1', { x: 5, y: 20 }],
-  //     ['node-2', { x: 0, y: 40 }],
-  //     ['node-3', { x: 10, y: 40 }],
-  //     ['node-4', { x: 30, y: 20 }],
-  //     ['node-5', { x: 25, y: 40 }],
-  //     ['node-6', { x: 35, y: 40 }],
-  //     ['node-7', { x: 35, y: 40 }],
-  //     ['node-8', { x: 35, y: 40 }],
-  //     ['node-9', { x: 35, y: 40 }],
-  //     ['node-10', { x: 35, y: 40 }],
-  //     ['node-11', { x: 35, y: 40 }],
-  //     ['node-12', { x: 35, y: 40 }],
-  //     ['node-13', { x: 35, y: 40 }],
-  //     ['node-14', { x: 35, y: 40 }],
-  //   ]),
-  // },
 ];
 
 // Define test cases with different trees and expected outcomes

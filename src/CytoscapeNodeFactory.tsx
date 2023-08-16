@@ -220,3 +220,41 @@ export function treeLayout(
 
   return root;
 }
+
+/**
+ * Deletes nodes (and their descendants) from the tree given their IDs.
+ *
+ * @param root - The root node of the tree.
+ * @param idsToDelete - List of node IDs to delete.
+ * @returns void
+ */
+export function deleteNodes(root: cytoscape.NodeSingular, idsToDelete: string[]): void {
+  // Recursive function to check and delete nodes
+  const checkAndDelete = (node: cytoscape.NodeSingular): boolean => {
+    // Check children first
+    console.log('node we try to get children of:', node);
+    const children = getChildren(node);
+    const childrenToDelete = [];
+    for (const child of children) {
+      if (checkAndDelete(child)) {
+        childrenToDelete.push(child);
+      }
+    }
+
+    // Remove children marked for deletion
+    for (const child of childrenToDelete) {
+      child.remove();
+    }
+
+    // If the current node's id is in the list of IDs to delete or all of its children have been deleted, delete it
+    if (idsToDelete.includes(node.id()) || (children.length && childrenToDelete.length === children.length)) {
+      node.remove();
+      return true;
+    }
+
+    return false;
+  };
+
+  // Start from the root node
+  checkAndDelete(root);
+}
