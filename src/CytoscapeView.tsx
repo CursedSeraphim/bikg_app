@@ -16,7 +16,7 @@ import {
   selectSelectedViolationExemplars,
   setSelectedViolationExemplars,
 } from './components/Store/CombinedSlice';
-import { treeLayout, getChildren, CytoscapeNodeFactory, getNodePositions, deleteNodes } from './CytoscapeNodeFactory';
+import { treeLayout, getChildren, getParents, rotateNodes, translateNodesToPosition, moveCollectionToBottomRight, findRootNode } from './CytoscapeNodeFactory';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(dagre);
@@ -571,9 +571,15 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       collectionIntoColumn(otherNodes);
       // collectionIntoColumn(exemplarNodes);
 
-      const boundingBox = typeNodes.union(otherNodes).union(violationNodes).boundingBox();
-      console.log('bounding box', boundingBox);
+      const potentialRoots = typeNodes.union(otherNodes);
+      console.log('potentialRoots', potentialRoots);
+      const root = findRootNode(potentialRoots);
+      console.log('root', root);
+
+      const violationsAndSuccessors = violationNodes.union(violationNodes.successors());
       treeLayout(violationNodes, { x: 50, y: 500 });
+      moveCollectionToBottomRight(cy, violationsAndSuccessors);
+      rotateNodes(violationsAndSuccessors, -45);
 
       cy.style().update();
     }
@@ -784,7 +790,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
           });
 
           newCy.on('cxttap', 'node', (event) => {
-            if (lassoSelectionInProgress) { 
+            if (lassoSelectionInProgress) {
               return;
             }
 

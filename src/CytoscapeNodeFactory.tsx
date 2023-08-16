@@ -70,7 +70,7 @@ export class CytoscapeNodeFactory {
 
 /**
  * Gets the children of a given node based on specific criteria.
- * If incoming edges include an edge with id 'sh:targetClass',
+ * If incoming edges include an edge with id 'sh:targetClass'  or 'rdfs:subClassOf',
  * then return all source nodes of that edge. Otherwise,
  * return all outgoing target nodes.
  *
@@ -78,19 +78,52 @@ export class CytoscapeNodeFactory {
  * @return {Array} The children nodes based on the criteria.
  */
 export const getChildren = (node) => {
-  let targetClassNode = false;
+  // for the sake of more sensible layout, if the parent is a targetClass or subClassOf, treat it as a child
+  // this is because it is clearer if nodeshapes are below types in the hierarchy
+  let parentShouldBeTreatedAsChild = false;
   node
     .incomers()
     .edges()
     .forEach((edge) => {
-      if (edge.data('id') === 'sh:targetClass') {
-        targetClassNode = true;
+      if (edge.data('id') === 'sh:targetClass' || edge.data('id') === 'rdfs:subClassOf') {
+        parentShouldBeTreatedAsChild = true;
       }
     });
-  if (targetClassNode) {
+  if (parentShouldBeTreatedAsChild) {
     return node.outgoers().sources();
   }
   return node.outgoers().targets();
+};
+
+/**
+ * Gets the parents of a given node based on specific criteria.
+ * If outgoing edges include an edge with id 'sh:targetClass' or 'rdfs:subClassOf',
+ * then return all target nodes of that edge. Otherwise,
+ * return all source nodes of the incoming edges.
+ *
+ * @param {Object} node - The node for which to find the parents.
+ * @return {Array} The parent nodes based on the criteria.
+ */
+export const getParents = (node) => {
+  // Check if this node has outgoing edges with id 'sh:targetClass' or 'rdfs:subClassOf'
+  // which indicates that the target of these edges is a parent.
+  const parentsViaOutgoingEdges = [];
+  node
+    .outgoers()
+    .edges()
+    .forEach((edge) => {
+      if (edge.data('id') === 'sh:targetClass' || edge.data('id') === 'rdfs:subClassOf') {
+        parentsViaOutgoingEdges.push(edge.target());
+      }
+    });
+
+  // If there are any parents found via outgoing edges, return them
+  if (parentsViaOutgoingEdges.length) {
+    return parentsViaOutgoingEdges;
+  }
+
+  // Otherwise, return the source nodes of all incoming edges as the parents.
+  return node.incomers().sources();
 };
 
 /**
@@ -280,4 +313,140 @@ function rotateNodesWithD3(nodes, angle, origin) {
       y: newY + origin.y,
     };
   });
+}
+
+// export function rotateNodes(nodes, angle) {
+//   const bb = nodes.boundingBox(); // the bounding box of the collection
+//   const cx = (bb.x1 + bb.x2) / 2; // the x-coordinate of the center of the collection
+//   const cy = (bb.y1 + bb.y2) / 2; // the y-coordinate of the center of the collection
+//   angle = (angle * Math.PI) / 180; // convert angle from degrees to radians
+
+//   nodes
+//     .layout({
+//       name: 'preset',
+//       animate: true,
+//       fit: false,
+//       transform: (node) => {
+//         const position = node.position();
+//         const x = position.x - cx;
+//         const y = position.y - cy;
+//         position.x = x * Math.cos(angle) - y * Math.sin(angle) + cx;
+//         position.y = x * Math.sin(angle) + y * Math.cos(angle) + cy;
+//         return position;
+//       },
+//     })
+//     .run();
+// }
+
+/**
+ * Rotates a collection of nodes in cytoscape about their collective center.
+ *
+ * @param {Object} nodes - A collection of nodes in cytoscape to be rotated.
+ * @param {number} angle - The angle (in degrees) by which the nodes should be rotated.
+ *                          Positive values represent counter-clockwise rotations, and negative values represent clockwise rotations.
+ *
+ * @example
+ * const nodes = cy.elements('node'); // get all nodes from cytoscape instance
+ * rotateNodes(nodes, 45); // rotates the nodes 45 degrees counter-clockwise about their collective center
+ */
+export function rotateNodes(nodes, angle) {
+  const bb = nodes.boundingBox(); // the bounding box of the collection
+  const cx = (bb.x1 + bb.x2) / 2; // the x-coordinate of the center of the collection
+  const cy = (bb.y1 + bb.y2) / 2; // the y-coordinate of the center of the collection
+  angle = (angle * Math.PI) / 180; // convert angle from degrees to radians
+
+  nodes.forEach((node) => {
+    const position = node.position();
+    const x = position.x - cx;
+    const y = position.y - cy;
+    position.x = x * Math.cos(angle) - y * Math.sin(angle) + cx;
+    position.y = x * Math.sin(angle) + y * Math.cos(angle) + cy;
+    node.position(position); // setting the new position for each node
+  });
+}
+
+export function translateNodesToPosition(nodes, x, y) {
+  const bb = nodes.boundingBox(); // the bounding box of the collection
+  const cx = (bb.x1 + bb.x2) / 2; // the x-coordinate of the center of the collection
+  const cy = (bb.y1 + bb.y2) / 2; // the y-coordinate of the center of the collection
+  const dx = x - cx; // the amount by which to translate the nodes along the x axis
+  const dy = y - cy; // the amount by which to translate the nodes along the y axis
+
+  nodes.positions((node, i) => {
+    const position = node.position();
+    position.x += dx;
+    position.y += dy;
+    return position;
+  });
+}
+
+/**
+ * Moves a collection of nodes in cytoscape to the bottom right of the bounding box
+ * of all other nodes while maintaining their relative distances to each other.
+ *
+ * @param {Object} targetCollection - The collection of nodes to be moved.
+ */
+export function moveCollectionToBottomRight(cy, targetCollection) {
+  const allNodes = cy.nodes();
+  const otherNodes = allNodes.difference(targetCollection);
+
+  // 1. Calculate the bounding box for all nodes except the nodes in target collection.
+  const otherNodesBB = otherNodes.boundingBox();
+
+  // 2. Calculate the bounding box for the target collection.
+  const targetCollectionBB = targetCollection.boundingBox();
+
+  // 3. Determine the new position for the top-left corner of target collection's bounding box.
+  const newTopLeftX = otherNodesBB.x2;
+  const newTopLeftY = otherNodesBB.y2;
+
+  // 4. Calculate the translation.
+  const translationX = newTopLeftX - targetCollectionBB.x1;
+  const translationY = newTopLeftY - targetCollectionBB.y1;
+
+  // 5. Move all nodes in the target collection.
+  targetCollection.positions((node) => {
+    const currentPosition = node.position();
+    return {
+      x: currentPosition.x + translationX,
+      y: currentPosition.y + translationY,
+    };
+  });
+}
+
+/**
+ * Finds the root node in a collection where all other nodes are below it in the hierarchy.
+ *
+ * @param {Object} nodeCollection - A collection of nodes.
+ * @returns {Object} The root node.
+ */
+export function findRootNode(nodeCollection) {
+  for (let i = 0; i < nodeCollection.length; i++) {
+    console.log('-------------------');
+    const node = nodeCollection[i];
+    const parents = getParents(node);
+    console.log(
+      'node',
+      node.id(),
+      'has parents',
+      parents.map((parent) => parent.id()),
+    );
+
+    let hasParentInCollection = false;
+
+    for (const parent of parents) {
+      if (nodeCollection.includes(parent)) {
+        hasParentInCollection = true;
+        console.log('node', node.id(), 'has parent', parent.id(), 'in collection, therefore it is not the root node');
+        break;
+      }
+    }
+
+    // If the current node doesn't have any parent in the collection, it's the root node.
+    if (!hasParentInCollection) {
+      return node;
+    }
+  }
+
+  return null; // In case no root is found, though given the problem's constraints, this should not happen.
 }
