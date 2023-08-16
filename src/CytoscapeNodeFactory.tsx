@@ -232,7 +232,6 @@ export function deleteNodes(root: cytoscape.NodeSingular, idsToDelete: string[])
   // Recursive function to check and delete nodes
   const checkAndDelete = (node: cytoscape.NodeSingular): boolean => {
     // Check children first
-    console.log('node we try to get children of:', node);
     const children = getChildren(node);
     const childrenToDelete = [];
     for (const child of children) {
@@ -257,4 +256,28 @@ export function deleteNodes(root: cytoscape.NodeSingular, idsToDelete: string[])
 
   // Start from the root node
   checkAndDelete(root);
+}
+
+const deg2rad = function (degrees) {
+  return (degrees * Math.PI) / 180;
+};
+
+function rotateNodesWithD3(nodes, angle, origin) {
+  const radians = deg2rad(angle); // Convert angle to radians
+
+  return nodes.map((node) => {
+    // Translate to origin
+    const x = node.x - origin.x;
+    const y = node.y - origin.y;
+
+    // Rotate using D3's rotation formula
+    const newX = x * Math.cos(radians) - y * Math.sin(radians);
+    const newY = x * Math.sin(radians) + y * Math.cos(radians);
+
+    // Translate back from origin
+    return {
+      x: newX + origin.x,
+      y: newY + origin.y,
+    };
+  });
 }

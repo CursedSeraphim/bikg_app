@@ -28,14 +28,6 @@ const CY_LAYOUT = {
   nodeDimensionsIncludeLabels: true,
 };
 
-const TREE_LAYOUT = {
-  name: 'dagre',
-  nodeSep: 20,
-  rankSep: 10,
-  acyclicer: 'greedy',
-  animationDuration: 1000,
-};
-
 /**
  * Coordinates a recursive layout for hierarchical nodes in a Cytoscape instance.
  * Each node and its child nodes are positioned into columns recursively.
@@ -550,25 +542,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       const allElementsBoundingBox = cy.elements().boundingBox();
 
-      // unittesting
-      // ------------------------------------------
-
-      // factory code to create test fixture
-      const factory = new CytoscapeNodeFactory();
-      const tree = factory.createTree(4, 2);
-
-      // add tree to cytoscape object
-      cy.add(tree);
-
-      const root = cy.getElementById('node-0');
-      deleteNodes(root, ['node-9', 'node-21']);
-
-      console.log('getNodePositions(root)', getNodePositions(root));
-
-      // TODO code to select the tree nodes
-
-      treeLayout(root);
-
       // color nodes, make selection visible
       styleCytoElements(violationNodes, 'element', 'orange');
       styleCytoElements(otherNodes, 'element', 'lightgrey');
@@ -579,17 +552,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       // Add nodes to list of nodes that have been made visible
       listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes); // , connectedNodesOfInterest);
-
-      // at the moment this is a cheap solution to show exemplare nodes in the center column. next we want to show attribute nodes for each node, rather than a single connected attribute. then we can do this differently altogether
-      // applyLayout(violationNodes, otherNodes.union(exemplarNodes), typeNodes, cy);
-      // get bounding box of all nodes
-      // const boundingBox = cy.elements().boundingBox();
-      // recursiveLayout(boundingBox.w, boundingBox.h, typeNodes.union(exemplarNodes), cy);
-
-      // const connectedEdges = violationNodes.edges().union(otherNodes.edges());
-
-      // positionCollection(exemplarNodes, 0, 0);
-      // moveToPosition(exemplarNodes.union(exemplarNodes.outgoers().targets()), allElementsBoundingBox.x2 + 100, allElementsBoundingBox.y2);
 
       const collectionIntoColumn = (collection) => {
         for (let i = 0; i < collection.length; i += 1) {
@@ -613,29 +575,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       console.log('bounding box', boundingBox);
       treeLayout(violationNodes, { x: 50, y: 500 });
 
-      // moveToPosition(exemplarNodes.union(exemplarNodes.outgoers().targets()), boundingBox.x2, boundingBox.y2);
-
-      // // define offset between groups
-      // const offset = 100;
-      // // counter to keep track of how far we've moved all the already processed groups
-      // let totalH = 0;
-      // exemplarNodes.forEach((node) => {
-      //   // align exemplpar node and its children
-      //   const nodePos = node.position();
-      //   alignNodes2(node.outgoers().targets(), nodePos);
-      //   for (let i = 0; i < node.outgoers().targets().length; i += 1) {
-      //     // move children down by current totalH
-      //     const n = node.outgoers().targets()[i];
-      //     const nPos = n.position();
-      //     n.position({ x: nPos.x, y: nPos.y + totalH + offset });
-      //   }
-      //   // move exemplar node down by current totalH
-      //   node.position({ x: nodePos.x, y: nodePos.y + totalH + offset });
-      //   // compute bounding box of this group
-      //   const bb = node.union(node.outgoers().targets()).boundingBox();
-      //   // add it to the totalH
-      //   totalH += bb.h + offset;
-      // });
       cy.style().update();
     }
   }, [cy, selectedViolations, selectedTypes, violationsTypesMap, violations, selectedViolationExemplars]);
@@ -845,7 +784,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
           });
 
           newCy.on('cxttap', 'node', (event) => {
-            if (lassoSelectionInProgress) {
+            if (lassoSelectionInProgress) { 
               return;
             }
 
