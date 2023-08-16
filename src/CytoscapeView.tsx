@@ -564,12 +564,17 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
       const potentialRoots = typeNodes.union(otherNodes);
       const root = findRootNode(potentialRoots);
-      const everything = typeNodes.union(otherNodes).union(violationNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets());
-      // const everything = typeNodes.union(otherNodes).union(violationNodes);
+      console.log('violationNodes', violationNodes);
+      const everything = typeNodes
+        .union(otherNodes)
+        .union(violationNodes)
+        .union(exemplarNodes)
+        .union(exemplarNodes.outgoers().targets())
+        .union(exemplarNodes.incomers().sources());
       if (root) {
+        treeLayout(violationNodes, { x: 70, y: 500 }, everything);
         treeLayout(root, { x: 70, y: 500 }, everything);
-        // moveCollectionToBottomRight(cy, violationsAndSuccessors);
-        // rotateNodes(everything, -90);
+        rotateNodes(everything, -90);
         const bb = cy.nodes().difference(everything).boundingBox();
         moveCollectionToCoordinates(cy, everything, bb.x2);
       }
