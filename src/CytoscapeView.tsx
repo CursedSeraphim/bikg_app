@@ -565,12 +565,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       const potentialRoots = typeNodes.union(otherNodes);
       const root = findRootNode(potentialRoots);
       console.log('violationNodes', violationNodes);
-      const everything = typeNodes
-        .union(otherNodes)
-        .union(violationNodes)
-        .union(exemplarNodes)
-        .union(exemplarNodes.outgoers().targets())
-        .union(exemplarNodes.incomers().sources());
+      const everything = typeNodes.union(otherNodes).union(violationNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes));
       if (root) {
         treeLayout(violationNodes, { x: 70, y: 500 }, everything);
         treeLayout(root, { x: 70, y: 500 }, everything);
