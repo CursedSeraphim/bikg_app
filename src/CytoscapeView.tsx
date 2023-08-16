@@ -16,7 +16,18 @@ import {
   selectSelectedViolationExemplars,
   setSelectedViolationExemplars,
 } from './components/Store/CombinedSlice';
-import { treeLayout, getChildren, getParents, rotateNodes, translateNodesToPosition, moveCollectionToBottomRight, findRootNode } from './CytoscapeNodeFactory';
+import {
+  treeLayout,
+  getChildren,
+  getSuccessors,
+  rotateNodes,
+  translateNodesToPosition,
+  moveCollectionToBottomRight,
+  findRootNode,
+  CytoscapeNodeFactory,
+  deleteNodes,
+  moveCollectionToCoordinates,
+} from './CytoscapeNodeFactory';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(dagre);
@@ -389,8 +400,6 @@ function positionCollection(collection, x, y) {
     lastHeight = totalHeight;
     const boundingBox = positionCollection(getChildren(child), x + offsetX, y + offsetY + totalHeight);
     translateBoundingBoxBelowTheLastBoundingBox(child, boundingBox, x, y + totalHeight);
-    console.log('child position', child.position());
-    console.log('bouinding box', boundingBox);
     totalHeight += boundingBox.h;
     // const childPosition = child.position();
     // child.position({ x: childPosition.x, y: lastHeight });
@@ -553,33 +562,17 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       // Add nodes to list of nodes that have been made visible
       listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes); // , connectedNodesOfInterest);
 
-      const collectionIntoColumn = (collection) => {
-        for (let i = 0; i < collection.length; i += 1) {
-          // translate node down by 50px
-          const n = collection[i];
-          const nPos = n.position();
-          n.position({ x: nPos.x, y: nPos.y + i * 50 });
-        }
-      };
-
-      typeNodes.position({ x: allElementsBoundingBox.x2, y: allElementsBoundingBox.y2 });
-      otherNodes.position({ x: allElementsBoundingBox.x2 + 100, y: allElementsBoundingBox.y2 });
-      violationNodes.position({ x: allElementsBoundingBox.x2 + 200, y: allElementsBoundingBox.y2 });
-      // exemplarNodes.position({ x: allElementsBoundingBox.x2 + 300, y: allElementsBoundingBox.y2 });
-      collectionIntoColumn(typeNodes);
-      collectionIntoColumn(violationNodes);
-      collectionIntoColumn(otherNodes);
-      // collectionIntoColumn(exemplarNodes);
-
       const potentialRoots = typeNodes.union(otherNodes);
-      console.log('potentialRoots', potentialRoots);
       const root = findRootNode(potentialRoots);
-      console.log('root', root);
-
-      const violationsAndSuccessors = violationNodes.union(violationNodes.successors());
-      treeLayout(violationNodes, { x: 50, y: 500 });
-      moveCollectionToBottomRight(cy, violationsAndSuccessors);
-      rotateNodes(violationsAndSuccessors, -45);
+      const everything = typeNodes.union(otherNodes).union(violationNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets());
+      // const everything = typeNodes.union(otherNodes).union(violationNodes);
+      if (root) {
+        treeLayout(root, { x: 70, y: 500 }, everything);
+        // moveCollectionToBottomRight(cy, violationsAndSuccessors);
+        // rotateNodes(everything, -90);
+        const bb = cy.nodes().difference(everything).boundingBox();
+        moveCollectionToCoordinates(cy, everything, bb.x2);
+      }
 
       cy.style().update();
     }

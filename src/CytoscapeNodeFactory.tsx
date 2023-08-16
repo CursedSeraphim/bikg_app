@@ -48,7 +48,6 @@ export class CytoscapeNodeFactory {
   createTree(depth: number, childrenPerNode: number, labelProvider: (index: number) => string = (index) => `Node ${index}`): ICytoNode[] {
     const elements: ICytoNode[] = [];
     const buildTree = (parent: ICytoNode, currentDepth: number): void => {
-      console.log('called with depth', currentDepth, 'and parent', parent.data.id);
       if (currentDepth === depth) return;
 
       for (let i = 0; i < childrenPerNode; i++) {
@@ -70,60 +69,72 @@ export class CytoscapeNodeFactory {
 
 /**
  * Gets the children of a given node based on specific criteria.
- * If incoming edges include an edge with id 'sh:targetClass'  or 'rdfs:subClassOf',
+ * If incoming edges include an edge with label 'sh:targetClass' or 'rdfs:subClassOf',
  * then return all source nodes of that edge. Otherwise,
- * return all outgoing target nodes.
+ * return all outgoing target nodes but exclude targets of outgoing edges with label 'sh:targetClass' or 'rdfs:subClassOf'.
  *
  * @param {Object} node - The node for which to find the children.
- * @return {Array} The children nodes based on the criteria.
+ * @return {Collection} The children nodes based on the criteria.
  */
 export const getChildren = (node) => {
-  // for the sake of more sensible layout, if the parent is a targetClass or subClassOf, treat it as a child
-  // this is because it is clearer if nodeshapes are below types in the hierarchy
-  let parentShouldBeTreatedAsChild = false;
+  const childrenCollection = [];
+
+  // Process incoming edges with specific labels
   node
     .incomers()
     .edges()
     .forEach((edge) => {
       if (edge.data('label') === 'sh:targetClass' || edge.data('label') === 'rdfs:subClassOf') {
-        parentShouldBeTreatedAsChild = true;
+        childrenCollection.push(edge.source());
       }
     });
-  if (parentShouldBeTreatedAsChild) {
-    return node.outgoers().sources();
-  }
-  return node.outgoers().targets();
+
+  // Process outgoing edges but exclude targets of edges with specific labels
+  node
+    .outgoers()
+    .edges()
+    .forEach((edge) => {
+      if (!(edge.data('label') === 'sh:targetClass' || edge.data('label') === 'rdfs:subClassOf')) {
+        childrenCollection.push(edge.target());
+      }
+    });
+
+  return childrenCollection;
 };
 
 /**
  * Gets the parents of a given node based on specific criteria.
- * If outgoing edges include an edge with id 'sh:targetClass' or 'rdfs:subClassOf',
+ * If outgoing edges include an edge with label 'sh:targetClass' or 'rdfs:subClassOf',
  * then return all target nodes of that edge. Otherwise,
- * return all source nodes of the incoming edges.
+ * return all incoming source nodes but exclude sources of incoming edges with label 'sh:targetClass' or 'rdfs:subClassOf'.
  *
  * @param {Object} node - The node for which to find the parents.
- * @return {Array} The parent nodes based on the criteria.
+ * @return {Collection} The parent nodes based on the criteria.
  */
 export const getParents = (node) => {
-  // Check if this node has outgoing edges with id 'sh:targetClass' or 'rdfs:subClassOf'
-  // which indicates that the target of these edges is a parent.
-  const parentsViaOutgoingEdges = [];
+  const parentsCollection = [];
+
+  // Process outgoing edges with specific labels
   node
     .outgoers()
     .edges()
     .forEach((edge) => {
       if (edge.data('label') === 'sh:targetClass' || edge.data('label') === 'rdfs:subClassOf') {
-        parentsViaOutgoingEdges.push(edge.target());
+        parentsCollection.push(edge.target());
       }
     });
 
-  // If there are any parents found via outgoing edges, return them
-  if (parentsViaOutgoingEdges.length) {
-    return parentsViaOutgoingEdges;
-  }
+  // Process incoming edges but exclude sources of edges with specific labels
+  node
+    .incomers()
+    .edges()
+    .forEach((edge) => {
+      if (!(edge.data('label') === 'sh:targetClass' || edge.data('label') === 'rdfs:subClassOf')) {
+        parentsCollection.push(edge.source());
+      }
+    });
 
-  // Otherwise, return the source nodes of all incoming edges as the parents.
-  return node.incomers().sources();
+  return parentsCollection;
 };
 
 /**
@@ -147,27 +158,63 @@ export function getNodePositions(root: cytoscape.NodeSingular): Map<string, cyto
   return positions;
 }
 
+export function collectionIntoColumn(collection, yDistance) {
+  for (let i = 0; i < collection.length; i += 1) {
+    const n = collection[i];
+    const nPos = n.position();
+    n.position({ x: nPos.x, y: nPos.y + i * yDistance });
+  }
+}
+
+/**
+ * Arranges nodes in a tree layout. If a collection of nodes is provided, only nodes
+ * within this collection will be positioned; others will be ignored.
+ *
+ * The layout algorithm places the root node at the origin (0, 0) and arranges its
+ * children based on the specified horizontal (x) and vertical (y) spacing. If a node
+ * is not in the provided node collection (if specified), it will not be positioned.
+ * The positioning is carried out recursively for each child node and its subsequent
+ * descendants. Each node's x-position is determined by the average x-position of its
+ * children.
+ *
+ * @param {Object} root - The root node from where the layout begins.
+ * @param {Object} spacing - An object with x and y properties determining the spacing between nodes.
+ *                           Default is { x: 100, y: 50 }.
+ * @param {Set} nodeCollection - (Optional) A set of nodes that should be positioned. If not provided,
+ *                               all nodes will be considered.
+ *
+ * @return {Object} The root node after positioning.
+ *
+ * @example
+ *
+ * treeLayout(rootNode, { x: 150, y: 70 }, new Set([node1, node2, node3]));
+ */
 export function treeLayout(
   root,
   spacing = {
     x: 100,
     y: 50,
   },
+  nodeCollection = null, // default is null which means all nodes are considered
 ) {
   // Create a set to keep track of nodes that have been processed
   const processedNodes = new Set();
 
-  function hasChildren(node) {
-    return getChildren(node).length > 0;
+  function isInCollection(node) {
+    return !nodeCollection || nodeCollection.has(node);
   }
 
-  if (!hasChildren(root)) {
+  function hasChildren(node) {
+    return getChildren(node).filter(isInCollection).length > 0;
+  }
+
+  if (!isInCollection(root) || !hasChildren(root)) {
     root.position({ x: 0, y: 0 });
     return root;
   }
 
   function averageChildXPosition(node) {
-    const children = getChildren(node);
+    const children = getChildren(node).filter(isInCollection);
     if (!children.length) return node.position().x;
 
     const totalX = children.reduce((acc, child) => acc + child.position().x, 0);
@@ -175,6 +222,10 @@ export function treeLayout(
   }
 
   function layoutNodeAndChildren(node, level = 0, offsetX = 0) {
+    if (!isInCollection(node)) {
+      return offsetX;
+    }
+
     // If the node has been processed, return to prevent infinite recursion
     if (processedNodes.has(node)) {
       return offsetX;
@@ -183,7 +234,7 @@ export function treeLayout(
     // Mark the node as processed
     processedNodes.add(node);
 
-    const children = getChildren(node);
+    const children = getChildren(node).filter(isInCollection);
     let lastChildX = offsetX;
 
     children.forEach((child, index) => {
@@ -195,7 +246,7 @@ export function treeLayout(
 
     const nodeXPosition = averageChildXPosition(node);
     node.position({ x: nodeXPosition, y: node.position().y });
-    return lastChildX + (hasChildren(node) ? spacing.x : 0);
+    return lastChildX; // + (hasChildren(node) ? spacing.x : 0);
   }
 
   root.position({ x: 0, y: 0 });
@@ -368,6 +419,39 @@ export function moveCollectionToBottomRight(cy, targetCollection) {
 }
 
 /**
+ * Moves a collection of nodes in cytoscape to the specified x/y coordinates
+ * while maintaining their relative distances to each other.
+ * If no x or y coordinate is provided, the current x or y coordinate of the
+ * targetCollection is retained.
+ *
+ * @param {Object} cy - The cytoscape instance.
+ * @param {Object} targetCollection - The collection of nodes to be moved.
+ * @param {number|null} x - The desired x-coordinate for the top-left corner
+ *                          of the target collection's bounding box, or null
+ *                          to retain the current x-coordinate.
+ * @param {number|null} y - The desired y-coordinate for the top-left corner
+ *                          of the target collection's bounding box, or null
+ *                          to retain the current y-coordinate.
+ */
+export function moveCollectionToCoordinates(cy, targetCollection, x = null, y = null) {
+  // 1. Calculate the bounding box for the target collection.
+  const targetCollectionBB = targetCollection.boundingBox();
+
+  // 2. Calculate the translation values. If x or y is null, use the current bounding box value.
+  const translationX = x !== null ? x - targetCollectionBB.x1 : 0;
+  const translationY = y !== null ? y - targetCollectionBB.y1 : 0;
+
+  // 3. Move all nodes in the target collection by applying the translation values.
+  targetCollection.positions((node) => {
+    const currentPosition = node.position();
+    return {
+      x: currentPosition.x + translationX,
+      y: currentPosition.y + translationY,
+    };
+  });
+}
+
+/**
  * Finds the root node in a collection where all other nodes are below it in the hierarchy.
  *
  * @param {Object} nodeCollection - A collection of nodes.
@@ -375,22 +459,14 @@ export function moveCollectionToBottomRight(cy, targetCollection) {
  */
 export function findRootNode(nodeCollection) {
   for (let i = 0; i < nodeCollection.length; i++) {
-    console.log('-------------------');
     const node = nodeCollection[i];
     const parents = getParents(node);
-    console.log(
-      'node',
-      node.id(),
-      'has parents',
-      parents.map((parent) => parent.id()),
-    );
 
     let hasParentInCollection = false;
 
     for (const parent of parents) {
       if (nodeCollection.includes(parent)) {
         hasParentInCollection = true;
-        console.log('node', node.id(), 'has parent', parent.id(), 'in collection, therefore it is not the root node');
         break;
       }
     }
@@ -402,4 +478,42 @@ export function findRootNode(nodeCollection) {
   }
 
   return null; // In case no root is found, though given the problem's constraints, this should not happen.
+}
+
+/**
+ * Retrieves all successors (children, grandchildren, etc.) for a collection of nodes.
+ *
+ * @param {Array} collection - The collection of nodes.
+ * @returns {Array} - The combined collection of all successors.
+ */
+export function getSuccessors(collection) {
+  const successors = [];
+  const visited = new Set();
+
+  // Helper function to recursively get successors for a node
+  function getSuccessorsForNode(node) {
+    if (visited.has(node)) {
+      // Skip this node since it has been visited before
+      return;
+    }
+
+    visited.add(node);
+
+    const children = getChildren(node);
+
+    // Add children directly into the successors collection
+    successors.push(...children);
+
+    // Recursively get successors for each child
+    children.forEach((child) => {
+      getSuccessorsForNode(child);
+    });
+  }
+
+  // Start the recursive retrieval of successors for each node in the initial collection
+  collection.forEach((node) => {
+    getSuccessorsForNode(node);
+  });
+
+  return successors;
 }
