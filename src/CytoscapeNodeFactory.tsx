@@ -295,53 +295,6 @@ export function deleteNodes(root: cytoscape.NodeSingular, idsToDelete: string[])
   checkAndDelete(root);
 }
 
-const deg2rad = function (degrees) {
-  return (degrees * Math.PI) / 180;
-};
-
-function rotateNodesWithD3(nodes, angle, origin) {
-  const radians = deg2rad(angle); // Convert angle to radians
-
-  return nodes.map((node) => {
-    // Translate to origin
-    const x = node.x - origin.x;
-    const y = node.y - origin.y;
-
-    // Rotate using D3's rotation formula
-    const newX = x * Math.cos(radians) - y * Math.sin(radians);
-    const newY = x * Math.sin(radians) + y * Math.cos(radians);
-
-    // Translate back from origin
-    return {
-      x: newX + origin.x,
-      y: newY + origin.y,
-    };
-  });
-}
-
-// export function rotateNodes(nodes, angle) {
-//   const bb = nodes.boundingBox(); // the bounding box of the collection
-//   const cx = (bb.x1 + bb.x2) / 2; // the x-coordinate of the center of the collection
-//   const cy = (bb.y1 + bb.y2) / 2; // the y-coordinate of the center of the collection
-//   angle = (angle * Math.PI) / 180; // convert angle from degrees to radians
-
-//   nodes
-//     .layout({
-//       name: 'preset',
-//       animate: true,
-//       fit: false,
-//       transform: (node) => {
-//         const position = node.position();
-//         const x = position.x - cx;
-//         const y = position.y - cy;
-//         position.x = x * Math.cos(angle) - y * Math.sin(angle) + cx;
-//         position.y = x * Math.sin(angle) + y * Math.cos(angle) + cy;
-//         return position;
-//       },
-//     })
-//     .run();
-// }
-
 /**
  * Rotates a collection of nodes in cytoscape about their collective center.
  *
@@ -357,14 +310,14 @@ export function rotateNodes(nodes, angle) {
   const bb = nodes.boundingBox(); // the bounding box of the collection
   const cx = (bb.x1 + bb.x2) / 2; // the x-coordinate of the center of the collection
   const cy = (bb.y1 + bb.y2) / 2; // the y-coordinate of the center of the collection
-  angle = (angle * Math.PI) / 180; // convert angle from degrees to radians
+  const radians = (angle * Math.PI) / 180; // convert angle from degrees to radians
 
   nodes.forEach((node) => {
     const position = node.position();
     const x = position.x - cx;
     const y = position.y - cy;
-    position.x = x * Math.cos(angle) - y * Math.sin(angle) + cx;
-    position.y = x * Math.sin(angle) + y * Math.cos(angle) + cy;
+    position.x = x * Math.cos(radians) - y * Math.sin(radians) + cx;
+    position.y = x * Math.sin(radians) + y * Math.cos(radians) + cy;
     node.position(position); // setting the new position for each node
   });
 }
@@ -376,7 +329,7 @@ export function translateNodesToPosition(nodes, x, y) {
   const dx = x - cx; // the amount by which to translate the nodes along the x axis
   const dy = y - cy; // the amount by which to translate the nodes along the y axis
 
-  nodes.positions((node, i) => {
+  nodes.positions((node) => {
     const position = node.position();
     position.x += dx;
     position.y += dy;
