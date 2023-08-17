@@ -207,7 +207,25 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     exemplarNodes.outgoers().targets().data('visible', true);
     exemplarNodes.outgoers().targets().style('display', 'element');
 
-    listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes);
+    // // get outgoers targets, filter them down to those that have children where the edge is called 'skos:prefLabel'
+    // const outgoersWithPrefLabel = exemplarNodes
+    //   .outgoers()
+    //   .targets()
+    //   .filter((node) => {
+    //     return node
+    //       .outgoers()
+    //       .edges()
+    //       .some((edge) => edge.data('label') === 'skos:prefLabel');
+    //   });
+
+    // // get those children
+    // const outgoersWithPrefLabelChildren = outgoersWithPrefLabel.outgoers().targets();
+
+    // // make them visible true and display element
+    // outgoersWithPrefLabelChildren.data('visible', true);
+    // outgoersWithPrefLabelChildren.style('display', 'element');
+
+    listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes); //, outgoersWithPrefLabelChildren);
   }
 
   /**
@@ -219,7 +237,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
    */
   function adjustLayout(violationNodes, typeNodes, otherNodes, exemplarNodes) {
     const potentialRoots = typeNodes.union(otherNodes);
-    const everything = typeNodes.union(otherNodes).union(violationNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes));
+    const everything = typeNodes.union(otherNodes).union(violationNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets());
     const roots = findRootNodes(potentialRoots);
     const layoutSpacing = { x: 70, y: 500 };
 
