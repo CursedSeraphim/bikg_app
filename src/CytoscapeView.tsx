@@ -202,7 +202,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       cy.remove(virtualRoot);
     } else if (roots?.length === 1) {
       const root = roots[0];
-      treeLayout(violationNodes, layoutCoordinates, everything);
       treeLayout(root, layoutCoordinates, everything);
     }
 
