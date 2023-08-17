@@ -246,7 +246,7 @@ export function treeLayout(
 
     const nodeXPosition = averageChildXPosition(node);
     node.position({ x: nodeXPosition, y: node.position().y });
-    return lastChildX; // + (hasChildren(node) ? spacing.x : 0);
+    return lastChildX;
   }
 
   root.position({ x: 0, y: 0 });
@@ -372,13 +372,14 @@ export function moveCollectionToBottomRight(cy, targetCollection) {
 }
 
 /**
- * Moves a collection of nodes in cytoscape to the specified x/y coordinates
- * while maintaining their relative distances to each other.
+ * Moves a collection of nodes in Cytoscape to the specified x/y coordinates
+ * while maintaining their relative distances to each other. If the collection contains
+ * duplicate nodes, each node is only moved once to ensure consistent positioning.
  * If no x or y coordinate is provided, the current x or y coordinate of the
  * targetCollection is retained.
  *
- * @param {Object} cy - The cytoscape instance.
  * @param {Object} targetCollection - The collection of nodes to be moved.
+ *                                    Can contain duplicate nodes.
  * @param {number|null} x - The desired x-coordinate for the top-left corner
  *                          of the target collection's bounding box, or null
  *                          to retain the current x-coordinate.
@@ -386,7 +387,7 @@ export function moveCollectionToBottomRight(cy, targetCollection) {
  *                          of the target collection's bounding box, or null
  *                          to retain the current y-coordinate.
  */
-export function moveCollectionToCoordinates(cy, targetCollection, x = null, y = null) {
+export function moveCollectionToCoordinates(targetCollection, x = null, y = null) {
   // 1. Calculate the bounding box for the target collection.
   const targetCollectionBB = targetCollection.boundingBox();
 
@@ -394,13 +395,19 @@ export function moveCollectionToCoordinates(cy, targetCollection, x = null, y = 
   const translationX = x !== null ? x - targetCollectionBB.x1 : 0;
   const translationY = y !== null ? y - targetCollectionBB.y1 : 0;
 
-  // 3. Move all nodes in the target collection by applying the translation values.
-  targetCollection.positions((node) => {
-    const currentPosition = node.position();
-    return {
-      x: currentPosition.x + translationX,
-      y: currentPosition.y + translationY,
-    };
+  // Set to keep track of already processed nodes
+  const processedNodes = new Set();
+
+  targetCollection.forEach((node) => {
+    if (!processedNodes.has(node.id())) {
+      // Only process nodes that haven't been processed
+      const currentPosition = node.position();
+      node.position({
+        x: currentPosition.x + translationX,
+        y: currentPosition.y + translationY,
+      });
+      processedNodes.add(node.id()); // Mark the node as processed
+    }
   });
 }
 
