@@ -405,12 +405,14 @@ export function moveCollectionToCoordinates(cy, targetCollection, x = null, y = 
 }
 
 /**
- * Finds the root node in a collection where all other nodes are below it in the hierarchy.
+ * Finds all potential root nodes in a collection where all other nodes are below them in the hierarchy.
  *
  * @param {Object} nodeCollection - A collection of nodes.
- * @returns {Object} The root node.
+ * @returns {Array} The array of root nodes.
  */
-export function findRootNode(nodeCollection) {
+export function findRootNodes(nodeCollection) {
+  const potentialRoots = [];
+
   for (let i = 0; i < nodeCollection.length; i++) {
     const node = nodeCollection[i];
     const parents = getParents(node);
@@ -424,13 +426,13 @@ export function findRootNode(nodeCollection) {
       }
     }
 
-    // If the current node doesn't have any parent in the collection, it's the root node.
+    // If the current node doesn't have any parent in the collection, it's a potential root node.
     if (!hasParentInCollection) {
-      return node;
+      potentialRoots.push(node);
     }
   }
 
-  return null; // In case no root is found, though given the problem's constraints, this should not happen.
+  return potentialRoots;
 }
 
 /**

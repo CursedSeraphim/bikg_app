@@ -16,7 +16,7 @@ import {
   selectSelectedViolationExemplars,
   setSelectedViolationExemplars,
 } from './components/Store/CombinedSlice';
-import { treeLayout, getSuccessors, rotateNodes, findRootNode, moveCollectionToCoordinates } from './CytoscapeNodeFactory';
+import { treeLayout, getSuccessors, rotateNodes, findRootNodes, moveCollectionToCoordinates } from './CytoscapeNodeFactory';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(dagre);
@@ -173,16 +173,40 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes); // , connectedNodesOfInterest);
 
       const potentialRoots = typeNodes.union(otherNodes);
-      const root = findRootNode(potentialRoots);
-      console.log('violationNodes', violationNodes);
+      const roots = findRootNodes(potentialRoots);
       const everything = typeNodes.union(otherNodes).union(violationNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes));
-      if (root) {
+      let root;
+
+      let virtualRoot;
+      if (roots && roots.length > 1) {
+        virtualRoot = cy.add({
+          group: 'nodes',
+          data: { id: 'virtualRoot' },
+        });
+        roots.forEach((node) => {
+          cy.add({
+            group: 'edges',
+            data: {
+              source: virtualRoot.id(),
+              target: node.id(),
+              label: 'virtualParent',
+            },
+          });
+        });
+      }
+
+      if (virtualRoot) {
+        treeLayout(virtualRoot, { x: 70, y: 500 }, virtualRoot.union(everything));
+        cy.remove(virtualRoot); // remove the virtual root after layout
+      } else if (roots && roots.length === 1) {
+        root = roots[0];
         treeLayout(violationNodes, { x: 70, y: 500 }, everything);
         treeLayout(root, { x: 70, y: 500 }, everything);
-        rotateNodes(everything, -90);
-        const bb = cy.nodes().difference(everything).boundingBox();
-        moveCollectionToCoordinates(cy, everything, bb.x2);
       }
+
+      rotateNodes(everything, -90);
+      const bb = cy.nodes().difference(everything).boundingBox();
+      moveCollectionToCoordinates(cy, everything, bb.x2);
 
       cy.style().update();
     }
