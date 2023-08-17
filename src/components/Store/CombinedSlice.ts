@@ -182,7 +182,7 @@ const combinedSlice = createSlice({
       updateSelectedViolationExemplars(state);
     },
     setSelectedFocusNodes: (state, action) => {
-      console.log('setSelectedFocusNodes',);
+      console.log('setSelectedFocusNodes');
       state.selectedNodes = action.payload;
 
       // Convert state.samples into an object for O(1) lookup
@@ -549,10 +549,16 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: IRdfSta
 const calculateObjectProperties = (visibleTriples, hiddenTriples) => {
   const objectProperties = new Map();
   const typesToInclude = new Set(['owl:ObjectProperty', 'owl:Class', 'sh:PropertyShape']);
+  const predicatesToInclude = new Set(['sh:value']);
 
   [...visibleTriples, ...hiddenTriples].forEach((t) => {
+    // If the object type is in typesToInclude, or if the predicate is in predicatesToInclude
+    // then consider the object as an object property.
     if (typesToInclude.has(t.o)) {
       objectProperties.set(t.s, t.o);
+    }
+    if (predicatesToInclude.has(t.p)) {
+      objectProperties.set(t.o, true); // Just indicate that this URI should be treated as an object property.
     }
   });
 
@@ -600,6 +606,7 @@ const processTriples = (triples, visible, nodes, edges, objectProperties) => {
       },
     });
   });
+  console.log('edges', edges);
 };
 
 /**
