@@ -127,6 +127,11 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
   const listOfNodesThatHaveBeenMadeVisible = React.useRef([]);
 
+  /**
+   * Add a virtual root to the collection and connect it to the provided roots.
+   * @param {Collection} roots - The roots to which the virtual root should be connected.
+   * @returns {Node} The added virtual root node.
+   */
   function addVirtualRoot(roots) {
     const virtualRoot = cy.add({
       group: 'nodes',
@@ -145,6 +150,10 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     return virtualRoot;
   }
 
+  /**
+   * Resets the positions of nodes to their initial state and hides nodes with (0,0) positions.
+   * @param {Collection} nodes - The collection of nodes to reset.
+   */
   function resetNodePositions(nodes) {
     let nodesToHide = cy.collection();
 
@@ -163,6 +172,10 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     nodesToHide.data('visible', false);
   }
 
+  /**
+   * Fetch and categorize nodes based on violations, types, and exemplars.
+   * @returns {Object} An object containing categorized nodes: violationNodes, typeNodes, otherNodes, and exemplarNodes.
+   */
   function getFilteredNodes() {
     const violationNodes = getNodesFromIds(selectedViolations, cy);
     const connectedNodesIds = selectedViolations.flatMap((violation) => violationsTypesMap[violation]);
@@ -178,6 +191,13 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     };
   }
 
+  /**
+   * Apply styles and display settings to nodes based on their categorization.
+   * @param {Collection} violationNodes - Nodes representing violations.
+   * @param {Collection} typeNodes - Nodes representing types.
+   * @param {Collection} otherNodes - Other nodes.
+   * @param {Collection} exemplarNodes - Nodes representing exemplars.
+   */
   function styleAndDisplayNodes(violationNodes, typeNodes, otherNodes, exemplarNodes) {
     styleCytoElements(violationNodes, 'element', 'orange');
     styleCytoElements(otherNodes, 'element', 'lightgrey');
@@ -190,26 +210,36 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes);
   }
 
+  /**
+   * Adjust the layout of nodes for better visibility and organization.
+   * @param {Collection} violationNodes - Nodes representing violations.
+   * @param {Collection} typeNodes - Nodes representing types.
+   * @param {Collection} otherNodes - Other nodes.
+   * @param {Collection} exemplarNodes - Nodes representing exemplars.
+   */
   function adjustLayout(violationNodes, typeNodes, otherNodes, exemplarNodes) {
     const potentialRoots = typeNodes.union(otherNodes);
     const everything = typeNodes.union(otherNodes).union(violationNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes));
     const roots = findRootNodes(potentialRoots);
-    const layoutCoordinates = { x: 70, y: 500 };
+    const layoutSpacing = { x: 70, y: 500 };
 
     if (roots?.length > 1) {
       const virtualRoot = addVirtualRoot(roots);
-      treeLayout(virtualRoot, layoutCoordinates, virtualRoot.union(everything));
+      treeLayout(virtualRoot, layoutSpacing, virtualRoot.union(everything));
       cy.remove(virtualRoot);
     } else if (roots?.length === 1) {
       const root = roots[0];
-      treeLayout(root, layoutCoordinates, everything);
+      treeLayout(root, layoutSpacing, everything);
     }
 
     rotateNodes(everything, -90);
     const bb = cy.nodes().difference(everything).boundingBox();
-    moveCollectionToCoordinates(cy, everything, bb.x2);
+    moveCollectionToCoordinates(everything, bb.x2);
   }
 
+  /**
+   * Hide all nodes that have previously been made visible. Convenience function using the listOfNodesThatHaveBeenMadeVisible ref.
+   */
   function hideAllVisibleNodes() {
     listOfNodesThatHaveBeenMadeVisible.current = hideVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
   }
