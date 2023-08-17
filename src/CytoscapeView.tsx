@@ -127,90 +127,108 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
   const listOfNodesThatHaveBeenMadeVisible = React.useRef([]);
 
-  React.useEffect(() => {
-    if (cy && selectedViolations) {
-      // hide everything again
-      listOfNodesThatHaveBeenMadeVisible.current = hideVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
+  function addVirtualRoot(roots) {
+    const virtualRoot = cy.add({
+      group: 'nodes',
+      data: { id: 'virtualRoot' },
+    });
+    roots.forEach((node) => {
+      cy.add({
+        group: 'edges',
+        data: {
+          source: virtualRoot.id(),
+          target: node.id(),
+          label: 'virtualParent',
+        },
+      });
+    });
+    return virtualRoot;
+  }
 
-      // reset positions
-      const applyInitialPositions = (nodes) => {
-        let nodesToHide = cy.collection();
-        nodes.forEach((node) => {
-          const pos = initialNodePositions.current.get(node.id());
-          if (pos) {
-            if (pos.x === 0 && pos.y === 0) {
-              nodesToHide = nodesToHide.union(node);
-            }
-            node.position(pos);
-          }
-        });
-        nodesToHide.style('display', 'none');
-        nodesToHide.data('visible', false);
-      };
-      applyInitialPositions(cy.nodes());
+  function resetNodePositions(nodes) {
+    let nodesToHide = cy.collection();
 
-      // select violationNodes, typeNodes, exemplarNodes, and otherNodes
-      const violationNodes = getNodesFromIds(selectedViolations, cy);
-      const connectedNodesIds = selectedViolations.flatMap((violation) => violationsTypesMap[violation]);
+    nodes.forEach((node) => {
+      const pos = initialNodePositions.current.get(node.id());
+      if (pos) {
+        node.position(pos);
 
-      const typeNodeIds = connectedNodesIds.filter((node) => selectedTypes.includes(node));
-      const otherNodeIds = connectedNodesIds.filter((node) => !selectedTypes.includes(node));
-
-      const typeNodes = getNodesFromIds(typeNodeIds, cy);
-      const otherNodes = getNodesFromIds(otherNodeIds, cy);
-
-      const exemplarNodes = getNodesFromIds(selectedViolationExemplars, cy);
-
-      // color nodes, make selection visible
-      styleCytoElements(violationNodes, 'element', 'orange');
-      styleCytoElements(otherNodes, 'element', 'lightgrey');
-      styleCytoElements(typeNodes, 'element', 'steelblue');
-      styleCytoElements(exemplarNodes, 'element', 'purple');
-      exemplarNodes.outgoers().targets().data('visible', true);
-      exemplarNodes.outgoers().targets().style('display', 'element');
-
-      // Add nodes to list of nodes that have been made visible
-      listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes); // , connectedNodesOfInterest);
-
-      const potentialRoots = typeNodes.union(otherNodes);
-      const roots = findRootNodes(potentialRoots);
-      const everything = typeNodes.union(otherNodes).union(violationNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes));
-      let root;
-
-      let virtualRoot;
-      if (roots && roots.length > 1) {
-        virtualRoot = cy.add({
-          group: 'nodes',
-          data: { id: 'virtualRoot' },
-        });
-        roots.forEach((node) => {
-          cy.add({
-            group: 'edges',
-            data: {
-              source: virtualRoot.id(),
-              target: node.id(),
-              label: 'virtualParent',
-            },
-          });
-        });
+        if (pos.x === 0 && pos.y === 0) {
+          nodesToHide = nodesToHide.union(node);
+        }
       }
+    });
 
-      if (virtualRoot) {
-        treeLayout(virtualRoot, { x: 70, y: 500 }, virtualRoot.union(everything));
-        cy.remove(virtualRoot); // remove the virtual root after layout
-      } else if (roots && roots.length === 1) {
-        root = roots[0];
-        treeLayout(violationNodes, { x: 70, y: 500 }, everything);
-        treeLayout(root, { x: 70, y: 500 }, everything);
-      }
+    nodesToHide.style('display', 'none');
+    nodesToHide.data('visible', false);
+  }
 
-      rotateNodes(everything, -90);
-      const bb = cy.nodes().difference(everything).boundingBox();
-      moveCollectionToCoordinates(cy, everything, bb.x2);
+  function getFilteredNodes() {
+    const violationNodes = getNodesFromIds(selectedViolations, cy);
+    const connectedNodesIds = selectedViolations.flatMap((violation) => violationsTypesMap[violation]);
 
-      cy.style().update();
+    const typeNodeIds = connectedNodesIds.filter((node) => selectedTypes.includes(node));
+    const otherNodeIds = connectedNodesIds.filter((node) => !selectedTypes.includes(node));
+
+    return {
+      violationNodes,
+      typeNodes: getNodesFromIds(typeNodeIds, cy),
+      otherNodes: getNodesFromIds(otherNodeIds, cy),
+      exemplarNodes: getNodesFromIds(selectedViolationExemplars, cy),
+    };
+  }
+
+  function styleAndDisplayNodes(violationNodes, typeNodes, otherNodes, exemplarNodes) {
+    styleCytoElements(violationNodes, 'element', 'orange');
+    styleCytoElements(otherNodes, 'element', 'lightgrey');
+    styleCytoElements(typeNodes, 'element', 'steelblue');
+    styleCytoElements(exemplarNodes, 'element', 'purple');
+
+    exemplarNodes.outgoers().targets().data('visible', true);
+    exemplarNodes.outgoers().targets().style('display', 'element');
+
+    listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes);
+  }
+
+  function adjustLayout(violationNodes, typeNodes, otherNodes, exemplarNodes) {
+    const potentialRoots = typeNodes.union(otherNodes);
+    const everything = typeNodes.union(otherNodes).union(violationNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes));
+    const roots = findRootNodes(potentialRoots);
+    const layoutCoordinates = { x: 70, y: 500 };
+
+    if (roots?.length > 1) {
+      const virtualRoot = addVirtualRoot(roots);
+      treeLayout(virtualRoot, layoutCoordinates, virtualRoot.union(everything));
+      cy.remove(virtualRoot);
+    } else if (roots?.length === 1) {
+      const root = roots[0];
+      treeLayout(violationNodes, layoutCoordinates, everything);
+      treeLayout(root, layoutCoordinates, everything);
     }
-  }, [cy, selectedViolations, selectedTypes, violationsTypesMap, violations, selectedViolationExemplars]);
+
+    rotateNodes(everything, -90);
+    const bb = cy.nodes().difference(everything).boundingBox();
+    moveCollectionToCoordinates(cy, everything, bb.x2);
+  }
+
+  function hideAllVisibleNodes() {
+    listOfNodesThatHaveBeenMadeVisible.current = hideVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
+  }
+
+  React.useEffect(() => {
+    if (!cy || !selectedViolations) return;
+
+    hideAllVisibleNodes();
+    resetNodePositions(cy.nodes());
+
+    const { violationNodes, typeNodes, otherNodes, exemplarNodes } = getFilteredNodes();
+
+    styleAndDisplayNodes(violationNodes, typeNodes, otherNodes, exemplarNodes);
+    adjustLayout(violationNodes, typeNodes, otherNodes, exemplarNodes);
+
+    cy.style().update();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cy, selectedViolations, selectedTypes, violationsTypesMap, selectedViolationExemplars]);
 
   React.useEffect(() => {
     selectCytoData(rdfOntology)
