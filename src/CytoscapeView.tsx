@@ -30,8 +30,8 @@ const CY_LAYOUT = {
 
 // Function to align nodes
 function alignNodes(nodes, parentNodePosition, isChild) {
-  const nodeLayoutOffsetX = 250;
-  const distanceBetweenNodesY = 50;
+  const nodeLayoutOffsetX = 500;
+  const distanceBetweenNodesY = 70;
   const totalHeight = distanceBetweenNodesY * (nodes.length - 1);
   const positionX = isChild ? parentNodePosition.x + nodeLayoutOffsetX : parentNodePosition.x - nodeLayoutOffsetX;
 
