@@ -16,7 +16,7 @@ import {
   selectSelectedViolationExemplars,
   setSelectedViolationExemplars,
 } from './components/Store/CombinedSlice';
-import { treeLayout, getSuccessors, rotateNodes, findRootNodes, moveCollectionToCoordinates } from './CytoscapeNodeFactory';
+import { treeLayout, rotateNodes, findRootNodes, moveCollectionToCoordinates } from './CytoscapeNodeFactory';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(dagre);
@@ -207,25 +207,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     exemplarNodes.outgoers().targets().data('visible', true);
     exemplarNodes.outgoers().targets().style('display', 'element');
 
-    // // get outgoers targets, filter them down to those that have children where the edge is called 'skos:prefLabel'
-    // const outgoersWithPrefLabel = exemplarNodes
-    //   .outgoers()
-    //   .targets()
-    //   .filter((node) => {
-    //     return node
-    //       .outgoers()
-    //       .edges()
-    //       .some((edge) => edge.data('label') === 'skos:prefLabel');
-    //   });
-
-    // // get those children
-    // const outgoersWithPrefLabelChildren = outgoersWithPrefLabel.outgoers().targets();
-
-    // // make them visible true and display element
-    // outgoersWithPrefLabelChildren.data('visible', true);
-    // outgoersWithPrefLabelChildren.style('display', 'element');
-
-    listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes); //, outgoersWithPrefLabelChildren);
+    listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes);
   }
 
   /**
