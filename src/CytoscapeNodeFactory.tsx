@@ -446,10 +446,10 @@ export function findRootNodes(nodeCollection) {
  * Retrieves all successors (children, grandchildren, etc.) for a collection of nodes.
  *
  * @param {Array} collection - The collection of nodes.
- * @returns {Array} - The combined collection of all successors.
+ * @return {Collection} The combined collection of successors.
  */
 export function getSuccessors(collection) {
-  const successors = [];
+  const successors = collection.cy().collection();
   const visited = new Set();
 
   // Helper function to recursively get successors for a node
@@ -460,7 +460,6 @@ export function getSuccessors(collection) {
     }
 
     visited.add(node);
-
     const children = getChildren(node);
 
     // Add children directly into the successors collection
