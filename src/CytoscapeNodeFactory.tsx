@@ -25,12 +25,12 @@ export class CytoscapeNodeFactory {
   createNode(label?: string, parent?: ICytoNode): [ICytoNode, ICytoEdge?] {
     const id = `node-${this.nodeIdCounter++}`;
     const node: ICytoNode = {
-      data: { id, label, visible: true },
+      data: { id, label, visible: true, namespace: 'dummyNameSpace' },
     };
 
     if (parent) {
       const edge: ICytoEdge = {
-        data: { id: `edge-${this.edgeIdCounter++}`, source: parent.data.id, target: id, visible: true },
+        data: { id: `edge-${this.edgeIdCounter++}`, source: parent.data.id, target: id, visible: true, namespace: 'dummyNameSpace' },
       };
       return [node, edge];
     }

@@ -2,7 +2,6 @@
 import * as React from 'react';
 import cytoscape from 'cytoscape';
 import coseBilkent from 'cytoscape-cose-bilkent';
-import dagre from 'cytoscape-dagre';
 import cytoscapeLasso from 'cytoscape-lasso';
 import { useDispatch, useSelector } from 'react-redux';
 import chroma from 'chroma-js';
@@ -17,9 +16,9 @@ import {
   setSelectedViolationExemplars,
 } from './components/Store/CombinedSlice';
 import { treeLayout, rotateNodes, findRootNodes, moveCollectionToCoordinates } from './CytoscapeNodeFactory';
+import { useColorHandler } from './components/components/colorHandler';
 
 cytoscape.use(cytoscapeLasso);
-cytoscape.use(dagre);
 cytoscape.use(coseBilkent);
 
 const CY_LAYOUT = {
@@ -86,6 +85,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   const selectedViolations = useSelector(selectSelectedViolations);
   const violationsTypesMap = useSelector(selectViolationsTypeMap);
   const violations = useSelector(selectViolations);
+  const { getColorForNamespace } = useColorHandler();
   const dispatch = useDispatch();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = React.useState(true); // setLoading wouldn't work if we removed loading
@@ -251,9 +251,12 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     resetNodePositions(cy.nodes());
 
     const { violationNodes, typeNodes, otherNodes, exemplarNodes } = getFilteredNodes();
+    console.log('exemplarNodes', exemplarNodes);
 
     styleAndDisplayNodes(violationNodes, typeNodes, otherNodes, exemplarNodes);
     adjustLayout(violationNodes, typeNodes, otherNodes, exemplarNodes);
+
+    console.log('color for node', exemplarNodes.first().data('id'), getColorForNamespace(exemplarNodes.first().data('namespace'), true));
 
     cy.style().update();
     // eslint-disable-next-line react-hooks/exhaustive-deps

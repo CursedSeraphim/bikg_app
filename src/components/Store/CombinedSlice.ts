@@ -9,9 +9,6 @@ import {
   ICombinedState,
   IRdfState,
   ITriple,
-  ICytoData,
-  ICytoNode,
-  ICytoEdge,
   ICsvData,
   FilterType,
   MissingEdgeOptionType,
@@ -38,6 +35,26 @@ const initialState: ICombinedState = {
   focusNodeExemplarDict: {},
   exemplarFocusNodeDict: {},
   selectedViolationExemplars: [],
+  namespaces: {},
+};
+
+const extractNamespaces = (rdfString) => {
+  const parser = new N3.Parser();
+  let namespaces = {};
+
+  parser.parse(rdfString, (error, triple, prefixes) => {
+    if (prefixes) {
+      const localNamespaces = { ...namespaces }; // Create a shallow copy
+      for (const prefix in prefixes) {
+        if (Object.prototype.hasOwnProperty.call(prefixes, prefix)) {
+          localNamespaces[prefix] = prefixes[prefix];
+        }
+      }
+      namespaces = localNamespaces; // Update the outer namespaces object
+    }
+  });
+
+  return namespaces;
 };
 
 function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
@@ -125,6 +142,9 @@ const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
+    setNamespaces: (state, action: PayloadAction<{ [key: string]: string }>) => {
+      state.namespaces = action.payload;
+    },
     setSelectedViolationExemplars: (state, action: PayloadAction<string[]>) => {
       state.selectedViolationExemplars = action.payload;
     },
@@ -278,6 +298,8 @@ const combinedSlice = createSlice({
     setRdfString: (state, action) => {
       console.log('setRdfString');
       state.rdfString = action.payload;
+      state.namespaces = extractNamespaces(action.payload);
+      console.log('namespaces', state.namespaces);
     },
   },
 });
@@ -298,6 +320,7 @@ export const selectSelectedFocusNodes = (state: { combined: ICombinedState }) =>
 export const selectSelectedTypes = (state: { combined: ICombinedState }) => state.combined.selectedTypes;
 export const selectRdfData = (state: { combined: ICombinedState }) => state.combined.rdfString;
 export const selectSelectedViolationExemplars = (state: { combined: ICombinedState }) => state.combined.selectedViolationExemplars;
+export const selectNamespaces = (state: { combined: ICombinedState }) => state.combined.namespaces;
 
 // TODO investigate why we are returning everything here
 // create memoized selector
@@ -576,10 +599,23 @@ const calculateObjectProperties = (visibleTriples, hiddenTriples) => {
  */
 const processTriples = (triples, visible, nodes, edges, objectProperties) => {
   triples.forEach((t) => {
+    const extractNamespace = (uri) => {
+      const match = uri.match(/^([^:]+):/);
+      return match ? match[1] : '';
+    };
+
     const findOrAddNode = (id, label) => {
       let node = nodes.find((n) => n.data.id === id);
       if (!node) {
-        node = { data: { id, label, visible, permanent: visible } };
+        node = {
+          data: {
+            id,
+            label,
+            visible,
+            permanent: visible,
+            namespace: extractNamespace(id),
+          },
+        };
         nodes.push(node);
       } else if (visible) {
         node.data.visible = node.data.permanent = visible;
@@ -603,6 +639,7 @@ const processTriples = (triples, visible, nodes, edges, objectProperties) => {
         label: t.p,
         visible,
         permanent: visible,
+        namespace: extractNamespace(t.p),
       },
     });
   });
@@ -646,6 +683,7 @@ export const {
   setFocusNodeExemplarDict,
   setExemplarFocusNodeDict,
   setSelectedViolationExemplars,
+  setNamespaces,
 } = combinedSlice.actions;
 
 export default combinedSlice.reducer;

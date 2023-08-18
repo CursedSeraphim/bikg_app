@@ -23,6 +23,7 @@ export interface ICytoNode {
     visible?: boolean;
     permanent?: boolean;
     violation?: boolean;
+    namespace: string;
   };
   position?: {
     x: number;
@@ -39,6 +40,7 @@ export interface ICytoEdge {
     label?: string;
     visible?: boolean;
     permanent?: boolean;
+    namespace: string;
   };
 }
 export interface ICytoData {
@@ -68,6 +70,10 @@ export type FilterType = 'none' | 'unimodal' | 'nan';
 
 export type MissingEdgeOptionType = 'remove' | 'keep';
 
+export interface INamespaces {
+  [prefix: string]: string;
+}
+
 export interface ICombinedState {
   samples: ICsvData[];
   originalSamples: ICsvData[];
@@ -84,6 +90,7 @@ export interface ICombinedState {
   focusNodeExemplarDict: FocusNodeExemplarDict;
   exemplarFocusNodeDict: ExemplarFocusNodeDict;
   selectedViolationExemplars: string[];
+  namespaces: INamespaces;
 }
 
 export interface ITriple {
