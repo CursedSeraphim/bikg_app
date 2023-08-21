@@ -107,6 +107,16 @@ def get_prefix_ns_node_edge_counts(graph: Graph):
             "edge_count": edge_count.get(ns_str, 0)
         }
 
+    # Special handling for 'omics'
+    if "omics" in node_count or "omics" in edge_count:
+        ns_info["omics"] = {
+            "namespace": "http://data.boehringer.com/ontology/omics/",
+            "node_count": node_count.get("omics", 0),
+            "edge_count": edge_count.get("omics", 0)
+        }
+    
+    print("ns_info:", ns_info)
+
     return ns_info
 
 
