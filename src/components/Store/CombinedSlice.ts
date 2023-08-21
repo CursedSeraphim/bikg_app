@@ -570,7 +570,7 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: IRdfSta
  */
 const calculateObjectProperties = (visibleTriples, hiddenTriples) => {
   const objectProperties = new Map();
-  const typesToInclude = new Set(['owl:ObjectProperty', 'owl:Class', 'sh:PropertyShape']);
+  const typesToInclude = new Set(['owl:ObjectProperty', 'owl:Class', 'sh:PropertyShape', 'owl:Ontology']);
   const predicatesToInclude = new Set(['sh:value']);
 
   [...visibleTriples, ...hiddenTriples].forEach((t) => {
