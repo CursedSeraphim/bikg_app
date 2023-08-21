@@ -90,6 +90,11 @@ def save_uri_set_of_uris_dict(data, path):
         json.dump(serialize_focus_node_exemplar_dict(dict(data)), f)
 
 
+def copy_namespaces(source_g, target_g):
+    for prefix, ns in source_g.namespaces():
+        target_g.namespace_manager.bind(prefix, ns)
+
+
 # TODO instead of counting the edge object pairs we should count the exemplar occurrences
 # TODO or keep track of ignored edges as well
 def get_violation_report_exemplars(ontology_g, violation_report_g):
@@ -101,6 +106,8 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
     ontology_g.namespace_manager.bind("dcterms", DCTERMS)
     violation_report_g.namespace_manager.bind("sh", SH)
     violation_report_g.namespace_manager.bind("dcterms", DCTERMS)
+
+    copy_namespaces(violation_report_g, ontology_g)
 
     violations_query = """
     SELECT ?violation ?p ?o WHERE {
