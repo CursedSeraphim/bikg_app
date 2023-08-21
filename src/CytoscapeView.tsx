@@ -257,6 +257,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     adjustLayout(violationNodes, typeNodes, otherNodes, exemplarNodes);
 
     console.log('color for node', exemplarNodes.first().data('id'), getColorForNamespace(exemplarNodes.first().data('namespace'), true));
+    console.log('namespace', exemplarNodes.first().data('namespace'));
 
     cy.style().update();
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -15,6 +15,7 @@ import {
   EdgeCountDict,
   FocusNodeExemplarDict,
   ExemplarFocusNodeDict,
+  INamespaces,
 } from '../../types';
 // import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
@@ -142,7 +143,7 @@ const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
-    setNamespaces: (state, action: PayloadAction<{ [key: string]: string }>) => {
+    setNamespaces: (state, action: PayloadAction<INamespaces>) => {
       state.namespaces = action.payload;
       console.log('set namespaces', action.payload);
     },

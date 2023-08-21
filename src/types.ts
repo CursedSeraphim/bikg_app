@@ -70,8 +70,14 @@ export type FilterType = 'none' | 'unimodal' | 'nan';
 
 export type MissingEdgeOptionType = 'remove' | 'keep';
 
+export interface INamespaceInfo {
+  namespace: string;
+  node_count: number;
+  edge_count: number;
+}
+
 export interface INamespaces {
-  [prefix: string]: string;
+  [prefix: string]: INamespaceInfo;
 }
 
 export interface ICombinedState {
