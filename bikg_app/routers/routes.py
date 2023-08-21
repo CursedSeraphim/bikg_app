@@ -6,7 +6,8 @@ import time
 import numpy as np
 import pandas as pd
 from fastapi import APIRouter, Request, Response
-from rdflib import Graph, Namespace
+from rdflib import Graph, Namespace, URIRef
+from rdflib.namespace import split_uri
 from scipy.stats import chi2_contingency
 
 from bikg_app.routers.utils import get_violation_report_exemplars, load_edge_count_json, load_uri_set_of_uris_dict, serialize_edge_count_dict, serialize_focus_node_exemplar_dict
@@ -64,12 +65,58 @@ def get_prefixes(graph: Graph):
     return {prefix: str(namespace) for prefix, namespace in graph.namespaces()}
 
 
+def split_uri_or_omics(uri):
+    if uri.startswith("http://data.boehringer.com/ontology/omics/"):
+        return "omics", ""
+    return split_uri(uri)
+
+
+def get_prefix_ns_node_edge_counts(graph: Graph):
+    # Initialize the dictionary to hold namespace information
+    ns_info = {}
+    
+    # Initialize counters
+    node_count = {}
+    edge_count = {}
+
+    prefix_ns_d = get_prefixes(graph)
+
+    for subject, predicate, obj in graph:
+        try:
+            subject_ns, _ = split_uri_or_omics(subject)
+            predicate_ns, _ = split_uri_or_omics(predicate)
+            object_ns, _ = split_uri_or_omics(obj)
+        except Exception:
+            # exceptions are numbers such as 0, 1 which have no namespace
+            continue
+
+        # Note that this counts subjects/objects multiple times if they have multiple edges
+        if subject_ns:
+            node_count[subject_ns] = node_count.get(subject_ns, 0) + 1
+        if object_ns:
+            node_count[object_ns] = node_count.get(object_ns, 0) + 1
+        if predicate_ns:
+            edge_count[predicate_ns] = edge_count.get(predicate_ns, 0) + 1
+
+    # Populate ns_info
+    for prefix, namespace in graph.namespaces():
+        ns_str = str(namespace)
+        ns_info[prefix] = {
+            "namespace": ns_str,
+            "node_count": node_count.get(ns_str, 0),
+            "edge_count": edge_count.get(ns_str, 0)
+        }
+
+    return ns_info
+
+
 @router.get("/namespaces")
 def send_namespace_dict():
     """
     Retrieves all the namespace prefixes used in the ontology
+    along with the count of nodes and edges using each namespace.
     """
-    return get_prefixes(g)
+    return get_prefix_ns_node_edge_counts(g)
 
 
 def shortenDictURIs(d, prefixes):
