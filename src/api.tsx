@@ -132,3 +132,10 @@ export async function fetchExemplarFocusNodeDict() {
   const data = await response.json();
   return data;
 }
+
+export async function fetchNamespaces() {
+  const endpoint = `http://localhost:9000/namespaces`;
+  const response = await fetch(endpoint);
+  const data = await response.json();
+  return data;
+}

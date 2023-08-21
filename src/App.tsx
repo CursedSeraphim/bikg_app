@@ -13,6 +13,7 @@ import {
   setEdgeCountDict,
   setFocusNodeExemplarDict,
   setExemplarFocusNodeDict,
+  setNamespaces,
 } from './components/Store/CombinedSlice';
 
 import CytoscapeView from './CytoscapeView';
@@ -26,6 +27,7 @@ import {
   fetchEdgeCountDict,
   fetchFocusNodeExemplarDict,
   fetchExemplarFocusNodeDict,
+  fetchNamespaces,
 } from './api';
 import { SPINNER_COLOR } from './constants';
 
@@ -33,6 +35,19 @@ export function App() {
   const dispatch = useDispatch();
   const rdfOntology = useSelector(selectRdfData);
   const [cytoscapeLoading, setCytoscapeLoading] = React.useState(true);
+
+  // Fetch prefix->namespace dictionary and print
+  React.useEffect(() => {
+    fetchNamespaces()
+      .then((data) => {
+        // dispatch(setEdgeCountDict(data));
+        console.log('fetchNamespaces', data);
+        dispatch(setNamespaces(data));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch edge count dictionary', error);
+      });
+  }, [dispatch]);
 
   // Fetch edge count dictionary and print
   React.useEffect(() => {

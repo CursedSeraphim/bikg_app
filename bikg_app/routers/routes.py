@@ -59,21 +59,17 @@ exemplar_focus_node_dict = load_uri_set_of_uris_dict(EXEMPLAR_FOCUS_NODE_DICT_JS
 
 router = APIRouter()
 
-# @router.get("/prefixes")
-# def get_prefixes():
-#     """
-#     Retrieves all the namespace prefixes used in the ontology
-#     """
-#     # Using the graph's namespace manager to get all the namespace bindings
-#     namespace_bindings = list(g.namespace_manager.namespaces())
-#     # Converting to dictionary where the keys are prefix strings and values are the corresponding URIs
-#     prefixes_dict = {prefix: str(namespace) for prefix, namespace in namespace_bindings}
-
-#     return prefixes_dict
-
 
 def get_prefixes(graph: Graph):
     return {prefix: str(namespace) for prefix, namespace in graph.namespaces()}
+
+
+@router.get("/namespaces")
+def send_namespace_dict():
+    """
+    Retrieves all the namespace prefixes used in the ontology
+    """
+    return get_prefixes(g)
 
 
 def shortenDictURIs(d, prefixes):

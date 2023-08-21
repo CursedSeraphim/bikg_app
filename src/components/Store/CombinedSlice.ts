@@ -144,6 +144,7 @@ const combinedSlice = createSlice({
   reducers: {
     setNamespaces: (state, action: PayloadAction<{ [key: string]: string }>) => {
       state.namespaces = action.payload;
+      console.log('set namespaces', action.payload);
     },
     setSelectedViolationExemplars: (state, action: PayloadAction<string[]>) => {
       state.selectedViolationExemplars = action.payload;
@@ -298,8 +299,6 @@ const combinedSlice = createSlice({
     setRdfString: (state, action) => {
       console.log('setRdfString');
       state.rdfString = action.payload;
-      state.namespaces = extractNamespaces(action.payload);
-      console.log('namespaces', state.namespaces);
     },
   },
 });
