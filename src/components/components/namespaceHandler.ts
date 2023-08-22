@@ -4,6 +4,13 @@ import { INamespaces, INamespaceInfo } from '../../types';
 import { selectNamespaces } from '../Store/CombinedSlice';
 
 const SHAPE_LIST = ['triangle', 'rectangle', 'diamond', 'pentagon', 'hexagon'];
+const map = {
+  omics: 'triangle',
+  sh: 'rectangle',
+  owl: 'diamond',
+  cns: 'pentagon',
+  xsd: 'hexagon',
+};
 const DEFAULT_SHAPE = 'ellipse';
 const MAX_DISPLAY_NAMESPACES = 5;
 
@@ -53,7 +60,7 @@ const initializeShapeList = (namespaces: INamespaces = {}) => {
   // if (sortedNamespaces.length > MAX_DISPLAY_NAMESPACES) {
   //   topNamespaces.push(['other', { namespace: 'other', node_count: otherNodeCount, edge_count: otherEdgeCount }]);
   // }
-  console.log('test namespaces', namespaces);
+  // console.log('test namespaces', namespaces);
   return SHAPE_LIST;
 };
 
@@ -65,14 +72,13 @@ const useShapeHandler = () => {
   const selectedNamespaces = useSelector(selectNamespaces);
   const namespaces: INamespaces = useMemo(() => selectedNamespaces || {}, [selectedNamespaces]);
   const [shapeList, setShapeList] = useState<string[]>(initializeShapeList(namespaces));
-  console.log('initializing useShapeHandler, namespaces currently are', namespaces);
 
   useEffect(() => {
     setShapeList(initializeShapeList(namespaces));
   }, [namespaces]);
 
   const sortedNamespaces = useMemo(() => sortAndFilterNamespaces(namespaces), [namespaces]);
-  console.log('sortedNamespaces', sortedNamespaces);
+  // console.log('sortedNamespaces', sortedNamespaces);
 
   /**
    * Gets the shape for a given namespace.
@@ -80,10 +86,11 @@ const useShapeHandler = () => {
    * @returns {string} The shape for the namespace.
    */
   const getShapeForNamespace = (namespace = '') => {
+    return map[namespace] || DEFAULT_SHAPE;
     // console.log('called with namespace', namespace);
     let namespaceIndex = sortedNamespaces.findIndex(([key]) => key === namespace);
 
-    // console.log('sortedNamespaces', sortedNamespaces, 'key', namespace, 'index', namespaceIndex);
+    console.log('sortedNamespaces', sortedNamespaces, 'key', namespace, 'index', namespaceIndex);
 
     if (sortedNamespaces.length > MAX_DISPLAY_NAMESPACES && namespaceIndex >= MAX_DISPLAY_NAMESPACES) {
       namespaceIndex = MAX_DISPLAY_NAMESPACES - 1; // Group as "other"
@@ -99,7 +106,7 @@ const useShapeHandler = () => {
     return shapeList[namespaceIndex] || DEFAULT_SHAPE;
   };
 
-  console.log('getShapeForNamespace("omics")', getShapeForNamespace('omics'));
+  // console.log('getShapeForNamespace("omics")', getShapeForNamespace('omics'));
 
   return { getShapeForNamespace };
 };
