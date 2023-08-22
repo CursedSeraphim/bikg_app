@@ -20,22 +20,10 @@ import { useColorHandler } from './components/components/namespaceHandler';
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(coseBilkent);
 
-const defaultNodeSize = 30;
-
 const CY_LAYOUT = {
   name: 'cose-bilkent',
   idealEdgeLength: 500,
   nodeDimensionsIncludeLabels: true,
-};
-
-const determineColor = (node) => {
-  if (node.data('violation')) {
-    return 'orange';
-  }
-  if (node.selected()) {
-    return 'steelblue';
-  }
-  return 'lightgrey';
 };
 
 const determineSelectColor = (node) => {
@@ -86,10 +74,9 @@ const hideVisibleNodes = (nodeList) => {
 };
 
 // Helper function to apply styles to nodes
-const styleCytoElements = (element, display, color) => {
+const showCytoElements = (element) => {
   element.style({
-    display,
-    // 'background-color': color,
+    display: 'element',
   });
   element.data('visible', true);
 };
@@ -163,10 +150,10 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
    * @param {Cytoscape.Core} cy - The cytoscape instance.
    * @param {Collection} nodes - The collection of nodes to reset.
    */
-  function resetNodePositions(cy, nodes) {
+  function resetNodePositions(cytoscapeInstance, nodes) {
     const nodesToHideArray = [];
 
-    cy.batch(() => {
+    cytoscapeInstance.batch(() => {
       nodes.forEach((node) => {
         const pos = initialNodePositions.current.get(node.id());
         if (pos) {
@@ -179,7 +166,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
       });
     });
 
-    const nodesToHide = cy.collection(nodesToHideArray);
+    const nodesToHide = cytoscapeInstance.collection(nodesToHideArray);
     nodesToHide.style('display', 'none');
     nodesToHide.data('visible', false);
   }
@@ -211,10 +198,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
    * @param {Collection} exemplarNodes - Nodes representing exemplars.
    */
   function styleAndDisplayNodes(violationNodes, typeNodes, otherNodes, exemplarNodes) {
-    styleCytoElements(violationNodes, 'element', 'orange');
-    styleCytoElements(otherNodes, 'element', 'lightgrey');
-    styleCytoElements(typeNodes, 'element', 'steelblue');
-    styleCytoElements(exemplarNodes, 'element', 'purple');
+    showCytoElements(violationNodes.union(otherNodes).union(typeNodes).union(exemplarNodes));
 
     exemplarNodes.outgoers().targets().data('visible', true);
     exemplarNodes.outgoers().targets().style('display', 'element');
@@ -504,7 +488,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
             }
           });
 
-          newCy.on('tap', function (evt) {
+          newCy.on('tap', (evt) => {
             const { target } = evt;
             if (target === newCy && newCy.nodes(':selected').length !== 0) {
               newCy.elements().unselect();
