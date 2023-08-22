@@ -182,19 +182,22 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
    * @param {Collection} nodes - The collection of nodes to reset.
    */
   function resetNodePositions(cy, nodes) {
-    let nodesToHide = cy.collection();
+    const nodesToHideArray = [];
 
-    nodes.forEach((node) => {
-      const pos = initialNodePositions.current.get(node.id());
-      if (pos) {
-        node.position(pos);
+    cy.batch(() => {
+      nodes.forEach((node) => {
+        const pos = initialNodePositions.current.get(node.id());
+        if (pos) {
+          node.position(pos);
 
-        if (pos.x === 0 && pos.y === 0) {
-          nodesToHide = nodesToHide.union(node);
+          if (pos.x === 0 && pos.y === 0) {
+            nodesToHideArray.push(node);
+          }
         }
-      }
+      });
     });
 
+    const nodesToHide = cy.collection(nodesToHideArray);
     nodesToHide.style('display', 'none');
     nodesToHide.data('visible', false);
   }
@@ -279,8 +282,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     resetNodePositions(cy, cy.nodes());
 
     const { violationNodes, typeNodes, otherNodes, exemplarNodes } = getFilteredNodes();
-    console.log('exemplarNodes', exemplarNodes);
-
     styleAndDisplayNodes(violationNodes, typeNodes, otherNodes, exemplarNodes);
     adjustLayout(violationNodes, typeNodes, otherNodes, exemplarNodes);
 
@@ -503,12 +504,8 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
           newCy.on('tap', function (evt) {
             const { target } = evt;
-
-            if (target === newCy) {
-              console.log('Tap on empty space');
-
+            if (target === newCy && newCy.nodes(':selected').length !== 0) {
               newCy.elements().unselect();
-
               hideAllVisibleNodes();
               resetNodePositions(newCy, newCy.nodes());
               dispatch(setSelectedTypes([]));
