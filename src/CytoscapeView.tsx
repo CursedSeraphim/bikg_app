@@ -15,7 +15,7 @@ import {
   setSelectedViolationExemplars,
 } from './components/Store/CombinedSlice';
 import { treeLayout, rotateNodes, findRootNodes, moveCollectionToCoordinates, getSuccessors } from './CytoscapeNodeFactory';
-import { useColorHandler } from './components/components/namespaceHandler';
+import { useShapeHandler } from './components/components/namespaceHandler';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(coseBilkent);
@@ -97,7 +97,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   const selectedViolations = useSelector(selectSelectedViolations);
   const violationsTypesMap = useSelector(selectViolationsTypeMap);
   const violations = useSelector(selectViolations);
-  const { getColorForNamespace } = useColorHandler();
+  const { getShapeForNamespace } = useShapeHandler();
   const dispatch = useDispatch();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = React.useState(true); // setLoading wouldn't work if we removed loading
@@ -276,7 +276,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   }, [cy, selectedViolations, selectedTypes, violationsTypesMap, selectedViolationExemplars]);
 
   React.useEffect(() => {
-    selectCytoData(rdfOntology, getColorForNamespace)
+    selectCytoData(rdfOntology, getShapeForNamespace)
       .then((data) => {
         const newCytoData = { ...data };
         newCytoData.nodes = newCytoData.nodes.map((node) => ({
@@ -312,7 +312,10 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
               {
                 selector: 'node',
                 style: {
-                  shape: 'ellipse',
+                  shape: (ele) => {
+                    // console.log('namespace', ele.data('namespace'), 'shape', getShapeForNamespace(ele.data('namespace')));
+                    return getShapeForNamespace(ele.data('namespace'));
+                  },
                   'background-color': 'lightgrey',
                   label: 'data(label)',
                   display: (ele) => (ele.data('visible') ? 'element' : 'none'),
@@ -322,7 +325,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
               {
                 selector: 'node:selected',
                 style: {
-                  shape: 'diamond',
+                  shape: (ele) => getShapeForNamespace(ele.data('namespace')),
                   'background-color': 'steelblue',
                   label: 'data(label)',
                   display: (ele) => (ele.data('visible') ? 'element' : 'none'),
@@ -332,6 +335,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
               {
                 selector: 'node[?violation]',
                 style: {
+                  shape: (ele) => getShapeForNamespace(ele.data('namespace')),
                   'background-color': 'orange',
                   display: (ele) => (ele.data('visible') ? 'element' : 'none'),
                 },

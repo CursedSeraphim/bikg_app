@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import colorbrewer from 'colorbrewer';
 import { useSelector } from 'react-redux';
 import { INamespaces, INamespaceInfo } from '../../types';
 import { selectNamespaces } from '../Store/CombinedSlice';
 
-const DEFAULT_COLOR = '#000000';
-const MAX_DISPLAY_NAMESPACES = 6;
+const SHAPE_LIST = ['triangle', 'rectangle', 'diamond', 'pentagon', 'hexagon'];
+const DEFAULT_SHAPE = 'ellipse';
+const MAX_DISPLAY_NAMESPACES = 5;
 
 /**
  * Sorts and filters an INamespaces object based on the node_count.
@@ -13,9 +13,12 @@ const MAX_DISPLAY_NAMESPACES = 6;
  * @returns {Array} An array of namespace entries, sorted and filtered.
  */
 const sortAndFilterNamespaces = (namespaces: INamespaces) => {
-  return Object.entries(namespaces)
-    .filter(([_, info]) => info.node_count > 0)
-    .sort(([, a], [, b]) => b.node_count - a.node_count);
+  return (
+    Object.entries(namespaces)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      .filter(([_, info]) => info.node_count > 0)
+      .sort(([, a], [, b]) => b.node_count - a.node_count)
+  );
 };
 
 /**
@@ -32,65 +35,73 @@ const calculateOtherCounts = (sortedNamespaces: Array<[string, INamespaceInfo]>)
 };
 
 /**
- * Initializes the color scale based on the namespaces.
- * @param {INamespaces} [namespaces={}] - Namespaces to be used for initializing the color scale.
- * @returns {string[]} An array of color codes.
+ * Initializes the shape scale based on the namespaces.
+ * @param {INamespaces} [namespaces={}] - Namespaces to be used for initializing the shape list.
+ * @returns {string[]} An array of shapes.
  */
-const initializeColorScale = (namespaces: INamespaces = {}) => {
-  const sortedNamespaces = sortAndFilterNamespaces(namespaces);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const initializeShapeList = (namespaces: INamespaces = {}) => {
+  // const sortedNamespaces = sortAndFilterNamespaces(namespaces);
 
-  let { otherNodeCount, otherEdgeCount } = { otherNodeCount: 0, otherEdgeCount: 0 };
+  // let { otherNodeCount, otherEdgeCount } = { otherNodeCount: 0, otherEdgeCount: 0 };
 
-  if (sortedNamespaces.length > MAX_DISPLAY_NAMESPACES) {
-    ({ otherNodeCount, otherEdgeCount } = calculateOtherCounts(sortedNamespaces));
-  }
+  // if (sortedNamespaces.length > MAX_DISPLAY_NAMESPACES) {
+  //   ({ otherNodeCount, otherEdgeCount } = calculateOtherCounts(sortedNamespaces));
+  // }
 
-  const topNamespaces = sortedNamespaces.slice(0, MAX_DISPLAY_NAMESPACES - 1);
-  if (sortedNamespaces.length > MAX_DISPLAY_NAMESPACES) {
-    topNamespaces.push(['other', { namespace: 'other', node_count: otherNodeCount, edge_count: otherEdgeCount }]);
-  }
-
-  const numDataClasses = topNamespaces.length * 2;
-
-  return colorbrewer?.Paired?.[numDataClasses] || [DEFAULT_COLOR];
+  // const topNamespaces = sortedNamespaces.slice(0, MAX_DISPLAY_NAMESPACES - 1);
+  // if (sortedNamespaces.length > MAX_DISPLAY_NAMESPACES) {
+  //   topNamespaces.push(['other', { namespace: 'other', node_count: otherNodeCount, edge_count: otherEdgeCount }]);
+  // }
+  console.log('test namespaces', namespaces);
+  return SHAPE_LIST;
 };
 
 /**
- * Custom React hook to handle colors for namespaces.
- * @returns {Object} An object containing a function to get the color for a given namespace.
+ * Custom React hook to handle shapes for namespaces.
+ * @returns {Object} An object containing a function to get the shapes for a given namespace.
  */
-const useColorHandler = () => {
+const useShapeHandler = () => {
   const selectedNamespaces = useSelector(selectNamespaces);
   const namespaces: INamespaces = useMemo(() => selectedNamespaces || {}, [selectedNamespaces]);
-  const [colorScale, setColorScale] = useState<string[]>(initializeColorScale(namespaces));
+  const [shapeList, setShapeList] = useState<string[]>(initializeShapeList(namespaces));
+  console.log('initializing useShapeHandler, namespaces currently are', namespaces);
 
   useEffect(() => {
-    setColorScale(initializeColorScale(namespaces));
+    setShapeList(initializeShapeList(namespaces));
   }, [namespaces]);
 
   const sortedNamespaces = useMemo(() => sortAndFilterNamespaces(namespaces), [namespaces]);
+  console.log('sortedNamespaces', sortedNamespaces);
 
   /**
-   * Gets the color for a given namespace.
-   * @param {string} [namespace=''] - The namespace to get the color for.
-   * @param {boolean} [isSelected=false] - Flag to indicate whether the namespace is selected.
-   * @returns {string} The color code for the namespace.
+   * Gets the shape for a given namespace.
+   * @param {string} [namespace=''] - The namespace to get the shape for.
+   * @returns {string} The shape for the namespace.
    */
-  const getColorForNamespace = (namespace = '', isSelected = false) => {
+  const getShapeForNamespace = (namespace = '') => {
+    // console.log('called with namespace', namespace);
     let namespaceIndex = sortedNamespaces.findIndex(([key]) => key === namespace);
+
+    // console.log('sortedNamespaces', sortedNamespaces, 'key', namespace, 'index', namespaceIndex);
 
     if (sortedNamespaces.length > MAX_DISPLAY_NAMESPACES && namespaceIndex >= MAX_DISPLAY_NAMESPACES) {
       namespaceIndex = MAX_DISPLAY_NAMESPACES - 1; // Group as "other"
     }
 
     if (namespaceIndex === -1) {
-      return colorScale[colorScale.length - 1] || DEFAULT_COLOR;
+      // console.log('returning default shape', DEFAULT_SHAPE);
+      return DEFAULT_SHAPE;
     }
 
-    return colorScale[namespaceIndex * 2 + (isSelected ? 1 : 0)] || DEFAULT_COLOR;
+    // console.log('returning shape by index', shapeList[namespaceIndex]);
+
+    return shapeList[namespaceIndex] || DEFAULT_SHAPE;
   };
 
-  return { getColorForNamespace };
+  console.log('getShapeForNamespace("omics")', getShapeForNamespace('omics'));
+
+  return { getShapeForNamespace };
 };
 
-export { useColorHandler };
+export { useShapeHandler };

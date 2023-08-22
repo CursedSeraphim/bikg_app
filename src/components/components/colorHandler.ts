@@ -13,9 +13,12 @@ const MAX_DISPLAY_NAMESPACES = 6;
  * @returns {Array} An array of namespace entries, sorted and filtered.
  */
 const sortAndFilterNamespaces = (namespaces: INamespaces) => {
-  return Object.entries(namespaces)
-    .filter(([_, info]) => info.node_count > 0)
-    .sort(([, a], [, b]) => b.node_count - a.node_count);
+  return (
+    Object.entries(namespaces)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      .filter(([_, info]) => info.node_count > 0)
+      .sort(([, a], [, b]) => b.node_count - a.node_count)
+  );
 };
 
 /**
