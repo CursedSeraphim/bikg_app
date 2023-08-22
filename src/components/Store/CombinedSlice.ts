@@ -608,7 +608,8 @@ const processTriples = (triples, visible, nodes, edges, objectProperties, getCol
         };
         nodes.push(node);
       } else if (visible) {
-        node.data.visible = node.data.permanent = visible;
+        node.data.visible = visible;
+        node.data.permanent = visible;
       }
     };
 

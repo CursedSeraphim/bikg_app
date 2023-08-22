@@ -26,26 +26,26 @@ const CY_LAYOUT = {
   nodeDimensionsIncludeLabels: true,
 };
 
-const determineSelectColor = (node) => {
-  console.log('node.data', node.data());
-  if (node.data('violation')) {
-    return 'orange';
-  }
-  if (node.data('exemplar')) {
-    return 'red';
-  }
-  return 'steelblue';
-};
+// const determineSelectColor = (node) => {
+//   console.log('node.data', node.data());
+//   if (node.data('violation')) {
+//     return 'orange';
+//   }
+//   if (node.data('exemplar')) {
+//     return 'red';
+//   }
+//   return 'steelblue';
+// };
 
-const determineDeselectColor = (node) => {
-  if (node.data('violation')) {
-    return 'orange';
-  }
-  if (node.data('exemplar')) {
-    return 'red';
-  }
-  return 'lightgrey';
-};
+// const determineDeselectColor = (node) => {
+//   if (node.data('violation')) {
+//     return 'orange';
+//   }
+//   if (node.data('exemplar')) {
+//     return 'red';
+//   }
+//   return 'lightgrey';
+// };
 
 // Function to align nodes
 function alignNodes(nodes, parentNodePosition, isChild) {
