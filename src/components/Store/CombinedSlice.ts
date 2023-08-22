@@ -39,25 +39,6 @@ const initialState: ICombinedState = {
   namespaces: {},
 };
 
-const extractNamespaces = (rdfString) => {
-  const parser = new N3.Parser();
-  let namespaces = {};
-
-  parser.parse(rdfString, (error, triple, prefixes) => {
-    if (prefixes) {
-      const localNamespaces = { ...namespaces }; // Create a shallow copy
-      for (const prefix in prefixes) {
-        if (Object.prototype.hasOwnProperty.call(prefixes, prefix)) {
-          localNamespaces[prefix] = prefixes[prefix];
-        }
-      }
-      namespaces = localNamespaces; // Update the outer namespaces object
-    }
-  });
-
-  return namespaces;
-};
-
 function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
   for (const [prefix, prefixURI] of Object.entries(prefixes)) {
     if (uri.startsWith(prefixURI)) {
@@ -597,8 +578,9 @@ const calculateObjectProperties = (visibleTriples, hiddenTriples) => {
  * @param {Array} edges - Array of Edges.
  * @param {Map} objectProperties - Map containing object properties.
  * @param {Function} getColorForNamespace - Function to get color for namespace.
+ * @param {Array} violations - Array of violations.
  */
-const processTriples = (triples, visible, nodes, edges, objectProperties, getColorForNamespace) => {
+const processTriples = (triples, visible, nodes, edges, objectProperties, getColorForNamespace, violations) => {
   triples.forEach((t) => {
     const extractNamespace = (uri) => {
       const match = uri.match(/^([^:]+):/);
@@ -620,6 +602,8 @@ const processTriples = (triples, visible, nodes, edges, objectProperties, getCol
             namespace,
             defaultColor,
             selectedColor,
+            violation: violations.includes(id),
+            exemplar: namespace === 'ex',
           },
         };
         nodes.push(node);
@@ -656,10 +640,11 @@ const processTriples = (triples, visible, nodes, edges, objectProperties, getCol
  * This function creates Nodes and Edges based on visible and hidden triples and returns.
  *
  * @param {string} rdfString string in Resource Description Framework format.
- * @param {Function} getColorForNamespace - Function to get color for namespace.
+ * @param {Function} getShapeForNamespace - Function to get a shape for a namespace.
+ * @param {Array} violations - Array of violations.
  * @returns {Object} An object containing array of Nodes and Edges.
  */
-export const selectCytoData = async (rdfString, getColorForNamespace) => {
+export const selectCytoData = async (rdfString, getShapeForNamespace, violations) => {
   // ... same as before
   const { visibleTriples, hiddenTriples } = await selectAllTriples(rdfString);
 
@@ -668,8 +653,8 @@ export const selectCytoData = async (rdfString, getColorForNamespace) => {
 
   const objectProperties = calculateObjectProperties(visibleTriples, hiddenTriples);
 
-  processTriples(hiddenTriples, false, nodes, edges, objectProperties, getColorForNamespace);
-  processTriples(visibleTriples, true, nodes, edges, objectProperties, getColorForNamespace);
+  processTriples(hiddenTriples, false, nodes, edges, objectProperties, getShapeForNamespace, violations);
+  processTriples(visibleTriples, true, nodes, edges, objectProperties, getShapeForNamespace, violations);
 
   return { nodes, edges };
 };

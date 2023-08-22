@@ -27,8 +27,12 @@ const CY_LAYOUT = {
 };
 
 const determineSelectColor = (node) => {
+  console.log('node.data', node.data());
   if (node.data('violation')) {
     return 'orange';
+  }
+  if (node.data('exemplar')) {
+    return 'red';
   }
   return 'steelblue';
 };
@@ -36,6 +40,9 @@ const determineSelectColor = (node) => {
 const determineDeselectColor = (node) => {
   if (node.data('violation')) {
     return 'orange';
+  }
+  if (node.data('exemplar')) {
+    return 'red';
   }
   return 'lightgrey';
 };
@@ -261,7 +268,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
         node.style('background-color', 'steelblue');
       } else if (selectedViolationExemplars.includes(node.data('id'))) {
         node.select();
-        node.style('background-color', 'purple');
+        node.style('background-color', 'red');
       } else if (selectedViolations.includes(node.data('id'))) {
         node.select();
         node.style('background-color', 'orange');
@@ -276,14 +283,15 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   }, [cy, selectedViolations, selectedTypes, violationsTypesMap, selectedViolationExemplars]);
 
   React.useEffect(() => {
-    selectCytoData(rdfOntology, getShapeForNamespace)
+    console.log('violations', violations);
+    console.log('calling selectcytodata with getShapeForNamespace', getShapeForNamespace('omics'));
+    selectCytoData(rdfOntology, getShapeForNamespace, violations)
       .then((data) => {
         const newCytoData = { ...data };
         newCytoData.nodes = newCytoData.nodes.map((node) => ({
           ...node,
           data: {
             ...node.data,
-            violation: violations.includes(node.data.id),
           },
         }));
         if (cy) {
@@ -313,7 +321,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
                 selector: 'node',
                 style: {
                   shape: (ele) => {
-                    // console.log('namespace', ele.data('namespace'), 'shape', getShapeForNamespace(ele.data('namespace')));
+                    // console.log(ele.data('namespace'), ':', getShapeForNamespace(ele.data('namespace')));
                     return getShapeForNamespace(ele.data('namespace'));
                   },
                   'background-color': 'lightgrey',
@@ -337,6 +345,15 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
                 style: {
                   shape: (ele) => getShapeForNamespace(ele.data('namespace')),
                   'background-color': 'orange',
+                  display: (ele) => (ele.data('visible') ? 'element' : 'none'),
+                },
+              },
+
+              {
+                selector: 'node[?exemplar]',
+                style: {
+                  shape: (ele) => getShapeForNamespace(ele.data('namespace')),
+                  'background-color': 'red',
                   display: (ele) => (ele.data('visible') ? 'element' : 'none'),
                 },
               },
@@ -387,13 +404,16 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
           newCy.on('mouseover', 'node', (event) => {
             const node = event.target;
+            node.stop(); // Stop any ongoing animation
 
             console.log('ndoe selected?', node.selected());
 
             node
               .animation({
                 style: {
-                  'background-color': node.selected() ? determineDeselectColor(node) : determineSelectColor(node),
+                  // 'background-color': node.selected() ? determineDeselectColor(node) : determineSelectColor(node),
+                  'border-color': 'black',
+                  'border-width': '3px',
                 },
                 duration: 30,
               })
@@ -402,11 +422,14 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
           newCy.on('mouseout', 'node', (event) => {
             const node = event.target;
+            node.stop(); // Stop any ongoing animation
 
             node
               .animation({
                 style: {
-                  'background-color': node.selected() ? determineSelectColor(node) : determineDeselectColor(node),
+                  // 'background-color': node.selected() ? determineSelectColor(node) : determineDeselectColor(node),
+                  'border-color': 'black',
+                  'border-width': '0px',
                 },
                 duration: 30,
               })
@@ -452,6 +475,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
           };
 
           newCy.on('tap', 'node', (event) => {
+            console.log('node tap');
             if (lassoSelectionInProgress) {
               return;
             }
@@ -476,15 +500,20 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
                 .edges()
                 .some((edge) => edge.data('label') === 'rdfs:subClassOf' && edge.data('source') === node.id());
               if (!hasPredecessorWithSubClassOf) {
-                return;
+                node.selected() ? node.unselect() : node.select();
               }
               if (!node.selected()) {
+                console.log('unselecting everything');
                 newCy.nodes().unselect();
                 node.select();
               } else {
+                console.log('unselecting everything');
                 newCy.nodes().unselect();
+                console.log('hiding everything');
                 hideAllVisibleNodes();
+                console.log('resetting all positions');
                 resetNodePositions(newCy, newCy.nodes());
+                console.log('dispatching empty selections');
                 dispatch(setSelectedTypes([]));
                 dispatch(setSelectedViolationExemplars([]));
               }

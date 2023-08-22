@@ -23,6 +23,7 @@ export interface ICytoNode {
     visible?: boolean;
     permanent?: boolean;
     violation?: boolean;
+    exemplar?: boolean;
     namespace: string;
     defaultColor?: string;
     selectedColor?: string;

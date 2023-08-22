@@ -102,10 +102,13 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
     SH = Namespace("http://www.w3.org/ns/shacl#")
     DCTERMS = Namespace("http://purl.org/dc/terms/")
     OWL = Namespace("http://www.w3.org/2002/07/owl#")
+    EX = Namespace("http://example.com/exemplar#")
     ontology_g.namespace_manager.bind("sh", SH)
     ontology_g.namespace_manager.bind("dcterms", DCTERMS)
     violation_report_g.namespace_manager.bind("sh", SH)
     violation_report_g.namespace_manager.bind("dcterms", DCTERMS)
+    ontology_g.namespace_manager.bind("ex", EX)
+    violation_report_g.namespace_manager.bind("ex", EX)
 
     copy_namespaces(violation_report_g, ontology_g)
 
@@ -132,7 +135,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
         """ % violation
 
         edge_object_pairs = []
-        shape = None
+        shape = ""
         current_focus_node = None
         for row in violation_report_g.query(violations_query):
             _, p, o = row # type: ignore
@@ -147,8 +150,10 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
         exemplar_name = exemplar_sets.get(frozenset(edge_object_pairs))
 
         if exemplar_name is None:
-            exemplar_name = URIRef(f"{shape}_exemplar_{len(exemplar_sets)+1}")
+            # Use custom exemplar namespace instead of the shape's namespace
+            exemplar_name = URIRef(f"{EX}{shape.split('omics/')[-1]}_exemplar_{len(exemplar_sets)+1}")
             exemplar_sets[frozenset(edge_object_pairs)] = exemplar_name
+
 
         focus_node_exemplar_dict[current_focus_node].add(exemplar_name)
         exemplar_focus_node_dict[exemplar_name].add(current_focus_node)
