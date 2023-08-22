@@ -24,6 +24,8 @@ export interface ICytoNode {
     permanent?: boolean;
     violation?: boolean;
     namespace: string;
+    defaultColor?: string;
+    selectedColor?: string;
   };
   position?: {
     x: number;

@@ -596,8 +596,9 @@ const calculateObjectProperties = (visibleTriples, hiddenTriples) => {
  * @param {Array} nodes - Array of Nodes.
  * @param {Array} edges - Array of Edges.
  * @param {Map} objectProperties - Map containing object properties.
+ * @param {Function} getColorForNamespace - Function to get color for namespace.
  */
-const processTriples = (triples, visible, nodes, edges, objectProperties) => {
+const processTriples = (triples, visible, nodes, edges, objectProperties, getColorForNamespace) => {
   triples.forEach((t) => {
     const extractNamespace = (uri) => {
       const match = uri.match(/^([^:]+):/);
@@ -607,13 +608,18 @@ const processTriples = (triples, visible, nodes, edges, objectProperties) => {
     const findOrAddNode = (id, label) => {
       let node = nodes.find((n) => n.data.id === id);
       if (!node) {
+        const namespace = extractNamespace(id);
+        const defaultColor = getColorForNamespace(namespace, false);
+        const selectedColor = getColorForNamespace(namespace, true);
         node = {
           data: {
             id,
             label,
             visible,
             permanent: visible,
-            namespace: extractNamespace(id),
+            namespace,
+            defaultColor,
+            selectedColor,
           },
         };
         nodes.push(node);
@@ -643,7 +649,6 @@ const processTriples = (triples, visible, nodes, edges, objectProperties) => {
       },
     });
   });
-  console.log('edges', edges);
 };
 
 /**
@@ -651,9 +656,11 @@ const processTriples = (triples, visible, nodes, edges, objectProperties) => {
  * This function creates Nodes and Edges based on visible and hidden triples and returns.
  *
  * @param {string} rdfString string in Resource Description Framework format.
+ * @param {Function} getColorForNamespace - Function to get color for namespace.
  * @returns {Object} An object containing array of Nodes and Edges.
  */
-export const selectCytoData = async (rdfString) => {
+export const selectCytoData = async (rdfString, getColorForNamespace) => {
+  // ... same as before
   const { visibleTriples, hiddenTriples } = await selectAllTriples(rdfString);
 
   const nodes = [];
@@ -661,8 +668,8 @@ export const selectCytoData = async (rdfString) => {
 
   const objectProperties = calculateObjectProperties(visibleTriples, hiddenTriples);
 
-  processTriples(hiddenTriples, false, nodes, edges, objectProperties);
-  processTriples(visibleTriples, true, nodes, edges, objectProperties);
+  processTriples(hiddenTriples, false, nodes, edges, objectProperties, getColorForNamespace);
+  processTriples(visibleTriples, true, nodes, edges, objectProperties, getColorForNamespace);
 
   return { nodes, edges };
 };

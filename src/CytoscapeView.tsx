@@ -15,16 +15,42 @@ import {
   selectSelectedViolationExemplars,
   setSelectedViolationExemplars,
 } from './components/Store/CombinedSlice';
-import { treeLayout, rotateNodes, findRootNodes, moveCollectionToCoordinates } from './CytoscapeNodeFactory';
-import { useColorHandler } from './components/components/colorHandler';
+import { treeLayout, rotateNodes, findRootNodes, moveCollectionToCoordinates, getSuccessors } from './CytoscapeNodeFactory';
+import { useColorHandler } from './components/components/namespaceHandler';
 
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(coseBilkent);
+
+const defaultNodeSize = 30;
 
 const CY_LAYOUT = {
   name: 'cose-bilkent',
   idealEdgeLength: 500,
   nodeDimensionsIncludeLabels: true,
+};
+
+const determineColor = (node) => {
+  if (node.data('violation')) {
+    return 'orange';
+  }
+  if (node.selected()) {
+    return 'steelblue';
+  }
+  return 'lightgrey';
+};
+
+const determineSelectColor = (node) => {
+  if (node.data('violation')) {
+    return 'orange';
+  }
+  return 'steelblue';
+};
+
+const determineDeselectColor = (node) => {
+  if (node.data('violation')) {
+    return 'orange';
+  }
+  return 'lightgrey';
 };
 
 // Function to align nodes
@@ -64,7 +90,7 @@ const hideVisibleNodes = (nodeList) => {
 const styleCytoElements = (element, display, color) => {
   element.style({
     display,
-    'background-color': color,
+    // 'background-color': color,
   });
   element.data('visible', true);
 };
@@ -109,21 +135,21 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   }
 
   // TODO can be implemented with hash map of selected nodes, and of type->node for efficiency
-  React.useEffect(() => {
-    if (cy && selectedTypes) {
-      // Iterate over all nodes
-      cy.nodes().forEach((node) => {
-        const nodeType = node.data().id;
-        if (selectedTypes.includes(nodeType)) {
-          node.style('background-color', 'steelblue');
-        } else if (violations.includes(nodeType)) {
-          node.style('background-color', 'orange');
-        } else {
-          node.style('background-color', 'lightgrey');
-        }
-      });
-    }
-  }, [cy, selectedTypes, violations]);
+  // React.useEffect(() => {
+  //   if (cy && selectedTypes) {
+  //     // Iterate over all nodes
+  //     cy.nodes().forEach((node) => {
+  //       const nodeType = node.data().id;
+  //       if (selectedTypes.includes(nodeType)) {
+  //         node.style('background-color', 'steelblue');
+  //       } else if (violations.includes(nodeType)) {
+  //         node.style('background-color', 'orange');
+  //       } else {
+  //         node.style('background-color', 'lightgrey');
+  //       }
+  //     });
+  //   }
+  // }, [cy, selectedTypes, violations]);
 
   const listOfNodesThatHaveBeenMadeVisible = React.useRef([]);
 
@@ -152,9 +178,10 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
   /**
    * Resets the positions of nodes to their initial state and hides nodes with (0,0) positions.
+   * @param {Cytoscape.Core} cy - The cytoscape instance.
    * @param {Collection} nodes - The collection of nodes to reset.
    */
-  function resetNodePositions(nodes) {
+  function resetNodePositions(cy, nodes) {
     let nodesToHide = cy.collection();
 
     nodes.forEach((node) => {
@@ -247,8 +274,9 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   React.useEffect(() => {
     if (!cy || !selectedViolations) return;
 
+    cy.nodes().unselect();
     hideAllVisibleNodes();
-    resetNodePositions(cy.nodes());
+    resetNodePositions(cy, cy.nodes());
 
     const { violationNodes, typeNodes, otherNodes, exemplarNodes } = getFilteredNodes();
     console.log('exemplarNodes', exemplarNodes);
@@ -256,15 +284,14 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     styleAndDisplayNodes(violationNodes, typeNodes, otherNodes, exemplarNodes);
     adjustLayout(violationNodes, typeNodes, otherNodes, exemplarNodes);
 
-    console.log('color for node', exemplarNodes.first().data('id'), getColorForNamespace(exemplarNodes.first().data('namespace'), true));
-    console.log('namespace', exemplarNodes.first().data('namespace'));
+    violationNodes.union(typeNodes).union(otherNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes)).select();
 
     cy.style().update();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cy, selectedViolations, selectedTypes, violationsTypesMap, selectedViolationExemplars]);
 
   React.useEffect(() => {
-    selectCytoData(rdfOntology)
+    selectCytoData(rdfOntology, getColorForNamespace)
       .then((data) => {
         const newCytoData = { ...data };
         newCytoData.nodes = newCytoData.nodes.map((node) => ({
@@ -300,18 +327,23 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
               {
                 selector: 'node',
                 style: {
-                  'background-color': 'lightgrey', // previously #666
+                  shape: 'ellipse',
+                  'background-color': 'lightgrey',
                   label: 'data(label)',
                   display: (ele) => (ele.data('visible') ? 'element' : 'none'),
                 },
               },
+
               {
-                selector: 'node[?selected]', // previously 'node:selected' which works for the default selection
+                selector: 'node:selected',
                 style: {
+                  shape: 'diamond',
                   'background-color': 'steelblue',
+                  label: 'data(label)',
                   display: (ele) => (ele.data('visible') ? 'element' : 'none'),
                 },
               },
+
               {
                 selector: 'node[?violation]',
                 style: {
@@ -353,6 +385,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
           });
 
           newCy.on('boxstart', () => {
+            console.log('boxstart');
             lassoSelectionInProgress = true;
             newCy.nodes(':selected').unselect();
           });
@@ -365,31 +398,26 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
           newCy.on('mouseover', 'node', (event) => {
             const node = event.target;
-            const currentColor = node.style('background-color');
-
-            if (!node.data('original-color')) {
-              // store the current color in the node's data so we can retrieve it later
-              node.data('original-color', currentColor);
-            }
-
-            const darkerColor = chroma(currentColor).darken().hex(); // darken the current color
 
             node
               .animation({
-                style: { 'background-color': darkerColor },
-                duration: 50,
+                style: {
+                  'background-color': node.selected() ? determineDeselectColor(node) : determineSelectColor(node),
+                },
+                duration: 30,
               })
               .play();
           });
 
           newCy.on('mouseout', 'node', (event) => {
             const node = event.target;
-            const originalColor = node.data('original-color'); // get the original color from data
 
             node
               .animation({
-                style: { 'background-color': originalColor },
-                duration: 50,
+                style: {
+                  'background-color': node.selected() ? determineSelectColor(node) : determineDeselectColor(node),
+                },
+                duration: 30,
               })
               .play();
           });
@@ -459,11 +487,32 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
               if (!hasPredecessorWithSubClassOf) {
                 return;
               }
-              node.stop(); // Stop any animation that is currently running
-              node.removeData('original-color');
-              newCy.nodes().unselect();
-              node.select();
+              if (!node.selected()) {
+                newCy.nodes().unselect();
+                node.select();
+              } else {
+                newCy.nodes().unselect();
+                hideAllVisibleNodes();
+                resetNodePositions(newCy, newCy.nodes());
+                dispatch(setSelectedTypes([]));
+                dispatch(setSelectedViolationExemplars([]));
+              }
               setTimeout(() => handleNodeSelection(newCy), 0);
+            }
+          });
+
+          newCy.on('tap', function (evt) {
+            const { target } = evt;
+
+            if (target === newCy) {
+              console.log('Tap on empty space');
+
+              newCy.elements().unselect();
+
+              hideAllVisibleNodes();
+              resetNodePositions(newCy, newCy.nodes());
+              dispatch(setSelectedTypes([]));
+              dispatch(setSelectedViolationExemplars([]));
             }
           });
 
