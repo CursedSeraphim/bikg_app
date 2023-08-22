@@ -4,7 +4,6 @@ import cytoscape from 'cytoscape';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
 import { useDispatch, useSelector } from 'react-redux';
-import chroma from 'chroma-js';
 import {
   selectSelectedViolations,
   selectCytoData,
@@ -134,23 +133,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     }
   }
 
-  // TODO can be implemented with hash map of selected nodes, and of type->node for efficiency
-  // React.useEffect(() => {
-  //   if (cy && selectedTypes) {
-  //     // Iterate over all nodes
-  //     cy.nodes().forEach((node) => {
-  //       const nodeType = node.data().id;
-  //       if (selectedTypes.includes(nodeType)) {
-  //         node.style('background-color', 'steelblue');
-  //       } else if (violations.includes(nodeType)) {
-  //         node.style('background-color', 'orange');
-  //       } else {
-  //         node.style('background-color', 'lightgrey');
-  //       }
-  //     });
-  //   }
-  // }, [cy, selectedTypes, violations]);
-
   const listOfNodesThatHaveBeenMadeVisible = React.useRef([]);
 
   /**
@@ -275,9 +257,10 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   }
 
   React.useEffect(() => {
+    // TODO determine when is this behvaiour supposed to happen, fix such that it doesn't interfere with other useeffect, or combine them
     if (!cy || !selectedViolations) return;
 
-    cy.nodes().unselect();
+    // cy.nodes().unselect();
     hideAllVisibleNodes();
     resetNodePositions(cy, cy.nodes());
 
@@ -286,6 +269,23 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     adjustLayout(violationNodes, typeNodes, otherNodes, exemplarNodes);
 
     violationNodes.union(typeNodes).union(otherNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes)).select();
+
+    console.log('selectedTypes', selectedTypes);
+    cy.nodes().forEach((node) => {
+      if (selectedTypes.includes(node.data('id'))) {
+        node.select();
+        node.style('background-color', 'steelblue');
+      } else if (selectedViolationExemplars.includes(node.data('id'))) {
+        node.select();
+        node.style('background-color', 'purple');
+      } else if (selectedViolations.includes(node.data('id'))) {
+        node.select();
+        node.style('background-color', 'orange');
+      } else {
+        node.unselect();
+        node.style('background-color', 'lightgrey');
+      }
+    });
 
     cy.style().update();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -399,6 +399,8 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
           newCy.on('mouseover', 'node', (event) => {
             const node = event.target;
+
+            console.log('ndoe selected?', node.selected());
 
             node
               .animation({
