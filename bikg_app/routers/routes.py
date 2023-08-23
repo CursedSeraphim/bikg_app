@@ -1,8 +1,9 @@
 # routes.py
 import json
 import os
-from collections import defaultdict
 import time
+from collections import defaultdict
+
 import numpy as np
 import pandas as pd
 from fastapi import APIRouter, Request, Response
@@ -10,7 +11,12 @@ from rdflib import Graph, Namespace
 from rdflib.namespace import split_uri
 from scipy.stats import chi2_contingency
 
-from bikg_app.routers.utils import load_edge_count_json, load_uri_set_of_uris_dict, serialize_edge_count_dict, serialize_focus_node_exemplar_dict
+from bikg_app.routers.utils import (
+    load_edge_count_json,
+    load_uri_set_of_uris_dict,
+    serialize_edge_count_dict,
+    serialize_focus_node_exemplar_dict,
+)
 
 SH = Namespace("http://www.w3.org/ns/shacl#")
 OWL = Namespace("http://www.w3.org/2002/07/owl#")
@@ -19,14 +25,14 @@ OWL = Namespace("http://www.w3.org/2002/07/owl#")
 VIOLATIONS_FILE_PATH = os.path.join("bikg_app/json", "violation_list.json")
 STUDY_CSV_FILE_PATH = "bikg_app/csv/study.csv"
 ONTOLOGY_TTL_FILE_PATH = "bikg_app/ttl/omics_model_union_violation_exemplar.ttl"
-EXEMPLAR_EDGE_COUNT_JSON_PATH = 'bikg_app/json/exemplar_edge_count_dict.json'
-FOCUS_NODE_EXEMPLAR_DICT_JSON_PATH = 'bikg_app/json/focus_node_exemplar_dict.json'
-EXEMPLAR_FOCUS_NODE_DICT_JSON_PATH = 'bikg_app/json/exemplar_focus_node_dict.json'
+EXEMPLAR_EDGE_COUNT_JSON_PATH = "bikg_app/json/exemplar_edge_count_dict.json"
+FOCUS_NODE_EXEMPLAR_DICT_JSON_PATH = "bikg_app/json/focus_node_exemplar_dict.json"
+EXEMPLAR_FOCUS_NODE_DICT_JSON_PATH = "bikg_app/json/exemplar_focus_node_dict.json"
 
 # load the violations
 assert os.path.exists(VIOLATIONS_FILE_PATH)
-with open(VIOLATIONS_FILE_PATH, "rb") as f:
-    violations_list = json.load(f)
+with open(VIOLATIONS_FILE_PATH, "rb") as violations_f:
+    violations_list = json.load(violations_f)
 
 # load the tabularized data
 df = pd.read_csv(STUDY_CSV_FILE_PATH, index_col=0)
@@ -48,7 +54,8 @@ g = Graph()
 g.parse(ONTOLOGY_TTL_FILE_PATH, format="ttl")
 
 overall_violation_value_counts = {
-    violation: sum(key * value for key, value in counts.items()) for violation, counts in overall_violation_value_dict.items()
+    violation: sum(key * value for key, value in counts.items())
+    for violation, counts in overall_violation_value_dict.items()
 }
 
 # load the edge_count_dict that gives edge counts within each exemplar
@@ -65,10 +72,16 @@ def get_prefixes(graph: Graph):
     return {prefix: str(namespace) for prefix, namespace in graph.namespaces()}
 
 
-def split_uri_or_omics(uri):
-    if uri.startswith("http://data.boehringer.com/ontology/omics/"):
-        return "omics", ""
-    return split_uri(uri)
+def has_namespace(uri):
+    return uri.startswith("http://") or uri.startswith("https://")
+
+
+def safe_split_uri(uri, ns_dict):
+    try:
+        ns, _ = split_uri(uri)
+        return ns_dict.get(ns, ns)
+    except ValueError:
+        return str(uri)
 
 
 def get_prefix_ns_node_edge_counts(graph: Graph):
@@ -79,42 +92,29 @@ def get_prefix_ns_node_edge_counts(graph: Graph):
     node_count = {}
     edge_count = {}
 
+    # Collect namespaces from the graph
+    ns_dict = {str(ns): prefix for prefix, ns in graph.namespaces()}
+
     for subject, predicate, obj in graph:
-        try:
-            subject_ns, _ = split_uri_or_omics(subject)
-            predicate_ns, _ = split_uri_or_omics(predicate)
-            object_ns, _ = split_uri_or_omics(obj)
-        except Exception:
-            # exceptions are numbers such as 0, 1 which have no namespace
-            continue
+        # Extract or fall back to full URIs if split_uri fails
+        subject_ns = safe_split_uri(subject, ns_dict)
+        predicate_ns = safe_split_uri(predicate, ns_dict)
+        object_ns = safe_split_uri(obj, ns_dict)
 
-        # Note that this counts subjects/objects multiple times if they have multiple edges
-        if subject_ns:
-            node_count[subject_ns] = node_count.get(subject_ns, 0) + 1
-        if object_ns:
-            node_count[object_ns] = node_count.get(object_ns, 0) + 1
-        if predicate_ns:
-            edge_count[predicate_ns] = edge_count.get(predicate_ns, 0) + 1
+        # Increment counters
+        node_count[subject_ns] = node_count.get(subject_ns, 0) + 1
+        node_count[object_ns] = node_count.get(object_ns, 0) + 1
+        edge_count[predicate_ns] = edge_count.get(predicate_ns, 0) + 1
 
-    # Populate ns_info
-    for prefix, namespace in graph.namespaces():
-        ns_str = str(namespace)
+    # Populate ns_info based on graph namespaces
+    for ns, prefix in ns_dict.items():
         ns_info[prefix] = {
-            "namespace": ns_str,
-            "node_count": node_count.get(ns_str, 0),
-            "edge_count": edge_count.get(ns_str, 0)
-        }
-
-    # Special handling for 'omics'
-    if "omics" in node_count or "omics" in edge_count:
-        ns_info["omics"] = {
-            "namespace": "http://data.boehringer.com/ontology/omics/",
-            "node_count": node_count.get("omics", 0),
-            "edge_count": edge_count.get("omics", 0)
+            "namespace": ns,
+            "node_count": node_count.get(ns, 0),
+            "edge_count": edge_count.get(ns, 0),
         }
 
     print("ns_info:", ns_info)
-
     return ns_info
 
 
@@ -129,17 +129,13 @@ def send_namespace_dict():
 
 def shorten_dict_uris(d, prefixes):
     def shorten(uri):
-        try:
-            # Check if the uri is a tuple and shorten each element of the tuple
-            if isinstance(uri, tuple):
-                return tuple(shorten(elem) for elem in uri)
-            for prefix, namespace in prefixes.items():
-                if uri.startswith(namespace):
-                    return uri.replace(namespace, f"{prefix}:")
-            return uri
-        except Exception as e:
-            print("Error shortening URI:", uri, "Error:", str(e))
-            return uri
+        # Check if the uri is a tuple and shorten each element of the tuple
+        if isinstance(uri, tuple):
+            return tuple(shorten(elem) for elem in uri)
+        for prefix, namespace in prefixes.items():
+            if uri.startswith(namespace):
+                return uri.replace(namespace, f"{prefix}:")
+        return uri
 
     def process_item(item):
         if isinstance(item, dict):
@@ -164,13 +160,17 @@ async def get_edge_count_dict():
 async def get_focus_node_exemplar_dict():
     # TODO shorten uris with shorten_dict_uris then return serialized shortened dict
     prefixes = get_prefixes(g)  # Get the prefixes from the graph
-    return serialize_focus_node_exemplar_dict(shorten_dict_uris(focus_node_exemplar_dict, prefixes))
+    return serialize_focus_node_exemplar_dict(
+        shorten_dict_uris(focus_node_exemplar_dict, prefixes)
+    )
 
 
 @router.get("/file/exemplar_focus_node_dict", response_model=dict)
 async def get_exemplar_focus_node_dict():
     prefixes = get_prefixes(g)  # Get the prefixes from the graph
-    return serialize_focus_node_exemplar_dict(shorten_dict_uris(exemplar_focus_node_dict, prefixes))
+    return serialize_focus_node_exemplar_dict(
+        shorten_dict_uris(exemplar_focus_node_dict, prefixes)
+    )
 
 
 @router.get("/file/study")
@@ -195,8 +195,8 @@ async def get_nodes_violations_types_from_feature_categories(request: Request):
     # Use pandas best practices to efficiently extract the value counts of this view of the df
     selected_df = df.loc[selected_nodes]
     selected_value_counts = {}
-    for column in filtered_columns:
-        selected_value_counts[column] = selected_df[column].value_counts().to_dict()
+    for col in filtered_columns:
+        selected_value_counts[col] = selected_df[col].value_counts().to_dict()
 
     # Return the nodes and the value counts as a dictionary
     return {"selectedNodes": selected_nodes, "valueCounts": selected_value_counts}
@@ -217,8 +217,8 @@ async def get_nodes_violations_types_from_violations(request: Request):
     selected_df = df.loc[selected_nodes]
 
     selected_value_counts = {}
-    for column in filtered_columns:
-        selected_value_counts[column] = selected_df[column].value_counts().to_dict()
+    for col in filtered_columns:
+        selected_value_counts[col] = selected_df[col].value_counts().to_dict()
 
     # Return the nodes and the value counts as a dictionary
     return {"selectedNodes": selected_nodes, "valueCounts": selected_value_counts}
@@ -227,34 +227,48 @@ async def get_nodes_violations_types_from_violations(request: Request):
 @router.post("/plot/bar/violations")
 async def get_violations_bar_plot_data_given_selected_nodes(request: Request):
     selected_nodes = await request.json()  # selected_nodes is a dictionary here
-    selected_nodes = selected_nodes.get("selectedNodes", [])  # Extracting the list from the dictionary
+    selected_nodes = selected_nodes.get(
+        "selectedNodes", []
+    )  # Extracting the list from the dictionary
 
     # Select rows from df using selected_nodes as indices
     selected_df = df.loc[selected_nodes]
 
     # Process the selected data: for each column, count the occurrences of each category
     selection_violation_value_counts = {}
-    for column in violations_list:
-        selection_violation_value_counts[column] = selected_df[column].value_counts().to_dict()
+    for col in violations_list:
+        selection_violation_value_counts[col] = (
+            selected_df[col].value_counts().to_dict()
+        )
 
     # Convert selection_value_counts into a dictionary where the key is the violation
     # and the value is the number of times (weighted sum of counts) that the violation has occurred.
     selection_violation_counts = {
-        violation: sum(key * value for key, value in counts.items()) for violation, counts in selection_violation_value_counts.items()
+        violation: sum(key * value for key, value in counts.items())
+        for violation, counts in selection_violation_value_counts.items()
     }
 
     # Compute chi square score per column
     chi_scores = {}
-    chi_scores["violations"] = chi_square_score(selection_violation_counts, overall_violation_value_counts)
+    chi_scores["violations"] = chi_square_score(
+        selection_violation_counts, overall_violation_value_counts
+    )
 
     # Transform the result into a format that can be used by plotly.
     plotly_data = {}
     plotly_data = {
-        "selected": value_counts_to_plotly_data(selection_violation_counts, "Selected Nodes", "steelblue"),
-        "overall": value_counts_to_plotly_data(overall_violation_value_counts, "Overall Distribution", "lightgrey"),
+        "selected": value_counts_to_plotly_data(
+            selection_violation_counts, "Selected Nodes", "steelblue"
+        ),
+        "overall": value_counts_to_plotly_data(
+            overall_violation_value_counts, "Overall Distribution", "lightgrey"
+        ),
     }
     # Send the processed data to the client
-    return {"plotlyData": {"violations": plotly_data}, "chiScores": {"violations": chi_scores}}
+    return {
+        "plotlyData": {"violations": plotly_data},
+        "chiScores": {"violations": chi_scores},
+    }
 
 
 @router.post("/plot/bar")
@@ -266,27 +280,35 @@ async def get_bar_plot_data_given_selected_nodes(request: Request):
     """
     time.time()
     selected_nodes = await request.json()  # selected_nodes is a dictionary here
-    selected_nodes = selected_nodes.get("selectedNodes", [])  # Extracting the list from the dictionary
+    selected_nodes = selected_nodes.get(
+        "selectedNodes", []
+    )  # Extracting the list from the dictionary
 
     # Select rows from df using selected_nodes as indices
     selected_df = df.loc[selected_nodes]
 
     # Process the selected data: for each column, count the occurrences of each category
     selection_value_counts = {}
-    for column in filtered_columns:
-        selection_value_counts[column] = selected_df[column].value_counts().to_dict()
+    for col in filtered_columns:
+        selection_value_counts[col] = selected_df[col].value_counts().to_dict()
 
     # Compute chi square score per column
     chi_scores = {}
-    for column in filtered_columns:
-        chi_scores[column] = chi_square_score(selection_value_counts[column], overall_value_counts[column])
+    for col in filtered_columns:
+        chi_scores[col] = chi_square_score(
+            selection_value_counts[col], overall_value_counts[col]
+        )
 
     # Transform the result into a format that can be used by plotly.
     plotly_data = {}
-    for column in filtered_columns:
-        plotly_data[column] = {
-            "selected": value_counts_to_plotly_data(selection_value_counts[column], "Selected Nodes", "steelblue"),
-            "overall": value_counts_to_plotly_data(overall_value_counts[column], "Overall Distribution", "lightgrey"),
+    for col in filtered_columns:
+        plotly_data[col] = {
+            "selected": value_counts_to_plotly_data(
+                selection_value_counts[col], "Selected Nodes", "steelblue"
+            ),
+            "overall": value_counts_to_plotly_data(
+                overall_value_counts[col], "Overall Distribution", "lightgrey"
+            ),
         }
 
     time.time()
@@ -306,9 +328,21 @@ def chi_square_score(selection_data, overall_data):
     # create observed frequency table
     categories = set(list(selection_data.keys()) + list(overall_data.keys()))
     observed = np.array(
-        [selection_data.get(category, 1e-7) if selection_data.get(category, 1e-7) != 0 else 1e-7 for category in categories]
+        [
+            selection_data.get(category, 1e-7)
+            if selection_data.get(category, 1e-7) != 0
+            else 1e-7
+            for category in categories
+        ]
     )
-    expected = np.array([overall_data.get(category, 1e-7) if overall_data.get(category, 1e-7) != 0 else 1e-7 for category in categories])
+    expected = np.array(
+        [
+            overall_data.get(category, 1e-7)
+            if overall_data.get(category, 1e-7) != 0
+            else 1e-7
+            for category in categories
+        ]
+    )
 
     # Compute chi-square scores
     chi2, _, _, _ = chi2_contingency([observed, expected])
@@ -346,7 +380,6 @@ def get_ttl_file(response: Response):
     """
     sends the contents of the ttl file serialized to the client
     """
-    global g
     ttl_data = g.serialize(format="turtle")
 
     response.headers["Content-Disposition"] = "attachment; filename=omics_model.ttl"
@@ -356,7 +389,8 @@ def get_ttl_file(response: Response):
 def uri_to_qname(graph, uri):
     try:
         return graph.namespace_manager.qname(uri)
-    except Exception:
+    except ValueError:
+        print("uri_to_qname failed for uri:", uri)
         return uri
 
 
@@ -422,5 +456,5 @@ async def read_file(file_path: str):
         return {"data": []}
 
     # load file_path and return it
-    with open(file_path, "rb") as f:
-        return json.load(f)
+    with open(file_path, "rb") as json_file:
+        return json.load(json_file)
