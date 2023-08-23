@@ -26,27 +26,6 @@ const CY_LAYOUT = {
   nodeDimensionsIncludeLabels: true,
 };
 
-// const determineSelectColor = (node) => {
-//   console.log('node.data', node.data());
-//   if (node.data('violation')) {
-//     return 'orange';
-//   }
-//   if (node.data('exemplar')) {
-//     return 'red';
-//   }
-//   return 'steelblue';
-// };
-
-// const determineDeselectColor = (node) => {
-//   if (node.data('violation')) {
-//     return 'orange';
-//   }
-//   if (node.data('exemplar')) {
-//     return 'red';
-//   }
-//   return 'lightgrey';
-// };
-
 // Function to align nodes
 function alignNodes(nodes, parentNodePosition, isChild) {
   const nodeLayoutOffsetX = 500;
@@ -110,6 +89,10 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   const [loading, setLoading] = React.useState(true); // setLoading wouldn't work if we removed loading
   const initialNodePositions = React.useRef(new Map());
 
+  /**
+   * Gets selected nodes from cy instance, treats them all as types, and dispatches setSelectedTypes action with the new list of unique selected types.
+   * @param newCy The cytoscape instance
+   */
   function handleNodeSelection(newCy: cytoscape.Core) {
     const selectedNodes = newCy.nodes(':selected');
     const selectedNodeTypes = selectedNodes.map((node) => node.data().id);
@@ -180,6 +163,9 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
   /**
    * Fetch and categorize nodes based on violations, types, and exemplars.
+   * Uses selectedViolations to get the nodes that need to be visible to show the path to the types using violationsTypesMap.
+   * Differentiates whether these nodes are selected types or not.
+   * Independently of this logic also returns the selectedViolatoinExemplars.
    * @returns {Object} An object containing categorized nodes: violationNodes, typeNodes, otherNodes, and exemplarNodes.
    */
   function getFilteredNodes() {
