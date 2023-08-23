@@ -1,6 +1,5 @@
 import { ICsvData } from '../../types';
 
-
 export interface CytoNode {
   data: {
     id: string;
@@ -43,8 +42,8 @@ export interface CombinedState {
   selectedViolations: string[];
   rdfString: string;
   violations: string[]; // list of possible violation source shapes
-  violationTypesMap: { [key: string]: string[]; }; // map of violation sh:PropertyShapes to their corresponding owl:Class and the sh:NodeShapes in between
-  typesViolationMap: { [key: string]: string[]; }; // map of owl:Classes to their corresponding sh:PropertyShapes and the sh:NodeShapes in between
+  violationTypesMap: { [key: string]: string[] }; // map of violation sh:PropertyShapes to their corresponding owl:Class and the sh:NodeShapes in between
+  typesViolationMap: { [key: string]: string[] }; // map of owl:Classes to their corresponding sh:PropertyShapes and the sh:NodeShapes in between
 }
 
 export interface Triple {

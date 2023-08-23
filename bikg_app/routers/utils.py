@@ -101,7 +101,7 @@ def load_edge_count_json(path):
     Returns:
         dict: A deserialized dictionary containing edge count information.
     """
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
     return deserialize_edge_count_dict(data)
 
@@ -118,7 +118,7 @@ def deserialize_focus_node_exemplar_dict(d):
     deserialized_dict = {}
     for key, value in d.items():
         deserialized_key = key
-        deserialized_value = [item for item in value]
+        deserialized_value = list(value)
         deserialized_dict[deserialized_key] = deserialized_value
     return deserialized_dict
 
@@ -132,7 +132,7 @@ def load_uri_set_of_uris_dict(path):
     Returns:
         dict: A deserialized dictionary mapping URIs to sets of URIs.
     """
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
     return deserialize_focus_node_exemplar_dict(data)
 
@@ -224,9 +224,11 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
     focus_node_exemplar_dict = defaultdict(set)
     exemplar_focus_node_dict = defaultdict(set)
 
-    ignored_edges = set(
-        [dcterms.date, sh.focusNode, URIRef("http://rdfunit.aksw.org/ns/core#testCase")]
-    )
+    ignored_edges = {
+        dcterms.date,
+        sh.focusNode,
+        URIRef("http://rdfunit.aksw.org/ns/core#testCase"),
+    }
 
     exemplar_sets = {}
 
