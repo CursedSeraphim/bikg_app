@@ -1,8 +1,7 @@
 # utils.py
 import numpy as np
 from collections import defaultdict
-from rdflib import Graph, Namespace, URIRef, RDF
-import time
+from rdflib import Namespace, URIRef, RDF
 from tqdm.auto import tqdm
 import sys
 import json
@@ -101,7 +100,6 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
 
     SH = Namespace("http://www.w3.org/ns/shacl#")
     DCTERMS = Namespace("http://purl.org/dc/terms/")
-    OWL = Namespace("http://www.w3.org/2002/07/owl#")
     EX = Namespace("http://example.com/exemplar#")
     ontology_g.namespace_manager.bind("sh", SH)
     ontology_g.namespace_manager.bind("dcterms", DCTERMS)
@@ -117,7 +115,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
         ?violation a sh:ValidationResult .
         }
         """
-    violations = [row[0] for row in violation_report_g.query(violations_query)] # type: ignore
+    violations = [row[0] for row in violation_report_g.query(violations_query)]  # type: ignore
 
     edge_count_dict = defaultdict(lambda: defaultdict(int))
     focus_node_exemplar_dict = defaultdict(set)
@@ -138,7 +136,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
         shape = ""
         current_focus_node = None
         for row in violation_report_g.query(violations_query):
-            _, p, o = row # type: ignore
+            _, p, o = row   # type: ignore
             if p == SH.focusNode:
                 current_focus_node = o
             if p == SH.sourceShape:
@@ -154,19 +152,17 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
             exemplar_name = URIRef(f"{EX}{shape.split('omics/')[-1]}_exemplar_{len(exemplar_sets)+1}")
             exemplar_sets[frozenset(edge_object_pairs)] = exemplar_name
 
-
         focus_node_exemplar_dict[current_focus_node].add(exemplar_name)
         exemplar_focus_node_dict[exemplar_name].add(current_focus_node)
 
         for p, o in edge_object_pairs:
             if edge_count_dict[exemplar_name][(p, o)] == 0:
                 if p == SH.sourceShape:
-                    ontology_g.add((o, URIRef("http://customnamespace.com/hasExemplar"), exemplar_name)) # type: ignore
+                    ontology_g.add((o, URIRef("http://customnamespace.com/hasExemplar"), exemplar_name))  # type: ignore
                 else:
-                    ontology_g.add((exemplar_name, p, o)) # type: ignore
+                    ontology_g.add((exemplar_name, p, o))  # type: ignore
                 # TODO create custom URI instead of object property
                 ontology_g.add((exemplar_name, RDF.type, SH.PropertyShape))
             edge_count_dict[exemplar_name][(p, o)] += 1
 
     return ontology_g, edge_count_dict, focus_node_exemplar_dict, exemplar_focus_node_dict
-

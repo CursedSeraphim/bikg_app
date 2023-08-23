@@ -6,11 +6,11 @@ import time
 import numpy as np
 import pandas as pd
 from fastapi import APIRouter, Request, Response
-from rdflib import Graph, Namespace, URIRef
+from rdflib import Graph, Namespace
 from rdflib.namespace import split_uri
 from scipy.stats import chi2_contingency
 
-from bikg_app.routers.utils import get_violation_report_exemplars, load_edge_count_json, load_uri_set_of_uris_dict, serialize_edge_count_dict, serialize_focus_node_exemplar_dict
+from bikg_app.routers.utils import load_edge_count_json, load_uri_set_of_uris_dict, serialize_edge_count_dict, serialize_focus_node_exemplar_dict
 
 SH = Namespace("http://www.w3.org/ns/shacl#")
 OWL = Namespace("http://www.w3.org/2002/07/owl#")
@@ -74,12 +74,10 @@ def split_uri_or_omics(uri):
 def get_prefix_ns_node_edge_counts(graph: Graph):
     # Initialize the dictionary to hold namespace information
     ns_info = {}
-    
+
     # Initialize counters
     node_count = {}
     edge_count = {}
-
-    prefix_ns_d = get_prefixes(graph)
 
     for subject, predicate, obj in graph:
         try:
@@ -114,7 +112,7 @@ def get_prefix_ns_node_edge_counts(graph: Graph):
             "node_count": node_count.get("omics", 0),
             "edge_count": edge_count.get("omics", 0)
         }
-    
+
     print("ns_info:", ns_info)
 
     return ns_info
@@ -129,7 +127,7 @@ def send_namespace_dict():
     return get_prefix_ns_node_edge_counts(g)
 
 
-def shortenDictURIs(d, prefixes):
+def shorten_dict_uris(d, prefixes):
     def shorten(uri):
         try:
             # Check if the uri is a tuple and shorten each element of the tuple
@@ -158,21 +156,21 @@ def shortenDictURIs(d, prefixes):
 
 @router.get("/file/edge_count_dict", response_model=dict)
 async def get_edge_count_dict():
-    prefixes = get_prefixes(g) # Get the prefixes from the graph
-    return serialize_edge_count_dict(shortenDictURIs(edge_count_dict, prefixes))
+    prefixes = get_prefixes(g)  # Get the prefixes from the graph
+    return serialize_edge_count_dict(shorten_dict_uris(edge_count_dict, prefixes))
 
 
 @router.get("/file/focus_node_exemplar_dict", response_model=dict)
 async def get_focus_node_exemplar_dict():
-    # TODO shorten uris with shortenDictURIs then return serialized shortened dict
-    prefixes = get_prefixes(g) # Get the prefixes from the graph
-    return serialize_focus_node_exemplar_dict(shortenDictURIs(focus_node_exemplar_dict, prefixes))
+    # TODO shorten uris with shorten_dict_uris then return serialized shortened dict
+    prefixes = get_prefixes(g)  # Get the prefixes from the graph
+    return serialize_focus_node_exemplar_dict(shorten_dict_uris(focus_node_exemplar_dict, prefixes))
 
 
 @router.get("/file/exemplar_focus_node_dict", response_model=dict)
 async def get_exemplar_focus_node_dict():
-    prefixes = get_prefixes(g) # Get the prefixes from the graph
-    return serialize_focus_node_exemplar_dict(shortenDictURIs(exemplar_focus_node_dict, prefixes))
+    prefixes = get_prefixes(g)  # Get the prefixes from the graph
+    return serialize_focus_node_exemplar_dict(shorten_dict_uris(exemplar_focus_node_dict, prefixes))
 
 
 @router.get("/file/study")
