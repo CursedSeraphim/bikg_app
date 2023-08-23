@@ -275,7 +275,7 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                 # print_defaultdict_human_readable(edge_count_dict)
                 # print('\nsorted(expected_edge_count_dict)')
                 # print_defaultdict_human_readable(expected_edge_count_dict)
-                assert edge_count_dict == expected_edge_count_dict)
+                assert edge_count_dict == expected_edge_count_dict
 
     def test_focus_node_exemplar_dict(self):
         for test_case in self.test_cases:
