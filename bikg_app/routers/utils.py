@@ -256,9 +256,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
 
         if exemplar_name is None:
             # Use custom exemplar namespace instead of the shape's namespace
-            exemplar_name = URIRef(
-                f"{ex}{shape.split('omics/')[-1]}_exemplar_{len(exemplar_sets)+1}"
-            )
+            exemplar_name = URIRef(f"{ex}{shape.split('omics/')[-1]}_exemplar_{len(exemplar_sets)+1}")
             exemplar_sets[frozenset(edge_object_pairs)] = exemplar_name
 
         focus_node_exemplar_dict[current_focus_node].add(exemplar_name)
