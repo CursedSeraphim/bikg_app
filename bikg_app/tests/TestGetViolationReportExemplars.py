@@ -73,12 +73,8 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                     }
                 },
             ),
-            "expected_exemplar_focus_node_dict": defaultdict(
-                lambda: defaultdict(set), {shape1_exemplar_1: {fn1}}
-            ),
-            "expected_focus_node_exemplar_dict": defaultdict(
-                lambda: defaultdict(set), {fn1: {shape1_exemplar_1}}
-            ),
+            "expected_exemplar_focus_node_dict": defaultdict(lambda: defaultdict(set), {shape1_exemplar_1: {fn1}}),
+            "expected_focus_node_exemplar_dict": defaultdict(lambda: defaultdict(set), {fn1: {shape1_exemplar_1}}),
         },
         # test case for one exemplar and multiple occurrences of the violation
         {
@@ -133,9 +129,7 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                     }
                 },
             ),
-            "expected_exemplar_focus_node_dict": defaultdict(
-                lambda: defaultdict(set), {shape1_exemplar_1: {fn1, fn2}}
-            ),
+            "expected_exemplar_focus_node_dict": defaultdict(lambda: defaultdict(set), {shape1_exemplar_1: {fn1, fn2}}),
             "expected_focus_node_exemplar_dict": defaultdict(
                 lambda: defaultdict(set),
                 {fn1: {shape1_exemplar_1}, fn2: {shape1_exemplar_1}},
@@ -229,9 +223,7 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                 lambda: defaultdict(set),
                 {shape1_exemplar_1: {fn1}, shape1_exemplar_2: {fn1}},
             ),
-            "expected_focus_node_exemplar_dict": defaultdict(
-                lambda: defaultdict(set), {fn1: {shape1_exemplar_1, shape1_exemplar_2}}
-            ),
+            "expected_focus_node_exemplar_dict": defaultdict(lambda: defaultdict(set), {fn1: {shape1_exemplar_1, shape1_exemplar_2}}),
         },
     ]
 
@@ -285,12 +277,8 @@ class TestGetViolationReportExemplars(unittest.TestCase):
 
                 g_v = Graph()
                 g_v.parse(test_case["violation_report_file"], format="ttl")
-                _, _, focus_node_exemplar_dict, _ = get_violation_report_exemplars(
-                    g, g_v
-                )
-                exepected_focus_node_exemplar_dict = test_case[
-                    "expected_focus_node_exemplar_dict"
-                ]
+                _, _, focus_node_exemplar_dict, _ = get_violation_report_exemplars(g, g_v)
+                exepected_focus_node_exemplar_dict = test_case["expected_focus_node_exemplar_dict"]
                 # print('\n tcprint focus_node_exemplar_dict')
                 # [print(k,v) for k,v in focus_node_exemplar_dict.items()]
                 # print()
@@ -307,12 +295,8 @@ class TestGetViolationReportExemplars(unittest.TestCase):
 
                 g_v = Graph()
                 g_v.parse(test_case["violation_report_file"], format="ttl")
-                _, _, _, exemplar_focus_node_dict = get_violation_report_exemplars(
-                    g, g_v
-                )
-                expected_exemplar_focus_node_dict = test_case[
-                    "expected_exemplar_focus_node_dict"
-                ]
+                _, _, _, exemplar_focus_node_dict = get_violation_report_exemplars(g, g_v)
+                expected_exemplar_focus_node_dict = test_case["expected_exemplar_focus_node_dict"]
                 # print('\n tcprint exemplar_focus_node_dict')
                 # [print(k,v) for k,v in exemplar_focus_node_dict.items()]
                 # print()
