@@ -30,8 +30,8 @@ class TestProcessEdgeObjectPairs(unittest.TestCase):
             edge_object_pairs,
             exemplar_name,
         )
-        self.assertEqual(len(self.ontology_g), 0)  # type: ignore
-        self.assertEqual(self.edge_count_dict, defaultdict(lambda: defaultdict(int)))
+        assert len(self.ontology_g) == 0  # type: ignore
+        assert self.edge_count_dict == defaultdict(lambda: defaultdict(int))
 
     def test_non_empty_pairs(self):
         edge_object_pairs = [
@@ -51,65 +51,57 @@ class TestProcessEdgeObjectPairs(unittest.TestCase):
         )
 
         # Check if edge_count_dict is updated correctly
-        self.assertEqual(
+        assert (
             self.edge_count_dict[exemplar_name][
                 f"{self.sh.sourceShape}__{URIRef('http://example.com/shape1')}"
-            ],
-            1,
+            ]
+            == 1
         )
-        self.assertEqual(
+        assert (
             self.edge_count_dict[exemplar_name][
                 f"{URIRef('http://example.com/predicate1')}__{URIRef('http://example.com/object1')}"
-            ],
-            1,
+            ]
+            == 1
         )
 
         # Check if triples are added to ontology_g
-        self.assertTrue(
-            (
-                URIRef("http://example.com/shape1"),
-                URIRef("http://customnamespace.com/hasExemplar"),
-                exemplar_name,
-            )
-            in self.ontology_g
-        )
-        self.assertTrue(
-            (
-                exemplar_name,
-                URIRef("http://example.com/predicate1"),
-                URIRef("http://example.com/object1"),
-            )
-            in self.ontology_g
-        )
-        self.assertTrue(
-            (exemplar_name, RDF.type, self.sh.PropertyShape) in self.ontology_g
-        )
+        assert (
+            URIRef("http://example.com/shape1"),
+            URIRef("http://customnamespace.com/hasExemplar"),
+            exemplar_name,
+        ) in self.ontology_g
+        assert (
+            exemplar_name,
+            URIRef("http://example.com/predicate1"),
+            URIRef("http://example.com/object1"),
+        ) in self.ontology_g
+        assert (exemplar_name, RDF.type, self.sh.PropertyShape) in self.ontology_g
         print("self.edge_count_dict: ", self.edge_count_dict)
 
 
 class TestSerializeEdgeCountDict(unittest.TestCase):
     def test_empty_dict(self):
-        self.assertEqual(serialize_edge_count_dict({}), "{}")
+        assert serialize_edge_count_dict({}) == "{}"
 
     def test_simple_dict(self):
         input_dict = {"a": 1, "b": 2}
         expected_output = json.dumps(input_dict)
-        self.assertEqual(serialize_edge_count_dict(input_dict), expected_output)
+        assert serialize_edge_count_dict(input_dict) == expected_output
 
     def test_dict_with_set(self):
         input_dict = {"a": {1, 2}, "b": 2}
         expected_output = json.dumps({"a": [1, 2], "b": 2})
-        self.assertEqual(serialize_edge_count_dict(input_dict), expected_output)
+        assert serialize_edge_count_dict(input_dict) == expected_output
 
     def test_dict_with_nested_dict(self):
         input_dict = {"a": {"nested": 1}, "b": 2}
         expected_output = json.dumps(input_dict)
-        self.assertEqual(serialize_edge_count_dict(input_dict), expected_output)
+        assert serialize_edge_count_dict(input_dict) == expected_output
 
     def test_dict_with_varied_keys(self):
         input_dict = {1: 1, "b": 2}
         expected_output = json.dumps({"1": 1, "b": 2})
-        self.assertEqual(serialize_edge_count_dict(input_dict), expected_output)
+        assert serialize_edge_count_dict(input_dict) == expected_output
 
 
 class TestSaveAndLoadEdgeCountJson(unittest.TestCase):
@@ -125,21 +117,21 @@ class TestSaveAndLoadEdgeCountJson(unittest.TestCase):
         save_edge_count_json(test_dict, self.test_filename)
 
         loaded_dict = load_edge_count_json(self.test_filename)
-        self.assertEqual(test_dict, loaded_dict)
+        assert test_dict == loaded_dict
 
     def test_save_and_load_simple_dict(self):
         test_dict = {"a": 1, "b": 2}
         save_edge_count_json(test_dict, self.test_filename)
 
         loaded_dict = load_edge_count_json(self.test_filename)
-        self.assertEqual(test_dict, loaded_dict)
+        assert test_dict == loaded_dict
 
     def test_save_and_load_complex_dict(self):
         test_dict = {"a": 1, "b": {"nested": 2}, "c": [1, 2, 3]}
         save_edge_count_json(test_dict, self.test_filename)
 
         loaded_dict = load_edge_count_json(self.test_filename)
-        self.assertEqual(test_dict, loaded_dict)
+        assert test_dict == loaded_dict
 
 
 class TestSaveAndLoadEdgeCountWithGraph(unittest.TestCase):
@@ -184,7 +176,7 @@ class TestSaveAndLoadEdgeCountWithGraph(unittest.TestCase):
             },
         }
 
-        self.assertEqual(loaded_edge_count_dict, expected_dict)
+        assert loaded_edge_count_dict == expected_dict
 
 
 class TestProcessEdgeObjectPairsWithSaveAndLoad(unittest.TestCase):
@@ -233,7 +225,7 @@ class TestProcessEdgeObjectPairsWithSaveAndLoad(unittest.TestCase):
             },
         }
 
-        self.assertEqual(loaded_edge_count_dict, expected_dict)
+        assert loaded_edge_count_dict == expected_dict
 
 
 class TestProcessEdgeObjectPairsWithMultiplePairs(unittest.TestCase):
@@ -312,7 +304,7 @@ class TestProcessEdgeObjectPairsWithMultiplePairs(unittest.TestCase):
             },
         }
 
-        self.assertEqual(loaded_edge_count_dict, expected_dict)
+        assert loaded_edge_count_dict == expected_dict
 
 
 if __name__ == "__main__":
