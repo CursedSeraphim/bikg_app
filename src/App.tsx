@@ -40,7 +40,6 @@ export function App() {
   React.useEffect(() => {
     fetchNamespaces()
       .then((data) => {
-        console.log('fetchNamespaces', data);
         dispatch(setNamespaces(data));
       })
       .catch((error) => {

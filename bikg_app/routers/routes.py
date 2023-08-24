@@ -54,8 +54,7 @@ g = Graph()
 g.parse(ONTOLOGY_TTL_FILE_PATH, format="ttl")
 
 overall_violation_value_counts = {
-    violation: sum(key * value for key, value in counts.items())
-    for violation, counts in overall_violation_value_dict.items()
+    violation: sum(key * value for key, value in counts.items()) for violation, counts in overall_violation_value_dict.items()
 }
 
 # load the edge_count_dict that gives edge counts within each exemplar
@@ -159,17 +158,13 @@ async def get_edge_count_dict():
 async def get_focus_node_exemplar_dict():
     # TODO shorten uris with shorten_dict_uris then return serialized shortened dict
     prefixes = get_prefixes(g)  # Get the prefixes from the graph
-    return serialize_focus_node_exemplar_dict(
-        shorten_dict_uris(focus_node_exemplar_dict, prefixes)
-    )
+    return serialize_focus_node_exemplar_dict(shorten_dict_uris(focus_node_exemplar_dict, prefixes))
 
 
 @router.get("/file/exemplar_focus_node_dict")
 async def get_exemplar_focus_node_dict():
     prefixes = get_prefixes(g)  # Get the prefixes from the graph
-    return serialize_focus_node_exemplar_dict(
-        shorten_dict_uris(exemplar_focus_node_dict, prefixes)
-    )
+    return serialize_focus_node_exemplar_dict(shorten_dict_uris(exemplar_focus_node_dict, prefixes))
 
 
 @router.get("/file/study")
@@ -226,9 +221,7 @@ async def get_nodes_violations_types_from_violations(request: Request):
 @router.post("/plot/bar/violations")
 async def get_violations_bar_plot_data_given_selected_nodes(request: Request):
     selected_nodes = await request.json()  # selected_nodes is a dictionary here
-    selected_nodes = selected_nodes.get(
-        "selectedNodes", []
-    )  # Extracting the list from the dictionary
+    selected_nodes = selected_nodes.get("selectedNodes", [])  # Extracting the list from the dictionary
 
     # Select rows from df using selected_nodes as indices
     selected_df = df.loc[selected_nodes]
@@ -236,32 +229,23 @@ async def get_violations_bar_plot_data_given_selected_nodes(request: Request):
     # Process the selected data: for each column, count the occurrences of each category
     selection_violation_value_counts = {}
     for col in violations_list:
-        selection_violation_value_counts[col] = (
-            selected_df[col].value_counts().to_dict()
-        )
+        selection_violation_value_counts[col] = selected_df[col].value_counts().to_dict()
 
     # Convert selection_value_counts into a dictionary where the key is the violation
     # and the value is the number of times (weighted sum of counts) that the violation has occurred.
     selection_violation_counts = {
-        violation: sum(key * value for key, value in counts.items())
-        for violation, counts in selection_violation_value_counts.items()
+        violation: sum(key * value for key, value in counts.items()) for violation, counts in selection_violation_value_counts.items()
     }
 
     # Compute chi square score per column
     chi_scores = {}
-    chi_scores["violations"] = chi_square_score(
-        selection_violation_counts, overall_violation_value_counts
-    )
+    chi_scores["violations"] = chi_square_score(selection_violation_counts, overall_violation_value_counts)
 
     # Transform the result into a format that can be used by plotly.
     plotly_data = {}
     plotly_data = {
-        "selected": value_counts_to_plotly_data(
-            selection_violation_counts, "Selected Nodes", "steelblue"
-        ),
-        "overall": value_counts_to_plotly_data(
-            overall_violation_value_counts, "Overall Distribution", "lightgrey"
-        ),
+        "selected": value_counts_to_plotly_data(selection_violation_counts, "Selected Nodes", "steelblue"),
+        "overall": value_counts_to_plotly_data(overall_violation_value_counts, "Overall Distribution", "lightgrey"),
     }
     # Send the processed data to the client
     return {
@@ -279,9 +263,7 @@ async def get_bar_plot_data_given_selected_nodes(request: Request):
     """
     time.time()
     selected_nodes = await request.json()  # selected_nodes is a dictionary here
-    selected_nodes = selected_nodes.get(
-        "selectedNodes", []
-    )  # Extracting the list from the dictionary
+    selected_nodes = selected_nodes.get("selectedNodes", [])  # Extracting the list from the dictionary
 
     # Select rows from df using selected_nodes as indices
     selected_df = df.loc[selected_nodes]
@@ -294,20 +276,14 @@ async def get_bar_plot_data_given_selected_nodes(request: Request):
     # Compute chi square score per column
     chi_scores = {}
     for col in filtered_columns:
-        chi_scores[col] = chi_square_score(
-            selection_value_counts[col], overall_value_counts[col]
-        )
+        chi_scores[col] = chi_square_score(selection_value_counts[col], overall_value_counts[col])
 
     # Transform the result into a format that can be used by plotly.
     plotly_data = {}
     for col in filtered_columns:
         plotly_data[col] = {
-            "selected": value_counts_to_plotly_data(
-                selection_value_counts[col], "Selected Nodes", "steelblue"
-            ),
-            "overall": value_counts_to_plotly_data(
-                overall_value_counts[col], "Overall Distribution", "lightgrey"
-            ),
+            "selected": value_counts_to_plotly_data(selection_value_counts[col], "Selected Nodes", "steelblue"),
+            "overall": value_counts_to_plotly_data(overall_value_counts[col], "Overall Distribution", "lightgrey"),
         }
 
     time.time()
@@ -327,21 +303,9 @@ def chi_square_score(selection_data, overall_data):
     # create observed frequency table
     categories = set(list(selection_data.keys()) + list(overall_data.keys()))
     observed = np.array(
-        [
-            selection_data.get(category, 1e-7)
-            if selection_data.get(category, 1e-7) != 0
-            else 1e-7
-            for category in categories
-        ]
+        [selection_data.get(category, 1e-7) if selection_data.get(category, 1e-7) != 0 else 1e-7 for category in categories]
     )
-    expected = np.array(
-        [
-            overall_data.get(category, 1e-7)
-            if overall_data.get(category, 1e-7) != 0
-            else 1e-7
-            for category in categories
-        ]
-    )
+    expected = np.array([overall_data.get(category, 1e-7) if overall_data.get(category, 1e-7) != 0 else 1e-7 for category in categories])
 
     # Compute chi-square scores
     chi2, _, _, _ = chi2_contingency([observed, expected])

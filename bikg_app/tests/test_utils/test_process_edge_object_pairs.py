@@ -51,17 +51,9 @@ class TestProcessEdgeObjectPairs(unittest.TestCase):
         )
 
         # Check if edge_count_dict is updated correctly
+        assert self.edge_count_dict[exemplar_name][f"{self.sh.sourceShape}__{URIRef('http://example.com/shape1')}"] == 1
         assert (
-            self.edge_count_dict[exemplar_name][
-                f"{self.sh.sourceShape}__{URIRef('http://example.com/shape1')}"
-            ]
-            == 1
-        )
-        assert (
-            self.edge_count_dict[exemplar_name][
-                f"{URIRef('http://example.com/predicate1')}__{URIRef('http://example.com/object1')}"
-            ]
-            == 1
+            self.edge_count_dict[exemplar_name][f"{URIRef('http://example.com/predicate1')}__{URIRef('http://example.com/object1')}"] == 1
         )
 
         # Check if triples are added to ontology_g
@@ -168,12 +160,8 @@ class TestSaveAndLoadEdgeCountWithGraph(unittest.TestCase):
         loaded_edge_count_dict = load_edge_count_json(self.test_filename)
 
         expected_dict = {
-            "http://example.com/exemplar1": {
-                "http://example.com/predicate__http://example.com/object": 2
-            },
-            "http://example.com/exemplar2": {
-                "http://example.com/predicate__http://example.com/object": 1
-            },
+            "http://example.com/exemplar1": {"http://example.com/predicate__http://example.com/object": 2},
+            "http://example.com/exemplar2": {"http://example.com/predicate__http://example.com/object": 1},
         }
 
         assert loaded_edge_count_dict == expected_dict
@@ -200,15 +188,9 @@ class TestProcessEdgeObjectPairsWithSaveAndLoad(unittest.TestCase):
             )
         ]
 
-        process_edge_object_pairs(
-            self.ontology_g, self.sh, self.edge_count_dict, po_pairs, exemplar1
-        )
-        process_edge_object_pairs(
-            self.ontology_g, self.sh, self.edge_count_dict, po_pairs, exemplar2
-        )
-        process_edge_object_pairs(
-            self.ontology_g, self.sh, self.edge_count_dict, po_pairs, exemplar1
-        )  # Reoccurring pair for exemplar1
+        process_edge_object_pairs(self.ontology_g, self.sh, self.edge_count_dict, po_pairs, exemplar1)
+        process_edge_object_pairs(self.ontology_g, self.sh, self.edge_count_dict, po_pairs, exemplar2)
+        process_edge_object_pairs(self.ontology_g, self.sh, self.edge_count_dict, po_pairs, exemplar1)  # Reoccurring pair for exemplar1
 
     def test_process_edge_object_pairs_with_save_and_load(self):
         self.add_exemplars_using_function()
@@ -217,12 +199,8 @@ class TestProcessEdgeObjectPairsWithSaveAndLoad(unittest.TestCase):
         loaded_edge_count_dict = load_edge_count_json(self.test_filename)
 
         expected_dict = {
-            "http://example.com/exemplar_func1": {
-                "http://example.com/predicate__http://example.com/object": 2
-            },
-            "http://example.com/exemplar_func2": {
-                "http://example.com/predicate__http://example.com/object": 1
-            },
+            "http://example.com/exemplar_func1": {"http://example.com/predicate__http://example.com/object": 2},
+            "http://example.com/exemplar_func2": {"http://example.com/predicate__http://example.com/object": 1},
         }
 
         assert loaded_edge_count_dict == expected_dict
