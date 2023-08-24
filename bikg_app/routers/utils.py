@@ -3,7 +3,6 @@
 import json
 import sys
 from collections import defaultdict
-from typing import Any
 
 import numpy as np
 from rdflib import RDF, Namespace, URIRef
