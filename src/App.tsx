@@ -40,7 +40,6 @@ export function App() {
   React.useEffect(() => {
     fetchNamespaces()
       .then((data) => {
-        // dispatch(setEdgeCountDict(data));
         console.log('fetchNamespaces', data);
         dispatch(setNamespaces(data));
       })
@@ -53,6 +52,7 @@ export function App() {
   React.useEffect(() => {
     fetchEdgeCountDict()
       .then((data) => {
+        console.log('fetchEdgeCountDict', data);
         dispatch(setEdgeCountDict(data));
       })
       .catch((error) => {

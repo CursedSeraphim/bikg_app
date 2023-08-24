@@ -3,6 +3,7 @@
 import json
 import sys
 from collections import defaultdict
+from typing import Any, Dict
 
 import numpy as np
 from rdflib import RDF, Namespace, URIRef
@@ -37,23 +38,23 @@ def get_symmetric_graph_matrix(graph):
     return matrix
 
 
-def serialize_edge_count_dict(d):
+def serialize_edge_count_dict(d: Dict[Any, Any]) -> str:
     """Serializes a nested dictionary of edge counts for easier storage.
 
     Args:
-        d (dict): A dictionary containing edge count information.
+        d (Dict[Any, Any]): A dictionary containing edge count information.
 
     Returns:
-        dict: A serialized version of the input dictionary.
+        str: A serialized version of the input dictionary.
     """
+    print("serializing edge count dict. dict: ", d)
     serialized_dict = {}
     for outer_key, outer_value in d.items():
-        inner_dict = {}
-        for inner_key, inner_value in dict(outer_value).items():
-            inner_key_str = tuple(map(str, inner_key))
-            inner_dict[json.dumps(inner_key_str)] = inner_value
-        serialized_dict[str(outer_key)] = inner_dict
-    return serialized_dict
+        if isinstance(outer_value, set):
+            outer_value = list(outer_value)
+        serialized_dict[str(outer_key)] = outer_value
+    print("serialized dict: ", serialized_dict)
+    return json.dumps(serialized_dict)
 
 
 def serialize_focus_node_exemplar_dict(d):
@@ -77,18 +78,12 @@ def deserialize_edge_count_dict(d):
     """Deserializes a nested dictionary of edge counts.
 
     Args:
-        d (dict): A serialized dictionary containing edge count information.
+        d (str): A JSON-serialized string containing edge count information.
 
     Returns:
         dict: A deserialized version of the input dictionary.
     """
-    deserialized_dict = {}
-    for outer_key, inner_dict in d.items():
-        inner_value = {}
-        for inner_key, value in inner_dict.items():
-            inner_key_tuple = tuple(json.loads(inner_key))
-            inner_value[inner_key_tuple] = value
-        deserialized_dict[outer_key] = inner_value
+    deserialized_dict = json.loads(d)  # Deserialize the JSON string to a Python dictionary
     return deserialized_dict
 
 
@@ -179,6 +174,11 @@ def copy_namespaces(source_g, target_g):
         target_g.namespace_manager.bind(prefix, ns)
 
 
+def bind_ns_if_not_bound(gnsm, ns_str, ns_obj):
+    if ns_str not in gnsm.namespaces():
+        gnsm.bind(ns_str, ns_obj)
+
+
 def get_violation_report_exemplars(ontology_g, violation_report_g):
     """
     Generates and returns a violation report based on ontology and violation graphs.
@@ -204,12 +204,12 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
     sh = Namespace("http://www.w3.org/ns/shacl#")
     dcterms = Namespace("http://purl.org/dc/terms/")
     ex = Namespace("http://example.com/exemplar#")
-    ontology_g.namespace_manager.bind("sh", sh)
-    ontology_g.namespace_manager.bind("dcterms", dcterms)
-    violation_report_g.namespace_manager.bind("sh", sh)
-    violation_report_g.namespace_manager.bind("dcterms", dcterms)
-    ontology_g.namespace_manager.bind("ex", ex)
-    violation_report_g.namespace_manager.bind("ex", ex)
+    bind_ns_if_not_bound(ontology_g.namespace_manager, "sh", sh)
+    bind_ns_if_not_bound(ontology_g.namespace_manager, "dcterms", dcterms)
+    bind_ns_if_not_bound(violation_report_g.namespace_manager, "sh", sh)
+    bind_ns_if_not_bound(violation_report_g.namespace_manager, "dcterms", dcterms)
+    bind_ns_if_not_bound(ontology_g.namespace_manager, "ex", ex)
+    bind_ns_if_not_bound(violation_report_g.namespace_manager, "ex", ex)
 
     copy_namespaces(violation_report_g, ontology_g)
 
@@ -262,15 +262,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
         focus_node_exemplar_dict[current_focus_node].add(exemplar_name)
         exemplar_focus_node_dict[exemplar_name].add(current_focus_node)
 
-        for p, o in edge_object_pairs:
-            if edge_count_dict[exemplar_name][(p, o)] == 0:
-                if p == sh.sourceShape:
-                    ontology_g.add((o, URIRef("http://customnamespace.com/hasExemplar"), exemplar_name))  # type: ignore
-                else:
-                    ontology_g.add((exemplar_name, p, o))  # type: ignore
-                # TODO create custom URI instead of object property
-                ontology_g.add((exemplar_name, RDF.type, sh.PropertyShape))
-            edge_count_dict[exemplar_name][(p, o)] += 1
+        process_edge_object_pairs(ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name)
 
     return (
         ontology_g,
@@ -278,3 +270,16 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
         focus_node_exemplar_dict,
         exemplar_focus_node_dict,
     )
+
+
+def process_edge_object_pairs(ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name):
+    for p, o in edge_object_pairs:
+        po_str = f"{p}__{o}"
+        if edge_count_dict[exemplar_name][po_str] == 0:
+            if p == sh.sourceShape:
+                ontology_g.add((o, URIRef("http://customnamespace.com/hasExemplar"), exemplar_name))  # type: ignore
+            else:
+                ontology_g.add((exemplar_name, p, o))  # type: ignore
+                # TODO create custom URI instead of object property
+            ontology_g.add((exemplar_name, RDF.type, sh.PropertyShape))
+        edge_count_dict[exemplar_name][po_str] += 1
