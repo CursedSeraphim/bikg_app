@@ -3,7 +3,7 @@
 import json
 import sys
 from collections import defaultdict
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 from rdflib import RDF, Namespace, URIRef
@@ -38,7 +38,7 @@ def get_symmetric_graph_matrix(graph):
     return matrix
 
 
-def serialize_edge_count_dict(d: Dict[Any, Any]) -> str:
+def serialize_edge_count_dict(d) -> str:
     """Serializes a nested dictionary of edge counts for easier storage.
 
     Args:
@@ -47,13 +47,11 @@ def serialize_edge_count_dict(d: Dict[Any, Any]) -> str:
     Returns:
         str: A serialized version of the input dictionary.
     """
-    print("serializing edge count dict. dict: ", d)
     serialized_dict = {}
     for outer_key, outer_value in d.items():
         if isinstance(outer_value, set):
             outer_value = list(outer_value)
         serialized_dict[str(outer_key)] = outer_value
-    print("serialized dict: ", serialized_dict)
     return json.dumps(serialized_dict)
 
 
@@ -83,7 +81,9 @@ def deserialize_edge_count_dict(d):
     Returns:
         dict: A deserialized version of the input dictionary.
     """
-    deserialized_dict = json.loads(d)  # Deserialize the JSON string to a Python dictionary
+    deserialized_dict = json.loads(
+        d
+    )  # Deserialize the JSON string to a Python dictionary
     return deserialized_dict
 
 
@@ -174,11 +174,6 @@ def copy_namespaces(source_g, target_g):
         target_g.namespace_manager.bind(prefix, ns)
 
 
-def bind_ns_if_not_bound(gnsm, ns_str, ns_obj):
-    if ns_str not in gnsm.namespaces():
-        gnsm.bind(ns_str, ns_obj)
-
-
 def get_violation_report_exemplars(ontology_g, violation_report_g):
     """
     Generates and returns a violation report based on ontology and violation graphs.
@@ -204,12 +199,12 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
     sh = Namespace("http://www.w3.org/ns/shacl#")
     dcterms = Namespace("http://purl.org/dc/terms/")
     ex = Namespace("http://example.com/exemplar#")
-    bind_ns_if_not_bound(ontology_g.namespace_manager, "sh", sh)
-    bind_ns_if_not_bound(ontology_g.namespace_manager, "dcterms", dcterms)
-    bind_ns_if_not_bound(violation_report_g.namespace_manager, "sh", sh)
-    bind_ns_if_not_bound(violation_report_g.namespace_manager, "dcterms", dcterms)
-    bind_ns_if_not_bound(ontology_g.namespace_manager, "ex", ex)
-    bind_ns_if_not_bound(violation_report_g.namespace_manager, "ex", ex)
+    ontology_g.namespace_manager.bind("dcterms", dcterms)
+    ontology_g.namespace_manager.bind("sh", sh)
+    ontology_g.namespace_manager.bind("ex", ex)
+    violation_report_g.namespace_manager.bind("dcterms", dcterms)
+    violation_report_g.namespace_manager.bind("sh", sh)
+    violation_report_g.namespace_manager.bind("ex", ex)
 
     copy_namespaces(violation_report_g, ontology_g)
 
@@ -256,13 +251,17 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
 
         if exemplar_name is None:
             # Use custom exemplar namespace instead of the shape's namespace
-            exemplar_name = URIRef(f"{ex}{shape.split('omics/')[-1]}_exemplar_{len(exemplar_sets)+1}")
+            exemplar_name = URIRef(
+                f"{ex}{shape.split('omics/')[-1]}_exemplar_{len(exemplar_sets)+1}"
+            )
             exemplar_sets[frozenset(edge_object_pairs)] = exemplar_name
 
         focus_node_exemplar_dict[current_focus_node].add(exemplar_name)
         exemplar_focus_node_dict[exemplar_name].add(current_focus_node)
 
-        process_edge_object_pairs(ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name)
+        process_edge_object_pairs(
+            ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name
+        )
 
     return (
         ontology_g,
@@ -272,7 +271,9 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
     )
 
 
-def process_edge_object_pairs(ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name):
+def process_edge_object_pairs(
+    ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name
+):
     for p, o in edge_object_pairs:
         po_str = f"{p}__{o}"
         if edge_count_dict[exemplar_name][po_str] == 0:
