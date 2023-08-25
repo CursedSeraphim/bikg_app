@@ -35,17 +35,14 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
           cy.elements().remove();
           cy.add(newCytoData);
           cy.lassoSelectionEnabled(true);
+          cy.nodes().forEach((node) => {
+            const pos = node.position();
+            initialNodePositions.current.set(node.data('id'), { x: pos.x, y: pos.y });
+          });
           cy.layout({ ...CY_LAYOUT, eles: cy.elements(':visible') }).run();
           cy.ready(() => {
             onLoaded();
             setLoading(false);
-            console.log('set loading false');
-            cy.nodes().forEach((node) => {
-              const pos = node.position();
-              initialNodePositions.current.set(node.data('id'), { x: pos.x, y: pos.y });
-            });
-            // TODO find a cleaner solution
-            // setTimeout(() => cy.fit(cy.elements(), 50), 1000); // Add a delay of 1 second before fitting the view
             cy.fit();
           });
         } else {
@@ -58,6 +55,11 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
           });
 
           setCy(newCy);
+          newCy.ready(() => {
+            onLoaded();
+            setLoading(false);
+            newCy.fit();
+          });
         }
       })
       .catch((error) => {
