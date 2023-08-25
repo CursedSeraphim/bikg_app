@@ -1,66 +1,32 @@
-// CytoscapeViewNew.tsx
 import * as React from 'react';
-import cytoscape from 'cytoscape';
-import { useDispatch, useSelector } from 'react-redux';
+import cytoscape, { Core } from 'cytoscape';
+import { useSelector } from 'react-redux';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
 import { selectCytoData, selectViolations } from '../Store/CombinedSlice';
-import { CY_LAYOUT } from './constants';
 import { useShapeHandler } from '../components/namespaceHandler';
+import { createNewCytoscapeInstance, updateCytoscapeInstance } from './CytoscapeUtils';
 
 cytoscape.use(coseBilkent);
 cytoscape.use(cytoscapeLasso);
 
-function CytoscapeView({ rdfOntology, onLoaded }) {
-  const [cy, setCy] = React.useState<cytoscape.Core | null>(null);
+interface CytoscapeViewProps {
+  rdfOntology: string;
+  onLoaded: () => void;
+}
+
+function CytoscapeView({ rdfOntology, onLoaded }: CytoscapeViewProps): JSX.Element {
+  const [cy, setCy] = React.useState<Core | null>(null);
   const violations = useSelector(selectViolations);
   const { getShapeForNamespace } = useShapeHandler();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = React.useState(true);
-  const initialNodePositions = React.useRef(new Map());
+  const initialNodePositions = React.useRef<Map<string, { x: number; y: number }>>(new Map());
 
   React.useEffect(() => {
     selectCytoData(rdfOntology, getShapeForNamespace, violations)
       .then((data) => {
-        const newCytoData = { ...data };
-        newCytoData.nodes = newCytoData.nodes.map((node) => ({
-          ...node,
-          data: {
-            ...node.data,
-          },
-        }));
-        if (cy) {
-          console.log('if cy');
-          // Update the cytoData elements and layout
-          cy.elements().remove();
-          cy.add(newCytoData);
-          cy.lassoSelectionEnabled(true);
-          cy.nodes().forEach((node) => {
-            const pos = node.position();
-            initialNodePositions.current.set(node.data('id'), { x: pos.x, y: pos.y });
-          });
-          cy.layout({ ...CY_LAYOUT, eles: cy.elements(':visible') }).run();
-          cy.ready(() => {
-            onLoaded();
-            setLoading(false);
-            cy.fit();
-          });
-        } else {
-          const newCy = cytoscape({
-            container: document.getElementById('cy'), // container to render in
-            wheelSensitivity: 0.2,
-            elements: newCytoData,
-            style: [],
-            layout: CY_LAYOUT,
-          });
-
-          setCy(newCy);
-          newCy.ready(() => {
-            onLoaded();
-            setLoading(false);
-            newCy.fit();
-          });
-        }
+        cy ? updateCytoscapeInstance(cy, data, initialNodePositions, onLoaded, setLoading) : createNewCytoscapeInstance(data, setCy, onLoaded, setLoading);
       })
       .catch((error) => {
         console.error('Failed to generate Cytoscape data:', error);
