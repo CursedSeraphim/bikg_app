@@ -133,15 +133,15 @@ const combinedSlice = createSlice({
     },
     setEdgeCountDict: (state, action: PayloadAction<EdgeCountDict>) => {
       state.edgeCountDict = action.payload;
-      console.log('setEdgeCountDict', action.payload);
+      console.log('setEdgeCountDict');
     },
     setFocusNodeExemplarDict: (state, action: PayloadAction<FocusNodeExemplarDict>) => {
+      console.log('setFocusNodeExemplarDict');
       state.focusNodeExemplarDict = action.payload;
-      console.log('setFocusNodeExemplarDict', action.payload);
     },
     setExemplarFocusNodeDict: (state, action: PayloadAction<ExemplarFocusNodeDict>) => {
+      console.log('setExemplarFocusNodeDict');
       state.exemplarFocusNodeDict = action.payload;
-      console.log('setExemplarFocusNodeDict', action.payload);
     },
     setMissingEdgeOption: (state, action: PayloadAction<MissingEdgeOptionType>) => {
       state.missingEdgeOption = action.payload;
