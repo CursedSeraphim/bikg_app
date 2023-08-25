@@ -45,7 +45,7 @@ function alignNodes(nodes, parentNodePosition, isChild) {
 }
 
 // Helper function to hide nodes
-const hideVisibleNodes = (nodeList) => {
+function hideVisibleNodes(nodeList) {
   nodeList.current.forEach((nodeCollection) => {
     nodeCollection.forEach((node) => {
       if (node.data('permanent') === false) {
@@ -57,24 +57,24 @@ const hideVisibleNodes = (nodeList) => {
 
   // return empty to clear nodeList.current
   return [];
-};
+}
 
 // Helper function to apply styles to nodes
-const showCytoElements = (element) => {
+function showCytoElements(element) {
   element.style({
     display: 'element',
   });
   element.data('visible', true);
-};
+}
 
 // Helper function to get nodes from ids
-const getNodesFromIds = (ids, cy) => {
+function getNodesFromIds(ids, cy) {
   let nodes = cy.collection();
   ids.forEach((id) => {
     nodes = nodes.union(cy.getElementById(id));
   });
   return nodes;
-};
+}
 
 function CytoscapeView({ rdfOntology, onLoaded }) {
   const [cy, setCy] = React.useState<cytoscape.Core | null>(null);
@@ -88,6 +88,11 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = React.useState(true); // setLoading wouldn't work if we removed loading
   const initialNodePositions = React.useRef(new Map());
+
+  function handleTap(cytoInstance, node) {
+    // if tapped node is not type, not violation, and not exemplar -> ignore it
+    // else call single point of truth for processing :selected nodes
+  }
 
   /**
    * Gets selected nodes from cy instance, treats them all as types, and dispatches setSelectedTypes action with the new list of unique selected types.

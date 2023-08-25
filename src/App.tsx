@@ -16,7 +16,7 @@ import {
   setNamespaces,
 } from './components/Store/CombinedSlice';
 
-import CytoscapeView from './CytoscapeView';
+import CytoscapeView from './components/Cytoscape/CytoscapeViewNew';
 
 import './styles.css';
 import {
