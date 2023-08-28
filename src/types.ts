@@ -93,6 +93,10 @@ export interface UseShapeHandlerReturnType {
   getShapeForNamespace: GetShapeForNamespaceFn;
 }
 
+export interface IRootState {
+  combined: ICombinedState;
+}
+
 export interface ICombinedState {
   samples: ICsvData[];
   originalSamples: ICsvData[];

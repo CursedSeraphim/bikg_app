@@ -106,7 +106,6 @@ export default function Treeview() {
       if (selectedTypes.length !== 0) {
         // If types are selected, toggle the paths to the selected nodes.
         for (const selectedType of selectedTypes) {
-          console.log('selectedType', selectedType);
           togglePathToNode(newTreeData, selectedType);
         }
       }
