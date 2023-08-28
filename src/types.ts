@@ -116,3 +116,22 @@ export interface ITriple {
   p: string;
   o: string;
 }
+
+// Defines the signature of the function that performs an action
+export type ActionFunction = (target: any) => void; // You might want to replace 'any' with a more specific type
+
+// Defines what a menu item looks like
+export type MenuItem = {
+  id: string;
+  content: string;
+  selector: string;
+  onClickFunction: (event: any) => void; // You might want to replace 'any' with a more specific type
+};
+
+// Defines what the context menu options look like
+export type ContextMenuOptions = {
+  menuItems: MenuItem[];
+};
+
+// Defines the shape of the 'actions' object passed to getContextMenuOptions
+export type Actions = Record<string, ActionFunction>;

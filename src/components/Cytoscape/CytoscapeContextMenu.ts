@@ -1,21 +1,21 @@
 // CytoscapeContextMenu.ts
-import contextMenus from 'cytoscape-context-menus';
-import 'cytoscape-context-menus/cytoscape-context-menus.css';
+import { ActionFunction, MenuItem, ContextMenuOptions, Actions } from '../../types';
 
-// This function will now just return the configuration object for the context menu
-export function getContextMenuOptions() {
-  return {
-    menuItems: [
-      {
-        id: 'remove',
-        content: 'remove',
-        selector: 'node',
-        onClickFunction(event) {
-          const target = event.target || event.cyTarget;
-          target.remove();
-        },
+export function getContextMenuOptions(actions: Actions): ContextMenuOptions {
+  const dynamicMenuItems: MenuItem[] = Object.keys(actions).map((actionKey) => {
+    return {
+      id: actionKey,
+      content: actionKey.replace('-', ' '),
+      selector: 'node',
+      onClickFunction(event) {
+        const target = event.target || event.cyTarget;
+        console.log(`Executing ${actionKey}`);
+        actions[actionKey](target);
       },
-      // Add more items as needed
-    ],
+    };
+  });
+
+  return {
+    menuItems: dynamicMenuItems,
   };
 }

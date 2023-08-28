@@ -1,7 +1,7 @@
 // Cytoscapeinstancehelpers.ts
 import cytoscape, { Core } from 'cytoscape';
 import React from 'react';
-import { GetShapeForNamespaceFn, ICytoData } from '../../types';
+import { Actions, GetShapeForNamespaceFn, ICytoData } from '../../types';
 import { getStyle } from './CytoscapeStyles';
 import { getLayout } from './CytoscapeLayout';
 import { getContextMenuOptions } from './CytoscapeContextMenu'; // import this
@@ -15,6 +15,7 @@ export function createNewCytoscapeInstance(
   onLoaded: () => void,
   setLoading: SetLoadingFn,
   getShapeForNamespace: GetShapeForNamespaceFn,
+  contextMenuActions: Actions,
 ): void {
   const newCy = cytoscape({
     container: document.getElementById('cy'),
@@ -23,7 +24,7 @@ export function createNewCytoscapeInstance(
     style: getStyle(getShapeForNamespace),
     layout: getLayout(),
   });
-  newCy.contextMenus(getContextMenuOptions());
+  newCy.contextMenus(getContextMenuOptions(contextMenuActions)); // add this
 
   setCy(newCy);
   newCy.ready(() => {
@@ -39,6 +40,7 @@ export function updateCytoscapeInstance(
   initialNodePositions: React.MutableRefObject<Map<string, { x: number; y: number }>>,
   onLoaded: () => void,
   setLoading: SetLoadingFn,
+  contextMenuActions: Actions,
 ): void {
   cy.elements().remove();
   cy.add(data);
@@ -53,4 +55,5 @@ export function updateCytoscapeInstance(
     setLoading(false);
     cy.fit();
   });
+  cy.contextMenus(getContextMenuOptions(contextMenuActions)); // add this
 }

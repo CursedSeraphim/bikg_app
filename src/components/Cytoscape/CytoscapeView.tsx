@@ -30,21 +30,25 @@ function CytoscapeView({ rdfOntology, onLoaded }: CytoscapeViewProps): JSX.Eleme
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = React.useState(true);
   const initialNodePositions = React.useRef<Map<string, { x: number; y: number }>>(new Map());
-  const { toggleChildren } = useViewUtilities(cy);
+  const { toggleChildren, toggleParents } = useViewUtilities(cy);
+  const contextMenuActions = {
+    'toggle-children': toggleChildren,
+    'toggle-parents': toggleParents,
+  };
 
   React.useEffect(() => {
     selectCytoData(rdfOntology, getShapeForNamespace, violations, types)
       .then((data) => {
         cy
-          ? updateCytoscapeInstance(cy, data, initialNodePositions, onLoaded, setLoading)
-          : createNewCytoscapeInstance(data, setCy, onLoaded, setLoading, getShapeForNamespace);
+          ? updateCytoscapeInstance(cy, data, initialNodePositions, onLoaded, setLoading, contextMenuActions)
+          : createNewCytoscapeInstance(data, setCy, onLoaded, setLoading, getShapeForNamespace, contextMenuActions);
       })
       .catch((error) => {
         console.error('Failed to generate Cytoscape data:', error);
       });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rdfOntology]);
+  }, [rdfOntology, toggleChildren, toggleParents]);
 
   React.useEffect(() => {
     // Register event listeners and get the cleanup function
