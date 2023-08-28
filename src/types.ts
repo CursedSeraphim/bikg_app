@@ -1,4 +1,4 @@
-import { NodeSingular } from 'cytoscape';
+import { Core, NodeSingular } from 'cytoscape';
 
 export type Position = { x: number; y: number };
 
@@ -141,3 +141,7 @@ export type ContextMenuOptions = {
 
 // Defines the shape of the 'actions' object passed to getContextMenuOptions
 export type Actions = Record<string, ActionFunction>;
+
+export type SetCyFn = React.Dispatch<React.SetStateAction<Core | null>>;
+
+export type SetLoadingFn = React.Dispatch<React.SetStateAction<boolean>>;

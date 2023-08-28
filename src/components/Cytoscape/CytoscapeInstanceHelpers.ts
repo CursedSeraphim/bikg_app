@@ -1,13 +1,10 @@
 // Cytoscapeinstancehelpers.ts
 import cytoscape, { Core } from 'cytoscape';
 import React from 'react';
-import { Actions, GetShapeForNamespaceFn, ICytoData } from '../../types';
+import { Actions, GetShapeForNamespaceFn, ICytoData, SetCyFn, SetLoadingFn } from '../../types';
 import { getStyle } from './CytoscapeStyles';
 import { getLayout } from './CytoscapeLayout';
 import { getContextMenuOptions } from './CytoscapeContextMenu'; // import this
-
-type SetCyFn = React.Dispatch<React.SetStateAction<Core | null>>;
-type SetLoadingFn = React.Dispatch<React.SetStateAction<boolean>>;
 
 export function createNewCytoscapeInstance(
   data: ICytoData,
