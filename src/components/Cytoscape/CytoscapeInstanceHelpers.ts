@@ -4,6 +4,7 @@ import React from 'react';
 import { GetShapeForNamespaceFn, ICytoData } from '../../types';
 import { getStyle } from './CytoscapeStyles';
 import { getLayout } from './CytoscapeLayout';
+import { getContextMenuOptions } from './CytoscapeContextMenu'; // import this
 
 type SetCyFn = React.Dispatch<React.SetStateAction<Core | null>>;
 type SetLoadingFn = React.Dispatch<React.SetStateAction<boolean>>;
@@ -22,6 +23,7 @@ export function createNewCytoscapeInstance(
     style: getStyle(getShapeForNamespace),
     layout: getLayout(),
   });
+  newCy.contextMenus(getContextMenuOptions());
 
   setCy(newCy);
   newCy.ready(() => {

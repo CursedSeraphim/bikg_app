@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
 import viewUtilities from 'cytoscape-view-utilities';
+import contextMenus from 'cytoscape-context-menus';
 import { selectCytoData, selectTypes, selectViolations } from '../Store/CombinedSlice';
 import { useShapeHandler } from '../components/namespaceHandler';
 import { createNewCytoscapeInstance, updateCytoscapeInstance } from './CytoscapeInstanceHelpers';
@@ -14,6 +15,7 @@ import { registerCytoscapeEventListeners } from './CytoscapeEventHandlers';
 cytoscape.use(viewUtilities);
 cytoscape.use(coseBilkent);
 cytoscape.use(cytoscapeLasso);
+cytoscape.use(contextMenus);
 
 interface CytoscapeViewProps {
   rdfOntology: string;
