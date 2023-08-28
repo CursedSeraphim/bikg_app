@@ -1,7 +1,7 @@
 // Cytoscapeinstancehelpers.ts
 import cytoscape, { Core } from 'cytoscape';
 import React from 'react';
-import { Actions, GetShapeForNamespaceFn, ICytoData, SetCyFn, SetLoadingFn } from '../../types';
+import { ContextMenuActions, GetShapeForNamespaceFn, ICytoData, SetCyFn, SetLoadingFn } from '../../types';
 import { getStyle } from './CytoscapeStyles';
 import { getLayout } from './CytoscapeLayout';
 import { getContextMenuOptions } from './CytoscapeContextMenu'; // import this
@@ -12,7 +12,7 @@ export function createNewCytoscapeInstance(
   onLoaded: () => void,
   setLoading: SetLoadingFn,
   getShapeForNamespace: GetShapeForNamespaceFn,
-  contextMenuActions: Actions,
+  contextMenuActions: ContextMenuActions,
 ): void {
   const newCy = cytoscape({
     container: document.getElementById('cy'),
@@ -37,7 +37,7 @@ export function updateCytoscapeInstance(
   initialNodePositions: React.MutableRefObject<Map<string, { x: number; y: number }>>,
   onLoaded: () => void,
   setLoading: SetLoadingFn,
-  contextMenuActions: Actions,
+  contextMenuActions: ContextMenuActions,
 ): void {
   cy.elements().remove();
   cy.add(data);

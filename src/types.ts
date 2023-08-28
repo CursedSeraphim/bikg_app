@@ -140,7 +140,7 @@ export type ContextMenuOptions = {
 };
 
 // Defines the shape of the 'actions' object passed to getContextMenuOptions
-export type Actions = Record<string, ActionFunction>;
+export type ContextMenuActions = Record<string, ActionFunction>;
 
 export type SetCyFn = React.Dispatch<React.SetStateAction<Core | null>>;
 

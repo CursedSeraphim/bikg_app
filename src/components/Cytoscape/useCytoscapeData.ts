@@ -3,17 +3,17 @@ import React, { useEffect } from 'react';
 import { Core } from 'cytoscape';
 import { selectCytoData } from '../Store/CombinedSlice';
 import { createNewCytoscapeInstance, updateCytoscapeInstance } from './CytoscapeInstanceHelpers';
-import { GetShapeForNamespaceFn, SetCyFn } from '../../types';
+import { ContextMenuActions, GetShapeForNamespaceFn, SetCyFn } from '../../types';
 
 type CytoscapeDataProps = {
   rdfOntology: string;
   getShapeForNamespace: GetShapeForNamespaceFn;
-  violations: any;
-  types: any;
+  violations: string[];
+  types: string[];
   cy: Core | null;
   setCy: SetCyFn;
   onLoaded: () => void;
-  contextMenuActions: any;
+  contextMenuActions: ContextMenuActions;
   initialNodePositions: React.MutableRefObject<Map<string, { x: number; y: number }>>;
   setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 };

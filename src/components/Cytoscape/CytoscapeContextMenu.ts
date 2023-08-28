@@ -1,7 +1,7 @@
 // CytoscapeContextMenu.ts
-import { MenuItem, ContextMenuOptions, Actions } from '../../types';
+import { MenuItem, ContextMenuOptions, ContextMenuActions } from '../../types';
 
-export function getContextMenuOptions(actions: Actions): ContextMenuOptions {
+export function getContextMenuOptions(actions: ContextMenuActions): ContextMenuOptions {
   const dynamicMenuItems: MenuItem[] = Object.keys(actions).map((actionKey) => {
     return {
       id: actionKey,
