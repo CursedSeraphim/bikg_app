@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
-import { INamespaces, INamespaceInfo } from '../../types';
+import { INamespaces, INamespaceInfo, UseShapeHandlerReturnType } from '../../types';
 import { selectNamespaces } from '../Store/CombinedSlice';
 
 const SHAPE_LIST = ['triangle', 'rectangle', 'diamond', 'pentagon', 'hexagon'];
@@ -68,7 +68,7 @@ const initializeShapeList = (namespaces: INamespaces = {}) => {
  * Custom React hook to handle shapes for namespaces.
  * @returns {Object} An object containing a function to get the shapes for a given namespace.
  */
-const useShapeHandler = () => {
+const useShapeHandler = (): UseShapeHandlerReturnType => {
   const selectedNamespaces = useSelector(selectNamespaces);
   const namespaces: INamespaces = useMemo(() => selectedNamespaces || {}, [selectedNamespaces]);
   const [shapeList, setShapeList] = useState<string[]>(initializeShapeList(namespaces));

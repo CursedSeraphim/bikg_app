@@ -6,7 +6,6 @@ import Treeview from './Treeview/Treeview';
 import SettingsTab from './SettingsTab/SettingsTab';
 
 function NavBarTabs() {
-  // Inside your Tabs component function
   const [currentTab, setCurrentTab] = useState('1');
   const plotlyData = useSelector(selectCsvDataForPlotly);
 

@@ -1,3 +1,5 @@
+export type Position = { x: number; y: number };
+
 export interface IOntologyNode {
   name: string;
   children: IOntologyNode[];
@@ -83,6 +85,12 @@ export interface INamespaces {
   [prefix: string]: INamespaceInfo;
 }
 
+export type GetShapeForNamespaceFn = (namespace?: string) => string;
+
+export interface UseShapeHandlerReturnType {
+  getShapeForNamespace: GetShapeForNamespaceFn;
+}
+
 export interface ICombinedState {
   samples: ICsvData[];
   originalSamples: ICsvData[];
@@ -100,6 +108,7 @@ export interface ICombinedState {
   exemplarFocusNodeDict: ExemplarFocusNodeDict;
   selectedViolationExemplars: string[];
   namespaces: INamespaces;
+  types: string[];
 }
 
 export interface ITriple {

@@ -14,9 +14,10 @@ import {
   setFocusNodeExemplarDict,
   setExemplarFocusNodeDict,
   setNamespaces,
+  setTypes,
 } from './components/Store/CombinedSlice';
 
-import CytoscapeView from './components/Cytoscape/CytoscapeViewNew';
+import CytoscapeView from './components/Cytoscape/CytoscapeView';
 
 import './styles.css';
 import {
@@ -28,6 +29,7 @@ import {
   fetchFocusNodeExemplarDict,
   fetchExemplarFocusNodeDict,
   fetchNamespaces,
+  fetchClasses,
 } from './api';
 import { SPINNER_COLOR } from './constants';
 
@@ -35,6 +37,17 @@ export function App() {
   const dispatch = useDispatch();
   const rdfOntology = useSelector(selectRdfData);
   const [cytoscapeLoading, setCytoscapeLoading] = React.useState(true);
+
+  // Fetch classes and print
+  React.useEffect(() => {
+    fetchClasses()
+      .then((data) => {
+        dispatch(setTypes(data));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch classes', error);
+      });
+  }, [dispatch]);
 
   // Fetch prefix->namespace dictionary and print
   React.useEffect(() => {
@@ -51,7 +64,7 @@ export function App() {
   React.useEffect(() => {
     fetchEdgeCountDict()
       .then((data) => {
-        console.log('fetchEdgeCountDict', data);
+        // console.log('fetchEdgeCountDict', data);
         dispatch(setEdgeCountDict(data));
       })
       .catch((error) => {

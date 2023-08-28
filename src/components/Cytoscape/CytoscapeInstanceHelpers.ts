@@ -1,19 +1,26 @@
-// CytoscapeUtils.ts
+// Cytoscapeinstancehelpers.ts
 import cytoscape, { Core } from 'cytoscape';
 import React from 'react';
-import { CY_LAYOUT } from './constants';
-import { ICytoData } from '../../types';
+import { GetShapeForNamespaceFn, ICytoData } from '../../types';
+import { getStyle } from './CytoscapeStyles';
+import { getLayout } from './CytoscapeLayout';
 
 type SetCyFn = React.Dispatch<React.SetStateAction<Core | null>>;
 type SetLoadingFn = React.Dispatch<React.SetStateAction<boolean>>;
 
-export function createNewCytoscapeInstance(data: ICytoData, setCy: SetCyFn, onLoaded: () => void, setLoading: SetLoadingFn): void {
+export function createNewCytoscapeInstance(
+  data: ICytoData,
+  setCy: SetCyFn,
+  onLoaded: () => void,
+  setLoading: SetLoadingFn,
+  getShapeForNamespace: GetShapeForNamespaceFn,
+): void {
   const newCy = cytoscape({
     container: document.getElementById('cy'),
     wheelSensitivity: 0.2,
     elements: data,
-    style: [],
-    layout: CY_LAYOUT,
+    style: getStyle(getShapeForNamespace),
+    layout: getLayout(),
   });
 
   setCy(newCy);
@@ -38,7 +45,7 @@ export function updateCytoscapeInstance(
     const pos = node.position();
     initialNodePositions.current.set(node.data('id'), { x: pos.x, y: pos.y });
   });
-  cy.layout({ ...CY_LAYOUT, eles: cy.elements(':visible') }).run();
+  cy.layout({ ...getLayout(), eles: cy.elements(':visible') }).run();
   cy.ready(() => {
     onLoaded();
     setLoading(false);

@@ -5,7 +5,7 @@ import { BarLoader } from 'react-spinners';
 import { selectRdfData, selectSelectedTypes, setSelectedTypes } from '../Store/CombinedSlice';
 import { getTreeDataFromN3Data } from './TreeviewGlue';
 import { lightTheme } from './lightTheme';
-import { SPINNER_COLOR } from '../../constants';
+import { SELECTED_TEXT_COLOR, SELECTED_TYPE_NODE_COLOR, SPINNER_COLOR, UNSELECTED_TYPE_NODE_COLOR } from '../../constants';
 
 function CustomHeader({ onSelect, style, node }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -16,19 +16,20 @@ function CustomHeader({ onSelect, style, node }) {
 
   let newStyle = { ...style.base, transition: 'all 0.15s ease-in-out' };
 
+  // TODO change color to node type selected and unselected color from constants.ts
   if (node.selected) {
     // Check selected instead of toggled
-    newStyle = { ...newStyle, color: 'steelblue', fontWeight: 'bold' };
+    newStyle = { ...newStyle, color: SELECTED_TYPE_NODE_COLOR, fontWeight: 'bold' };
   } else {
-    newStyle = { ...newStyle, color: 'lightgrey', fontWeight: 'normal' };
+    newStyle = { ...newStyle, color: UNSELECTED_TYPE_NODE_COLOR, fontWeight: 'normal' };
   }
 
   // Adding hover and active style
   if (isHovered) {
-    newStyle = { ...newStyle, color: 'black' };
+    newStyle = { ...newStyle, color: SELECTED_TEXT_COLOR };
   }
   if (isActive) {
-    newStyle = { ...newStyle, backgroundColor: 'steelblue', color: 'white' };
+    newStyle = { ...newStyle, backgroundColor: SELECTED_TYPE_NODE_COLOR, color: 'white' };
   }
 
   return (

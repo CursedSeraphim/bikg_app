@@ -7,7 +7,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 from fastapi import APIRouter, Request, Response
-from rdflib import Graph, Namespace
+from rdflib import RDF, Graph, Namespace
 from rdflib.namespace import split_uri
 from scipy.stats import chi2_contingency
 
@@ -170,6 +170,14 @@ async def get_exemplar_focus_node_dict():
 @router.get("/file/study")
 async def read_csv_file():
     return {"data": df.to_dict(orient="records")}
+
+
+@router.get("/owl:Class")
+async def get_classes():
+    """
+    Retrieves all the classes in the ontology
+    """
+    return [str(g.namespace_manager.qname(c)) for c in g.subjects(predicate=RDF.type, object=OWL.Class)]  # type: ignore
 
 
 @router.post("/FeatureCategorySelection")

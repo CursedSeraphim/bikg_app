@@ -5,7 +5,7 @@ import { Data, Layout } from 'plotly.js';
 import { BarLoader } from 'react-spinners';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSelectedFocusNodes, selectSelectedFocusNodes } from '../Store/CombinedSlice'; // Import the necessary actions and selectors from CombinedSlice
-import { SPINNER_COLOR } from '../../constants';
+import { SELECTED_EXEMPLAR_NODE_COLOR, SPINNER_COLOR, UNSELECTED_EXEMPLAR_NODE_COLOR } from '../../constants';
 
 const Plot = createPlotlyComponent(Plotly);
 
@@ -33,7 +33,8 @@ function InteractiveScatterPlot({ data }: InteractiveScatterPlotProps) {
       text: data.map((d) => d.text),
       marker: {
         size: 3,
-        color: data.map((d) => (localSelectedFocusNodes.includes(d.text) ? 'steelblue' : 'lightgrey')),
+        // TODO change color to selected and unselected focus node color from constants.ts
+        color: data.map((d) => (localSelectedFocusNodes.includes(d.text) ? SELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_EXEMPLAR_NODE_COLOR)),
         opacity: 0.5,
       },
     },

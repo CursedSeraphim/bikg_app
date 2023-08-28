@@ -5,7 +5,6 @@ import InteractiveScatterPlot from './EmbeddingView/InteractiveScatterPlot';
 import LineUpView from './LineUp/LineUpView';
 
 function BottomTabs() {
-  // Inside your Tabs component function
   const [currentTab, setCurrentTab] = useState('1');
   const plotlyData = useSelector(selectCsvDataForPlotly);
 

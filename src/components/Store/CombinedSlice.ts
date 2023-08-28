@@ -37,6 +37,7 @@ const initialState: ICombinedState = {
   exemplarFocusNodeDict: {},
   selectedViolationExemplars: [],
   namespaces: {},
+  types: [],
 };
 
 function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
@@ -124,6 +125,10 @@ const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
+    setTypes: (state, action: PayloadAction<string[]>) => {
+      state.types = action.payload;
+      console.log('set types', action.payload);
+    },
     setNamespaces: (state, action: PayloadAction<INamespaces>) => {
       state.namespaces = action.payload;
       console.log('set namespaces', action.payload);
@@ -133,15 +138,15 @@ const combinedSlice = createSlice({
     },
     setEdgeCountDict: (state, action: PayloadAction<EdgeCountDict>) => {
       state.edgeCountDict = action.payload;
-      console.log('setEdgeCountDict', action.payload);
+      console.log('setEdgeCountDict');
     },
     setFocusNodeExemplarDict: (state, action: PayloadAction<FocusNodeExemplarDict>) => {
       state.focusNodeExemplarDict = action.payload;
-      console.log('setFocusNodeExemplarDict', action.payload);
+      console.log('setFocusNodeExemplarDict');
     },
     setExemplarFocusNodeDict: (state, action: PayloadAction<ExemplarFocusNodeDict>) => {
       state.exemplarFocusNodeDict = action.payload;
-      console.log('setExemplarFocusNodeDict', action.payload);
+      console.log('setExemplarFocusNodeDict');
     },
     setMissingEdgeOption: (state, action: PayloadAction<MissingEdgeOptionType>) => {
       state.missingEdgeOption = action.payload;
@@ -302,6 +307,7 @@ export const selectSelectedTypes = (state: { combined: ICombinedState }) => stat
 export const selectRdfData = (state: { combined: ICombinedState }) => state.combined.rdfString;
 export const selectSelectedViolationExemplars = (state: { combined: ICombinedState }) => state.combined.selectedViolationExemplars;
 export const selectNamespaces = (state: { combined: ICombinedState }) => state.combined.namespaces;
+export const selectTypes = (state: { combined: ICombinedState }) => state.combined.types;
 
 // TODO investigate why we are returning everything here
 // create memoized selector
@@ -579,8 +585,9 @@ const calculateObjectProperties = (visibleTriples, hiddenTriples) => {
  * @param {Map} objectProperties - Map containing object properties.
  * @param {Function} getColorForNamespace - Function to get color for namespace.
  * @param {Array} violations - Array of violations.
+ * @param {Array} types - Array of types.
  */
-const processTriples = (triples, visible, nodes, edges, objectProperties, getColorForNamespace, violations) => {
+const processTriples = (triples, visible, nodes, edges, objectProperties, getColorForNamespace, violations, types) => {
   triples.forEach((t) => {
     const extractNamespace = (uri) => {
       const match = uri.match(/^([^:]+):/);
@@ -604,6 +611,7 @@ const processTriples = (triples, visible, nodes, edges, objectProperties, getCol
             selectedColor,
             violation: violations.includes(id),
             exemplar: namespace === 'ex',
+            type: types.includes(id),
           },
         };
         nodes.push(node);
@@ -645,7 +653,7 @@ const processTriples = (triples, visible, nodes, edges, objectProperties, getCol
  * @param {Array} violations - Array of violations.
  * @returns {Object} An object containing array of Nodes and Edges.
  */
-export const selectCytoData = async (rdfString, getShapeForNamespace, violations) => {
+export const selectCytoData = async (rdfString, getShapeForNamespace, violations, types) => {
   // ... same as before
   const { visibleTriples, hiddenTriples } = await selectAllTriples(rdfString);
 
@@ -653,9 +661,8 @@ export const selectCytoData = async (rdfString, getShapeForNamespace, violations
   const edges = [];
 
   const objectProperties = calculateObjectProperties(visibleTriples, hiddenTriples);
-
-  processTriples(hiddenTriples, false, nodes, edges, objectProperties, getShapeForNamespace, violations);
-  processTriples(visibleTriples, true, nodes, edges, objectProperties, getShapeForNamespace, violations);
+  processTriples(hiddenTriples, false, nodes, edges, objectProperties, getShapeForNamespace, violations, types); // TODO requires state.types as last parameter
+  processTriples(visibleTriples, true, nodes, edges, objectProperties, getShapeForNamespace, violations, types); // TODO requires state.types as last parameter
 
   return { nodes, edges };
 };
@@ -677,6 +684,7 @@ export const {
   setExemplarFocusNodeDict,
   setSelectedViolationExemplars,
   setNamespaces,
+  setTypes,
 } = combinedSlice.actions;
 
 export default combinedSlice.reducer;

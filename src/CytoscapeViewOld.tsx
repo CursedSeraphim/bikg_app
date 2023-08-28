@@ -13,6 +13,7 @@ import {
   selectViolations,
   selectSelectedViolationExemplars,
   setSelectedViolationExemplars,
+  selectTypes,
 } from './components/Store/CombinedSlice';
 import { treeLayout, rotateNodes, findRootNodes, moveCollectionToCoordinates, getSuccessors } from './CytoscapeNodeFactory';
 import { useShapeHandler } from './components/components/namespaceHandler';
@@ -83,6 +84,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   const selectedViolations = useSelector(selectSelectedViolations);
   const violationsTypesMap = useSelector(selectViolationsTypeMap);
   const violations = useSelector(selectViolations);
+  const types = useSelector(selectTypes);
   const { getShapeForNamespace } = useShapeHandler();
   const dispatch = useDispatch();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -276,7 +278,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   React.useEffect(() => {
     console.log('violations', violations);
     console.log('calling selectcytodata with getShapeForNamespace', getShapeForNamespace('omics'));
-    selectCytoData(rdfOntology, getShapeForNamespace, violations)
+    selectCytoData(rdfOntology, getShapeForNamespace, violations, types)
       .then((data) => {
         const newCytoData = { ...data };
         newCytoData.nodes = newCytoData.nodes.map((node) => ({

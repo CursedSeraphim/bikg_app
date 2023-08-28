@@ -53,7 +53,7 @@ export class CytoscapeNodeFactory {
       for (let i = 0; i < childrenPerNode; i++) {
         const [node, edge] = this.createNode(labelProvider(this.nodeIdCounter), parent);
         elements.push(node);
-        if (edge) elements.push(edge as ICytoNode); // Since edge has a different structure, it needs to be casted if you intend to keep it in the same array
+        if (edge) elements.push(edge as ICytoNode); // Since edge has a different structure, it needs to be casted if intended to keep it in the same array
 
         buildTree(node, currentDepth + 1);
       }
