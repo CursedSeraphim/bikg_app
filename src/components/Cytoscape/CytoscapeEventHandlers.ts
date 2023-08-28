@@ -1,6 +1,7 @@
 import { Core } from 'cytoscape';
+import { ActionFunction } from '../../types';
 
-export function registerCytoscapeEventListeners(cy: Core | null, toggleChildren: any) {
+export function registerCytoscapeEventListeners(cy: Core | null, toggleChildren: ActionFunction) {
   if (!cy) return () => {};
 
   // Register dblclick event

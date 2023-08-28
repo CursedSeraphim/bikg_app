@@ -1,3 +1,5 @@
+import { NodeSingular } from 'cytoscape';
+
 export type Position = { x: number; y: number };
 
 export interface IOntologyNode {
@@ -118,14 +120,14 @@ export interface ITriple {
 }
 
 // Defines the signature of the function that performs an action
-export type ActionFunction = (target: any) => void; // You might want to replace 'any' with a more specific type
+export type ActionFunction = (target: NodeSingular) => void;
 
 // Defines what a menu item looks like
 export type MenuItem = {
   id: string;
   content: string;
   selector: string;
-  onClickFunction: (event: any) => void; // You might want to replace 'any' with a more specific type
+  onClickFunction: (event: NodeSingular) => void;
 };
 
 // Defines what the context menu options look like
