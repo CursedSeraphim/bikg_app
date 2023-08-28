@@ -48,7 +48,7 @@ function CytoscapeView({ rdfOntology, onLoaded }: CytoscapeViewProps): JSX.Eleme
       });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rdfOntology, toggleChildren, toggleParents]);
+  }, [rdfOntology, contextMenuActions]);
 
   React.useEffect(() => {
     // Register event listeners and get the cleanup function
