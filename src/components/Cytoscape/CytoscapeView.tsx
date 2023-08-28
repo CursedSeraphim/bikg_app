@@ -1,3 +1,4 @@
+// CytoscopeView.tsx
 import React, { useMemo, useState, useRef } from 'react';
 import cytoscape, { Core } from 'cytoscape';
 import { useSelector } from 'react-redux';
@@ -8,7 +9,7 @@ import contextMenus from 'cytoscape-context-menus';
 import { selectTypes, selectViolations } from '../Store/CombinedSlice';
 import { useShapeHandler } from '../components/namespaceHandler';
 import { useViewUtilities } from './useCytoscapeViewHelpers';
-import { registerCytoscapeEventListeners } from './CytoscapeEventHandlers';
+import { useRegisterCytoscapeEventListeners } from './CytoscapeEventHandlers'; // Import the new hook
 import { useSubscribeCytoscape } from './useSubscribeCytoscape';
 import { useCytoscapeData } from './useCytoscapeData';
 
@@ -38,12 +39,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
   useCytoscapeData({ rdfOntology, getShapeForNamespace, violations, types, cy, setCy, onLoaded, contextMenuActions, initialNodePositions, setLoading });
 
-  React.useEffect(() => {
-    const cleanup = registerCytoscapeEventListeners(cy, toggleChildren);
-    return () => {
-      cleanup();
-    };
-  }, [cy, toggleChildren]);
+  useRegisterCytoscapeEventListeners(cy, toggleChildren);
 
   return <div id="cy" />;
 }
