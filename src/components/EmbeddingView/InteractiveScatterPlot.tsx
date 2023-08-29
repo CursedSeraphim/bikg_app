@@ -1,91 +1,52 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Plotly from 'plotly.js-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
-import { Data, Layout } from 'plotly.js';
 import { BarLoader } from 'react-spinners';
-import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedFocusNodes, selectSelectedFocusNodes } from '../Store/CombinedSlice'; // Import the necessary actions and selectors from CombinedSlice
-import { SELECTED_EXEMPLAR_NODE_COLOR, SPINNER_COLOR, UNSELECTED_EXEMPLAR_NODE_COLOR } from '../../constants';
+import { useDispatch } from 'react-redux';
+import _ from 'lodash';
+import { setSelectedFocusNodes } from '../Store/CombinedSlice'; // Import the necessary actions from CombinedSlice
+import { SPINNER_COLOR } from '../../constants';
+import store from '../Store/Store'; // Import your store
+import { IScatterPlotProps } from '../../types';
+import { getPlotData, plotLayout } from './PlotlyHelpers';
 
 const Plot = createPlotlyComponent(Plotly);
 
-interface ScatterNode {
-  text: string;
-  x: number;
-  y: number;
-}
+function InteractiveScatterPlot({ data }: IScatterPlotProps) {
+  console.time('Rendering scatter plot took');
 
-interface InteractiveScatterPlotProps {
-  data: ScatterNode[];
-}
-
-function InteractiveScatterPlot({ data }: InteractiveScatterPlotProps) {
   const dispatch = useDispatch();
-  const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
-  const [localSelectedFocusNodes, setLocalSelectedFocusNodes] = useState<string[]>([]);
+  const selectedFocusNodesRef = useRef<string[]>([]);
 
-  const plotData: Data[] = [
-    {
-      x: data.map((d) => d.x),
-      y: data.map((d) => d.y),
-      mode: 'markers',
-      type: 'scatter',
-      text: data.map((d) => d.text),
-      marker: {
-        size: 3,
-        // TODO change color to selected and unselected focus node color from constants.ts
-        color: data.map((d) => (localSelectedFocusNodes.includes(d.text) ? SELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_EXEMPLAR_NODE_COLOR)),
-        opacity: 0.5,
-      },
-    },
-  ];
+  useEffect(() => {
+    const unsubscribe = store.subscribe(() => {
+      const currentState = store.getState();
+      const newSelectedFocusNodes = currentState.combined.selectedNodes;
 
-  const plotLayout: Partial<Layout> = {
-    hovermode: 'closest',
-    dragmode: 'lasso',
-    autosize: true,
-    margin: {
-      l: 0, // left margin
-      r: 0, // right margin
-      b: 0, // bottom margin
-      t: 0, // top margin
-      pad: 0, // padding
-    },
-    xaxis: {
-      // title: 'Embedding Dimension 1',
-      showgrid: false,
-      zeroline: false,
-      showticklabels: false,
-      showline: false,
-      ticks: '',
-    },
-    yaxis: {
-      // title: 'Embedding Dimension 2',
-      showgrid: false,
-      zeroline: false,
-      showticklabels: false,
-      showline: false,
-      ticks: '',
-    },
-  };
+      if (!_.isEqual(selectedFocusNodesRef.current, newSelectedFocusNodes)) {
+        selectedFocusNodesRef.current = newSelectedFocusNodes;
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleSelection = (eventData) => {
     if (eventData?.points && eventData.points.length > 0) {
       const selectedPoints = eventData.points.map((point) => data[point.pointIndex]);
-      const selectedNodes = selectedPoints.map((point) => point.text); // Extract the focus_node from each selected point
-      setLocalSelectedFocusNodes(selectedNodes); // Update the local selected focus nodes
-      dispatch(setSelectedFocusNodes(selectedNodes)); // Update the selected focus nodes in the Redux store
+      const selectedNodes = selectedPoints.map((point) => point.text);
+      selectedFocusNodesRef.current = selectedNodes;
+      dispatch(setSelectedFocusNodes(selectedNodes));
     }
   };
 
-  useEffect(() => {
-    setLocalSelectedFocusNodes(selectedFocusNodes);
-  }, [selectedFocusNodes]);
+  const plotData = getPlotData(selectedFocusNodesRef.current, data);
 
   if (data.length === 0) {
     return <BarLoader color={SPINNER_COLOR} loading />;
   }
 
+  console.timeEnd('Rendering scatter plot took');
   return (
     <div className="scatter-plot-container">
       <Plot

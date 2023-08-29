@@ -19,7 +19,8 @@ cytoscape.use(cytoscapeLasso);
 cytoscape.use(contextMenus);
 
 function CytoscapeView({ rdfOntology, onLoaded }) {
-  console.log('CytoscapeView render');
+  console.time('Rendering CytoscapeView took');
+
   const [cy, setCy] = useState<Core | null>(null);
   const violations = useSelector(selectViolations);
   const types = useSelector(selectTypes);
@@ -42,6 +43,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
 
   useRegisterCytoscapeEventListeners(cy, toggleChildren);
 
+  console.timeEnd('Rendering CytoscapeView took');
   return <div id="cy" />;
 }
 

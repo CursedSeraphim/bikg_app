@@ -153,6 +153,8 @@ export function App() {
       });
   }, [dispatch]);
 
+  console.log('render app');
+
   return (
     <div className="container">
       <div className="Ontology-Title">Extended Ontology View</div>

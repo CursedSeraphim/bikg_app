@@ -11,7 +11,8 @@ import useTreeData from './useTreeData';
 decorators.Header = CustomHeader;
 
 export default function Treeview() {
-  console.log('Treeview render');
+  console.time('Rendering Treeview took');
+
   const dispatch = useDispatch();
 
   const [treeData, setTreeData, selectedTypesRef] = useTreeData(); // Use your new custom hook
@@ -60,6 +61,7 @@ export default function Treeview() {
   // This will expand the treeview by default
   treeData.toggled = true;
 
+  console.timeEnd('Rendering Treeview took');
   // Here we return the JSX that will be rendered
   return (
     <div className="treeview-container">

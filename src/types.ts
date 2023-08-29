@@ -146,3 +146,13 @@ export type ContextMenuActions = Record<string, ActionFunction>;
 export type SetCyFn = React.Dispatch<React.SetStateAction<Core | null>>;
 
 export type SetLoadingFn = React.Dispatch<React.SetStateAction<boolean>>;
+
+export interface IScatterNode {
+  text: string;
+  x: number;
+  y: number;
+}
+
+export interface IScatterPlotProps {
+  data: IScatterNode[];
+}
