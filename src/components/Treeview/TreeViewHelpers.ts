@@ -30,3 +30,14 @@ export function resetAllNodes(node) {
     }
   }
 }
+
+export function updateTreeDataWithSelectedTypes(oldTreeData, selectedTypes) {
+  const newTreeData = JSON.parse(JSON.stringify(oldTreeData));
+  resetAllNodes(newTreeData);
+
+  for (const selectedType of selectedTypes) {
+    togglePathToNode(newTreeData, selectedType);
+  }
+
+  return newTreeData;
+}

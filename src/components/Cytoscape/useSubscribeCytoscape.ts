@@ -22,12 +22,12 @@ const selectNodes = (cyInstance: Core, attribute: string, values: string[]) => {
   });
 };
 
-const logSelectedNodes = (cyInstance: Core) => {
-  console.log('Print all selected nodes:');
-  cyInstance.$(':selected').forEach((node) => {
-    console.log(node.id());
-  });
-};
+// const logSelectedNodes = (cyInstance: Core) => {
+//   console.log('Print all selected nodes:');
+//   cyInstance.$(':selected').forEach((node) => {
+//     console.log(node.id());
+//   });
+// };
 
 // Custom Hook
 export const useSubscribeCytoscape = (cy: Core | null) => {
@@ -51,5 +51,6 @@ export const useSubscribeCytoscape = (cy: Core | null) => {
     return () => {
       unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cy]);
 };
