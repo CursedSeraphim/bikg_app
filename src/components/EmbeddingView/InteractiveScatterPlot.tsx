@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Plotly from 'plotly.js-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import { BarLoader } from 'react-spinners';
@@ -12,17 +12,18 @@ import { getPlotData, plotLayout } from './PlotlyHelpers';
 
 const Plot = createPlotlyComponent(Plotly);
 
+// TODO replace plotly with a faster library that can handle the updates
 function InteractiveScatterPlot({ data }: IScatterPlotProps) {
   console.time('Rendering scatter plot took');
 
   const dispatch = useDispatch();
   const selectedFocusNodesRef = useRef<string[]>([]);
+  const plotData = getPlotData(selectedFocusNodesRef.current, data);
 
   useEffect(() => {
     const unsubscribe = store.subscribe(() => {
       const currentState = store.getState();
       const newSelectedFocusNodes = currentState.combined.selectedNodes;
-
       if (!_.isEqual(selectedFocusNodesRef.current, newSelectedFocusNodes)) {
         selectedFocusNodesRef.current = newSelectedFocusNodes;
       }
@@ -32,15 +33,13 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
   }, []);
 
   const handleSelection = (eventData) => {
-    if (eventData?.points && eventData.points.length > 0) {
+    if (eventData?.points) {
       const selectedPoints = eventData.points.map((point) => data[point.pointIndex]);
       const selectedNodes = selectedPoints.map((point) => point.text);
       selectedFocusNodesRef.current = selectedNodes;
       dispatch(setSelectedFocusNodes(selectedNodes));
     }
   };
-
-  const plotData = getPlotData(selectedFocusNodesRef.current, data);
 
   if (data.length === 0) {
     return <BarLoader color={SPINNER_COLOR} loading />;
