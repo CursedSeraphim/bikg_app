@@ -52,5 +52,5 @@ export const useSubscribeCytoscape = (cy: Core | null) => {
     return () => {
       unsubscribe();
     };
-  }, [cy, store]);
+  }, [cy]);
 };

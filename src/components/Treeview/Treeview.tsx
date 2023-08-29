@@ -1,139 +1,91 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState, useEffect, useRef } from 'react';
+import { useDispatch } from 'react-redux';
 import { Treebeard, decorators } from 'react-treebeard';
 import { BarLoader } from 'react-spinners';
-import { selectRdfData, selectSelectedTypes, setSelectedTypes } from '../Store/CombinedSlice';
+import _ from 'lodash';
+import store from '../Store/Store';
+import { setSelectedTypes } from '../Store/CombinedSlice';
 import { getTreeDataFromN3Data } from './TreeviewGlue';
 import { lightTheme } from './lightTheme';
-import { SELECTED_TEXT_COLOR, SELECTED_TYPE_NODE_COLOR, SPINNER_COLOR, UNSELECTED_TYPE_NODE_COLOR } from '../../constants';
-
-function CustomHeader({ onSelect, style, node }) {
-  const [isHovered, setIsHovered] = useState(false);
-  const [isActive, setIsActive] = useState(false);
-
-  const iconClass = `fas fa-caret-right`;
-  const iconStyle = { marginRight: '5px' };
-
-  let newStyle = { ...style.base, transition: 'all 0.15s ease-in-out' };
-
-  // TODO change color to node type selected and unselected color from constants.ts
-  if (node.selected) {
-    // Check selected instead of toggled
-    newStyle = { ...newStyle, color: SELECTED_TYPE_NODE_COLOR, fontWeight: 'bold' };
-  } else {
-    newStyle = { ...newStyle, color: UNSELECTED_TYPE_NODE_COLOR, fontWeight: 'normal' };
-  }
-
-  // Adding hover and active style
-  if (isHovered) {
-    newStyle = { ...newStyle, color: SELECTED_TEXT_COLOR };
-  }
-  if (isActive) {
-    newStyle = { ...newStyle, backgroundColor: SELECTED_TYPE_NODE_COLOR, color: 'white' };
-  }
-
-  return (
-    <div
-      style={newStyle}
-      onClick={onSelect}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onMouseDown={() => setIsActive(true)}
-      onMouseUp={() => setIsActive(false)}
-      onBlur={() => setIsActive(false)}
-    >
-      <div style={node.selected ? { ...style.title, fontWeight: 'bold' } : style.title}>
-        <i className={iconClass} style={iconStyle} />
-        {node.name}
-      </div>
-    </div>
-  );
-}
+import { CustomHeader } from './CustomHeader'; // Import CustomHeader
+import { SPINNER_COLOR } from '../../constants';
+import { togglePathToNode, resetAllNodes } from './TreeViewHelpers';
 
 decorators.Header = CustomHeader;
 
-// it would lead to problems with large objects if we created a new object for each node to solve the eslint error
-// this way we can keep an elegant recursive solution
-/* eslint-disable no-param-reassign */
-function togglePathToNode(node, targetName) {
-  if (node.name === targetName) {
-    node.toggled = true;
-    node.selected = true; // Add selected field
-    return true;
-  }
-  if (node.children) {
-    for (const child of node.children) {
-      if (togglePathToNode(child, targetName)) {
-        node.toggled = true;
-        return true;
-      }
-    }
-  }
-  return false;
-}
+function updateTreeDataWithSelectedTypes(oldTreeData, selectedTypes) {
+  const newTreeData = JSON.parse(JSON.stringify(oldTreeData));
+  resetAllNodes(newTreeData);
 
-function resetAllNodes(node) {
-  if (node) {
-    node.toggled = false;
-    node.selected = false; // Reset selected field
-    if (node.children) {
-      for (const child of node.children) {
-        resetAllNodes(child);
-      }
-    }
+  for (const selectedType of selectedTypes) {
+    togglePathToNode(newTreeData, selectedType);
   }
+
+  return newTreeData;
 }
 
 export default function Treeview() {
+  console.log('Treeview render');
   const dispatch = useDispatch();
   const [treeData, setTreeData] = useState(null);
-  const ontology = useSelector(selectRdfData);
-  const selectedTypes = useSelector(selectSelectedTypes);
+  const ontologyRef = useRef('');
+  const selectedTypesRef = useRef([]);
 
   useEffect(() => {
-    if (ontology) {
-      getTreeDataFromN3Data(ontology).then((processedData) => {
-        setTreeData(processedData);
-      });
-    }
-  }, [ontology]);
+    const unsubscribe = store.subscribe(() => {
+      const currentState = store.getState();
+      const newOntology = currentState.combined.rdfString;
+      const newSelectedTypes = currentState.combined.selectedTypes;
 
-  useEffect(() => {
-    setTreeData((oldTreeData) => {
-      const newTreeData = JSON.parse(JSON.stringify(oldTreeData));
-      resetAllNodes(newTreeData);
+      let shouldUpdateTreeData = false;
 
-      if (selectedTypes.length !== 0) {
-        // If types are selected, toggle the paths to the selected nodes.
-        for (const selectedType of selectedTypes) {
-          togglePathToNode(newTreeData, selectedType);
-        }
+      if (ontologyRef.current !== newOntology) {
+        ontologyRef.current = newOntology;
+        shouldUpdateTreeData = true;
+        console.log('Treeview: ontology changed: ontology', ontologyRef.current, 'newOntology', newOntology);
       }
 
-      return newTreeData;
-    });
-  }, [selectedTypes]);
+      if (!_.isEqual(selectedTypesRef.current, newSelectedTypes)) {
+        selectedTypesRef.current = newSelectedTypes;
+        shouldUpdateTreeData = true;
+        console.log('Treeview: selectedTypes changed: selectedTypes', selectedTypesRef.current, 'newSelectedTypes', newSelectedTypes);
+      }
 
+      if (shouldUpdateTreeData) {
+        if (newOntology) {
+          getTreeDataFromN3Data(newOntology).then((processedData) => {
+            if (Array.isArray(newSelectedTypes) && newSelectedTypes.length > 0) {
+              setTreeData(updateTreeDataWithSelectedTypes(processedData, newSelectedTypes));
+            } else {
+              setTreeData(processedData);
+            }
+          });
+        } else if (Array.isArray(newSelectedTypes) && newSelectedTypes.length > 0) {
+          setTreeData((oldTreeData) => updateTreeDataWithSelectedTypes(oldTreeData, newSelectedTypes));
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // This function will be called when a node is toggled
   const onToggle = (node, toggled) => {
-    // Get the current list of selected types
-    let newSelectedTypes = [...selectedTypes];
+    let newSelectedTypes = [...selectedTypesRef.current];
 
     const removeNodeAndChildrenFromList = (n) => {
       newSelectedTypes = newSelectedTypes.filter((type) => type !== n.name);
-
       if (n.children) {
         n.children.forEach(removeNodeAndChildrenFromList);
       }
     };
 
-    // If toggled, add the node to the list
     if (toggled) {
       newSelectedTypes.push(node.name);
     } else {
       removeNodeAndChildrenFromList(node);
     }
 
-    // Update the selected types in the store
     dispatch(setSelectedTypes(newSelectedTypes));
 
     if (node.children) {
@@ -153,13 +105,15 @@ export default function Treeview() {
     }
   };
 
+  // This will show a spinner while the treeview is loading
   if (!treeData) {
     return <BarLoader color={SPINNER_COLOR} loading />;
   }
 
-  // set root element to be default toggled
+  // This will expand the treeview by default
   treeData.toggled = true;
 
+  // Here we return the JSX that will be rendered
   return (
     <div className="treeview-container">
       <Treebeard data={treeData} style={lightTheme} onToggle={onToggle} decorator={decorators} />
