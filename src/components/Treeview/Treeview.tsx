@@ -9,7 +9,6 @@ import { SPINNER_COLOR } from '../../constants';
 import useTreeData from './useTreeData';
 
 decorators.Header = CustomHeader;
-// TODO sort the treeview alphabetically
 export default function Treeview() {
   console.time('Rendering Treeview took');
 

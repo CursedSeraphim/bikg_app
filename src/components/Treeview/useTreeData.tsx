@@ -5,6 +5,24 @@ import store from '../Store/Store';
 import { getTreeDataFromTuples } from './TreeviewGlue';
 import { updateTreeDataWithSelectedTypes } from './TreeViewHelpers';
 
+function sortEachLayerAlphabetically(tree) {
+  if (!tree) return;
+
+  const queue = [tree];
+
+  while (queue.length > 0) {
+    const node = queue.shift();
+
+    if (Array.isArray(node.children)) {
+      // Sort the children of the current node
+      node.children.sort((a, b) => a.name.localeCompare(b.name));
+
+      // Add children to the queue to sort their children later
+      queue.push(...node.children);
+    }
+  }
+}
+
 export default function useTreeData() {
   const [treeData, setTreeData] = useState(null);
   const ontologyRef = useRef('');
@@ -41,6 +59,7 @@ export default function useTreeData() {
         if (newOntology) {
           // Call the function directly since it's not asynchronous anymore
           processedData = getTreeDataFromTuples(subClassOfTriplesRef.current);
+          sortEachLayerAlphabetically(processedData);
           if (Array.isArray(newSelectedTypes) && newSelectedTypes.length > 0) {
             setTreeData(updateTreeDataWithSelectedTypes(processedData, newSelectedTypes));
           } else {
