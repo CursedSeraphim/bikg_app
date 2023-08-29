@@ -5,7 +5,7 @@ import { BarLoader } from 'react-spinners';
 import _ from 'lodash';
 import store from '../Store/Store';
 import { setSelectedTypes } from '../Store/CombinedSlice';
-import { getTreeDataFromN3Data } from './TreeviewGlue';
+import { getTreeDataFromTuples } from './TreeviewGlue';
 import { lightTheme } from './lightTheme';
 import { CustomHeader } from './CustomHeader'; // Import CustomHeader
 import { SPINNER_COLOR } from '../../constants';
@@ -61,7 +61,7 @@ export default function Treeview() {
         let processedData;
         if (newOntology) {
           // Call the function directly since it's not asynchronous anymore
-          processedData = getTreeDataFromN3Data(newOntology, subClassOfTriplesRef.current);
+          processedData = getTreeDataFromTuples(subClassOfTriplesRef.current);
           if (Array.isArray(newSelectedTypes) && newSelectedTypes.length > 0) {
             setTreeData(updateTreeDataWithSelectedTypes(processedData, newSelectedTypes));
           } else {

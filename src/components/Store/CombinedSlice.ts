@@ -128,11 +128,11 @@ const combinedSlice = createSlice({
   reducers: {
     setSubClassOfTriples: (state, action: PayloadAction<ITriple[]>) => {
       state.subClassOfTriples = action.payload;
-      console.log('setSubClassOfTriples, payload: ', action.payload);
+      console.log('setSubClassOfTriples');
     },
     setTypes: (state, action: PayloadAction<string[]>) => {
       state.types = action.payload;
-      console.log('set types', action.payload);
+      console.log('set types');
     },
     setNamespaces: (state, action: PayloadAction<INamespaces>) => {
       state.namespaces = action.payload;
