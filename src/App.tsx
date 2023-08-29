@@ -15,6 +15,7 @@ import {
   setExemplarFocusNodeDict,
   setNamespaces,
   setTypes,
+  setSubClassOfTriples,
 } from './components/Store/CombinedSlice';
 
 import CytoscapeView from './components/Cytoscape/CytoscapeView';
@@ -30,6 +31,7 @@ import {
   fetchExemplarFocusNodeDict,
   fetchNamespaces,
   fetchClasses,
+  fetchSubClassOfTriples,
 } from './api';
 import { SPINNER_COLOR } from './constants';
 
@@ -37,6 +39,18 @@ export function App() {
   const dispatch = useDispatch();
   const rdfOntology = useSelector(selectRdfData);
   const [cytoscapeLoading, setCytoscapeLoading] = React.useState(true);
+
+  // Fetch sub-class-of triples and print
+  React.useEffect(() => {
+    fetchSubClassOfTriples()
+      .then((data) => {
+        console.log('fetchSubClassOfTriples', data);
+        dispatch(setSubClassOfTriples(data));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch sub-class-of triples', error);
+      });
+  }, [dispatch]);
 
   // Fetch classes and print
   React.useEffect(() => {

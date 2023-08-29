@@ -44,7 +44,6 @@ export const useSubscribeCytoscape = (cy: Core | null) => {
         selectNodes(cy, 'label', selectedTypes);
         selectNodes(cy, 'label', selectedViolationExemplars);
         selectNodes(cy, 'label', selectedViolations);
-        logSelectedNodes(cy);
       }
     });
 

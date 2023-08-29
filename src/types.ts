@@ -115,6 +115,7 @@ export interface ICombinedState {
   selectedViolationExemplars: string[];
   namespaces: INamespaces;
   types: string[];
+  subClassOfTriples: ITriple[];
 }
 
 export interface ITriple {

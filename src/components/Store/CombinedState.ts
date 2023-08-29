@@ -35,6 +35,7 @@ export interface RdfState {
   rdfString: string;
 }
 
+// TODO move all this into types, combinedstate already exists there
 export interface CombinedState {
   samples: ICsvData[];
   selectedNodes: string[];
@@ -44,6 +45,7 @@ export interface CombinedState {
   violations: string[]; // list of possible violation source shapes
   violationTypesMap: { [key: string]: string[] }; // map of violation sh:PropertyShapes to their corresponding owl:Class and the sh:NodeShapes in between
   typesViolationMap: { [key: string]: string[] }; // map of owl:Classes to their corresponding sh:PropertyShapes and the sh:NodeShapes in between
+  subClassOfTriples: Triple[];
 }
 
 export interface Triple {

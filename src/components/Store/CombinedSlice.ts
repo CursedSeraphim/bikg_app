@@ -38,6 +38,7 @@ const initialState: ICombinedState = {
   selectedViolationExemplars: [],
   namespaces: {},
   types: [],
+  subClassOfTriples: [],
 };
 
 function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
@@ -125,6 +126,10 @@ const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
+    setSubClassOfTriples: (state, action: PayloadAction<ITriple[]>) => {
+      state.subClassOfTriples = action.payload;
+      console.log('setSubClassOfTriples, payload: ', action.payload);
+    },
     setTypes: (state, action: PayloadAction<string[]>) => {
       state.types = action.payload;
       console.log('set types', action.payload);
@@ -308,6 +313,7 @@ export const selectRdfData = (state: { combined: ICombinedState }) => state.comb
 export const selectSelectedViolationExemplars = (state: { combined: ICombinedState }) => state.combined.selectedViolationExemplars;
 export const selectNamespaces = (state: { combined: ICombinedState }) => state.combined.namespaces;
 export const selectTypes = (state: { combined: ICombinedState }) => state.combined.types;
+export const selectSubClassOfTriples = (state: { combined: ICombinedState }) => state.combined.subClassOfTriples;
 
 // TODO investigate why we are returning everything here
 // create memoized selector
@@ -389,10 +395,13 @@ export const selectSubClassesAndViolations = async (state: { combined: ICombined
 };
 
 export const selectSubClassOfTuples = async (state: { rdf: IRdfState }): Promise<ITriple[]> => {
+  console.time('time in selectSubClassoFTupless');
+
   const { rdfString } = state.rdf;
   const store: Store = new Store();
   const parser: N3.Parser = new N3.Parser();
   let prefixes: { [key: string]: string } = {};
+  console.time('time awaiting promise');
 
   await new Promise<void>((resolve, reject) => {
     parser.parse(rdfString, (error, quad, _prefixes) => {
@@ -406,10 +415,12 @@ export const selectSubClassOfTuples = async (state: { rdf: IRdfState }): Promise
       }
     });
   });
+  console.timeEnd('time awaiting promise');
   const subClassOfPredicate = new NamedNode(`${prefixes.rdfs}subClassOf`);
   const subClassOfTuples = store.getQuads(null, subClassOfPredicate, null);
   // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
   // In selectSubClassOfTuples and selectSubClassOrObjectPropertyTuples functions
+  console.timeEnd('time in selectSubClassoFTupless');
   return subClassOfTuples.map((quad) => {
     return {
       s: shortenURI(quad.subject.id, prefixes),
@@ -685,6 +696,7 @@ export const {
   setSelectedViolationExemplars,
   setNamespaces,
   setTypes,
+  setSubClassOfTriples,
 } = combinedSlice.actions;
 
 export default combinedSlice.reducer;
