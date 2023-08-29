@@ -6,8 +6,8 @@ export const CSV_EDGE_NOT_IN_ONTOLOGY_STRING = 'EdgeNotPresent';
 export const SPINNER_COLOR = 'grey';
 
 // Default Node Colors
-export const UNSELECTED_DEFAULT_COLOR = 'grey';
-export const SELECTED_DEFAULT_COLOR = 'darkgrey';
+export const UNSELECTED_DEFAULT_COLOR = '#999';
+export const SELECTED_DEFAULT_COLOR = '#666';
 
 // Text Colors
 export const SELECTED_TEXT_COLOR = 'black';
