@@ -37,11 +37,9 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     [toggleChildren, toggleParents],
   );
 
-  useSubscribeCytoscape(cy);
-
   useCytoscapeData({ rdfOntology, getShapeForNamespace, violations, types, cy, setCy, onLoaded, contextMenuActions, initialNodePositions, setLoading });
-
   useRegisterCytoscapeEventListeners(cy, toggleChildren);
+  useSubscribeCytoscape(cy, initialNodePositions);
 
   console.timeEnd('Rendering CytoscapeView took');
   return <div id="cy" />;

@@ -21,7 +21,7 @@ export function createNewCytoscapeInstance(
     style: getStyle(getShapeForNamespace),
     layout: getLayout(),
   });
-  newCy.contextMenus(getContextMenuOptions(contextMenuActions)); // add this
+  newCy.contextMenus(getContextMenuOptions(contextMenuActions));
 
   setCy(newCy);
   newCy.ready(() => {
@@ -42,15 +42,15 @@ export function updateCytoscapeInstance(
   cy.elements().remove();
   cy.add(data);
   cy.lassoSelectionEnabled(true);
-  cy.nodes().forEach((node) => {
-    const pos = node.position();
-    initialNodePositions.current.set(node.data('id'), { x: pos.x, y: pos.y });
-  });
   cy.layout({ ...getLayout(), eles: cy.elements(':visible') }).run();
   cy.ready(() => {
     onLoaded();
     setLoading(false);
     cy.fit();
+    cy.nodes().forEach((node) => {
+      const pos = node.position();
+      initialNodePositions.current.set(node.data('id'), { x: pos.x, y: pos.y });
+    });
   });
-  cy.contextMenus(getContextMenuOptions(contextMenuActions)); // add this
+  cy.contextMenus(getContextMenuOptions(contextMenuActions));
 }

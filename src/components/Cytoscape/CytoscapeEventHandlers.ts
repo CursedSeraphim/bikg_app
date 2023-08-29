@@ -20,6 +20,40 @@ export function useRegisterCytoscapeEventListeners(cy: Core | null, toggleChildr
       toggleChildren(node);
     };
 
+    const handleMouseover = (event) => {
+      const node = event.target;
+      node.stop(); // Stop any ongoing animation
+
+      console.log('ndoe selected?', node.selected());
+
+      node
+        .animation({
+          style: {
+            // 'background-color': node.selected() ? determineDeselectColor(node) : determineSelectColor(node),
+            'border-color': 'black',
+            'border-width': '3px',
+          },
+          duration: 30,
+        })
+        .play();
+    };
+
+    const handleMouseout = (event) => {
+      const node = event.target;
+      node.stop(); // Stop any ongoing animation
+
+      node
+        .animation({
+          style: {
+            // 'background-color': node.selected() ? determineSelectColor(node) : determineDeselectColor(node),
+            'border-color': 'black',
+            'border-width': '0px',
+          },
+          duration: 30,
+        })
+        .play();
+    };
+
     // const handleSelect = (evt) => {
     //   console.log('selected');
     //   const selectedTypes = [];
@@ -60,10 +94,15 @@ export function useRegisterCytoscapeEventListeners(cy: Core | null, toggleChildr
 
     cy.on('dblclick', 'node', handleDblClick);
     // cy.on('select', 'node', handleSelect);
+    cy.on('mouseover', 'node', handleMouseover);
+
+    cy.on('mouseout', 'node', handleMouseout);
 
     return () => {
       cy.off('dblclick', 'node', handleDblClick);
       // cy.off('select', 'node', handleSelect);
+      cy.off('mouseover', 'node', handleMouseover);
+      cy.off('mouseout', 'node', handleMouseout);
     };
   }, [cy, toggleChildren, dispatch]); // Only re-run the effect if cy, toggleChildren, or dispatch changes
 }
