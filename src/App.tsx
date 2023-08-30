@@ -78,7 +78,6 @@ export function App() {
   React.useEffect(() => {
     fetchEdgeCountDict()
       .then((data) => {
-        // console.log('fetchEdgeCountDict', data);
         dispatch(setEdgeCountDict(data));
       })
       .catch((error) => {

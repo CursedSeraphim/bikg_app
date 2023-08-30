@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { INamespaces, INamespaceInfo, UseShapeHandlerReturnType } from '../../types';
 import { selectNamespaces } from '../Store/CombinedSlice';
@@ -85,28 +85,32 @@ const useShapeHandler = (): UseShapeHandlerReturnType => {
    * @param {string} [namespace=''] - The namespace to get the shape for.
    * @returns {string} The shape for the namespace.
    */
-  const getShapeForNamespace = (namespace = '') => {
+  const getShapeForNamespace = useCallback((namespace = '') => {
     return map[namespace] || DEFAULT_SHAPE;
-    // console.log('called with namespace', namespace);
-    let namespaceIndex = sortedNamespaces.findIndex(([key]) => key === namespace);
+  }, []);
 
-    console.log('sortedNamespaces', sortedNamespaces, 'key', namespace, 'index', namespaceIndex);
+  //   const getShapeForNamespace = (namespace = '') => {
+  //     return map[namespace] || DEFAULT_SHAPE;
+  //     // console.log('called with namespace', namespace);
+  //     // let namespaceIndex = sortedNamespaces.findIndex(([key]) => key === namespace);
 
-    if (sortedNamespaces.length > MAX_DISPLAY_NAMESPACES && namespaceIndex >= MAX_DISPLAY_NAMESPACES) {
-      namespaceIndex = MAX_DISPLAY_NAMESPACES - 1; // Group as "other"
-    }
+  //     // console.log('sortedNamespaces', sortedNamespaces, 'key', namespace, 'index', namespaceIndex);
 
-    if (namespaceIndex === -1) {
-      // console.log('returning default shape', DEFAULT_SHAPE);
-      return DEFAULT_SHAPE;
-    }
+  //     // if (sortedNamespaces.length > MAX_DISPLAY_NAMESPACES && namespaceIndex >= MAX_DISPLAY_NAMESPACES) {
+  //     //   namespaceIndex = MAX_DISPLAY_NAMESPACES - 1; // Group as "other"
+  //     // }
 
-    // console.log('returning shape by index', shapeList[namespaceIndex]);
+  //     // if (namespaceIndex === -1) {
+  //     //   // console.log('returning default shape', DEFAULT_SHAPE);
+  //     //   return DEFAULT_SHAPE;
+  //     // }
 
-    return shapeList[namespaceIndex] || DEFAULT_SHAPE;
-  };
+  //     // // console.log('returning shape by index', shapeList[namespaceIndex]);
 
-  // console.log('getShapeForNamespace("omics")', getShapeForNamespace('omics'));
+  //     // return shapeList[namespaceIndex] || DEFAULT_SHAPE;
+  //   };
+
+  //   // console.log('getShapeForNamespace("omics")', getShapeForNamespace('omics'));
 
   return { getShapeForNamespace };
 };
