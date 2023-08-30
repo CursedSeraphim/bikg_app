@@ -44,17 +44,12 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodePositions) => 
       const { selectedTypes, selectedViolationExemplars, selectedViolations } = extractSelectedData(state);
 
       if (cy && initialNodePositions.current && initialNodePositions.current.size > 0) {
-        console.time('handling subscription for tree layout took');
+        console.time('usesubscribe/handling subscription for tree layout took');
 
         clearSelectedNodes(cy);
-        console.time('hideallnodes');
-        // hideAllVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
-        console.timeEnd('hideallnodes');
-        console.time('resetpositions');
-        resetNodePositions(cy, cy.nodes(), initialNodePositions);
-        console.timeEnd('resetpositions');
+        hideAllVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
+        resetNodePositions(cy, initialNodePositions.current);
 
-        console.time('getfilterednodes');
         const { violationNodes, typeNodes, otherNodes, exemplarNodes } = getFilteredNodes(
           cy,
           selectedViolations,
@@ -62,20 +57,15 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodePositions) => 
           selectedTypes,
           selectedViolationExemplars,
         );
-        console.timeEnd('getfilterednodes');
-        console.time('styleanddisplay');
         styleAndDisplayNodes(listOfNodesThatHaveBeenMadeVisible, typeNodes, otherNodes, exemplarNodes, violationNodes);
-        console.timeEnd('styleanddisplay');
-        console.time('adjustlayout');
         adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes);
-        console.timeEnd('adjustlayout');
 
         violationNodes.union(typeNodes).union(otherNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes)).select();
         selectNodes(cy, 'label', selectedTypes);
         selectNodes(cy, 'label', selectedViolationExemplars);
         selectNodes(cy, 'label', selectedViolations);
         cy.style().update();
-        console.timeEnd('handling subscription for tree layout took');
+        console.timeEnd('usesubscribe/handling subscription for tree layout took');
       }
     });
 

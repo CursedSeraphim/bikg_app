@@ -5,18 +5,18 @@ import { selectCytoData } from '../Store/CombinedSlice';
 import { createNewCytoscapeInstance, updateCytoscapeInstance } from './CytoscapeInstanceHelpers';
 import { ContextMenuActions, GetShapeForNamespaceFn, SetCyFn } from '../../types';
 
-type CytoscapeDataProps = {
-  rdfOntology: string;
+interface CytoscapeDataProps {
+  rdfOntology: any;
   getShapeForNamespace: GetShapeForNamespaceFn;
   violations: string[];
   types: string[];
-  cy: Core | null;
-  setCy: SetCyFn;
-  onLoaded: () => void;
-  contextMenuActions: ContextMenuActions;
-  initialNodePositions: React.MutableRefObject<Map<string, { x: number; y: number }>>;
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
-};
+  cy: any;
+  setCy: React.Dispatch<any>;
+  onLoaded: any;
+  contextMenuActions: { [key: string]: any };
+  initialNodePositions: React.MutableRefObject<Map<string, { x: number; y: number; visible: boolean }>>;
+  setLoading: React.Dispatch<any>;
+}
 
 export function useCytoscapeData({
   rdfOntology,
@@ -40,5 +40,6 @@ export function useCytoscapeData({
       .catch((error) => {
         console.error('Failed to generate Cytoscape data:', error);
       });
-  }, [rdfOntology, getShapeForNamespace, violations, types, cy, setCy, onLoaded, contextMenuActions, initialNodePositions, setLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rdfOntology, getShapeForNamespace, violations, types, cy, setCy, onLoaded, contextMenuActions, setLoading]);
 }

@@ -27,7 +27,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   const { getShapeForNamespace } = useShapeHandler();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
-  const initialNodePositions = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const initialNodePositions = useRef<Map<string, { x: number; y: number; visible: boolean }>>(new Map());
   const { toggleChildren, toggleParents } = useViewUtilities(cy);
   const contextMenuActions = useMemo(
     () => ({
@@ -37,7 +37,18 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     [toggleChildren, toggleParents],
   );
 
-  useCytoscapeData({ rdfOntology, getShapeForNamespace, violations, types, cy, setCy, onLoaded, contextMenuActions, initialNodePositions, setLoading });
+  useCytoscapeData({
+    rdfOntology,
+    getShapeForNamespace,
+    violations,
+    types,
+    cy,
+    setCy,
+    onLoaded,
+    contextMenuActions,
+    initialNodePositions,
+    setLoading,
+  });
   useRegisterCytoscapeEventListeners(cy, toggleChildren);
   useSubscribeCytoscape(cy, initialNodePositions);
 

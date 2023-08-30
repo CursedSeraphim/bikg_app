@@ -28,3 +28,6 @@ export const UNSELECTED_EXEMPLAR_NODE_COLOR = '#FF7F7F'; // desaturated version
 // children/parent alignment constants
 export const NODE_LAYOUT_OFFSET_X = 500;
 export const DISTANCE_BETWEEN_NODES_Y = 70;
+
+// tree layout constants
+export const UNFOLDED_SUBTREE_BOUNDING_BOX_MARGIN = 100;

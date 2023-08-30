@@ -1,6 +1,7 @@
 // TreeLayoutHelpers.ts
-
+import cytoscape from 'cytoscape';
 import { findRootNodes, moveCollectionToCoordinates, rotateNodes, treeLayout } from '../../CytoscapeNodeFactory';
+import { UNFOLDED_SUBTREE_BOUNDING_BOX_MARGIN } from '../../constants';
 
 // Helper function to hide nodes
 export function hideVisibleNodes(nodeList) {
@@ -41,29 +42,29 @@ export function addVirtualRoot(cy, roots) {
 }
 
 /**
- * Resets the positions of nodes to their initial state and hides nodes with (0,0) positions.
- * @param {Cytoscape.Core} cy - The cytoscape instance.
- * @param {Collection} nodes - The collection of nodes to reset.
+ * Resets the positions and visibility of nodes based on the provided initial positions map.
+ *
+ * @param {cytoscape.Core} cy - The Cytoscape instance.
+ * @param {Map<string, {x: number, y: number, visible: boolean}>} initialNodePositions -
+ *        An Map where keys are node IDs and values are objects containing x, y coordinates
+ *        and a visibility flag.
  */
-export function resetNodePositions(cy, nodes, initialNodePositions) {
-  const nodesToHideArray = [];
+export function resetNodePositions(cy: cytoscape.Core, initialNodePositions: Map<string, { x: number; y: number; visible: boolean }>) {
+  cy.startBatch();
 
-  cy.batch(() => {
-    nodes.forEach((node) => {
-      const pos = initialNodePositions.current.get(node.id());
-      if (pos) {
-        node.position(pos);
+  for (const [id, { x, y, visible }] of initialNodePositions) {
+    const node = cy.getElementById(id);
+    if (node.empty()) continue;
 
-        if (pos.x === 0 && pos.y === 0) {
-          nodesToHideArray.push(node);
-        }
-      }
+    // Set x, y, and visible properties directly
+    node.json({
+      position: { x, y },
+      data: { visible },
+      style: { display: visible ? 'element' : 'none' },
     });
-  });
+  }
 
-  const nodesToHide = cy.collection(nodesToHideArray);
-  nodesToHide.style('display', 'none');
-  nodesToHide.data('visible', false);
+  cy.endBatch();
 }
 
 // Helper function to get nodes from ids
@@ -114,9 +115,11 @@ export function showCytoElements(element) {
  */
 export function adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes) {
   const potentialRoots = typeNodes.union(otherNodes);
-  const everything = typeNodes.union(otherNodes).union(violationNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets());
+  const everything = potentialRoots.union(violationNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets());
   const roots = findRootNodes(potentialRoots);
   const layoutSpacing = { x: 70, y: 500 };
+
+  cy.startBatch();
 
   if (roots?.length > 1) {
     const virtualRoot = addVirtualRoot(cy, roots);
@@ -128,8 +131,16 @@ export function adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplar
   }
 
   rotateNodes(everything, -90);
-  const bb = cy.nodes().difference(everything).boundingBox();
-  moveCollectionToCoordinates(everything, bb.x2);
+  cy.endBatch();
+
+  let maxX = -Infinity;
+  cy.nodes().forEach((node) => {
+    if (node.data('permanent') === false) return;
+    const x = node.position('x');
+    maxX = Math.max(maxX, x);
+  });
+  const newX = maxX + UNFOLDED_SUBTREE_BOUNDING_BOX_MARGIN;
+  moveCollectionToCoordinates(everything, newX);
 }
 
 /**
@@ -145,7 +156,7 @@ export function styleAndDisplayNodes(listOfNodesThatHaveBeenMadeVisible, typeNod
   exemplarNodes.outgoers().targets().data('visible', true);
   exemplarNodes.outgoers().targets().style('display', 'element');
 
-  listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes);
+  listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes, exemplarNodes.outgoers().targets());
 }
 
 /**
