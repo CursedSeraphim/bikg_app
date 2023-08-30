@@ -8,7 +8,6 @@ import { OntologyMap, ITriple } from '../../types';
 export function getTreeDataFromTuples(subClassOfTriples: ITriple[]) {
   const ontologyMap: OntologyMap = {};
 
-  // The quads now come from the parameter subClassOfTriples instead of the async call to selectSubClassOfTuples
   const quads = subClassOfTriples;
 
   quads.forEach((triple) => {

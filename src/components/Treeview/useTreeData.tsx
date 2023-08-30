@@ -37,7 +37,6 @@ export default function useTreeData() {
       const newSubClassOfTriples = currentState.combined.subClassOfTriples; // Get new value from state
 
       let shouldUpdateTreeData = false;
-
       if (ontologyRef.current !== newOntology) {
         ontologyRef.current = newOntology;
         shouldUpdateTreeData = true;

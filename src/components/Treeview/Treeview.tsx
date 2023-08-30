@@ -2,6 +2,7 @@ import React from 'react';
 import { useDispatch } from 'react-redux';
 import { Treebeard, decorators } from 'react-treebeard';
 import { BarLoader } from 'react-spinners';
+import _ from 'lodash';
 import { setSelectedTypes } from '../Store/CombinedSlice';
 import { lightTheme } from './lightTheme';
 import { CustomHeader } from './CustomHeader'; // Import CustomHeader
@@ -10,8 +11,6 @@ import useTreeData from './useTreeData';
 
 decorators.Header = CustomHeader;
 export default function Treeview() {
-  console.time('Rendering Treeview took');
-
   const dispatch = useDispatch();
 
   const [treeData, setTreeData, selectedTypesRef] = useTreeData(); // Use your new custom hook
@@ -37,7 +36,7 @@ export default function Treeview() {
 
     if (node.children) {
       setTreeData((oldTreeData) => {
-        const newTreeData = JSON.parse(JSON.stringify(oldTreeData));
+        const newTreeData = _.cloneDeep(oldTreeData);
         const traverseAndToggle = (n) => {
           if (n.children) {
             n.children.forEach(traverseAndToggle);
@@ -51,7 +50,6 @@ export default function Treeview() {
       });
     }
   };
-
   // This will show a spinner while the treeview is loading
   if (!treeData) {
     return <BarLoader color={SPINNER_COLOR} loading />;
@@ -59,8 +57,6 @@ export default function Treeview() {
 
   // This will expand the treeview by default
   treeData.toggled = true;
-
-  console.timeEnd('Rendering Treeview took');
   // Here we return the JSX that will be rendered
   return (
     <div className="treeview-container">
