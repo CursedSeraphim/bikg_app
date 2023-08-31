@@ -20,14 +20,14 @@ export default function Treeview() {
     let newSelectedTypes = [...selectedTypesRef.current];
 
     const removeNodeAndChildrenFromList = (n) => {
-      newSelectedTypes = newSelectedTypes.filter((type) => type !== n.name);
+      newSelectedTypes = newSelectedTypes.filter((type) => type !== n.name.split(' ')[0]);
       if (n.children) {
         n.children.forEach(removeNodeAndChildrenFromList);
       }
     };
 
     if (toggled) {
-      newSelectedTypes.push(node.name);
+      newSelectedTypes.push(node.name.split(' ')[0]);
     } else {
       removeNodeAndChildrenFromList(node);
     }
