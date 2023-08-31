@@ -198,12 +198,12 @@ const combinedSlice = createSlice({
     },
     setSelectedFocusNodes: (state, action) => {
       console.log('setSelectedFocusNodes');
-      state.selectedNodes = action.payload;
-
+      const newSelectedNodes = action.payload;
+      f;
       // Convert state.samples into an object for O(1) lookup
-      const samplesMap = {};
+      const focusNodesSamplesMap = {};
       state.samples.forEach((sample) => {
-        samplesMap[sample.focus_node] = sample;
+        focusNodesSamplesMap[sample.focus_node] = sample;
       });
 
       // Initiate a violation map with 0 at each violation key
@@ -213,11 +213,11 @@ const combinedSlice = createSlice({
       });
 
       // Use a Set to store selected types
-      const selectedTypes = new Set();
+      const selectedTypesSet: Set<string> = new Set();
 
       // Iterate over selected nodes
-      state.selectedNodes.forEach((selectedNode) => {
-        const correspondingSample = samplesMap[selectedNode];
+      newSelectedNodes.forEach((selectedNode) => {
+        const correspondingSample = focusNodesSamplesMap[selectedNode];
 
         if (!correspondingSample) return; // if no corresponding sample is found, skip
 
@@ -229,20 +229,25 @@ const combinedSlice = createSlice({
 
         // If the sample has a type, add it to the selectedTypes set
         const sampleType = String(correspondingSample['rdf:type']);
-        if (sampleType) selectedTypes.add(sampleType);
+        if (sampleType) selectedTypesSet.add(sampleType);
       });
 
       // Convert selectedTypes set back to array
-      state.selectedTypes = Array.from(selectedTypes) as string[];
+      const newSelectedTypes = Array.from(selectedTypesSet);
 
       // Set state.selectedViolations to the keys of the map with value > 0
-      state.selectedViolations = Array.from(violationMap.entries())
+      const newSelectedViolations = Array.from(violationMap.entries())
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .filter(([key, value]) => value > 0)
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .map(([key, value]) => key);
 
-      console.log('udpating selected violation exemplars');
+      // Now, we assign new values to the state variables.
+      state.selectedNodes = newSelectedNodes;
+      state.selectedTypes = newSelectedTypes;
+      state.selectedViolations = newSelectedViolations;
+
+      console.log('updating selected violation exemplars');
       updateSelectedViolationExemplars(state);
     },
     setSelectedViolations: (state, action) => {
