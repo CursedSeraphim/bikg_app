@@ -252,7 +252,6 @@ const combinedSlice = createSlice({
     setSelectedTypes: (state, action) => {
       state.selectedTypes = action.payload;
 
-      // if selectedTypes is empty, set selectedNodes to empty
       if (state.selectedTypes.length === 0) {
         state.selectedNodes = [];
         state.selectedViolations = [];
@@ -260,9 +259,9 @@ const combinedSlice = createSlice({
       }
 
       // Initiate an empty array to hold focus nodes of selected types
-      state.selectedNodes = [];
+      const newSelectedNodes = [];
 
-      // create map from state.violations array, initialized with 0 at each violation key
+      // Create a map from state.violations array, initialized with 0 at each violation key
       const violationMap = new Map();
       state.violations.forEach((violation) => {
         violationMap.set(violation, 0);
@@ -270,9 +269,9 @@ const combinedSlice = createSlice({
 
       // Iterate over each sample
       state.samples.forEach((sample) => {
-        // If the sample's type is in the selected types array, add its focus node to the selectedNodes array
         if (state.selectedTypes.includes(String(sample['rdf:type']))) {
-          state.selectedNodes.push(sample.focus_node);
+          newSelectedNodes.push(sample.focus_node);
+
           state.violations.forEach((violation) => {
             if (sample && sample[`${violation}`]) {
               violationMap.set(violation, violationMap.get(violation) + 1);
@@ -280,13 +279,14 @@ const combinedSlice = createSlice({
           });
         }
       });
-      // set state.selectedViolations to the keys of the map with value > 0
-      state.selectedViolations = [];
-      violationMap.forEach((value, key) => {
-        if (value > 0) {
-          state.selectedViolations.push(key);
-        }
-      });
+
+      // Create a new array for state.selectedViolations, filled with keys of the map with value > 0
+      const newSelectedViolations = Array.from(violationMap)
+        .filter(([key, value]) => value > 0)
+        .map(([key]) => key);
+
+      state.selectedNodes = newSelectedNodes;
+      state.selectedViolations = newSelectedViolations;
 
       updateSelectedViolationExemplars(state);
     },
