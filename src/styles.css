@@ -267,3 +267,27 @@ body {
   left: 0;
 }
  */
+
+ .node-type.unselected {
+  color: UNSELECTED_TYPE_NODE_COLOR;
+}
+
+.node-type.selected {
+  color: SELECTED_TYPE_NODE_COLOR;
+}
+
+.node-type.hover {
+  color: SELECTED_TEXT_COLOR;
+}
+
+.node-exemplar.unselected {
+  color: UNSELECTED_EXEMPLAR_NODE_COLOR;
+}
+
+.node-exemplar.selected {
+  color: SELECTED_EXEMPLAR_NODE_COLOR;
+}
+
+.node-exemplar.hover {
+  color: SELECTED_TEXT_COLOR;
+}

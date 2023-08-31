@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { SELECTED_TEXT_COLOR, SELECTED_TYPE_NODE_COLOR, UNSELECTED_TYPE_NODE_COLOR } from '../../constants';
+import {
+  SELECTED_TEXT_COLOR,
+  SELECTED_TYPE_NODE_COLOR,
+  UNSELECTED_TYPE_NODE_COLOR,
+  SELECTED_EXEMPLAR_NODE_COLOR,
+  UNSELECTED_EXEMPLAR_NODE_COLOR,
+} from '../../constants';
 
 export function CustomHeader({ onSelect, style, node }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -19,9 +25,13 @@ export function CustomHeader({ onSelect, style, node }) {
   if (isHovered) {
     newStyle = { ...newStyle, color: SELECTED_TEXT_COLOR };
   }
+
   if (isActive) {
     newStyle = { ...newStyle, backgroundColor: SELECTED_TYPE_NODE_COLOR, color: 'white' };
   }
+
+  // Split the node name into two parts
+  const [nodeName, countTotal] = node.name.split(' ');
 
   return (
     <div
@@ -35,7 +45,10 @@ export function CustomHeader({ onSelect, style, node }) {
     >
       <div style={node.selected ? { ...style.title, fontWeight: 'bold' } : style.title}>
         <i className={iconClass} style={iconStyle} />
-        {node.name}
+        <span style={{ color: isHovered ? SELECTED_TEXT_COLOR : node.selected ? SELECTED_TYPE_NODE_COLOR : UNSELECTED_TYPE_NODE_COLOR }}>{nodeName}</span>{' '}
+        <span style={{ color: isHovered ? SELECTED_TEXT_COLOR : node.selected ? SELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_EXEMPLAR_NODE_COLOR }}>
+          {countTotal}
+        </span>
       </div>
     </div>
   );
