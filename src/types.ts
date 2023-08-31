@@ -156,3 +156,7 @@ export interface IScatterNode {
 export interface IScatterPlotProps {
   data: IScatterNode[];
 }
+
+export interface ICanvasOwner {
+  canvas?: HTMLCanvasElement;
+}

@@ -1,17 +1,17 @@
 // useCytoscapeData.ts
+import cytoscape, { Core } from 'cytoscape';
 import React, { useEffect } from 'react';
-import { Core } from 'cytoscape';
 import { selectCytoData } from '../Store/CombinedSlice';
 import { createNewCytoscapeInstance, updateCytoscapeInstance } from './CytoscapeInstanceHelpers';
-import { ContextMenuActions, GetShapeForNamespaceFn, SetCyFn } from '../../types';
+import { GetShapeForNamespaceFn, SetCyFn } from '../../types';
 
 interface CytoscapeDataProps {
-  rdfOntology: any;
+  rdfOntology: string;
   getShapeForNamespace: GetShapeForNamespaceFn;
   violations: string[];
   types: string[];
-  cy: any;
-  setCy: React.Dispatch<any>;
+  cy: Core;
+  setCy: React.Dispatch<SetCyFn>;
   onLoaded: any;
   contextMenuActions: { [key: string]: any };
   initialNodePositions: React.MutableRefObject<Map<string, { x: number; y: number; visible: boolean }>>;

@@ -44,8 +44,6 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodePositions) => 
       const { selectedTypes, selectedViolationExemplars, selectedViolations } = extractSelectedData(state);
 
       if (cy && initialNodePositions.current && initialNodePositions.current.size > 0) {
-        console.time('usesubscribe/handling subscription for tree layout took');
-
         clearSelectedNodes(cy);
         hideAllVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
         resetNodePositions(cy, initialNodePositions.current);
@@ -60,12 +58,13 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodePositions) => 
         styleAndDisplayNodes(listOfNodesThatHaveBeenMadeVisible, typeNodes, otherNodes, exemplarNodes, violationNodes);
         adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes);
 
+        console.log('selecting typenodes... ', typeNodes);
+        // TODO check why this triggers a selection of typeNodes with an empty array afterwards
         violationNodes.union(typeNodes).union(otherNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes)).select();
         selectNodes(cy, 'label', selectedTypes);
         selectNodes(cy, 'label', selectedViolationExemplars);
         selectNodes(cy, 'label', selectedViolations);
         cy.style().update();
-        console.timeEnd('usesubscribe/handling subscription for tree layout took');
       }
     });
 
