@@ -38,6 +38,6 @@ export function updateTreeDataWithSelectedTypes(oldTreeData, selectedTypes) {
   for (const selectedType of selectedTypes) {
     togglePathToNode(newTreeData, selectedType);
   }
-
+  console.log('newTreeData', newTreeData);
   return newTreeData;
 }

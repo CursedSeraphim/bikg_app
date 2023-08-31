@@ -16,6 +16,7 @@ import {
   FocusNodeExemplarDict,
   ExemplarFocusNodeDict,
   INamespaces,
+  INumberViolationsPerType,
 } from '../../types';
 // import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
@@ -39,6 +40,7 @@ const initialState: ICombinedState = {
   namespaces: {},
   types: [],
   subClassOfTriples: [],
+  numberViolationsPerType: {},
 };
 
 function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
@@ -121,6 +123,43 @@ const updateSelectedViolationExemplars = (state) => {
   state.selectedViolationExemplars = Array.from(selectedViolationExemplarsSet);
 };
 
+function setNumberViolationsPerType(state: ICombinedState): void {
+  const numberViolationsPerType: INumberViolationsPerType = {};
+
+  state.samples.forEach((sample: ICsvData) => {
+    const sampleType = String(sample['rdf:type']);
+    if (!sampleType) return; // Skip if no type is found
+
+    if (!numberViolationsPerType[sampleType]) {
+      numberViolationsPerType[sampleType] = [0, 0]; // Initialize if necessary
+    }
+
+    numberViolationsPerType[sampleType][0] += 1; // Increment the total count of violations
+  });
+
+  state.numberViolationsPerType = numberViolationsPerType;
+}
+
+function setNumberViolationsPerTypeGivenType(state: ICombinedState): void {
+  // Create a new object to store the updated numberViolationsPerType
+  const newNumberViolationsPerType: INumberViolationsPerType = { ...state.numberViolationsPerType };
+
+  // Loop through all the keys in numberViolationsPerType to reset 'selected' count to zero
+  Object.keys(newNumberViolationsPerType).forEach((type) => {
+    newNumberViolationsPerType[type][1] = 0;
+  });
+
+  // Update 'selected' count in the new object based on new selected types
+  state.selectedTypes.forEach((type) => {
+    if (newNumberViolationsPerType[type]) {
+      newNumberViolationsPerType[type][1] = newNumberViolationsPerType[type][0];
+    }
+  });
+
+  // Now, we update the state all at once
+  state.numberViolationsPerType = newNumberViolationsPerType;
+}
+
 // TODO set types of payloadaction for all reducers
 const combinedSlice = createSlice({
   name: 'combined',
@@ -162,6 +201,7 @@ const combinedSlice = createSlice({
       } else if (state.missingEdgeOption === 'keep') {
         state.samples = [...state.originalSamples];
       }
+      setNumberViolationsPerType(state);
     },
     setFilterType: (state, action: PayloadAction<FilterType>) => {
       state.filterType = action.payload;
@@ -186,6 +226,7 @@ const combinedSlice = createSlice({
       } else if (state.missingEdgeOption === 'keep') {
         state.samples = action.payload;
       }
+      setNumberViolationsPerType(state);
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
       console.log('setSelectedFocusNodesUsingFeatureCategories');
@@ -195,11 +236,12 @@ const combinedSlice = createSlice({
       updateSelectedViolations(state, valueCounts);
       updateSelectedTypes(state, valueCounts);
       updateSelectedViolationExemplars(state);
+      setNumberViolationsPerTypeGivenType(state);
     },
     setSelectedFocusNodes: (state, action) => {
       console.log('setSelectedFocusNodes');
       const newSelectedNodes = action.payload;
-      f;
+
       // Convert state.samples into an object for O(1) lookup
       const focusNodesSamplesMap = {};
       state.samples.forEach((sample) => {
@@ -215,6 +257,14 @@ const combinedSlice = createSlice({
       // Use a Set to store selected types
       const selectedTypesSet: Set<string> = new Set();
 
+      // Prepare a new object for updating numberViolationsPerType
+      const newNumberViolationsPerType: INumberViolationsPerType = { ...state.numberViolationsPerType };
+
+      // Reset the 'selected' counts to 0
+      Object.keys(newNumberViolationsPerType).forEach((type) => {
+        newNumberViolationsPerType[type][1] = 0;
+      });
+
       // Iterate over selected nodes
       newSelectedNodes.forEach((selectedNode) => {
         const correspondingSample = focusNodesSamplesMap[selectedNode];
@@ -229,7 +279,14 @@ const combinedSlice = createSlice({
 
         // If the sample has a type, add it to the selectedTypes set
         const sampleType = String(correspondingSample['rdf:type']);
-        if (sampleType) selectedTypesSet.add(sampleType);
+        if (sampleType) {
+          selectedTypesSet.add(sampleType);
+
+          // Update the 'selected' count in the new object based on new selected nodes
+          if (newNumberViolationsPerType[sampleType]) {
+            newNumberViolationsPerType[sampleType][1]++;
+          }
+        }
       });
 
       // Convert selectedTypes set back to array
@@ -237,25 +294,27 @@ const combinedSlice = createSlice({
 
       // Set state.selectedViolations to the keys of the map with value > 0
       const newSelectedViolations = Array.from(violationMap.entries())
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .filter(([key, value]) => value > 0)
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .map(([key, value]) => key);
+        .filter(([_, value]) => value > 0)
+        .map(([key, _]) => key);
 
       // Now, we assign new values to the state variables.
       state.selectedNodes = newSelectedNodes;
       state.selectedTypes = newSelectedTypes;
       state.selectedViolations = newSelectedViolations;
+      state.numberViolationsPerType = newNumberViolationsPerType;
 
       console.log('updating selected violation exemplars');
       updateSelectedViolationExemplars(state);
     },
+
     setSelectedViolations: (state, action) => {
       console.log('setSelectedViolations');
       state.selectedViolations = action.payload;
     },
     setSelectedTypes: (state, action) => {
       state.selectedTypes = action.payload;
+
+      setNumberViolationsPerTypeGivenType(state);
 
       if (state.selectedTypes.length === 0) {
         state.selectedNodes = [];

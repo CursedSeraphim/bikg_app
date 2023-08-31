@@ -35,6 +35,7 @@ export default function useTreeData() {
       const newOntology = currentState.combined.rdfString;
       const newSelectedTypes = currentState.combined.selectedTypes;
       const newSubClassOfTriples = currentState.combined.subClassOfTriples; // Get new value from state
+      console.log('currentState.combined', currentState.combined);
 
       let shouldUpdateTreeData = false;
       if (ontologyRef.current !== newOntology) {

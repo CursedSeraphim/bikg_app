@@ -97,6 +97,10 @@ export interface IRootState {
   combined: ICombinedState;
 }
 
+export interface INumberViolationsPerType {
+  [key: string]: [violations: number, selected: number];
+}
+
 export interface ICombinedState {
   samples: ICsvData[];
   originalSamples: ICsvData[];
@@ -116,6 +120,7 @@ export interface ICombinedState {
   namespaces: INamespaces;
   types: string[];
   subClassOfTriples: ITriple[];
+  numberViolationsPerType: INumberViolationsPerType;
 }
 
 export interface ITriple {
