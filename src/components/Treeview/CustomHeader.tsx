@@ -46,7 +46,7 @@ export function CustomHeader({ onSelect, style, node }) {
       <div style={node.selected ? { ...style.title, fontWeight: 'bold' } : style.title}>
         <i className={iconClass} style={iconStyle} />
         <span style={{ color: isHovered ? SELECTED_TEXT_COLOR : node.selected ? SELECTED_TYPE_NODE_COLOR : UNSELECTED_TYPE_NODE_COLOR }}>{nodeName}</span>{' '}
-        <span style={{ color: isHovered ? SELECTED_TEXT_COLOR : node.selected ? SELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_EXEMPLAR_NODE_COLOR }}>
+        <span style={{ color: isHovered ? SELECTED_EXEMPLAR_NODE_COLOR : node.selected ? SELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_EXEMPLAR_NODE_COLOR }}>
           {countTotal}
         </span>
       </div>
