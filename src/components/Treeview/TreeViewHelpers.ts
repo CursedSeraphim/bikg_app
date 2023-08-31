@@ -2,7 +2,7 @@
 
 // Toggle the path to a node in the tree data
 export function togglePathToNode(node, targetName) {
-  if (node.name === targetName) {
+  if (node.name.split(' ')[0] === targetName) {
     node.toggled = true;
     node.selected = true;
     return true;

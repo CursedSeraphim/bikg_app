@@ -1,11 +1,11 @@
-import { OntologyMap, ITriple } from '../../types';
+import { OntologyMap, ITriple, INumberViolationsPerType } from '../../types';
 
 /**
  * Glue that connects CombinedSlice selectSubClassOrObjectPropertyTuples return value to the Treebeard component
  * @param subClassOfTriples The cached subClassOf triples
  * @returns The tree data in the format expected by Treebeard
  */
-export function getTreeDataFromTuples(subClassOfTriples: ITriple[]) {
+export function getTreeDataFromTuples(subClassOfTriples: ITriple[], numberViolationsPerType: INumberViolationsPerType) {
   const ontologyMap: OntologyMap = {};
 
   const quads = subClassOfTriples;
@@ -24,7 +24,22 @@ export function getTreeDataFromTuples(subClassOfTriples: ITriple[]) {
 
   const roots = Object.keys(ontologyMap)
     .filter((node) => !childSet.has(node))
-    .map((node) => ontologyMap[node]);
+    .map((node) => {
+      return ontologyMap[node];
+    });
+
+  const traverseTree = (node) => {
+    if (numberViolationsPerType[node.name]) {
+      node.name = `${node.name} (${String(numberViolationsPerType[node.name][1])}/${String(numberViolationsPerType[node.name][0])})`;
+    } else {
+      console.log(`Key ${node.name} not found in numberViolationsPerType`);
+    }
+    if (node.children) {
+      node.children.forEach(traverseTree);
+    }
+  };
+
+  roots.forEach(traverseTree);
 
   if (roots.length > 1) {
     const data = { name: 'root', children: roots };

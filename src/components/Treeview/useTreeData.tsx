@@ -28,6 +28,7 @@ export default function useTreeData() {
   const ontologyRef = useRef('');
   const selectedTypesRef = useRef([]);
   const subClassOfTriplesRef = useRef([]);
+  const numberViolationsPerTypeRef = useRef({});
 
   useEffect(() => {
     const unsubscribe = store.subscribe(() => {
@@ -35,7 +36,7 @@ export default function useTreeData() {
       const newOntology = currentState.combined.rdfString;
       const newSelectedTypes = currentState.combined.selectedTypes;
       const newSubClassOfTriples = currentState.combined.subClassOfTriples; // Get new value from state
-      console.log('currentState.combined', currentState.combined);
+      const newNumberViolationsPerType = currentState.combined.numberViolationsPerType;
 
       let shouldUpdateTreeData = false;
       if (ontologyRef.current !== newOntology) {
@@ -49,16 +50,20 @@ export default function useTreeData() {
       }
 
       if (!_.isEqual(subClassOfTriplesRef.current, newSubClassOfTriples)) {
-        // Compare new and old value
         subClassOfTriplesRef.current = newSubClassOfTriples;
+        shouldUpdateTreeData = true;
+      }
+
+      if (!_.isEqual(numberViolationsPerTypeRef.current, newNumberViolationsPerType)) {
+        numberViolationsPerTypeRef.current = newNumberViolationsPerType;
         shouldUpdateTreeData = true;
       }
 
       if (shouldUpdateTreeData) {
         let processedData;
-        if (newOntology) {
+        if (newOntology && numberViolationsPerTypeRef.current && Object.keys(numberViolationsPerTypeRef.current).length > 0) {
           // Call the function directly since it's not asynchronous anymore
-          processedData = getTreeDataFromTuples(subClassOfTriplesRef.current);
+          processedData = getTreeDataFromTuples(subClassOfTriplesRef.current, numberViolationsPerTypeRef.current);
           sortEachLayerAlphabetically(processedData);
           if (Array.isArray(newSelectedTypes) && newSelectedTypes.length > 0) {
             setTreeData(updateTreeDataWithSelectedTypes(processedData, newSelectedTypes));

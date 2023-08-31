@@ -58,7 +58,6 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodePositions) => 
         styleAndDisplayNodes(listOfNodesThatHaveBeenMadeVisible, typeNodes, otherNodes, exemplarNodes, violationNodes);
         adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes);
 
-        console.log('selecting typenodes... ', typeNodes);
         // TODO check why this triggers a selection of typeNodes with an empty array afterwards
         violationNodes.union(typeNodes).union(otherNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes)).select();
         selectNodes(cy, 'label', selectedTypes);

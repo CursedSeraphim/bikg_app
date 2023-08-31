@@ -90,9 +90,7 @@ function BarPlotSample({ plotlyData, feature }) {
 
   const handleSelection = (eventData) => {
     if (eventData?.points && eventData.points.length > 0) {
-      console.log('handleSelection', eventData);
       const selectedValues = eventData.points.map((point) => point.y);
-      console.log('selectedValues', selectedValues);
       if (feature === 'violations') {
         fetchSelectedNodesAndValueCountsGivenViolationSelection(feature, selectedValues).then((d) => {
           dispatch(setSelectedFocusNodesUsingFeatureCategories(d));

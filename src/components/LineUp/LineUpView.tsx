@@ -312,7 +312,6 @@ export default function LineUpView() {
   }, [lineupRef, csvData, dispatch]);
 
   useEffect(() => {
-    console.log('selectedFocusNodes changed: ', selectedFocusNodes.length);
     if (lineupInstanceRef.current) {
       if (selectedFocusNodes.length > 0) {
         createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, selectedFocusNodes, csvData);

@@ -44,7 +44,6 @@ export function App() {
   React.useEffect(() => {
     fetchSubClassOfTriples()
       .then((data) => {
-        console.log('fetchSubClassOfTriples', data);
         dispatch(setSubClassOfTriples(data));
       })
       .catch((error) => {
@@ -151,8 +150,6 @@ export function App() {
         console.error('Failed to fetch RDF file', error);
       });
   }, [dispatch]);
-
-  console.log('render app');
 
   return (
     <div className="container">

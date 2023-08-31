@@ -14,7 +14,6 @@ const initialData = {
 };
 
 function App() {
-  console.log('function App()');
   const [data, setData] = useState(initialData);
 
   const onToggle = (node, toggled) => {

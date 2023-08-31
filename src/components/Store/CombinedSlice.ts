@@ -175,7 +175,7 @@ const combinedSlice = createSlice({
     },
     setNamespaces: (state, action: PayloadAction<INamespaces>) => {
       state.namespaces = action.payload;
-      console.log('set namespaces', action.payload);
+      console.log('set namespaces');
     },
     setSelectedViolationExemplars: (state, action: PayloadAction<string[]>) => {
       state.selectedViolationExemplars = action.payload;
@@ -187,12 +187,10 @@ const combinedSlice = createSlice({
     setFocusNodeExemplarDict: (state, action: PayloadAction<FocusNodeExemplarDict>) => {
       console.log('setFocusNodeExemplarDict');
       state.focusNodeExemplarDict = action.payload;
-      console.log('setFocusNodeExemplarDict', action.payload);
     },
     setExemplarFocusNodeDict: (state, action: PayloadAction<ExemplarFocusNodeDict>) => {
       console.log('setExemplarFocusNodeDict');
       state.exemplarFocusNodeDict = action.payload;
-      console.log('setExemplarFocusNodeDict', action.payload);
     },
     setMissingEdgeOption: (state, action: PayloadAction<MissingEdgeOptionType>) => {
       state.missingEdgeOption = action.payload;

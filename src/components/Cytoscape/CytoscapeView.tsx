@@ -34,8 +34,6 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   const { toggleChildren, toggleParents } = useViewUtilities(cy);
 
   const selectConnectedViolations = (node: NodeSingular): void => {
-    console.log('selectConnectedViolations', node);
-
     if (node.data('violation')) {
       dispatch(setSelectedViolations([node.id()]));
     }
