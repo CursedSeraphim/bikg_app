@@ -1,5 +1,6 @@
 // CytoscapeStyles.ts
 import {
+  MANTINE_HEADER_COLOR,
   SELECTED_DEFAULT_COLOR,
   SELECTED_EXEMPLAR_NODE_COLOR,
   SELECTED_TYPE_NODE_COLOR,
@@ -91,7 +92,7 @@ export function getStyle(getShapeForNamespace) {
       selector: 'edge',
       style: {
         ...edgeStyleBase(),
-        label: '',
+        label: (ele) => (ele.data('labelVisible') ? ele.data('label') : ''),
       },
     },
     // Selected edge style
@@ -99,7 +100,10 @@ export function getStyle(getShapeForNamespace) {
       selector: 'edge:selected',
       style: {
         ...edgeStyleBase(),
-        label: (ele) => ele.data('label'),
+        'line-color': MANTINE_HEADER_COLOR,
+        width: 5,
+        'target-arrow-color': MANTINE_HEADER_COLOR,
+        'arrow-scale': 1.5,
       },
     },
   ];

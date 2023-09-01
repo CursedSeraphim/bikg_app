@@ -48,16 +48,31 @@ export function useRegisterCytoscapeEventListeners(cy: Core | null, toggleChildr
         .play();
     };
 
+    const handleDblClickEdge = (event) => {
+      const edge = event.target;
+      const currentLabelVisible = edge.data('labelVisible');
+
+      if (currentLabelVisible) {
+        // If the label is currently visible, hide it
+        edge.data('labelVisible', false);
+      } else {
+        // If the label is currently hidden, show it
+        edge.data('labelVisible', true);
+      }
+    };
+
     cy.on('dblclick', 'node', handleDblClick);
     // cy.on('select', 'node', handleSelect);
     cy.on('mouseover', 'node', handleMouseover);
     cy.on('mouseout', 'node', handleMouseout);
+    cy.on('dblclick', 'edge', handleDblClickEdge);
 
     return () => {
       cy.off('dblclick', 'node', handleDblClick);
       // cy.off('select', 'node', handleSelect);
       cy.off('mouseover', 'node', handleMouseover);
       cy.off('mouseout', 'node', handleMouseout);
+      cy.off('dblclick', 'edge', handleDblClickEdge);
     };
   }, [cy, toggleChildren, dispatch]);
 }
