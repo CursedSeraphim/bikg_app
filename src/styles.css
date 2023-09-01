@@ -1,18 +1,10 @@
 /* styles.css */
 
 :root {
-  /* general web design colors */
-  --primary-color: #007bff;
-  --secondary-color: #6c757d;
-  --light-color: #f8f9fa;
-  --dark-color: #343a40;
-  --text-light: #ffffff;
-  --text-dark: #000000;
-
-  --mantine-header-color: #495057;
   
   /* Other constants */
   --spinner-color: grey;
+  --mantine-header-color: #495057;
 
   /* Default Node Colors */
   --unselected-default-color: #aaa;

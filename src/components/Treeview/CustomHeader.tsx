@@ -5,6 +5,7 @@ import {
   UNSELECTED_TYPE_NODE_COLOR,
   SELECTED_EXEMPLAR_NODE_COLOR,
   UNSELECTED_EXEMPLAR_NODE_COLOR,
+  MANTINE_HEADER_COLOR,
 } from '../../constants';
 
 export function CustomHeader({ onSelect, style, node }) {

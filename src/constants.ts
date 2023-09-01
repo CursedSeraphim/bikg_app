@@ -3,11 +3,12 @@
 // Other constants
 export const CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING = '-';
 export const CSV_EDGE_NOT_IN_ONTOLOGY_STRING = 'EdgeNotPresent';
-export const SPINNER_COLOR = 'grey';
+export const MANTINE_HEADER_COLOR = '#495057';
+export const SPINNER_COLOR = MANTINE_HEADER_COLOR;
 
 // Default Node Colors
-export const UNSELECTED_DEFAULT_COLOR = '#999';
-export const SELECTED_DEFAULT_COLOR = '#666';
+export const UNSELECTED_DEFAULT_COLOR = '#aaa';
+export const SELECTED_DEFAULT_COLOR = '#888';
 
 // Text Colors
 export const SELECTED_TEXT_COLOR = 'black';

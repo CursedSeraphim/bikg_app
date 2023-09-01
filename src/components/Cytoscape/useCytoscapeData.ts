@@ -1,5 +1,5 @@
 // useCytoscapeData.ts
-import cytoscape, { Core } from 'cytoscape';
+import { Core } from 'cytoscape';
 import React, { useEffect } from 'react';
 import { selectCytoData } from '../Store/CombinedSlice';
 import { createNewCytoscapeInstance, updateCytoscapeInstance } from './CytoscapeInstanceHelpers';

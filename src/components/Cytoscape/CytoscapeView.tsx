@@ -1,4 +1,5 @@
 // CytoscopeView.tsx
+import { v4 as uuidv4 } from 'uuid';
 import React, { useMemo, useState, useRef } from 'react';
 import cytoscape, { Core, NodeSingular } from 'cytoscape';
 import { useSelector, useDispatch } from 'react-redux';
@@ -19,8 +20,23 @@ cytoscape.use(coseBilkent);
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(contextMenus);
 
+const ID = uuidv4();
+
+const selectConnectedViolations = (node: NodeSingular, dispatch): void => {
+  if (node.data('violation')) {
+    dispatch(setSelectedViolations([node.id()]));
+  }
+  if (node.data('exemplar')) {
+    dispatch(setSelectedViolationExemplars([node.id()]));
+  }
+  if (node.data('type')) {
+    dispatch(setSelectedTypes([node.id()]));
+  }
+};
+
 function CytoscapeView({ rdfOntology, onLoaded }) {
   console.time('Rendering CytoscapeView took');
+  console.log(`Rendering CytoscapeView ${ID}...`);
 
   const dispatch = useDispatch();
 
@@ -33,26 +49,14 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   const initialNodePositions = useRef<Map<string, { x: number; y: number; visible: boolean }>>(new Map());
   const { toggleChildren, toggleParents } = useViewUtilities(cy);
 
-  const selectConnectedViolations = (node: NodeSingular): void => {
-    if (node.data('violation')) {
-      dispatch(setSelectedViolations([node.id()]));
-    }
-    if (node.data('exemplar')) {
-      dispatch(setSelectedViolationExemplars([node.id()]));
-    }
-    if (node.data('type')) {
-      dispatch(setSelectedTypes([node.id()]));
-    }
-  };
-
   const contextMenuActions = useMemo(
     () => ({
-      'toggle-children': toggleChildren,
-      'toggle-parents': toggleParents,
-      'select-connected-violations': selectConnectedViolations,
+      'toggle-children': { action: toggleChildren, args: [] },
+      'toggle-parents': { action: toggleParents, args: [] },
+      'select-connected-violations': { action: selectConnectedViolations, args: [dispatch] },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [toggleChildren, toggleParents],
   );
 
   useCytoscapeData({

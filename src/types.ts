@@ -132,6 +132,11 @@ export interface ITriple {
 // Defines the signature of the function that performs an action
 export type ActionFunction = (target: NodeSingular) => void;
 
+export type ActionWithArgs = {
+  action: (event: any, ...args: any[]) => void;
+  args: any[];
+};
+
 // Defines what a menu item looks like
 export type MenuItem = {
   id: string;
@@ -146,7 +151,7 @@ export type ContextMenuOptions = {
 };
 
 // Defines the shape of the 'actions' object passed to getContextMenuOptions
-export type ContextMenuActions = Record<string, ActionFunction>;
+export type ContextMenuActions = Record<string, ActionFunction | ActionWithArgs>;
 
 export type SetCyFn = React.Dispatch<React.SetStateAction<Core | null>>;
 
