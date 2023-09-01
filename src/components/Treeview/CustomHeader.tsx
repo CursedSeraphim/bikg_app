@@ -24,7 +24,7 @@ export function CustomHeader({ onSelect, style, node }) {
   }
 
   if (isHovered) {
-    newStyle = { ...newStyle, color: SELECTED_TEXT_COLOR };
+    newStyle = { ...newStyle, backgroundColor: UNSELECTED_TYPE_NODE_COLOR, color: 'white' };
   }
 
   if (isActive) {
