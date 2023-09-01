@@ -32,7 +32,7 @@ const selectNodes = (cyInstance: Core, attribute: string, values: string[]) => {
 // };
 
 // Custom Hook
-export const useSubscribeCytoscape = (cy: Core | null, initialNodePositions) => {
+export const useSubscribeCytoscape = (cy: Core | null, initialNodePositions, showAllPermanentEdges) => {
   const store = useStore<IRootState>();
 
   useEffect(() => {
@@ -45,6 +45,7 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodePositions) => 
       if (cy && initialNodePositions.current && initialNodePositions.current.size > 0) {
         clearSelectedNodes(cy);
         hideAllNonPermanentNodes(cy);
+        showAllPermanentEdges();
         resetNodePositions(cy, initialNodePositions.current);
 
         const { violationNodes, typeNodes, otherNodes, exemplarNodes } = getFilteredNodes(

@@ -50,8 +50,18 @@ export const useViewUtilities = (cy: Core | null) => {
     if (anyParentHidden) alignNodes(parents, node, false);
   };
 
+  const showAllPermanentEdges = () => {
+    console.log('showAllPermanentEdges');
+    cy.edges()
+      .filter((edge) => edge.data('permanent') === true)
+      .style('visibility', 'visible')
+      .data('visible', false);
+    viewUtilities.show(cy.edges());
+  };
+
   return {
     toggleChildren,
     toggleParents,
+    showAllPermanentEdges,
   };
 };

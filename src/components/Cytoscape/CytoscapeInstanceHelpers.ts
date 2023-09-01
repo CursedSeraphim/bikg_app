@@ -21,7 +21,6 @@ export function createNewCytoscapeInstance(
     style: getStyle(getShapeForNamespace),
     layout: getLayout(),
   });
-  newCy.contextMenus(getContextMenuOptions(contextMenuActions));
 
   setCy(newCy);
   newCy.ready(() => {
@@ -29,6 +28,7 @@ export function createNewCytoscapeInstance(
     setLoading(false);
     newCy.fit();
   });
+  newCy.contextMenus(getContextMenuOptions(contextMenuActions));
 }
 
 export function updateCytoscapeInstance(

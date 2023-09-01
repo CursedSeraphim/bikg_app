@@ -43,7 +43,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
   const initialNodePositions = useRef<Map<string, { x: number; y: number; visible: boolean }>>(new Map());
-  const { toggleChildren, toggleParents } = useViewUtilities(cy);
+  const { toggleChildren, toggleParents, showAllPermanentEdges } = useViewUtilities(cy);
 
   const contextMenuActions = useMemo(
     () => ({
@@ -68,7 +68,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     setLoading,
   });
   useRegisterCytoscapeEventListeners(cy, toggleChildren);
-  useSubscribeCytoscape(cy, initialNodePositions);
+  useSubscribeCytoscape(cy, initialNodePositions, showAllPermanentEdges);
 
   console.timeEnd('Rendering CytoscapeView took');
   return <div id="cy" />;
