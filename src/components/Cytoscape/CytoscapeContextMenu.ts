@@ -1,5 +1,4 @@
 // CytoscapeContextMenu.ts
-import { v4 as uuidv4 } from 'uuid';
 import { NodeSingular } from 'cytoscape'; // Make sure to import NodeSingular from cytoscape
 import { MenuItem, ContextMenuOptions, ContextMenuActions } from '../../types'; // Update the imports based on your project structure
 

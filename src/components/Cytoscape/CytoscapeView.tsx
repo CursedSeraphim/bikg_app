@@ -1,5 +1,4 @@
 // CytoscopeView.tsx
-import { v4 as uuidv4 } from 'uuid';
 import React, { useMemo, useState, useRef } from 'react';
 import cytoscape, { Core, NodeSingular } from 'cytoscape';
 import { useSelector, useDispatch } from 'react-redux';
@@ -20,8 +19,6 @@ cytoscape.use(coseBilkent);
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(contextMenus);
 
-const ID = uuidv4();
-
 const selectConnectedViolations = (node: NodeSingular, dispatch): void => {
   if (node.data('violation')) {
     dispatch(setSelectedViolations([node.id()]));
@@ -36,7 +33,6 @@ const selectConnectedViolations = (node: NodeSingular, dispatch): void => {
 
 function CytoscapeView({ rdfOntology, onLoaded }) {
   console.time('Rendering CytoscapeView took');
-  console.log(`Rendering CytoscapeView ${ID}...`);
 
   const dispatch = useDispatch();
 
