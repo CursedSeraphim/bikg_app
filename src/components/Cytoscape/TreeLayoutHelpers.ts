@@ -150,13 +150,11 @@ export function adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplar
  * @param {Collection} otherNodes - Other nodes.
  * @param {Collection} exemplarNodes - Nodes representing exemplars.
  */
-export function styleAndDisplayNodes(listOfNodesThatHaveBeenMadeVisible, typeNodes, otherNodes, exemplarNodes, violationNodes) {
+export function styleAndDisplayNodes(typeNodes, otherNodes, exemplarNodes, violationNodes) {
   showCytoElements(violationNodes.union(otherNodes).union(typeNodes).union(exemplarNodes));
 
   exemplarNodes.outgoers().targets().data('visible', true);
   exemplarNodes.outgoers().targets().style('display', 'element');
-
-  listOfNodesThatHaveBeenMadeVisible.current.push(violationNodes, otherNodes, exemplarNodes, typeNodes, exemplarNodes.outgoers().targets());
 }
 
 /**
@@ -164,4 +162,11 @@ export function styleAndDisplayNodes(listOfNodesThatHaveBeenMadeVisible, typeNod
  */
 export function hideAllVisibleNodes(listOfNodesThatHaveBeenMadeVisible) {
   listOfNodesThatHaveBeenMadeVisible.current = hideVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
+}
+
+export function hideAllNonPermanentNodes(cy) {
+  cy.nodes()
+    .filter((node) => node.data('permanent') === false)
+    .style('display', 'none')
+    .data('visible', false);
 }

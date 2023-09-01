@@ -4,7 +4,7 @@ import { Core } from 'cytoscape';
 import { useStore } from 'react-redux';
 import { IRootState } from '../../types';
 import { getSuccessors } from '../../CytoscapeNodeFactory';
-import { adjustLayout, getFilteredNodes, hideAllVisibleNodes, resetNodePositions, styleAndDisplayNodes } from './TreeLayoutHelpers';
+import { adjustLayout, getFilteredNodes, hideAllNonPermanentNodes, hideAllVisibleNodes, resetNodePositions, styleAndDisplayNodes } from './TreeLayoutHelpers';
 
 const extractSelectedData = (state) => {
   return {
@@ -34,7 +34,6 @@ const selectNodes = (cyInstance: Core, attribute: string, values: string[]) => {
 // Custom Hook
 export const useSubscribeCytoscape = (cy: Core | null, initialNodePositions) => {
   const store = useStore<IRootState>();
-  const listOfNodesThatHaveBeenMadeVisible = React.useRef([]);
 
   useEffect(() => {
     // Subscribe to changes
@@ -45,7 +44,7 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodePositions) => 
 
       if (cy && initialNodePositions.current && initialNodePositions.current.size > 0) {
         clearSelectedNodes(cy);
-        hideAllVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
+        hideAllNonPermanentNodes(cy);
         resetNodePositions(cy, initialNodePositions.current);
 
         const { violationNodes, typeNodes, otherNodes, exemplarNodes } = getFilteredNodes(
@@ -55,7 +54,7 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodePositions) => 
           selectedTypes,
           selectedViolationExemplars,
         );
-        styleAndDisplayNodes(listOfNodesThatHaveBeenMadeVisible, typeNodes, otherNodes, exemplarNodes, violationNodes);
+        styleAndDisplayNodes(typeNodes, otherNodes, exemplarNodes, violationNodes);
         adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes);
 
         // TODO check why this triggers a selection of typeNodes with an empty array afterwards
