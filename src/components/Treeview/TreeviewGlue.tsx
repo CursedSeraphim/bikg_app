@@ -31,8 +31,6 @@ export function getTreeDataFromTuples(subClassOfTriples: ITriple[], numberViolat
   const traverseTree = (node) => {
     if (numberViolationsPerType[node.name]) {
       node.name = `${node.name} (${String(numberViolationsPerType[node.name][1])}/${String(numberViolationsPerType[node.name][0])})`;
-    } else {
-      console.log(`Key ${node.name} not found in numberViolationsPerType`);
     }
     if (node.children) {
       node.children.forEach(traverseTree);
