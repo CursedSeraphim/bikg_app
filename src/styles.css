@@ -5,6 +5,7 @@
   /* Other constants */
   --spinner-color: grey;
   --mantine-header-color: #495057;
+  --mantine-header-hover-color: #92a0ad;
 
   /* Default Node Colors */
   --unselected-default-color: #aaa;
@@ -165,7 +166,7 @@ body {
 
 /* Hover Effect */
 .tab-button:hover {
-  background-color: var(--unselected-default-color);
+  background-color: var(--mantine-header-hover-color);
   color: white;
   border: 1px solid grey;
   box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* subtle shadow as in tabs */
@@ -291,7 +292,7 @@ body {
 
 .filterButtonsContainer .filterLabel:hover {
   color: white; /* darker text on hover */
-  background-color: var(--unselected-default-color);
+  background-color: var(--mantine-header-hover-color);
 }
 
 .filterButtonsContainer .filterLabel:active {
@@ -372,7 +373,7 @@ body {
 
 /* Hover state */
 .cy-context-menus-cxt-menuitem:hover {
-  background-color: var(--unselected-default-color);
+  background-color: var(--mantine-header-hover-color);
   color: #ffffff;  /* White text for contrast */
 }
 
