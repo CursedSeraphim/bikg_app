@@ -14,7 +14,7 @@ interface CytoscapeDataProps {
   setCy: React.Dispatch<SetCyFn>;
   onLoaded: any;
   contextMenuActions: { [key: string]: any };
-  initialNodePositions: React.MutableRefObject<Map<string, { x: number; y: number; visible: boolean }>>;
+  initialNodeData: React.MutableRefObject<Map<string, { x: number; y: number; visible: boolean }>>;
   setLoading: React.Dispatch<any>;
 }
 
@@ -27,14 +27,14 @@ export function useCytoscapeData({
   setCy,
   onLoaded,
   contextMenuActions,
-  initialNodePositions,
+  initialNodeData,
   setLoading,
 }: CytoscapeDataProps) {
   useEffect(() => {
     selectCytoData(rdfOntology, getShapeForNamespace, violations, types)
       .then((data) => {
         cy
-          ? updateCytoscapeInstance(cy, data, initialNodePositions, onLoaded, setLoading, contextMenuActions)
+          ? updateCytoscapeInstance(cy, data, initialNodeData, onLoaded, setLoading, contextMenuActions)
           : createNewCytoscapeInstance(data, setCy, onLoaded, setLoading, getShapeForNamespace, contextMenuActions);
       })
       .catch((error) => {

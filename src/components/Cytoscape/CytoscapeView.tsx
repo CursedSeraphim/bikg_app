@@ -9,7 +9,7 @@ import contextMenus from 'cytoscape-context-menus';
 import { setSelectedTypes, setSelectedViolations, setSelectedViolationExemplars, selectTypes, selectViolations } from '../Store/CombinedSlice';
 
 import { useShapeHandler } from '../components/namespaceHandler';
-import { useViewUtilities } from './useCytoscapeViewHelpers';
+import { useCytoViewHelpers } from './useCytoscapeViewHelpers';
 import { useRegisterCytoscapeEventListeners } from './CytoscapeEventHandlers'; // Import the new hook
 import { useSubscribeCytoscape } from './useSubscribeCytoscape';
 import { useCytoscapeData } from './useCytoscapeData';
@@ -42,8 +42,8 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   const { getShapeForNamespace } = useShapeHandler();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
-  const initialNodePositions = useRef<Map<string, { x: number; y: number; visible: boolean }>>(new Map());
-  const { toggleChildren, toggleParents, showAllPermanentEdges } = useViewUtilities(cy);
+  const initialNodeData = useRef<Map<string, { x: number; y: number; visible: boolean }>>(new Map());
+  const { toggleChildren, toggleParents, showAllPermanentEdges } = useCytoViewHelpers(cy);
 
   const contextMenuActions = useMemo(
     () => ({
@@ -64,11 +64,11 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     setCy,
     onLoaded,
     contextMenuActions,
-    initialNodePositions,
+    initialNodeData,
     setLoading,
   });
   useRegisterCytoscapeEventListeners(cy, toggleChildren);
-  useSubscribeCytoscape(cy, initialNodePositions, showAllPermanentEdges);
+  useSubscribeCytoscape(cy, initialNodeData, showAllPermanentEdges);
 
   console.timeEnd('Rendering CytoscapeView took');
   return <div id="cy" />;

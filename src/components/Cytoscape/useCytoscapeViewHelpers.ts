@@ -3,19 +3,12 @@ import { Core, NodeSingular, NodeCollection } from 'cytoscape';
 import { NODE_LAYOUT_OFFSET_X, DISTANCE_BETWEEN_NODES_Y } from '../../constants';
 import { Position } from '../../types';
 
-export const useViewUtilities = (cy: Core | null) => {
+export const useCytoViewHelpers = (cy: Core | null) => {
   if (!cy) return {};
-
-  const viewUtilities = cy.viewUtilities({
-    neighbor(node): NodeCollection {
-      return node.closedNeighborhood();
-    },
-    neighborSelectTime: 500,
-  });
 
   const toggleVisibility = (nodes: NodeCollection, shouldShow: boolean) => {
     const nodesToToggle = nodes.filter((node) => !node.data('permanent'));
-    shouldShow ? viewUtilities.show(nodesToToggle) : viewUtilities.hide(nodesToToggle);
+    shouldShow ? nodesToToggle.removeClass('hidden').addClass('visible') : nodesToToggle.removeClass('visible').addClass('hidden');
   };
 
   const alignNodes = (nodes: NodeCollection, parentNode: NodeSingular, isChild: boolean): void => {
@@ -50,18 +43,15 @@ export const useViewUtilities = (cy: Core | null) => {
     if (anyParentHidden) alignNodes(parents, node, false);
   };
 
-  const showAllPermanentEdges = () => {
-    console.log('showAllPermanentEdges');
-    cy.edges()
-      .filter((edge) => edge.data('permanent') === true)
-      .style('visibility', 'visible')
-      .data('visible', false);
-    viewUtilities.show(cy.edges());
+  const showAllEdges = () => {
+    const edges = cy.edges();
+    edges.removeClass('hidden').addClass('visible');
+    edges.data('visible', true);
   };
 
   return {
     toggleChildren,
     toggleParents,
-    showAllPermanentEdges,
+    showAllPermanentEdges: showAllEdges,
   };
 };

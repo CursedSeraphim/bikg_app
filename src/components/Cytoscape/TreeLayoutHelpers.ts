@@ -45,14 +45,14 @@ export function addVirtualRoot(cy, roots) {
  * Resets the positions and visibility of nodes based on the provided initial positions map.
  *
  * @param {cytoscape.Core} cy - The Cytoscape instance.
- * @param {Map<string, {x: number, y: number, visible: boolean}>} initialNodePositions -
+ * @param {Map<string, {x: number, y: number, visible: boolean}>} initialNodeData -
  *        An Map where keys are node IDs and values are objects containing x, y coordinates
  *        and a visibility flag.
  */
-export function resetNodePositions(cy: cytoscape.Core, initialNodePositions: Map<string, { x: number; y: number; visible: boolean }>) {
+export function resetNodes(cy: cytoscape.Core, initialNodeData: Map<string, { x: number; y: number; visible: boolean }>) {
   cy.startBatch();
 
-  for (const [id, { x, y, visible }] of initialNodePositions) {
+  for (const [id, { x, y, visible }] of initialNodeData) {
     const node = cy.getElementById(id);
     if (node.empty()) continue;
 
@@ -60,8 +60,14 @@ export function resetNodePositions(cy: cytoscape.Core, initialNodePositions: Map
     node.json({
       position: { x, y },
       data: { visible },
-      style: { display: visible ? 'element' : 'none' },
+      style: { display: 'none' },
     });
+
+    if (visible) {
+      node.removeClass('hidden').addClass('visible');
+    } else {
+      node.removeClass('visible').addClass('hidden');
+    }
   }
 
   cy.endBatch();
@@ -100,9 +106,7 @@ export function getFilteredNodes(cy, selectedViolations, violationsTypesMap, sel
 
 // Helper function to apply styles to nodes
 export function showCytoElements(element) {
-  element.style({
-    display: 'element',
-  });
+  element.removeClass('hidden').addClass('visible');
   element.data('visible', true);
 }
 
@@ -151,10 +155,7 @@ export function adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplar
  * @param {Collection} exemplarNodes - Nodes representing exemplars.
  */
 export function styleAndDisplayNodes(typeNodes, otherNodes, exemplarNodes, violationNodes) {
-  showCytoElements(violationNodes.union(otherNodes).union(typeNodes).union(exemplarNodes));
-
-  exemplarNodes.outgoers().targets().data('visible', true);
-  exemplarNodes.outgoers().targets().style('display', 'element');
+  showCytoElements(violationNodes.union(otherNodes).union(typeNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets()));
 }
 
 /**

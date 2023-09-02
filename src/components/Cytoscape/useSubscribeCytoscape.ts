@@ -4,7 +4,7 @@ import { Core } from 'cytoscape';
 import { useStore } from 'react-redux';
 import { IRootState } from '../../types';
 import { getSuccessors } from '../../CytoscapeNodeFactory';
-import { adjustLayout, getFilteredNodes, hideAllNonPermanentNodes, hideAllVisibleNodes, resetNodePositions, styleAndDisplayNodes } from './TreeLayoutHelpers';
+import { adjustLayout, getFilteredNodes, hideAllVisibleNodes, resetNodes, showCytoElements, styleAndDisplayNodes } from './TreeLayoutHelpers';
 
 const extractSelectedData = (state) => {
   return {
@@ -32,22 +32,30 @@ const selectNodes = (cyInstance: Core, attribute: string, values: string[]) => {
 // };
 
 // Custom Hook
-export const useSubscribeCytoscape = (cy: Core | null, initialNodePositions, showAllPermanentEdges) => {
+export const useSubscribeCytoscape = (cy: Core | null, initialNodeData, showAllPermanentEdges) => {
   const store = useStore<IRootState>();
 
   useEffect(() => {
     // Subscribe to changes
     const unsubscribe = store.subscribe(() => {
+      console.time('cyto useeffect');
       const state = store.getState();
       const violationsTypesMap = state.combined.violationTypesMap;
       const { selectedTypes, selectedViolationExemplars, selectedViolations } = extractSelectedData(state);
 
-      if (cy && initialNodePositions.current && initialNodePositions.current.size > 0) {
+      if (cy && initialNodeData.current && initialNodeData.current.size > 0) {
+        console.log('');
+        console.time('clear');
         clearSelectedNodes(cy);
-        hideAllNonPermanentNodes(cy);
+        console.timeEnd('clear');
+        console.time('show');
         showAllPermanentEdges();
-        resetNodePositions(cy, initialNodePositions.current);
+        console.timeEnd('show');
+        console.time('reset');
+        resetNodes(cy, initialNodeData.current);
+        console.timeEnd('reset');
 
+        console.time('getfilter');
         const { violationNodes, typeNodes, otherNodes, exemplarNodes } = getFilteredNodes(
           cy,
           selectedViolations,
@@ -55,15 +63,27 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodePositions, sho
           selectedTypes,
           selectedViolationExemplars,
         );
-        styleAndDisplayNodes(typeNodes, otherNodes, exemplarNodes, violationNodes);
+        console.timeEnd('getfilter');
+        console.time('style&display');
+        showCytoElements(violationNodes.union(otherNodes).union(typeNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets()));
+        console.timeEnd('style&display');
+        console.time('adjst');
         adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes);
+        console.timeEnd('adjst');
 
         // TODO check why this triggers a selection of typeNodes with an empty array afterwards
+        console.time('unionsel');
         violationNodes.union(typeNodes).union(otherNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes)).select();
-        selectNodes(cy, 'label', selectedTypes);
-        selectNodes(cy, 'label', selectedViolationExemplars);
-        selectNodes(cy, 'label', selectedViolations);
-        cy.style().update();
+        console.timeEnd('unionsel');
+
+        const ex = cy.edges().filter((edge) => edge.data('label').includes('ns1:hasExemplar') && edge.source().data('label').includes('hasStudyType'));
+        console.log('ex.data("id")', ex.data('id'));
+        console.log('ex.data("visible")', ex.data('visible'));
+        console.log('ex.data("permanent")', ex.data('permanent'));
+        console.log('ex.style().display', ex.style('display'));
+
+        console.log('targets', ex.targets(), ex.targets());
+        console.log('sources', ex.sources(), ex.sources());
       }
     });
 
@@ -72,5 +92,5 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodePositions, sho
       unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cy, initialNodePositions]);
+  }, [cy, initialNodeData]);
 };

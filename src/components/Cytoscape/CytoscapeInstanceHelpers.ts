@@ -34,7 +34,7 @@ export function createNewCytoscapeInstance(
 export function updateCytoscapeInstance(
   cy: Core,
   data: ICytoData,
-  initialNodePositions: React.MutableRefObject<Map<string, { x: number; y: number; visible: boolean }>>,
+  initialNodeData: React.MutableRefObject<Map<string, { x: number; y: number; visible: boolean }>>,
   onLoaded: () => void,
   setLoading: SetLoadingFn,
   contextMenuActions: ContextMenuActions,
@@ -49,7 +49,7 @@ export function updateCytoscapeInstance(
     cy.fit();
     cy.nodes().forEach((node) => {
       const pos = node.position();
-      initialNodePositions.current.set(node.data('id'), { x: pos.x, y: pos.y, visible: node.data('visible') });
+      initialNodeData.current.set(node.data('id'), { x: pos.x, y: pos.y, visible: node.data('visible') });
     });
   });
   cy.contextMenus(getContextMenuOptions(contextMenuActions));

@@ -16,7 +16,7 @@ export function nodeStyleBase(getShapeForNamespace) {
     shape: (ele) => getShapeForNamespace(ele.data('namespace')),
     'background-color': UNSELECTED_DEFAULT_COLOR,
     label: 'data(label)',
-    display: (ele) => (ele.data('visible') ? 'element' : 'none'),
+    display: (ele) => (ele.data('permanent') ? 'element' : 'none'),
   };
 }
 
@@ -27,6 +27,7 @@ export function edgeStyleBase() {
     'target-arrow-color': UNSELECTED_DEFAULT_COLOR, // '#ccc',
     'target-arrow-shape': 'triangle',
     'curve-style': 'bezier',
+    label: (ele) => (ele.data('labelVisible') ? ele.data('label') : ''),
   };
 }
 
@@ -41,69 +42,134 @@ export function getStyle(getShapeForNamespace) {
     {
       selector: 'node:selected',
       style: {
-        ...nodeStyleBase(getShapeForNamespace),
         'background-color': SELECTED_DEFAULT_COLOR,
       },
     },
     {
       selector: 'node[?violation]',
       style: {
-        ...nodeStyleBase(getShapeForNamespace),
         'background-color': UNSELECTED_VIOLATION_NODE_COLOR,
       },
     },
     {
       selector: 'node[?violation]:selected',
       style: {
-        ...nodeStyleBase(getShapeForNamespace),
         'background-color': SELECTED_VIOLATION_NODE_COLOR,
       },
     },
     {
       selector: 'node[?exemplar]',
       style: {
-        ...nodeStyleBase(getShapeForNamespace),
         'background-color': UNSELECTED_EXEMPLAR_NODE_COLOR,
       },
     },
     {
       selector: 'node[?exemplar]:selected',
       style: {
-        ...nodeStyleBase(getShapeForNamespace),
         'background-color': SELECTED_EXEMPLAR_NODE_COLOR,
       },
     },
     {
       selector: 'node[?type]',
       style: {
-        ...nodeStyleBase(getShapeForNamespace),
         'background-color': UNSELECTED_TYPE_NODE_COLOR,
       },
     },
     {
       selector: 'node[?type]:selected',
       style: {
-        ...nodeStyleBase(getShapeForNamespace),
         'background-color': SELECTED_TYPE_NODE_COLOR,
       },
     },
+    {
+      selector: 'node.hidden',
+      style: {
+        display: 'none',
+      },
+    },
+    {
+      selector: 'node.visible',
+      style: {
+        display: 'element',
+      },
+    },
+    {
+      selector: 'node[?violation].hidden',
+      style: {
+        display: 'none',
+      },
+    },
+    {
+      selector: 'node[?violation].visible',
+      style: {
+        display: 'element',
+      },
+    },
+    {
+      selector: 'node[?exemplar].hidden',
+      style: {
+        display: 'none',
+      },
+    },
+    {
+      selector: 'node[?exemplar].visible',
+      style: {
+        display: 'element',
+      },
+    },
+    {
+      selector: 'node[?type].hidden',
+      style: {
+        display: 'none',
+      },
+    },
+    {
+      selector: 'node[?type].visible',
+      style: {
+        display: 'element',
+      },
+    },
+
     // Base edge style
     {
       selector: 'edge',
       style: {
         ...edgeStyleBase(),
-        label: (ele) => (ele.data('labelVisible') ? ele.data('label') : ''),
+      },
+    },
+    {
+      selector: 'edge.hidden',
+      style: {
+        display: 'none',
+        label: '',
+      },
+    },
+    {
+      selector: 'edge.visible',
+      style: {
+        display: 'element',
       },
     },
     // Selected edge style
     {
       selector: 'edge:selected',
       style: {
-        ...edgeStyleBase(),
         'line-color': MANTINE_HEADER_COLOR,
         width: 5,
         'target-arrow-color': MANTINE_HEADER_COLOR,
         'arrow-scale': 1.5,
+      },
+    },
+    {
+      selector: 'edge:selected.hidden',
+      style: {
+        display: 'none',
+      },
+    },
+    {
+      selector: 'edge:selected.visible',
+      style: {
+        display: 'element',
       },
     },
   ];
