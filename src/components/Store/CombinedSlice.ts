@@ -1,5 +1,5 @@
 // CombinedSlice.ts
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, current, PayloadAction } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Store, Quad } from 'n3';
 import { createSelector } from 'reselect';
@@ -41,6 +41,7 @@ const initialState: ICombinedState = {
   types: [],
   subClassOfTriples: [],
   numberViolationsPerType: {},
+  focusNodeSampleMap: {},
 };
 
 function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
@@ -125,7 +126,6 @@ const updateSelectedViolationExemplars = (state) => {
 
 function setNumberViolationsPerType(state: ICombinedState): void {
   const numberViolationsPerType: INumberViolationsPerType = {};
-
   state.samples.forEach((sample: ICsvData) => {
     const sampleType = String(sample['rdf:type']);
     if (!sampleType) return; // Skip if no type is found
@@ -158,6 +158,90 @@ function setNumberViolationsPerTypeGivenType(state: ICombinedState): void {
 
   // Now, we update the state all at once
   state.numberViolationsPerType = newNumberViolationsPerType;
+}
+
+function calculateNewNumberViolationsPerType(samples, existingNumberViolationsPerType, newSelectedNodes) {
+  const focusNodesSamplesMap = {};
+  samples.forEach((sample) => {
+    focusNodesSamplesMap[sample.focus_node] = sample;
+  });
+
+  // Initialize newNumberViolationsPerType based on existing state
+  const newNumberViolationsPerType = { ...existingNumberViolationsPerType };
+
+  // Reset the 'selected' counts to 0
+  Object.keys(newNumberViolationsPerType).forEach((type) => {
+    newNumberViolationsPerType[type][1] = 0;
+  });
+
+  newSelectedNodes.forEach((selectedNode) => {
+    const correspondingSample = focusNodesSamplesMap[selectedNode];
+
+    if (!correspondingSample) return;
+
+    const sampleType = String(correspondingSample['rdf:type']);
+    if (sampleType && newNumberViolationsPerType[sampleType]) {
+      newNumberViolationsPerType[sampleType][1]++;
+    }
+  });
+
+  return newNumberViolationsPerType;
+}
+
+/**
+ * This function calculates the new selected nodes and violations based on selected types
+ * If the action is overwrite, it takes all nodes of those types and all corresponding violations and returns them
+ * If the action is append, it takes the currently selectedNodes and selectedViolations, determines the new nodes and violations based on the selected type, and appends them to the existing ones, returning the new arrays
+ * If the action is remove, it takes the currently selectedNodes and selectedViolations, determines the new nodes and violations based on the selected type, and removes them from the existing ones, returning the new arrays
+ * @param selectedTypes list of types that were just selected (for overwriting, adding, or removing)
+ * @param violations list of all violations that exist in the data
+ * @param samples list of all samples from the original CSV data which have a property sample.focus_node
+ * @param actionType 'overwrite', 'append', or 'remove'
+ * @param selectedNodes list of currently selected nodes
+ * @param selectedViolations list of currently selected violations
+ * @returns {newSelectedNodes, newSelectedViolations} newSelectedNodes is the list of nodes that should be selected after the action, newSelectedViolations is the list of violations that should be selected after the action
+ */
+const calculateSelectedNodesAndViolations = (
+  selectedTypes: string[],
+  violations: string[],
+  samples: ICsvData[],
+  actionType: string,
+  selectedNodes: string[] = [],
+  selectedViolations: string[] = [],
+) => {
+  const newSelectedNodes = actionType === 'append' ? [...selectedNodes] : [];
+  const newViolationNumberNodesMap = new Map();
+
+  violations.forEach((violation) => {
+    newViolationNumberNodesMap.set(violation, 0);
+  });
+
+  if (actionType === 'append' || actionType === 'remove') {
+    selectedViolations.forEach((violation) => {
+      newViolationNumberNodesMap.set(violation, 0);
+    });
+  }
+
+  samples.forEach((sample) => {
+    if (selectedTypes.includes(String(sample['rdf:type']))) {
+      newSelectedNodes.push(sample.focus_node);
+
+      violations.forEach((violation) => {
+        if (sample && sample[`${violation}`]) {
+          const increment = actionType === 'remove' ? -1 : 1;
+          newViolationNumberNodesMap.set(violation, newViolationNumberNodesMap.get(violation) + increment);
+        }
+      });
+    }
+  });
+
+  return { newSelectedNodes, newViolationNumberNodesMap };
+};
+
+function updateFocusNodeSampleMap(state) {
+  state.samples.forEach((sample) => {
+    state.focusNodeSampleMap[sample.focus_node] = sample;
+  });
 }
 
 // TODO set types of payloadaction for all reducers
@@ -200,6 +284,7 @@ const combinedSlice = createSlice({
         state.samples = [...state.originalSamples];
       }
       setNumberViolationsPerType(state);
+      updateFocusNodeSampleMap(state);
     },
     setFilterType: (state, action: PayloadAction<FilterType>) => {
       state.filterType = action.payload;
@@ -225,6 +310,7 @@ const combinedSlice = createSlice({
         state.samples = action.payload;
       }
       setNumberViolationsPerType(state);
+      updateFocusNodeSampleMap(state);
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
       console.log('setSelectedFocusNodesUsingFeatureCategories');
@@ -320,30 +406,14 @@ const combinedSlice = createSlice({
         return;
       }
 
-      // Initiate an empty array to hold focus nodes of selected types
-      const newSelectedNodes = [];
+      const { newSelectedNodes, newViolationNumberNodesMap } = calculateSelectedNodesAndViolations(
+        state.selectedTypes,
+        state.violations,
+        state.samples,
+        'overwrite',
+      );
 
-      // Create a map from state.violations array, initialized with 0 at each violation key
-      const violationMap = new Map();
-      state.violations.forEach((violation) => {
-        violationMap.set(violation, 0);
-      });
-
-      // Iterate over each sample
-      state.samples.forEach((sample) => {
-        if (state.selectedTypes.includes(String(sample['rdf:type']))) {
-          newSelectedNodes.push(sample.focus_node);
-
-          state.violations.forEach((violation) => {
-            if (sample && sample[`${violation}`]) {
-              violationMap.set(violation, violationMap.get(violation) + 1);
-            }
-          });
-        }
-      });
-
-      // Create a new array for state.selectedViolations, filled with keys of the map with value > 0
-      const newSelectedViolations = Array.from(violationMap)
+      const newSelectedViolations = Array.from(newViolationNumberNodesMap)
         .filter(([key, value]) => value > 0)
         .map(([key]) => key);
 
@@ -351,6 +421,82 @@ const combinedSlice = createSlice({
       state.selectedViolations = newSelectedViolations;
 
       updateSelectedViolationExemplars(state);
+    },
+    addSingleSelectedType: (state, action) => {
+      const newType = action.payload;
+      if (!state.selectedTypes.includes(newType)) {
+        state.selectedTypes.push(newType);
+      }
+
+      const { newSelectedNodes, newViolationNumberNodesMap } = calculateSelectedNodesAndViolations(
+        [newType],
+        state.violations,
+        state.samples,
+        'append',
+        state.selectedNodes,
+        state.selectedViolations,
+      );
+
+      const newSelectedViolations = Array.from(newViolationNumberNodesMap)
+        .filter(([key, value]) => value > 0)
+        .map(([key]) => key);
+
+      state.selectedNodes = [...new Set([...state.selectedNodes, ...newSelectedNodes])];
+      state.selectedViolations = [...new Set([...state.selectedViolations, ...newSelectedViolations])];
+
+      updateSelectedViolationExemplars(state);
+      const newNumberViolationsPerType = calculateNewNumberViolationsPerType(state.samples, state.numberViolationsPerType, state.selectedNodes);
+      state.numberViolationsPerType = newNumberViolationsPerType;
+    },
+    removeSingleSelectedType: (state, action) => {
+      const typeToRemove = action.payload;
+      const index = state.selectedTypes.indexOf(typeToRemove);
+      if (index > -1) {
+        state.selectedTypes.splice(index, 1);
+      }
+      const { newSelectedNodes, newViolationNumberNodesMap } = calculateSelectedNodesAndViolations(
+        [typeToRemove], // Only removing this type
+        state.violations,
+        state.samples,
+        'remove', // Remove from existing
+        state.selectedNodes,
+        state.selectedViolations,
+      );
+      // filter out the nodes that are in newSelectedNodes from the current selectedNodes
+      const nodesToRemove = new Set(newSelectedNodes);
+      state.selectedNodes = state.selectedNodes.filter((node) => !nodesToRemove.has(node));
+
+      const currentSelectedViolationsMap = new Map();
+      state.violations.forEach((violation) => {
+        currentSelectedViolationsMap.set(violation, 0);
+      });
+      state.selectedNodes.forEach((node) => {
+        const correspondingSample = state.focusNodeSampleMap[node];
+        if (correspondingSample) {
+          state.violations.forEach((v) => {
+            if (correspondingSample[v]) {
+              currentSelectedViolationsMap.set(v, currentSelectedViolationsMap.get(v) + 1);
+            }
+          });
+        }
+      });
+
+      const newSelectedViolations = [];
+
+      newViolationNumberNodesMap.forEach((value, key) => {
+        if (currentSelectedViolationsMap.has(key)) {
+          currentSelectedViolationsMap.set(key, currentSelectedViolationsMap.get(key) + value);
+        }
+        if (currentSelectedViolationsMap.get(key) > 0) {
+          newSelectedViolations.push(key);
+        }
+      });
+
+      state.selectedViolations = newSelectedViolations;
+
+      updateSelectedViolationExemplars(state);
+      const newNumberViolationsPerType = calculateNewNumberViolationsPerType(state.samples, state.numberViolationsPerType, state.selectedNodes);
+      state.numberViolationsPerType = newNumberViolationsPerType;
     },
     setRdfString: (state, action) => {
       console.log('setRdfString');
@@ -736,8 +882,8 @@ export const selectCytoData = async (rdfString, getShapeForNamespace, violations
   const edges = [];
 
   const objectProperties = calculateObjectProperties(visibleTriples, hiddenTriples);
-  processTriples(hiddenTriples, false, nodes, edges, objectProperties, getShapeForNamespace, violations, types); // TODO requires state.types as last parameter
-  processTriples(visibleTriples, true, nodes, edges, objectProperties, getShapeForNamespace, violations, types); // TODO requires state.types as last parameter
+  processTriples(hiddenTriples, false, nodes, edges, objectProperties, getShapeForNamespace, violations, types);
+  processTriples(visibleTriples, true, nodes, edges, objectProperties, getShapeForNamespace, violations, types);
 
   return { nodes, edges };
 };
@@ -749,6 +895,8 @@ export const {
   setSelectedFocusNodesUsingFeatureCategories,
   setSelectedFocusNodes,
   setSelectedTypes,
+  addSingleSelectedType,
+  removeSingleSelectedType,
   setRdfString,
   setViolationTypesMap,
   setTypesViolationMap,

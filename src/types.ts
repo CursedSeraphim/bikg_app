@@ -101,6 +101,10 @@ export interface INumberViolationsPerType {
   [key: string]: [violations: number, selected: number];
 }
 
+export interface IFocusNodeSampleMap {
+  [key: string]: ICsvData;
+}
+
 export interface ICombinedState {
   samples: ICsvData[];
   originalSamples: ICsvData[];
@@ -121,6 +125,7 @@ export interface ICombinedState {
   types: string[];
   subClassOfTriples: ITriple[];
   numberViolationsPerType: INumberViolationsPerType;
+  focusNodeSampleMap: IFocusNodeSampleMap;
 }
 
 export interface ITriple {

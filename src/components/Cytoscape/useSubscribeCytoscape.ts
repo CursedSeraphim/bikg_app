@@ -38,24 +38,26 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData, showAllP
   useEffect(() => {
     // Subscribe to changes
     const unsubscribe = store.subscribe(() => {
-      console.time('cyto useeffect');
+      console.log('cyto/ subscription triggered');
+      // console.time('cyto useeffect');
       const state = store.getState();
       const violationsTypesMap = state.combined.violationTypesMap;
       const { selectedTypes, selectedViolationExemplars, selectedViolations } = extractSelectedData(state);
+      console.log('cyto/ state', state);
 
       if (cy && initialNodeData.current && initialNodeData.current.size > 0) {
-        console.log('');
-        console.time('clear');
+        // console.log('');
+        // console.time('clear');
         clearSelectedNodes(cy);
-        console.timeEnd('clear');
-        console.time('show');
+        // console.timeEnd('clear');
+        // console.time('show');
         showAllPermanentEdges();
-        console.timeEnd('show');
-        console.time('reset');
+        // console.timeEnd('show');
+        // console.time('reset');
         resetNodes(cy, initialNodeData.current);
-        console.timeEnd('reset');
+        // console.timeEnd('reset');
 
-        console.time('getfilter');
+        // console.time('getfilter');
         const { violationNodes, typeNodes, otherNodes, exemplarNodes } = getFilteredNodes(
           cy,
           selectedViolations,
@@ -63,27 +65,18 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData, showAllP
           selectedTypes,
           selectedViolationExemplars,
         );
-        console.timeEnd('getfilter');
-        console.time('style&display');
+        // console.timeEnd('getfilter');
+        // console.time('style&display');
         showCytoElements(violationNodes.union(otherNodes).union(typeNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets()));
-        console.timeEnd('style&display');
-        console.time('adjst');
+        // console.timeEnd('style&display');
+        // console.time('adjst');
         adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes);
-        console.timeEnd('adjst');
+        // console.timeEnd('adjst');
 
         // TODO check why this triggers a selection of typeNodes with an empty array afterwards
-        console.time('unionsel');
+        // console.time('unionsel');
         violationNodes.union(typeNodes).union(otherNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes)).select();
-        console.timeEnd('unionsel');
-
-        const ex = cy.edges().filter((edge) => edge.data('label').includes('ns1:hasExemplar') && edge.source().data('label').includes('hasStudyType'));
-        console.log('ex.data("id")', ex.data('id'));
-        console.log('ex.data("visible")', ex.data('visible'));
-        console.log('ex.data("permanent")', ex.data('permanent'));
-        console.log('ex.style().display', ex.style('display'));
-
-        console.log('targets', ex.targets(), ex.targets());
-        console.log('sources', ex.sources(), ex.sources());
+        // console.timeEnd('unionsel');
       }
     });
 

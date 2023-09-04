@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { Treebeard, decorators } from 'react-treebeard';
 import { BarLoader } from 'react-spinners';
 import _ from 'lodash';
-import { setSelectedTypes } from '../Store/CombinedSlice';
+import { addSingleSelectedType, removeSingleSelectedType, setSelectedTypes } from '../Store/CombinedSlice';
 import { lightTheme } from './lightTheme';
 import { CustomHeader } from './CustomHeader'; // Import CustomHeader
 import { SPINNER_COLOR } from '../../constants';
@@ -15,31 +15,27 @@ export default function Treeview() {
 
   const [treeData, setTreeData, selectedTypesRef] = useTreeData(); // Use your new custom hook
 
-  // This function will be called when a node is toggled
   const onToggle = (node, toggled) => {
-    // create a copy of the selected types
-    let newSelectedTypes = [...selectedTypesRef.current];
-
-    // define function which will remove a node and its children from the list of selected types
+    // Define function which will remove a node and its children from the list of selected types
     const removeNodeAndChildrenFromList = (n) => {
-      newSelectedTypes = newSelectedTypes.filter((type) => type !== n.name.split(' ')[0]);
+      const typeToRemove = n.name.split(' ')[0];
+      dispatch(removeSingleSelectedType(typeToRemove));
+
       if (n.children) {
         n.children.forEach(removeNodeAndChildrenFromList);
       }
     };
 
     if (toggled) {
-      // if the node is toggled, i.e., selected, add it to the list of selected types
-      newSelectedTypes.push(node.name.split(' ')[0]);
+      // If the node is toggled, i.e., selected, add it to the list of selected types
+      const typeToAdd = node.name.split(' ')[0];
+      dispatch(addSingleSelectedType(typeToAdd));
     } else {
-      // if the node is not toggled, i.e., not selected, remove it and its children from the list of selected types
+      // If the node is not toggled, i.e., not selected, remove it and its children from the list of selected types
       removeNodeAndChildrenFromList(node);
     }
 
-    // update the list of selected types in the redux store using the new list
-    dispatch(setSelectedTypes(newSelectedTypes));
-
-    // update the tree data to reflect the toggled state of the node
+    // Update the tree data to reflect the toggled state of the node
     if (node.children) {
       setTreeData((oldTreeData) => {
         const newTreeData = _.cloneDeep(oldTreeData);
@@ -56,6 +52,7 @@ export default function Treeview() {
       });
     }
   };
+
   // This will show a spinner while the treeview is loading
   if (!treeData) {
     return <BarLoader color={SPINNER_COLOR} loading />;
