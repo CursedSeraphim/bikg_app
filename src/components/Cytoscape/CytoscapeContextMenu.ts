@@ -1,6 +1,5 @@
-// CytoscapeContextMenu.ts
-import { NodeSingular } from 'cytoscape'; // Make sure to import NodeSingular from cytoscape
-import { MenuItem, ContextMenuOptions, ContextMenuActions } from '../../types'; // Update the imports based on your project structure
+import { NodeSingular } from 'cytoscape';
+import { MenuItem, ContextMenuOptions, ContextMenuActions } from '../../types';
 
 export function getContextMenuOptions(actions: ContextMenuActions): ContextMenuOptions {
   const dynamicMenuItems: MenuItem[] = Object.keys(actions).map((actionKey) => {
@@ -8,14 +7,13 @@ export function getContextMenuOptions(actions: ContextMenuActions): ContextMenuO
 
     const actionOrObject = actions[actionKey];
 
-    let action: (target: NodeSingular, ...args: any[]) => void;
-    let args: any[] = [];
+    let action: (target: NodeSingular, ...args: unknown[]) => void;
+    let args: unknown[] = [];
 
     if (typeof actionOrObject === 'function') {
       action = actionOrObject;
     } else if (actionOrObject && 'action' in actionOrObject && 'args' in actionOrObject) {
-      action = actionOrObject.action;
-      args = actionOrObject.args;
+      ({ action, args } = actionOrObject);
     } else {
       throw new Error(`Invalid action configuration for key ${actionKey}`);
     }

@@ -1,5 +1,5 @@
 // CombinedSlice.ts
-import { createSlice, current, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Store, Quad } from 'n3';
 import { createSelector } from 'reselect';
@@ -202,15 +202,19 @@ const updateViolationCount = (sample: ICsvData, violationCount: Record<string, n
   for (const key in violationCount) {
     if (sample[key]) {
       const increment = actionType === ActionTypes.REMOVE ? -1 : 1;
+      // eslint-disable-next-line no-param-reassign
       violationCount[key] += increment;
     }
   }
 };
 
 const calculateNewSelectedViolations = (newViolationCount: Record<string, number>): string[] => {
-  return Object.entries(newViolationCount)
-    .filter(([_, value]) => value > 0)
-    .map(([key]) => key);
+  return (
+    Object.entries(newViolationCount)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      .filter(([_, value]) => value > 0)
+      .map(([key]) => key)
+  );
 };
 
 const calculateSelectedNodesAndViolations = (
@@ -373,7 +377,9 @@ const combinedSlice = createSlice({
 
       // Set state.selectedViolations to the keys of the map with value > 0
       const newSelectedViolations = Array.from(violationMap.entries())
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .filter(([_, value]) => value > 0)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .map(([key, _]) => key);
 
       // Now, we assign new values to the state variables.
@@ -466,7 +472,7 @@ const combinedSlice = createSlice({
       const newSelectedViolations = [];
 
       for (const [key, value] of Object.entries(newViolationCount)) {
-        if (currentSelectedViolationsCount.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(currentSelectedViolationsCount, key)) {
           currentSelectedViolationsCount[key] += value;
         }
         if (currentSelectedViolationsCount[key] > 0) {

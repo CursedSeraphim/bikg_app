@@ -1,10 +1,10 @@
 // useSubscribeCytoscape.ts
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Core } from 'cytoscape';
 import { useStore } from 'react-redux';
 import { IRootState } from '../../types';
 import { getSuccessors } from '../../CytoscapeNodeFactory';
-import { adjustLayout, getFilteredNodes, hideAllVisibleNodes, resetNodes, showCytoElements, styleAndDisplayNodes } from './TreeLayoutHelpers';
+import { adjustLayout, getFilteredNodes, resetNodes, showCytoElements } from './TreeLayoutHelpers';
 
 const extractSelectedData = (state) => {
   return {
@@ -17,19 +17,6 @@ const extractSelectedData = (state) => {
 const clearSelectedNodes = (cyInstance: Core) => {
   cyInstance.$(':selected').unselect();
 };
-
-const selectNodes = (cyInstance: Core, attribute: string, values: string[]) => {
-  values.forEach((value) => {
-    cyInstance.$(`node[${attribute}="${value}"]`).select();
-  });
-};
-
-// const logSelectedNodes = (cyInstance: Core) => {
-//   console.log('Print all selected nodes:');
-//   cyInstance.$(':selected').forEach((node) => {
-//     console.log(node.id());
-//   });
-// };
 
 // Custom Hook
 export const useSubscribeCytoscape = (cy: Core | null, initialNodeData, showAllPermanentEdges) => {

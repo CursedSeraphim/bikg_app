@@ -158,13 +158,6 @@ export function styleAndDisplayNodes(typeNodes, otherNodes, exemplarNodes, viola
   showCytoElements(violationNodes.union(otherNodes).union(typeNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets()));
 }
 
-/**
- * Hide all nodes that have previously been made visible. Convenience function using the listOfNodesThatHaveBeenMadeVisible ref.
- */
-export function hideAllVisibleNodes(listOfNodesThatHaveBeenMadeVisible) {
-  listOfNodesThatHaveBeenMadeVisible.current = hideVisibleNodes(listOfNodesThatHaveBeenMadeVisible);
-}
-
 export function hideAllNonPermanentNodes(cy) {
   cy.nodes()
     .filter((node) => node.data('permanent') === false)

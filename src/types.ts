@@ -1,4 +1,4 @@
-import { Core, NodeSingular } from 'cytoscape';
+import { Core, NodeSingular, EventObject } from 'cytoscape';
 
 export type Position = { x: number; y: number };
 
@@ -138,8 +138,8 @@ export interface ITriple {
 export type ActionFunction = (target: NodeSingular) => void;
 
 export type ActionWithArgs = {
-  action: (event: any, ...args: any[]) => void;
-  args: any[];
+  action: (target: NodeSingular, ...args: unknown[]) => void; // Updated
+  args: unknown[]; // Replaced any with unknown
 };
 
 // Defines what a menu item looks like
@@ -147,7 +147,7 @@ export type MenuItem = {
   id: string;
   content: string;
   selector: string;
-  onClickFunction: (event: NodeSingular) => void;
+  onClickFunction: (event: EventObject) => void; // Replaced NodeSingular with EventObject
 };
 
 // Defines what the context menu options look like
