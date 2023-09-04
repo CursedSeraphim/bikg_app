@@ -7,7 +7,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 from fastapi import APIRouter, Request, Response
-from rdflib import Graph, Namespace
+from rdflib import RDF, Graph, Namespace
 from rdflib.namespace import split_uri
 from scipy.stats import chi2_contingency
 
@@ -20,6 +20,7 @@ from bikg_app.routers.utils import (
 
 SH = Namespace("http://www.w3.org/ns/shacl#")
 OWL = Namespace("http://www.w3.org/2002/07/owl#")
+RDFS = Namespace("http://www.w3.org/2000/01/rdf-schema#")
 
 # File paths
 VIOLATIONS_FILE_PATH = os.path.join("bikg_app/json", "violation_list.json")
@@ -52,6 +53,7 @@ for column in violations_list:
 # load the ontology
 g = Graph()
 g.parse(ONTOLOGY_TTL_FILE_PATH, format="ttl")
+ttl_data = g.serialize(format="turtle")
 
 overall_violation_value_counts = {
     violation: sum(key * value for key, value in counts.items()) for violation, counts in overall_violation_value_dict.items()
@@ -170,6 +172,14 @@ async def get_exemplar_focus_node_dict():
 @router.get("/file/study")
 async def read_csv_file():
     return {"data": df.to_dict(orient="records")}
+
+
+@router.get("/owl:Class")
+async def get_classes():
+    """
+    Retrieves all the classes in the ontology
+    """
+    return [str(g.namespace_manager.qname(c)) for c in g.subjects(predicate=RDF.type, object=OWL.Class)]  # type: ignore
 
 
 @router.post("/FeatureCategorySelection")
@@ -337,14 +347,39 @@ def value_counts_to_plotly_data(value_counts, distribution_name, marker_color):
     }
 
 
+@router.get("/sub-class-of")
+async def get_sub_class_of():
+    """
+    Retrieves all tuples with the rdfs:SubClassOf predicate using SPARQL and converts them to QNames.
+    """
+    g = Graph()
+    g.parse(data=ttl_data, format="turtle")  # Assuming ttl_data is the turtle file content
+
+    query = """
+    SELECT ?s ?o WHERE {
+        ?s rdfs:subClassOf ?o .
+    }
+    """
+
+    result = []
+    for row in g.query(query):
+        result.append(
+            {
+                "s": g.namespace_manager.qname(row.s),  # type: ignore
+                "p": "rdfs:subClassOf",
+                "o": g.namespace_manager.qname(row.o),  # type: ignore
+            }
+        )
+
+    return result
+
+
 # TODO: execute this in preprocessing already
 @router.get("/file/ontology")
 def get_ttl_file(response: Response):
     """
     sends the contents of the ttl file serialized to the client
     """
-    ttl_data = g.serialize(format="turtle")
-
     response.headers["Content-Disposition"] = "attachment; filename=omics_model.ttl"
     return Response(content=ttl_data, media_type="text/turtle")
 

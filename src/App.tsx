@@ -14,9 +14,11 @@ import {
   setFocusNodeExemplarDict,
   setExemplarFocusNodeDict,
   setNamespaces,
+  setTypes,
+  setSubClassOfTriples,
 } from './components/Store/CombinedSlice';
 
-import CytoscapeView from './CytoscapeView';
+import CytoscapeView from './components/Cytoscape/CytoscapeView';
 
 import './styles.css';
 import {
@@ -28,6 +30,8 @@ import {
   fetchFocusNodeExemplarDict,
   fetchExemplarFocusNodeDict,
   fetchNamespaces,
+  fetchClasses,
+  fetchSubClassOfTriples,
 } from './api';
 import { SPINNER_COLOR } from './constants';
 
@@ -35,6 +39,28 @@ export function App() {
   const dispatch = useDispatch();
   const rdfOntology = useSelector(selectRdfData);
   const [cytoscapeLoading, setCytoscapeLoading] = React.useState(true);
+
+  // Fetch sub-class-of triples and print
+  React.useEffect(() => {
+    fetchSubClassOfTriples()
+      .then((data) => {
+        dispatch(setSubClassOfTriples(data));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch sub-class-of triples', error);
+      });
+  }, [dispatch]);
+
+  // Fetch classes and print
+  React.useEffect(() => {
+    fetchClasses()
+      .then((data) => {
+        dispatch(setTypes(data));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch classes', error);
+      });
+  }, [dispatch]);
 
   // Fetch prefix->namespace dictionary and print
   React.useEffect(() => {
@@ -51,7 +77,6 @@ export function App() {
   React.useEffect(() => {
     fetchEdgeCountDict()
       .then((data) => {
-        console.log('fetchEdgeCountDict', data);
         dispatch(setEdgeCountDict(data));
       })
       .catch((error) => {

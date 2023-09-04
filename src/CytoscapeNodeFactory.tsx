@@ -1,6 +1,5 @@
 // CytoscapeNodeFactory.tsx
-import cytoscape from 'cytoscape';
-
+import cytoscape, { NodeSingular, Collection } from 'cytoscape';
 import { ICytoNode, ICytoEdge } from './types';
 
 /**
@@ -53,7 +52,7 @@ export class CytoscapeNodeFactory {
       for (let i = 0; i < childrenPerNode; i++) {
         const [node, edge] = this.createNode(labelProvider(this.nodeIdCounter), parent);
         elements.push(node);
-        if (edge) elements.push(edge as ICytoNode); // Since edge has a different structure, it needs to be casted if you intend to keep it in the same array
+        if (edge) elements.push(edge as ICytoNode); // Since edge has a different structure, it needs to be casted if intended to keep it in the same array
 
         buildTree(node, currentDepth + 1);
       }
@@ -378,8 +377,8 @@ export function moveCollectionToBottomRight(cy, targetCollection) {
  * If no x or y coordinate is provided, the current x or y coordinate of the
  * targetCollection is retained.
  *
- * @param {Object} targetCollection - The collection of nodes to be moved.
- *                                    Can contain duplicate nodes.
+ * @param {Collection} targetCollection - The collection of nodes to be moved.
+ *                                       Can contain duplicate nodes.
  * @param {number|null} x - The desired x-coordinate for the top-left corner
  *                          of the target collection's bounding box, or null
  *                          to retain the current x-coordinate.
@@ -387,28 +386,33 @@ export function moveCollectionToBottomRight(cy, targetCollection) {
  *                          of the target collection's bounding box, or null
  *                          to retain the current y-coordinate.
  */
-export function moveCollectionToCoordinates(targetCollection, x = null, y = null) {
-  // 1. Calculate the bounding box for the target collection.
+export function moveCollectionToCoordinates(targetCollection: Collection, x: number | null = null, y: number | null = null): void {
+  // Reduce to unique nodes first
+  const uniqueNodes: Record<string, NodeSingular> = targetCollection.reduce((acc: Record<string, NodeSingular>, node: NodeSingular) => {
+    acc[node.id()] = node;
+    return acc;
+  }, {});
+
+  // Calculate the bounding box for the target collection.
   const targetCollectionBB = targetCollection.boundingBox();
 
-  // 2. Calculate the translation values. If x or y is null, use the current bounding box value.
+  // Calculate the translation values. If x or y is null, use the current bounding box value.
   const translationX = x !== null ? x - targetCollectionBB.x1 : 0;
   const translationY = y !== null ? y - targetCollectionBB.y1 : 0;
 
-  // Set to keep track of already processed nodes
-  const processedNodes = new Set();
+  // Batch processing for better performance
+  targetCollection.cy().startBatch();
 
-  targetCollection.forEach((node) => {
-    if (!processedNodes.has(node.id())) {
-      // Only process nodes that haven't been processed
-      const currentPosition = node.position();
-      node.position({
-        x: currentPosition.x + translationX,
-        y: currentPosition.y + translationY,
-      });
-      processedNodes.add(node.id()); // Mark the node as processed
-    }
-  });
+  for (const node of Object.values(uniqueNodes)) {
+    const currentPosition = node.position();
+    node.position({
+      x: currentPosition.x + translationX,
+      y: currentPosition.y + translationY,
+    });
+  }
+
+  // End batch processing
+  targetCollection.cy().endBatch();
 }
 
 /**

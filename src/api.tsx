@@ -139,3 +139,17 @@ export async function fetchNamespaces() {
   const data = await response.json();
   return data;
 }
+
+export async function fetchClasses() {
+  const endpoint = `http://localhost:9000/owl:Class`;
+  const response = await fetch(endpoint);
+  const data = await response.json();
+  return data;
+}
+
+export async function fetchSubClassOfTriples() {
+  const endpoint = `http://localhost:9000/sub-class-of`;
+  const response = await fetch(endpoint);
+  const data = await response.json();
+  return data;
+}

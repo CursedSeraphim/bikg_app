@@ -1,14 +1,10 @@
 // NavBarTabs.tsx
 import React, { useState, useMemo } from 'react';
-import { useSelector } from 'react-redux';
-import { selectCsvDataForPlotly } from './Store/CombinedSlice';
 import Treeview from './Treeview/Treeview';
 import SettingsTab from './SettingsTab/SettingsTab';
 
 function NavBarTabs() {
-  // Inside your Tabs component function
   const [currentTab, setCurrentTab] = useState('1');
-  const plotlyData = useSelector(selectCsvDataForPlotly);
 
   const MemoizedTreeView = React.memo(Treeview);
   const MemoizedSettingsTab = React.memo(SettingsTab);
@@ -29,7 +25,7 @@ function NavBarTabs() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [plotlyData],
+    [],
   );
 
   const handleTabClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {

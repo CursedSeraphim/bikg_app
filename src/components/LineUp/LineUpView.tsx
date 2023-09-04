@@ -3,110 +3,11 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import * as LineUpJS from 'lineupjs';
 import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes, selectFilterType, selectMissingEdgeOption } from '../Store/CombinedSlice';
-import { ICsvData, CsvCell } from '../../types';
-import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
+import { ICsvData, CsvCell, ICanvasOwner } from '../../types';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING } from '../../constants';
+import { filterAllNanColumns, filterAllUniModalColumns } from './LineUpHelpers';
 
 const columnTypes = {};
-
-/**
- * Filter out columns that only contain a single unique value.
- *
- * @param {ICsvData[]} data - The CSV data to be processed.
- * @returns {ICsvData[]} The CSV data without columns containing a single unique value.
- */
-const filterAllUniModalColumns = (data: ICsvData[]): ICsvData[] => {
-  const uniqueValuesPerColumn = new Map<string, Set<CsvCell>>();
-  const isUnimodalColumn = new Map<string, boolean>();
-
-  // Iterate over all rows and columns
-  data.forEach((row) => {
-    if (row.Id !== null) {
-      for (const key in row) {
-        if (key !== 'Id') {
-          const value = row[key];
-          let uniqueValues = uniqueValuesPerColumn.get(key);
-
-          // if the unique values for this column hasn't been initialized, do so
-          if (!uniqueValues) {
-            uniqueValues = new Set();
-            uniqueValuesPerColumn.set(key, uniqueValues);
-            isUnimodalColumn.set(key, true);
-          }
-
-          // If the unique values set already has this value, continue to next column
-          if (uniqueValues.has(value)) {
-            continue;
-          }
-
-          // If the column is unimodal but a second unique value is found, mark as not unimodal
-          if (isUnimodalColumn.get(key) && uniqueValues.size === 1) {
-            isUnimodalColumn.set(key, false);
-          }
-
-          uniqueValues.add(value);
-        }
-      }
-    }
-  });
-
-  // Return a new array containing only rows with non-unimodal columns
-  return data.map((row) => {
-    const filteredRow: ICsvData = { Id: row.Id };
-
-    for (const key in row) {
-      if (key !== 'Id' && !isUnimodalColumn.get(key)) {
-        filteredRow[key] = row[key];
-      }
-    }
-
-    return filteredRow;
-  });
-};
-
-/**
- * Filter out columns that exclusively contain NaN values.
- *
- * @param {ICsvData[]} data - The CSV data to be processed.
- * @returns {ICsvData[]} The CSV data with columns exclusively containing NaN values removed.
- */
-const filterAllNanColumns = (data: ICsvData[]): ICsvData[] => {
-  const notMissingEdgeColumns = new Map<string, boolean>();
-
-  // Preprocess data and track columns with non-dash values
-  const preprocessedData = data.map((sample) => {
-    const processedSample: ICsvData = { Id: sample.Id };
-
-    for (const key in sample) {
-      if (sample.Id !== null) {
-        if (key !== 'Id') {
-          const value = sample[key] === CSV_EDGE_NOT_IN_ONTOLOGY_STRING ? CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING : sample[key];
-
-          processedSample[key] = value;
-
-          // If the value is not "-", mark the column as having non-dash values
-          if (value !== CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING && !notMissingEdgeColumns.get(key)) {
-            notMissingEdgeColumns.set(key, true);
-          }
-        }
-      }
-    }
-
-    return processedSample;
-  });
-
-  // Filter out columns that only contain missing edges
-  return preprocessedData.map((sample) => {
-    const filteredSample: ICsvData = { Id: sample.Id };
-
-    for (const key in sample) {
-      if (key !== 'Id' && notMissingEdgeColumns.get(key)) {
-        filteredSample[key] = sample[key];
-      }
-    }
-
-    return filteredSample;
-  });
-};
 
 /**
  * LineUpView component for visualizing CSV data.
@@ -115,6 +16,8 @@ const filterAllNanColumns = (data: ICsvData[]): ICsvData[] => {
  * @returns {React.Element} A rendered LineUp view component.
  */
 export default function LineUpView() {
+  console.time('Rendering LU took');
+
   const dispatch = useDispatch();
   const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
   const reduxCsvData = useSelector(selectCsvData);
@@ -195,10 +98,6 @@ export default function LineUpView() {
     return 'string';
   }
 
-  interface CanvasOwner {
-    canvas?: HTMLCanvasElement;
-  }
-
   /**
    * Measures the width of a text string when rendered in a certain font, using a canvas element.
    * The canvas element is created once and then re-used for subsequent measurements for better performance.
@@ -208,7 +107,7 @@ export default function LineUpView() {
    * @returns {number} The measured width of the text.
    */
   function getTextWidthFromCanvas(text: string, font: string): number {
-    const canvasOwner = getTextWidthFromCanvas as CanvasOwner;
+    const canvasOwner = getTextWidthFromCanvas as ICanvasOwner;
 
     if (!canvasOwner.canvas) {
       canvasOwner.canvas = document.createElement('canvas');
@@ -425,6 +324,7 @@ export default function LineUpView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFocusNodes, csvData, filterType, missingEdgeOption]); // add filterType to the dependencies
 
+  console.timeEnd('Rendering LU took');
   return (
     <div className="lineup-window">
       <link href="https://unpkg.com/lineupjsx/build/LineUpJSx.css" rel="stylesheet" />

@@ -1,20 +1,14 @@
-import { selectSubClassOfTuples } from '../Store/CombinedSlice';
-import { RdfState } from '../Store/CombinedState';
-import { OntologyMap } from '../../types';
+import { OntologyMap, ITriple, INumberViolationsPerType } from '../../types';
 
 /**
  * Glue that connects CombinedSlice selectSubClassOrObjectPropertyTuples return value to the Treebeard component
- * @param ontology The ontology data in N3 format
+ * @param subClassOfTriples The cached subClassOf triples
  * @returns The tree data in the format expected by Treebeard
  */
-export async function getTreeDataFromN3Data(ontology) {
+export function getTreeDataFromTuples(subClassOfTriples: ITriple[], numberViolationsPerType: INumberViolationsPerType) {
   const ontologyMap: OntologyMap = {};
 
-  const rdfOntologyState: RdfState = {
-    rdfString: ontology,
-  };
-
-  const quads = await selectSubClassOfTuples({ rdf: rdfOntologyState });
+  const quads = subClassOfTriples;
 
   quads.forEach((triple) => {
     ontologyMap[triple.s] = ontologyMap[triple.s] || { name: triple.s, children: [] };
@@ -23,17 +17,31 @@ export async function getTreeDataFromN3Data(ontology) {
   });
 
   // Find nodes with no parents
-  const roots = Object.values(ontologyMap).filter((node) => {
-    // A node has no parents if no other node has it as a child
-    return Object.values(ontologyMap).every((otherNode) => {
-      return otherNode.children.indexOf(node) === -1;
-    });
+  const childSet = new Set();
+  quads.forEach((triple) => {
+    childSet.add(triple.s);
   });
+
+  const roots = Object.keys(ontologyMap)
+    .filter((node) => !childSet.has(node))
+    .map((node) => {
+      return ontologyMap[node];
+    });
+
+  const traverseTree = (node) => {
+    if (numberViolationsPerType[node.name]) {
+      node.name = `${node.name} (${String(numberViolationsPerType[node.name][1])}/${String(numberViolationsPerType[node.name][0])})`;
+    }
+    if (node.children) {
+      node.children.forEach(traverseTree);
+    }
+  };
+
+  roots.forEach(traverseTree);
 
   if (roots.length > 1) {
     const data = { name: 'root', children: roots };
     return data;
   }
-
   return roots[0];
 }

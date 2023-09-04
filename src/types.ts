@@ -1,3 +1,7 @@
+import { Core, NodeSingular, EventObject } from 'cytoscape';
+
+export type Position = { x: number; y: number };
+
 export interface IOntologyNode {
   name: string;
   children: IOntologyNode[];
@@ -83,6 +87,24 @@ export interface INamespaces {
   [prefix: string]: INamespaceInfo;
 }
 
+export type GetShapeForNamespaceFn = (namespace?: string) => string;
+
+export interface UseShapeHandlerReturnType {
+  getShapeForNamespace: GetShapeForNamespaceFn;
+}
+
+export interface IRootState {
+  combined: ICombinedState;
+}
+
+export interface INumberViolationsPerType {
+  [key: string]: [violations: number, selected: number];
+}
+
+export interface IFocusNodeSampleMap {
+  [key: string]: ICsvData;
+}
+
 export interface ICombinedState {
   samples: ICsvData[];
   originalSamples: ICsvData[];
@@ -100,10 +122,56 @@ export interface ICombinedState {
   exemplarFocusNodeDict: ExemplarFocusNodeDict;
   selectedViolationExemplars: string[];
   namespaces: INamespaces;
+  types: string[];
+  subClassOfTriples: ITriple[];
+  numberViolationsPerType: INumberViolationsPerType;
+  focusNodeSampleMap: IFocusNodeSampleMap;
 }
 
 export interface ITriple {
   s: string;
   p: string;
   o: string;
+}
+
+// Defines the signature of the function that performs an action
+export type ActionFunction = (target: NodeSingular) => void;
+
+export type ActionWithArgs = {
+  action: (target: NodeSingular, ...args: unknown[]) => void; // Updated
+  args: unknown[]; // Replaced any with unknown
+};
+
+// Defines what a menu item looks like
+export type MenuItem = {
+  id: string;
+  content: string;
+  selector: string;
+  onClickFunction: (event: EventObject) => void; // Replaced NodeSingular with EventObject
+};
+
+// Defines what the context menu options look like
+export type ContextMenuOptions = {
+  menuItems: MenuItem[];
+};
+
+// Defines the shape of the 'actions' object passed to getContextMenuOptions
+export type ContextMenuActions = Record<string, ActionFunction | ActionWithArgs>;
+
+export type SetCyFn = React.Dispatch<React.SetStateAction<Core | null>>;
+
+export type SetLoadingFn = React.Dispatch<React.SetStateAction<boolean>>;
+
+export interface IScatterNode {
+  text: string;
+  x: number;
+  y: number;
+}
+
+export interface IScatterPlotProps {
+  data: IScatterNode[];
+}
+
+export interface ICanvasOwner {
+  canvas?: HTMLCanvasElement;
 }

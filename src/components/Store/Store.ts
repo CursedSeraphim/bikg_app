@@ -1,14 +1,14 @@
 // Store.ts
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import combinedReducer from './CombinedSlice';
-import { CombinedState } from './CombinedState';
+import { ICombinedState } from '../../types';
 
 const rootReducer = combineReducers({
   combined: combinedReducer,
 });
 
 export interface RootState {
-  combined: CombinedState;
+  combined: ICombinedState;
 }
 
 const store = configureStore<RootState>({
