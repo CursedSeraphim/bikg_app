@@ -188,54 +188,49 @@ function calculateNewNumberViolationsPerType(samples, existingNumberViolationsPe
   return newNumberViolationsPerType;
 }
 
-/**
- * This function calculates the new selected nodes and violations based on selected types
- * If the action is overwrite, it takes all nodes of those types and all corresponding violations and returns them
- * If the action is append, it takes the currently selectedNodes and selectedViolations, determines the new nodes and violations based on the selected type, and appends them to the existing ones, returning the new arrays
- * If the action is remove, it takes the currently selectedNodes and selectedViolations, determines the new nodes and violations based on the selected type, and removes them from the existing ones, returning the new arrays
- * @param selectedTypes list of types that were just selected (for overwriting, adding, or removing)
- * @param violations list of all violations that exist in the data
- * @param samples list of all samples from the original CSV data which have a property sample.focus_node
- * @param actionType 'overwrite', 'append', or 'remove'
- * @param selectedNodes list of currently selected nodes
- * @param selectedViolations list of currently selected violations
- * @returns {newSelectedNodes, newSelectedViolations} newSelectedNodes is the list of nodes that should be selected after the action, newSelectedViolations is the list of violations that should be selected after the action
- */
+enum ActionTypes {
+  OVERWRITE = 'overwrite',
+  APPEND = 'append',
+  REMOVE = 'remove',
+}
+
+const initializeViolationCount = (violations: string[], initialValue = 0): Record<string, number> => {
+  return violations.reduce((acc, v) => ({ ...acc, [v]: initialValue }), {});
+};
+
+const updateViolationCount = (sample: ICsvData, violationCount: Record<string, number>, actionType: ActionTypes) => {
+  for (const key in violationCount) {
+    if (sample[key]) {
+      const increment = actionType === ActionTypes.REMOVE ? -1 : 1;
+      violationCount[key] += increment;
+    }
+  }
+};
+
+const calculateNewSelectedViolations = (newViolationCount: Record<string, number>): string[] => {
+  return Object.entries(newViolationCount)
+    .filter(([_, value]) => value > 0)
+    .map(([key]) => key);
+};
+
 const calculateSelectedNodesAndViolations = (
   selectedTypes: string[],
   violations: string[],
   samples: ICsvData[],
-  actionType: string,
+  actionType: ActionTypes,
   selectedNodes: string[] = [],
-  selectedViolations: string[] = [],
-) => {
-  const newSelectedNodes = actionType === 'append' ? [...selectedNodes] : [];
-  const newViolationNumberNodesMap = new Map();
-
-  violations.forEach((violation) => {
-    newViolationNumberNodesMap.set(violation, 0);
-  });
-
-  if (actionType === 'append' || actionType === 'remove') {
-    selectedViolations.forEach((violation) => {
-      newViolationNumberNodesMap.set(violation, 0);
-    });
-  }
+): { newSelectedNodes: string[]; newViolationCount: Record<string, number> } => {
+  const newSelectedNodes = actionType === ActionTypes.APPEND ? [...selectedNodes] : [];
+  const newViolationCount = initializeViolationCount(violations);
 
   samples.forEach((sample) => {
     if (selectedTypes.includes(String(sample['rdf:type']))) {
       newSelectedNodes.push(sample.focus_node);
-
-      violations.forEach((violation) => {
-        if (sample && sample[`${violation}`]) {
-          const increment = actionType === 'remove' ? -1 : 1;
-          newViolationNumberNodesMap.set(violation, newViolationNumberNodesMap.get(violation) + increment);
-        }
-      });
+      updateViolationCount(sample, newViolationCount, actionType);
     }
   });
 
-  return { newSelectedNodes, newViolationNumberNodesMap };
+  return { newSelectedNodes, newViolationCount };
 };
 
 function updateFocusNodeSampleMap(state) {
@@ -406,19 +401,15 @@ const combinedSlice = createSlice({
         return;
       }
 
-      const { newSelectedNodes, newViolationNumberNodesMap } = calculateSelectedNodesAndViolations(
+      const { newSelectedNodes, newViolationCount } = calculateSelectedNodesAndViolations(
         state.selectedTypes,
         state.violations,
         state.samples,
-        'overwrite',
+        ActionTypes.OVERWRITE,
       );
 
-      const newSelectedViolations = Array.from(newViolationNumberNodesMap)
-        .filter(([key, value]) => value > 0)
-        .map(([key]) => key);
-
       state.selectedNodes = newSelectedNodes;
-      state.selectedViolations = newSelectedViolations;
+      state.selectedViolations = calculateNewSelectedViolations(newViolationCount);
 
       updateSelectedViolationExemplars(state);
     },
@@ -428,23 +419,20 @@ const combinedSlice = createSlice({
         state.selectedTypes.push(newType);
       }
 
-      const { newSelectedNodes, newViolationNumberNodesMap } = calculateSelectedNodesAndViolations(
-        [newType],
+      const { newSelectedNodes, newViolationCount } = calculateSelectedNodesAndViolations(
+        [newType], // Only adding this new type
         state.violations,
         state.samples,
-        'append',
+        ActionTypes.APPEND, // Append to existing
         state.selectedNodes,
-        state.selectedViolations,
       );
 
-      const newSelectedViolations = Array.from(newViolationNumberNodesMap)
-        .filter(([key, value]) => value > 0)
-        .map(([key]) => key);
-
+      // Remove duplicates by converting to Set and then back to Array
       state.selectedNodes = [...new Set([...state.selectedNodes, ...newSelectedNodes])];
-      state.selectedViolations = [...new Set([...state.selectedViolations, ...newSelectedViolations])];
+      state.selectedViolations = [...new Set([...state.selectedViolations, ...calculateNewSelectedViolations(newViolationCount)])];
 
       updateSelectedViolationExemplars(state);
+
       const newNumberViolationsPerType = calculateNewNumberViolationsPerType(state.samples, state.numberViolationsPerType, state.selectedNodes);
       state.numberViolationsPerType = newNumberViolationsPerType;
     },
@@ -454,47 +442,43 @@ const combinedSlice = createSlice({
       if (index > -1) {
         state.selectedTypes.splice(index, 1);
       }
-      const { newSelectedNodes, newViolationNumberNodesMap } = calculateSelectedNodesAndViolations(
+
+      const { newSelectedNodes, newViolationCount } = calculateSelectedNodesAndViolations(
         [typeToRemove], // Only removing this type
         state.violations,
         state.samples,
-        'remove', // Remove from existing
+        ActionTypes.REMOVE, // Remove from existing
         state.selectedNodes,
-        state.selectedViolations,
       );
-      // filter out the nodes that are in newSelectedNodes from the current selectedNodes
+
       const nodesToRemove = new Set(newSelectedNodes);
       state.selectedNodes = state.selectedNodes.filter((node) => !nodesToRemove.has(node));
 
-      const currentSelectedViolationsMap = new Map();
-      state.violations.forEach((violation) => {
-        currentSelectedViolationsMap.set(violation, 0);
-      });
+      const currentSelectedViolationsCount = initializeViolationCount(state.violations);
+
       state.selectedNodes.forEach((node) => {
         const correspondingSample = state.focusNodeSampleMap[node];
         if (correspondingSample) {
-          state.violations.forEach((v) => {
-            if (correspondingSample[v]) {
-              currentSelectedViolationsMap.set(v, currentSelectedViolationsMap.get(v) + 1);
-            }
-          });
+          updateViolationCount(correspondingSample, currentSelectedViolationsCount, ActionTypes.APPEND);
         }
       });
 
       const newSelectedViolations = [];
 
-      newViolationNumberNodesMap.forEach((value, key) => {
-        if (currentSelectedViolationsMap.has(key)) {
-          currentSelectedViolationsMap.set(key, currentSelectedViolationsMap.get(key) + value);
+      for (const [key, value] of Object.entries(newViolationCount)) {
+        if (currentSelectedViolationsCount.hasOwnProperty(key)) {
+          currentSelectedViolationsCount[key] += value;
         }
-        if (currentSelectedViolationsMap.get(key) > 0) {
+        if (currentSelectedViolationsCount[key] > 0) {
           newSelectedViolations.push(key);
         }
-      });
+      }
 
       state.selectedViolations = newSelectedViolations;
 
+      // Your existing functions like updateSelectedViolationExemplars
       updateSelectedViolationExemplars(state);
+
       const newNumberViolationsPerType = calculateNewNumberViolationsPerType(state.samples, state.numberViolationsPerType, state.selectedNodes);
       state.numberViolationsPerType = newNumberViolationsPerType;
     },
