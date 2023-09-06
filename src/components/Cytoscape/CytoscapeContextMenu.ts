@@ -2,8 +2,7 @@ import { NodeSingular } from 'cytoscape';
 import { MenuItem, ContextMenuOptions, ContextMenuActions } from '../../types';
 
 export function getContextMenuOptions(actions: ContextMenuActions): ContextMenuOptions {
-  console.log('getContextMenuOptions', actions);
-  const dynamicMenuItems: MenuItem[] = Object.keys(actions).map((actionKey) => {
+  let dynamicMenuItems: MenuItem[] = Object.keys(actions).map((actionKey) => {
     const actionOrObject = actions[actionKey];
 
     let action: (target: NodeSingular, ...args: unknown[]) => void;
@@ -30,6 +29,9 @@ export function getContextMenuOptions(actions: ContextMenuActions): ContextMenuO
     };
     return menuItem;
   });
+
+  // Sort menu items by 'content' property alphabetically
+  dynamicMenuItems = dynamicMenuItems.sort((a, b) => a.content.localeCompare(b.content));
 
   return {
     menuItems: dynamicMenuItems,
