@@ -13,7 +13,6 @@ interface CytoscapeDataProps {
   cy: Core;
   setCy: React.Dispatch<SetCyFn>;
   onLoaded: () => void;
-  contextMenuActions: ContextMenuActions;
   initialNodeData: React.MutableRefObject<Map<string, { x: number; y: number; visible: boolean }>>;
   setLoading: React.Dispatch<boolean>;
 }
@@ -26,7 +25,6 @@ export function useCytoscapeData({
   cy,
   setCy,
   onLoaded,
-  contextMenuActions,
   initialNodeData,
   setLoading,
 }: CytoscapeDataProps) {
@@ -34,12 +32,12 @@ export function useCytoscapeData({
     selectCytoData(rdfOntology, getShapeForNamespace, violations, types)
       .then((data) => {
         cy
-          ? updateCytoscapeInstance(cy, data, initialNodeData, onLoaded, setLoading, contextMenuActions)
-          : createNewCytoscapeInstance(data, setCy, onLoaded, setLoading, getShapeForNamespace, contextMenuActions);
+          ? updateCytoscapeInstance(cy, data, initialNodeData, onLoaded, setLoading)
+          : createNewCytoscapeInstance(data, setCy, onLoaded, setLoading, getShapeForNamespace);
       })
       .catch((error) => {
         console.error('Failed to generate Cytoscape data:', error);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rdfOntology, getShapeForNamespace, violations, types, cy, setCy, onLoaded, contextMenuActions, setLoading]);
+  }, [rdfOntology, getShapeForNamespace, violations, types, cy, setCy, onLoaded, setLoading]);
 }

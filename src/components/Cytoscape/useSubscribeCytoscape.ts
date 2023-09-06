@@ -5,6 +5,7 @@ import { useStore } from 'react-redux';
 import { IRootState } from '../../types';
 import { getSuccessors } from '../../CytoscapeNodeFactory';
 import { adjustLayout, getFilteredNodes, resetNodes, showCytoElements } from './TreeLayoutHelpers';
+import { showAllEdges } from './useCytoscapeViewHelpers';
 
 const extractSelectedData = (state) => {
   return {
@@ -18,33 +19,27 @@ const clearSelectedNodes = (cyInstance: Core) => {
   cyInstance.$(':selected').unselect();
 };
 
+export const resetCyto = (cy: Core, initialNodeData) => {
+  clearSelectedNodes(cy);
+  showAllEdges(cy);
+  resetNodes(cy, initialNodeData);
+};
+
 // Custom Hook
-export const useSubscribeCytoscape = (cy: Core | null, initialNodeData, showAllPermanentEdges) => {
+export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
   const store = useStore<IRootState>();
 
   useEffect(() => {
     // Subscribe to changes
     const unsubscribe = store.subscribe(() => {
-      console.log('cyto/ subscription triggered');
       // console.time('cyto useeffect');
       const state = store.getState();
       const violationsTypesMap = state.combined.violationTypesMap;
       const { selectedTypes, selectedViolationExemplars, selectedViolations } = extractSelectedData(state);
-      console.log('cyto/ state', state);
 
       if (cy && initialNodeData.current && initialNodeData.current.size > 0) {
-        // console.log('');
-        // console.time('clear');
-        clearSelectedNodes(cy);
-        // console.timeEnd('clear');
-        // console.time('show');
-        showAllPermanentEdges();
-        // console.timeEnd('show');
-        // console.time('reset');
-        resetNodes(cy, initialNodeData.current);
-        // console.timeEnd('reset');
+        resetCyto(cy, initialNodeData.current);
 
-        // console.time('getfilter');
         const { violationNodes, typeNodes, otherNodes, exemplarNodes } = getFilteredNodes(
           cy,
           selectedViolations,
@@ -52,18 +47,10 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData, showAllP
           selectedTypes,
           selectedViolationExemplars,
         );
-        // console.timeEnd('getfilter');
-        // console.time('style&display');
         showCytoElements(violationNodes.union(otherNodes).union(typeNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets()));
-        // console.timeEnd('style&display');
-        // console.time('adjst');
         adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes);
-        // console.timeEnd('adjst');
 
-        // TODO check why this triggers a selection of typeNodes with an empty array afterwards
-        // console.time('unionsel');
         violationNodes.union(typeNodes).union(otherNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes)).select();
-        // console.timeEnd('unionsel');
       }
     });
 

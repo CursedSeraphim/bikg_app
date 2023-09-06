@@ -3,6 +3,12 @@ import { Core, NodeSingular, NodeCollection } from 'cytoscape';
 import { NODE_LAYOUT_OFFSET_X, DISTANCE_BETWEEN_NODES_Y } from '../../constants';
 import { Position } from '../../types';
 
+export const showAllEdges = (cy: Core) => {
+  const edges = cy.edges();
+  edges.removeClass('hidden').addClass('visible');
+  edges.data('visible', true);
+};
+
 export const useCytoViewHelpers = (cy: Core | null) => {
   if (!cy) return {};
 
@@ -43,15 +49,8 @@ export const useCytoViewHelpers = (cy: Core | null) => {
     if (anyParentHidden) alignNodes(parents, node, false);
   };
 
-  const showAllEdges = () => {
-    const edges = cy.edges();
-    edges.removeClass('hidden').addClass('visible');
-    edges.data('visible', true);
-  };
-
   return {
     toggleChildren,
     toggleParents,
-    showAllPermanentEdges: showAllEdges,
   };
 };

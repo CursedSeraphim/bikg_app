@@ -11,29 +11,17 @@ import { setSelectedTypes, setSelectedViolations, setSelectedViolationExemplars,
 import { useShapeHandler } from '../components/namespaceHandler';
 import { useCytoViewHelpers } from './useCytoscapeViewHelpers';
 import { useRegisterCytoscapeEventListeners } from './CytoscapeEventHandlers'; // Import the new hook
-import { useSubscribeCytoscape } from './useSubscribeCytoscape';
+import { resetCyto, useSubscribeCytoscape } from './useSubscribeCytoscape';
 import { useCytoscapeData } from './useCytoscapeData';
+import { useCytoscapeContextMenu } from './olduseCytoscapeContextMenu';
+import { getContextMenuOptions } from './CytoscapeContextMenu';
 
 cytoscape.use(viewUtilities);
 cytoscape.use(coseBilkent);
 cytoscape.use(cytoscapeLasso);
 cytoscape.use(contextMenus);
 
-const selectConnectedViolations = (node: NodeSingular, dispatch): void => {
-  if (node.data('violation')) {
-    dispatch(setSelectedViolations([node.id()]));
-  }
-  if (node.data('exemplar')) {
-    dispatch(setSelectedViolationExemplars([node.id()]));
-  }
-  if (node.data('type')) {
-    dispatch(setSelectedTypes([node.id()]));
-  }
-};
-
 function CytoscapeView({ rdfOntology, onLoaded }) {
-  console.time('Rendering CytoscapeView took');
-
   const dispatch = useDispatch();
 
   const [cy, setCy] = useState<Core | null>(null);
@@ -43,17 +31,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
   const initialNodeData = useRef<Map<string, { x: number; y: number; visible: boolean }>>(new Map());
-  const { toggleChildren, toggleParents, showAllPermanentEdges } = useCytoViewHelpers(cy);
-
-  const contextMenuActions = useMemo(
-    () => ({
-      'toggle-children': { action: toggleChildren, args: [] },
-      'toggle-parents': { action: toggleParents, args: [] },
-      'select-connected-violations': { action: selectConnectedViolations, args: [dispatch] },
-    }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [toggleChildren, toggleParents],
-  );
+  const { toggleChildren, toggleParents } = useCytoViewHelpers(cy);
 
   useCytoscapeData({
     rdfOntology,
@@ -63,14 +41,12 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     cy,
     setCy,
     onLoaded,
-    contextMenuActions,
     initialNodeData,
     setLoading,
   });
   useRegisterCytoscapeEventListeners(cy, toggleChildren);
-  useSubscribeCytoscape(cy, initialNodeData, showAllPermanentEdges);
+  useSubscribeCytoscape(cy, initialNodeData);
 
-  console.timeEnd('Rendering CytoscapeView took');
   return <div id="cy" />;
 }
 

@@ -16,8 +16,6 @@ const columnTypes = {};
  * @returns {React.Element} A rendered LineUp view component.
  */
 export default function LineUpView() {
-  console.time('Rendering LU took');
-
   const dispatch = useDispatch();
   const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
   const reduxCsvData = useSelector(selectCsvData);
@@ -324,7 +322,6 @@ export default function LineUpView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFocusNodes, csvData, filterType, missingEdgeOption]); // add filterType to the dependencies
 
-  console.timeEnd('Rendering LU took');
   return (
     <div className="lineup-window">
       <link href="https://unpkg.com/lineupjsx/build/LineUpJSx.css" rel="stylesheet" />

@@ -140,6 +140,7 @@ export type ActionFunction = (target: NodeSingular) => void;
 export type ActionWithArgs = {
   action: (target: NodeSingular, ...args: unknown[]) => void; // Updated
   args: unknown[]; // Replaced any with unknown
+  coreAsWell: boolean;
 };
 
 // Defines what a menu item looks like

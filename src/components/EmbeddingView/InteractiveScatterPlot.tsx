@@ -14,8 +14,6 @@ const Plot = createPlotlyComponent(Plotly);
 
 // TODO replace plotly with a faster library that can handle the updates
 function InteractiveScatterPlot({ data }: IScatterPlotProps) {
-  console.time('Rendering scatter plot took');
-
   const dispatch = useDispatch();
   const selectedFocusNodesRef = useRef<string[]>([]);
   const plotData = getPlotData(selectedFocusNodesRef.current, data);
@@ -45,7 +43,6 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
     return <BarLoader color={SPINNER_COLOR} loading />;
   }
 
-  console.timeEnd('Rendering scatter plot took');
   return (
     <div className="scatter-plot-container">
       <Plot

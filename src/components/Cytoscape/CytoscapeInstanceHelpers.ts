@@ -12,7 +12,6 @@ export function createNewCytoscapeInstance(
   onLoaded: () => void,
   setLoading: SetLoadingFn,
   getShapeForNamespace: GetShapeForNamespaceFn,
-  contextMenuActions: ContextMenuActions,
 ): void {
   const newCy = cytoscape({
     container: document.getElementById('cy'),
@@ -28,7 +27,6 @@ export function createNewCytoscapeInstance(
     setLoading(false);
     newCy.fit();
   });
-  newCy.contextMenus(getContextMenuOptions(contextMenuActions));
 }
 
 export function updateCytoscapeInstance(
@@ -37,7 +35,6 @@ export function updateCytoscapeInstance(
   initialNodeData: React.MutableRefObject<Map<string, { x: number; y: number; visible: boolean }>>,
   onLoaded: () => void,
   setLoading: SetLoadingFn,
-  contextMenuActions: ContextMenuActions,
 ): void {
   cy.elements().remove();
   cy.add(data);
@@ -52,5 +49,4 @@ export function updateCytoscapeInstance(
       initialNodeData.current.set(node.data('id'), { x: pos.x, y: pos.y, visible: node.data('visible') });
     });
   });
-  cy.contextMenus(getContextMenuOptions(contextMenuActions));
 }
