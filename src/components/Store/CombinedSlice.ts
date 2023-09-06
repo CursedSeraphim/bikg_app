@@ -393,8 +393,48 @@ const combinedSlice = createSlice({
     },
 
     setSelectedViolations: (state, action) => {
+      console.time('setSelectedViolations');
+
       console.log('setSelectedViolations');
       state.selectedViolations = action.payload;
+      // new selected focus nodes = []
+      const newSelectedNodes = [];
+      // new selected types = []
+      const newSelectedTypes = [];
+      // iterate samples (faster if we had a violationFocusNodeMap prepared)
+      state.samples.forEach((sample) => {
+        // iterate selected violations
+        state.selectedViolations.forEach((violation) => {
+          // if sample has violation
+          if ((sample[violation] as number) > 0) {
+            // add focus_node to new selected focus nodes
+            newSelectedNodes.push(sample.focus_node);
+            // add type to new selected types
+            newSelectedTypes.push(sample['rdf:type']);
+          }
+        });
+      });
+      // use focus nodes and focusNodeExemplarDict to update selected violation exemplars
+      // new selected violation exemplars = []
+      const newSelectedViolationExemplars = [];
+      // iterate selected focus nodes
+      newSelectedNodes.forEach((node) => {
+        // get corresponding exemplars from focusNodeExemplarDict
+        const correspondingExemplars = state.focusNodeExemplarDict[node];
+        // add exemplars to new selected exemplars
+        newSelectedViolationExemplars.push(...correspondingExemplars);
+      });
+
+      // update state for selected exemplars
+      state.selectedViolationExemplars = newSelectedViolationExemplars;
+      // update state for selected types
+      state.selectedTypes = newSelectedTypes;
+      // update state for selected nodes
+      state.selectedNodes = newSelectedNodes;
+
+      const newNumberViolationsPerType = calculateNewNumberViolationsPerType(state.samples, state.numberViolationsPerType, state.selectedNodes);
+      state.numberViolationsPerType = newNumberViolationsPerType;
+      console.timeEnd('setSelectedViolations');
     },
     setSelectedTypes: (state, action) => {
       state.selectedTypes = action.payload;
@@ -430,6 +470,7 @@ const combinedSlice = createSlice({
         state.violations,
         state.samples,
         ActionTypes.APPEND, // Append to existing
+
         state.selectedNodes,
       );
 
