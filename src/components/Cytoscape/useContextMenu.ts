@@ -28,7 +28,7 @@ const useCytoscapeContextMenu = (cy: Core, viewHelpers: ActionFunctionMap, subsc
         'Toggle children': { action: viewHelpers.toggleChildren, args: [], coreAsWell: false },
         'Toggle parents': { action: viewHelpers.toggleParents, args: [], coreAsWell: false },
         'Select connected violations': { action: selectConnectedViolations, args: [dispatch], coreAsWell: false },
-        'Reset View': { action: subscribeCytoscape.resetCyto, args: [], coreAsWell: true },
+        'Reset View': { action: subscribeCytoscape.resetCytoAndDispatch, args: [], coreAsWell: true },
       };
 
       // Updating the context menu with new actions

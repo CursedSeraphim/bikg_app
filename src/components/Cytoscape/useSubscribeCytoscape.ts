@@ -6,6 +6,7 @@ import { IRootState } from '../../types';
 import { getSuccessors } from '../../CytoscapeNodeFactory';
 import { adjustLayout, getFilteredNodes, resetNodes, showCytoElements } from './TreeLayoutHelpers';
 import { showAllEdges } from './useCytoscapeViewHelpers';
+import { setSelectedTypes } from '../Store/CombinedSlice';
 
 const extractSelectedData = (state) => {
   return {
@@ -21,11 +22,18 @@ const clearSelectedNodes = (cy: Core) => {
 
 export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
   const store = useStore<IRootState>();
+  const { dispatch } = store;
 
   const resetCyto = () => {
     clearSelectedNodes(cy);
     showAllEdges(cy);
     resetNodes(cy, initialNodeData.current);
+  };
+
+  // TODO add const resetCytoAndDispatch which calls resetCyto but also dispatches the selection of an empty types array
+  const resetCytoAndDispatch = () => {
+    dispatch(setSelectedTypes([]));
+    resetCyto();
   };
 
   useEffect(() => {
@@ -61,6 +69,6 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
   }, [cy, initialNodeData]);
 
   return {
-    resetCyto,
+    resetCytoAndDispatch,
   };
 };
