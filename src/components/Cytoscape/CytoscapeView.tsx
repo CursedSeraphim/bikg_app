@@ -42,8 +42,8 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     setLoading,
   });
   useRegisterCytoscapeEventListeners(cy, viewHelpers);
-  const { resetCyto } = useSubscribeCytoscape(cy, initialNodeData);
-  useCytoscapeContextMenu(cy, viewHelpers, resetCyto);
+  const subScribeCytoscape = useSubscribeCytoscape(cy, initialNodeData);
+  useCytoscapeContextMenu(cy, viewHelpers, subScribeCytoscape);
 
   return <div id="cy" />;
 }
