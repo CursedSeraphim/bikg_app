@@ -42,6 +42,14 @@ export const useCytoViewHelpers = (cy: Core | null) => {
     if (anyChildHidden) alignNodes(children, node, true);
   };
 
+  const hideNode = (node: NodeSingular): void => {
+    if (!node.data('permanent')) {
+      node.data('visible', false);
+      node.removeClass('visible');
+      node.addClass('hidden');
+    }
+  };
+
   const toggleParents = (node: NodeSingular): void => {
     const parents = node.incomers().sources();
     const anyParentHidden = parents.some((parent) => parent.hidden());
@@ -52,5 +60,6 @@ export const useCytoViewHelpers = (cy: Core | null) => {
   return {
     toggleChildren,
     toggleParents,
+    hideNode,
   };
 };

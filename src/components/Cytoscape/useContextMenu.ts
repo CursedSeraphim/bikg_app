@@ -24,6 +24,7 @@ const useCytoscapeContextMenu = (cy: Core, viewHelpers: ActionFunctionMap, subsc
 
     if (cy) {
       updatedContextMenuActions = {
+        'Hide node': { action: viewHelpers.hideNode, args: [], coreAsWell: false },
         'Toggle children': { action: viewHelpers.toggleChildren, args: [], coreAsWell: false },
         'Toggle parents': { action: viewHelpers.toggleParents, args: [], coreAsWell: false },
         'Select connected violations': { action: selectConnectedViolations, args: [dispatch], coreAsWell: false },
