@@ -13,6 +13,7 @@ import { useCytoViewHelpers } from './useCytoscapeViewHelpers';
 import { useRegisterCytoscapeEventListeners } from './CytoscapeEventHandlers'; // Import the new hook
 import { useSubscribeCytoscape } from './useSubscribeCytoscape';
 import { useCytoscapeData } from './useCytoscapeData';
+import useCytoscapeContextMenu from './useContextMenu';
 
 cytoscape.use(viewUtilities);
 cytoscape.use(coseBilkent);
@@ -41,8 +42,8 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     setLoading,
   });
   useRegisterCytoscapeEventListeners(cy, viewHelpers);
-  useSubscribeCytoscape(cy, initialNodeData);
-  // TODO add context menu hook
+  const { resetCyto } = useSubscribeCytoscape(cy, initialNodeData);
+  useCytoscapeContextMenu(cy, viewHelpers, resetCyto);
 
   return <div id="cy" />;
 }

@@ -19,7 +19,6 @@ const clearSelectedNodes = (cy: Core) => {
   cy.$(':selected').unselect();
 };
 
-// Custom Hook
 export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
   const store = useStore<IRootState>();
 
@@ -60,4 +59,8 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cy, initialNodeData]);
+
+  return {
+    resetCyto,
+  };
 };
