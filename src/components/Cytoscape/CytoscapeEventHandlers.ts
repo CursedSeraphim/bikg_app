@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { Core } from 'cytoscape';
 import { useDispatch } from 'react-redux';
-import { ActionFunction } from '../../types';
+import { ActionFunctionMap } from '../../types';
 
-export function useRegisterCytoscapeEventListeners(cy: Core | null, toggleChildren: ActionFunction) {
+export function useRegisterCytoscapeEventListeners(cy: Core | null, viewHelpers: ActionFunctionMap) {
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -13,7 +13,7 @@ export function useRegisterCytoscapeEventListeners(cy: Core | null, toggleChildr
 
     const handleDblClick = (evt) => {
       const node = evt.target;
-      toggleChildren(node);
+      viewHelpers.toggleChildren(node);
     };
 
     const handleMouseover = (event) => {
@@ -74,5 +74,5 @@ export function useRegisterCytoscapeEventListeners(cy: Core | null, toggleChildr
       cy.off('mouseout', 'node', handleMouseout);
       cy.off('dblclick', 'edge', handleDblClickEdge);
     };
-  }, [cy, toggleChildren, dispatch]);
+  }, [cy, viewHelpers, dispatch]);
 }

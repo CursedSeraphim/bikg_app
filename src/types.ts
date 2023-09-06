@@ -133,31 +133,34 @@ export interface ITriple {
   p: string;
   o: string;
 }
-
 // Defines the signature of the function that performs an action
-export type ActionFunction = (target: NodeSingular) => void;
+export type ActionFunction<T = any> = (target: T) => void;
 
-export type ActionWithArgs = {
-  action: (target: NodeSingular, ...args: unknown[]) => void; // Updated
-  args: unknown[]; // Replaced any with unknown
+export type ActionWithArgs<T = any> = {
+  action: (target: T, ...args: unknown[]) => void;
+  args: unknown[];
   coreAsWell: boolean;
 };
 
+export type ActionFunctionMap<T = any> = {
+  [key: string]: ActionFunction<T>;
+};
+
 // Defines what a menu item looks like
-export type MenuItem = {
+export type MenuItem<T = any> = {
   id: string;
   content: string;
   selector: string;
-  onClickFunction: (event: EventObject) => void; // Replaced NodeSingular with EventObject
+  onClickFunction: (event: EventObject<T>) => void;
 };
 
 // Defines what the context menu options look like
-export type ContextMenuOptions = {
-  menuItems: MenuItem[];
+export type ContextMenuOptions<T = any> = {
+  menuItems: MenuItem<T>[];
 };
 
 // Defines the shape of the 'actions' object passed to getContextMenuOptions
-export type ContextMenuActions = Record<string, ActionFunction | ActionWithArgs>;
+export type ContextMenuActions<T = any> = Record<string, ActionFunction<T> | ActionWithArgs<T>>;
 
 export type SetCyFn = React.Dispatch<React.SetStateAction<Core | null>>;
 

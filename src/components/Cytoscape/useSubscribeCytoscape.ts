@@ -15,19 +15,19 @@ const extractSelectedData = (state) => {
   };
 };
 
-const clearSelectedNodes = (cyInstance: Core) => {
-  cyInstance.$(':selected').unselect();
-};
-
-export const resetCyto = (cy: Core, initialNodeData) => {
-  clearSelectedNodes(cy);
-  showAllEdges(cy);
-  resetNodes(cy, initialNodeData);
+const clearSelectedNodes = (cy: Core) => {
+  cy.$(':selected').unselect();
 };
 
 // Custom Hook
 export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
   const store = useStore<IRootState>();
+
+  const resetCyto = () => {
+    clearSelectedNodes(cy);
+    showAllEdges(cy);
+    resetNodes(cy, initialNodeData.current);
+  };
 
   useEffect(() => {
     // Subscribe to changes
@@ -38,7 +38,7 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
       const { selectedTypes, selectedViolationExemplars, selectedViolations } = extractSelectedData(state);
 
       if (cy && initialNodeData.current && initialNodeData.current.size > 0) {
-        resetCyto(cy, initialNodeData.current);
+        resetCyto();
 
         const { violationNodes, typeNodes, otherNodes, exemplarNodes } = getFilteredNodes(
           cy,

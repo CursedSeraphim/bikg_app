@@ -3,7 +3,7 @@ import { Core } from 'cytoscape';
 import React, { useEffect } from 'react';
 import { selectCytoData } from '../Store/CombinedSlice';
 import { createNewCytoscapeInstance, updateCytoscapeInstance } from './CytoscapeInstanceHelpers';
-import { ContextMenuActions, GetShapeForNamespaceFn, SetCyFn } from '../../types';
+import { GetShapeForNamespaceFn, SetCyFn } from '../../types';
 
 interface CytoscapeDataProps {
   rdfOntology: string;
