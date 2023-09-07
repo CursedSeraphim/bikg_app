@@ -1,5 +1,6 @@
 // Store.ts
-import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import { configureStore, combineReducers, Action } from '@reduxjs/toolkit';
+import { ThunkAction } from 'redux-thunk';
 import combinedReducer from './CombinedSlice';
 import { ICombinedState } from '../../types';
 
@@ -14,5 +15,9 @@ export interface RootState {
 const store = configureStore<RootState>({
   reducer: rootReducer,
 });
+
+export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, RootState, unknown, Action<string>>;
+
+export type AppDispatch = typeof store.dispatch;
 
 export default store;

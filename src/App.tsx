@@ -2,17 +2,15 @@
 import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { BarLoader } from 'react-spinners';
+import { AppDispatch } from './components/Store/Store';
 import BottomTabs from './components/BottomTabs';
 import {
   setRdfString,
   selectRdfData,
-  setCsvData,
-  setViolations,
   setViolationTypesMap,
   setTypesViolationMap,
   setEdgeCountDict,
   setFocusNodeExemplarDict,
-  setExemplarFocusNodeDict,
   setNamespaces,
   setTypes,
   setSubClassOfTriples,
@@ -23,20 +21,18 @@ import CytoscapeView from './components/Cytoscape/CytoscapeView';
 import './styles.css';
 import {
   fetchOntology,
-  fetchCSVFile,
-  fetchViolationList,
   fetchViolationPathNodesDict,
   fetchEdgeCountDict,
   fetchFocusNodeExemplarDict,
-  fetchExemplarFocusNodeDict,
   fetchNamespaces,
   fetchClasses,
   fetchSubClassOfTriples,
 } from './api';
 import { SPINNER_COLOR } from './constants';
+import { fetchAndInitializeData } from './components/Store/thunks';
 
 export function App() {
-  const dispatch = useDispatch();
+  const dispatch: AppDispatch = useDispatch();
   const rdfOntology = useSelector(selectRdfData);
   const [cytoscapeLoading, setCytoscapeLoading] = React.useState(true);
 
@@ -95,28 +91,6 @@ export function App() {
       });
   }, [dispatch]);
 
-  // Fetch edge count dictionary and print
-  React.useEffect(() => {
-    fetchExemplarFocusNodeDict()
-      .then((data) => {
-        dispatch(setExemplarFocusNodeDict(data));
-      })
-      .catch((error) => {
-        console.error('Failed to fetch exemplar focus node dictionary', error);
-      });
-  }, [dispatch]);
-
-  // Fetch violation list
-  React.useEffect(() => {
-    fetchViolationList()
-      .then((data) => {
-        dispatch(setViolations(data));
-      })
-      .catch((error) => {
-        console.error('Failed to fetch RDF file', error);
-      });
-  }, [dispatch]);
-
   // Fetch ontology
   React.useEffect(() => {
     fetchOntology()
@@ -139,16 +113,8 @@ export function App() {
       });
   }, [dispatch]);
 
-  // Fetch study data
   React.useEffect(() => {
-    fetchCSVFile()
-      .then((data) => {
-        const parsedData = JSON.parse(data);
-        dispatch(setCsvData(parsedData.data));
-      })
-      .catch((error) => {
-        console.error('Failed to fetch RDF file', error);
-      });
+    dispatch(fetchAndInitializeData());
   }, [dispatch]);
 
   return (

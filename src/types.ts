@@ -11,6 +11,16 @@ export type OntologyMap = { [key: string]: IOntologyNode };
 
 export type CsvCell = string | number | undefined;
 
+export interface IViolationInfo {
+  focusNodes: string[];
+  types: string[];
+  exemplars: string[];
+}
+
+export interface IViolationMap {
+  [key: string]: IViolationInfo;
+}
+
 export interface ICsvData {
   Id: string;
   x?: number;
@@ -126,6 +136,7 @@ export interface ICombinedState {
   subClassOfTriples: ITriple[];
   numberViolationsPerType: INumberViolationsPerType;
   focusNodeSampleMap: IFocusNodeSampleMap;
+  violationMap: IViolationMap;
 }
 
 export interface ITriple {
