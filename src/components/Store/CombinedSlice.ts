@@ -620,29 +620,31 @@ const combinedSlice = createSlice({
       console.timeEnd('setSelectedViolations');
     },
     setSelectedTypes: (state, action) => {
+      console.log('selectedTypes', action.payload);
+      console.time('setSelectedTypes');
       state.selectedTypes = action.payload;
-
       setNumberViolationsPerTypeGivenType(state);
 
-      if (state.selectedTypes.length === 0) {
-        state.selectedNodes = [];
-        state.selectedViolations = [];
-        return;
-      }
+      let newSelectedNodes = [];
+      let newSelectedViolations = [];
+      let newSelectedViolationExemplars = [];
 
-      const { newSelectedNodes, newViolationCount } = calculateSelectedNodesAndViolations(
-        state.selectedTypes,
-        state.violations,
-        state.samples,
-        ActionTypes.OVERWRITE,
-      );
+      state.selectedTypes.forEach((type) => {
+        newSelectedNodes = [...newSelectedNodes, ...state.typeMap[type].nodes];
+        newSelectedViolations = [...newSelectedViolations, ...state.typeMap[type].violations];
+        newSelectedViolationExemplars = [...newSelectedViolationExemplars, ...state.typeMap[type].exemplars];
+      });
+
+      // Remove duplicates by converting to a Set and then back to an array
+      newSelectedNodes = [...new Set(newSelectedNodes)];
+      newSelectedViolations = [...new Set(newSelectedViolations)];
+      newSelectedViolationExemplars = [...new Set(newSelectedViolationExemplars)];
 
       state.selectedNodes = newSelectedNodes;
-      state.selectedViolations = calculateNewSelectedViolations(newViolationCount);
+      state.selectedViolations = newSelectedViolations;
+      state.selectedViolationExemplars = newSelectedViolationExemplars;
 
-      console.log('selected nodes', state.selectedNodes);
-
-      updateSelectedViolationExemplars(state);
+      console.timeEnd('setSelectedTypes');
     },
     addSingleSelectedType: (state, action) => {
       const newType = action.payload;
