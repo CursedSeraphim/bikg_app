@@ -47,16 +47,16 @@ export function App() {
       });
   }, [dispatch]);
 
-  // Fetch classes and print
-  React.useEffect(() => {
-    fetchClasses()
-      .then((data) => {
-        dispatch(setTypes(data));
-      })
-      .catch((error) => {
-        console.error('Failed to fetch classes', error);
-      });
-  }, [dispatch]);
+  // // Fetch classes and print
+  // React.useEffect(() => {
+  //   fetchClasses()
+  //     .then((data) => {
+  //       dispatch(setTypes(data));
+  //     })
+  //     .catch((error) => {
+  //       console.error('Failed to fetch classes', error);
+  //     });
+  // }, [dispatch]);
 
   // Fetch prefix->namespace dictionary and print
   React.useEffect(() => {
@@ -80,16 +80,16 @@ export function App() {
       });
   }, [dispatch]);
 
-  // Fetch edge count dictionary and print
-  React.useEffect(() => {
-    fetchFocusNodeExemplarDict()
-      .then((data) => {
-        dispatch(setFocusNodeExemplarDict(data));
-      })
-      .catch((error) => {
-        console.error('Failed to fetch focus node exemplar dictionary', error);
-      });
-  }, [dispatch]);
+  // // Fetch edge count dictionary and print
+  // React.useEffect(() => {
+  //   fetchFocusNodeExemplarDict()
+  //     .then((data) => {
+  //       dispatch(setFocusNodeExemplarDict(data));
+  //     })
+  //     .catch((error) => {
+  //       console.error('Failed to fetch focus node exemplar dictionary', error);
+  //     });
+  // }, [dispatch]);
 
   // Fetch ontology
   React.useEffect(() => {

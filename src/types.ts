@@ -11,14 +11,14 @@ export type OntologyMap = { [key: string]: IOntologyNode };
 
 export type CsvCell = string | number | undefined;
 
-export interface IViolationInfo {
-  focusNodes: string[];
+export interface IViolationValue {
+  nodes: string[];
   types: string[];
   exemplars: string[];
 }
 
 export interface IViolationMap {
-  [key: string]: IViolationInfo;
+  [key: string]: IViolationValue;
 }
 
 export interface ICsvData {
@@ -115,6 +115,37 @@ export interface IFocusNodeSampleMap {
   [key: string]: ICsvData;
 }
 
+// Define the new maps' value types first
+export interface IFocusNodeValue {
+  types: string[];
+  violations: string[];
+  exemplars: string[];
+}
+
+export interface ITypeValue {
+  nodes: string[];
+  violations: string[];
+  exemplars: string[];
+}
+
+export interface IExemplarValue {
+  nodes: string[];
+  types: string[];
+  violations: string[];
+}
+
+export interface IFocusNodeMap {
+  [key: string]: IFocusNodeValue;
+}
+
+export interface ITypeMap {
+  [key: string]: ITypeValue;
+}
+
+export interface IExemplarMap {
+  [key: string]: IExemplarValue;
+}
+
 export interface ICombinedState {
   samples: ICsvData[];
   originalSamples: ICsvData[];
@@ -137,6 +168,9 @@ export interface ICombinedState {
   numberViolationsPerType: INumberViolationsPerType;
   focusNodeSampleMap: IFocusNodeSampleMap;
   violationMap: IViolationMap;
+  focusNodeMap: IFocusNodeMap;
+  typeMap: ITypeMap;
+  exemplarMap: IExemplarMap;
 }
 
 export interface ITriple {

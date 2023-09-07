@@ -1,20 +1,53 @@
 // thunks.ts
 
 import { Dispatch } from 'redux';
-import { fetchCSVFile, fetchExemplarFocusNodeDict, fetchViolationList } from '../../api';
-import { createViolationMap, setCsvData, setExemplarFocusNodeDict, setViolationMap, setViolations } from './CombinedSlice';
+import { fetchCSVFile, fetchClasses, fetchExemplarFocusNodeDict, fetchFocusNodeExemplarDict, fetchViolationList } from '../../api';
+import {
+  createMaps,
+  setCsvData,
+  setExemplarFocusNodeDict,
+  setExemplarMap,
+  setFocusNodeExemplarDict,
+  setFocusNodeMap,
+  setTypeMap,
+  setTypes,
+  setViolationMap,
+  setViolations,
+} from './CombinedSlice';
 import { RootState } from './Store';
 
 // In your actions.js or equivalent file
 export const fetchAndInitializeData = () => async (dispatch: Dispatch, getState: () => RootState) => {
-  const [csvData, violationList, exemplarFocusNodeDict] = await Promise.all([fetchCSVFile(), fetchViolationList(), fetchExemplarFocusNodeDict()]);
+  const [csvData, violationList, types, focusNodeExemplarDict, exemplarFocusNodeDict] = await Promise.all([
+    fetchCSVFile(),
+    fetchViolationList(),
+    fetchClasses(),
+    fetchFocusNodeExemplarDict(),
+    fetchExemplarFocusNodeDict(),
+  ]);
 
   dispatch(setCsvData(JSON.parse(csvData).data));
   dispatch(setViolations(violationList));
+  dispatch(setTypes(types));
+  dispatch(setFocusNodeExemplarDict(focusNodeExemplarDict));
   dispatch(setExemplarFocusNodeDict(exemplarFocusNodeDict));
+  // TODO update to also fetch and dispatch for the new parameters
 
   // Here, we wait for the Redux state to get updated, and then read it.
   const state = getState().combined;
-  const violationMap = createViolationMap(state.samples, state.violations, state.focusNodeExemplarDict);
+  const { violationMap, typeMap, exemplarMap, focusNodeMap } = createMaps(
+    state.samples,
+    state.violations,
+    state.types,
+    state.focusNodeExemplarDict,
+    state.exemplarFocusNodeDict,
+  );
+  console.log('violationMap', violationMap);
+  console.log('typeMap', typeMap);
+  console.log('exemplarMap', exemplarMap);
+  console.log('focusNodeMap', focusNodeMap);
   dispatch(setViolationMap(violationMap));
+  dispatch(setTypeMap(typeMap));
+  dispatch(setExemplarMap(exemplarMap));
+  dispatch(setFocusNodeMap(focusNodeMap));
 };
