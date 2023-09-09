@@ -403,7 +403,6 @@ const combinedSlice = createSlice({
       let newSelectedViolations = [];
 
       state.selectedViolationExemplars.forEach((exemplar) => {
-        console.log('trying to access exemplar', exemplar, 'in state.exemplarMap', current(state.exemplarMap));
         newSelectedNodes = [...newSelectedNodes, ...state.exemplarMap[exemplar].nodes];
         newSelectedTypes = [...newSelectedTypes, ...state.exemplarMap[exemplar].types];
         newSelectedViolations = [...newSelectedViolations, ...state.exemplarMap[exemplar].violations];
@@ -422,39 +421,6 @@ const combinedSlice = createSlice({
       state.numberViolationsPerType = newNumberViolationsPerType;
 
       console.timeEnd('setSelectedViolationExemplars');
-
-      // // new selected violations = empty set
-      // const newSelectedViolations = new Set<string>();
-      // // new selected types = empty set
-      // const newSelectedTypes = new Set<string>();
-      // // use state.exemplarFocusNodeDict to initialize new selected nodes
-      // const newSelectedNodes = state.selectedViolationExemplars.map((exemplar) => state.exemplarFocusNodeDict[exemplar]).flat();
-
-      // // iterate new selected nodes
-      // newSelectedNodes.forEach((node) => {
-      //   // get sample from state.focusNodeSampleMap
-      //   const sample = state.focusNodeSampleMap[node];
-      //   // iterate violations
-      //   state.violations.forEach((violation) => {
-      //     // if sample has violation
-      //     if ((sample[violation] as number) > 0) {
-      //       // add violation to new selected violations
-      //       newSelectedViolations.add(violation);
-      //     }
-      //   });
-      //   // add type sample['rdf:type'] to new selected types set
-      //   newSelectedTypes.add(String(sample['rdf:type']));
-      // });
-
-      // // set state for new selected nodes
-      // state.selectedNodes = newSelectedNodes;
-      // // set state for new selected violations as array
-      // state.selectedViolations = Array.from(newSelectedViolations);
-      // // set state for new selected types as array
-      // state.selectedTypes = Array.from(newSelectedTypes);
-      // const newNumberViolationsPerType = calculateNewNumberViolationsPerType(state.samples, state.numberViolationsPerType, state.selectedNodes);
-      // state.numberViolationsPerType = newNumberViolationsPerType;
-      // console.log('selected nodes', state.selectedNodes);
     },
     setEdgeCountDict: (state, action: PayloadAction<EdgeCountDict>) => {
       state.edgeCountDict = action.payload;
@@ -503,11 +469,6 @@ const combinedSlice = createSlice({
       }
       setNumberViolationsPerType(state);
       updateFocusNodeSampleMap(state);
-
-      // code for a map with focus node as key, and the value are: a list of corresponding violations, a list of corresponding types, and a list of corresponding exemplars
-      // code for a map with violation as key, and the value are: a list of corresponding focus nodes, a list of corresponding types, and a list of corresponding exemplars
-      // code for a map with type as key, and the value are: a list of corresponding focus nodes, a list of corresponding violations, and a list of corresponding exemplars
-      // code for a map with exemplar as key, and the value are: a list of corresponding focus nodes, a list of corresponding violations, and a list of corresponding types
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
       console.log('setSelectedFocusNodesUsingFeatureCategories');
@@ -520,6 +481,7 @@ const combinedSlice = createSlice({
       setNumberViolationsPerTypeGivenType(state);
     },
     setSelectedFocusNodes: (state, action) => {
+      // TODO rework with new maps
       console.log('setSelectedFocusNodes');
       const newSelectedNodes = action.payload;
 
