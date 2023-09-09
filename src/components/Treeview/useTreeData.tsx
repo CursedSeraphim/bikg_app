@@ -35,7 +35,7 @@ export default function useTreeData() {
       const currentState = store.getState();
       const newOntology = currentState.combined.rdfString;
       const newSelectedTypes = currentState.combined.selectedTypes;
-      const newSubClassOfTriples = currentState.combined.subClassOfTriples; // Get new value from state
+      const newSubClassOfTriples = currentState.combined.subClassOfTriples;
       const newNumberViolationsPerType = currentState.combined.numberViolationsPerType;
 
       let shouldUpdateTreeData = false;

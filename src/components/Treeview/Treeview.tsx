@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { Treebeard, decorators } from 'react-treebeard';
 import { BarLoader } from 'react-spinners';
 import _ from 'lodash';
-import { addSingleSelectedType, removeSingleSelectedType, setSelectedTypes } from '../Store/CombinedSlice';
+import { addSingleSelectedType, removeSingleSelectedType } from '../Store/CombinedSlice';
 import { lightTheme } from './lightTheme';
 import { CustomHeader } from './CustomHeader'; // Import CustomHeader
 import { SPINNER_COLOR } from '../../constants';
@@ -13,7 +13,7 @@ decorators.Header = CustomHeader;
 export default function Treeview() {
   const dispatch = useDispatch();
 
-  const [treeData, setTreeData, selectedTypesRef] = useTreeData();
+  const [treeData, setTreeData] = useTreeData();
 
   const onToggle = (node, toggled) => {
     // Define function which will remove a node and its children from the list of selected types
@@ -44,6 +44,7 @@ export default function Treeview() {
             n.children.forEach(traverseAndToggle);
           }
           if (n.name === node.name) {
+            // eslint-disable-next-line no-param-reassign
             n.toggled = toggled;
           }
         };

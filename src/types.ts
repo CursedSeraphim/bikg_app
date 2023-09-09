@@ -5,9 +5,15 @@ export type Position = { x: number; y: number };
 export interface IOntologyNode {
   name: string;
   children: IOntologyNode[];
+  n_selected_nodes: number;
+  n_violating_nodes: number;
+  n_cumulative_selected_nodes: number;
+  n_cumulative_violating_nodes: number;
 }
 
 export type OntologyMap = { [key: string]: IOntologyNode };
+
+export type OntologyTree = IOntologyNode | null;
 
 export type CsvCell = string | number | undefined;
 
@@ -171,6 +177,7 @@ export interface ICombinedState {
   focusNodeMap: IFocusNodeMap;
   typeMap: ITypeMap;
   exemplarMap: IExemplarMap;
+  ontologyTree: OntologyTree;
 }
 
 export interface ITriple {

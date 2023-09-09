@@ -21,6 +21,7 @@ import {
   ITypeMap,
   IExemplarMap,
   IFocusNodeMap,
+  OntologyTree,
 } from '../../types';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
@@ -49,6 +50,7 @@ const initialState: ICombinedState = {
   focusNodeMap: {},
   typeMap: {},
   exemplarMap: {},
+  ontologyTree: null,
 };
 
 export function createMaps(
@@ -365,6 +367,10 @@ const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
+    setOntologyTree: (state, action: PayloadAction<OntologyTree>) => {
+      state.ontologyTree = action.payload;
+      console.log('setOntologyTree', state.ontologyTree);
+    },
     setViolationMap: (state, action: PayloadAction<IViolationMap>) => {
       state.violationMap = action.payload;
       console.log('setViolationMap', state.violationMap);
@@ -1109,6 +1115,7 @@ export const {
   setFocusNodeMap,
   setTypeMap,
   setExemplarMap,
+  setOntologyTree,
 } = combinedSlice.actions;
 
 export default combinedSlice.reducer;

@@ -1,47 +1,83 @@
-import { OntologyMap, ITriple, INumberViolationsPerType } from '../../types';
+/* eslint-disable no-param-reassign */
+import { OntologyMap, ITriple, INumberViolationsPerType, IOntologyNode } from '../../types';
 
-/**
- * Glue that connects CombinedSlice selectSubClassOrObjectPropertyTuples return value to the Treebeard component
- * @param subClassOfTriples The cached subClassOf triples
- * @returns The tree data in the format expected by Treebeard
- */
-export function getTreeDataFromTuples(subClassOfTriples: ITriple[], numberViolationsPerType: INumberViolationsPerType) {
+// Formats the node name with the cumulative values
+function formatNodeName(node: IOntologyNode): string {
+  const originalName = node.name.split(' ')[0];
+  return `${originalName} (${node.n_cumulative_violating_nodes}/${node.n_cumulative_selected_nodes})`;
+}
+
+// Updates the cumulative values for a node based on its children
+function updateCumulativeNodeValues(node: IOntologyNode): void {
+  node.n_cumulative_selected_nodes = node.n_selected_nodes;
+  node.n_cumulative_violating_nodes = node.n_violating_nodes;
+
+  if (!node.children) return;
+
+  for (const child of node.children) {
+    updateCumulativeNodeValues(child);
+    node.n_cumulative_selected_nodes += child.n_cumulative_selected_nodes;
+    node.n_cumulative_violating_nodes += child.n_cumulative_violating_nodes;
+  }
+
+  node.name = formatNodeName(node);
+}
+
+// Populates the node with values from numberViolationsPerType and its formatted name
+function populateNodeWithViolations(node: IOntologyNode, numberViolationsPerType: INumberViolationsPerType): void {
+  if (numberViolationsPerType[node.name]) {
+    const [selected, violating] = numberViolationsPerType[node.name];
+    node.n_selected_nodes = selected;
+    node.n_violating_nodes = violating;
+    node.n_cumulative_selected_nodes = selected;
+    node.n_cumulative_violating_nodes = violating;
+    node.name = formatNodeName(node);
+  }
+}
+
+// Traverse the tree to populate nodes with violation counts
+function traverseTreeAndPopulateViolations(node: IOntologyNode, numberViolationsPerType: INumberViolationsPerType): void {
+  populateNodeWithViolations(node, numberViolationsPerType);
+  node.children?.forEach((child) => traverseTreeAndPopulateViolations(child, numberViolationsPerType));
+}
+
+export function getTreeDataFromTuples(subClassOfTriples: ITriple[], numberViolationsPerType: INumberViolationsPerType): IOntologyNode {
+  // Initialize the ontology map
   const ontologyMap: OntologyMap = {};
 
-  const quads = subClassOfTriples;
-
-  quads.forEach((triple) => {
-    ontologyMap[triple.s] = ontologyMap[triple.s] || { name: triple.s, children: [] };
-    ontologyMap[triple.o] = ontologyMap[triple.o] || { name: triple.o, children: [] };
-    ontologyMap[triple.o].children.push(ontologyMap[triple.s]);
-  });
-
-  // Find nodes with no parents
-  const childSet = new Set();
-  quads.forEach((triple) => {
-    childSet.add(triple.s);
-  });
-
-  const roots = Object.keys(ontologyMap)
-    .filter((node) => !childSet.has(node))
-    .map((node) => {
-      return ontologyMap[node];
-    });
-
-  const traverseTree = (node) => {
-    if (numberViolationsPerType[node.name]) {
-      node.name = `${node.name} (${String(numberViolationsPerType[node.name][1])}/${String(numberViolationsPerType[node.name][0])})`;
-    }
-    if (node.children) {
-      node.children.forEach(traverseTree);
-    }
-  };
-
-  roots.forEach(traverseTree);
-
-  if (roots.length > 1) {
-    const data = { name: 'root', children: roots };
-    return data;
+  // Populate the ontology map based on the subclass triples
+  for (const { s, o } of subClassOfTriples) {
+    ontologyMap[s] = ontologyMap[s] || {
+      name: s,
+      children: [],
+      n_selected_nodes: 0,
+      n_violating_nodes: 0,
+      n_cumulative_selected_nodes: 0,
+      n_cumulative_violating_nodes: 0,
+    };
+    ontologyMap[o] = ontologyMap[o] || {
+      name: o,
+      children: [],
+      n_selected_nodes: 0,
+      n_violating_nodes: 0,
+      n_cumulative_selected_nodes: 0,
+      n_cumulative_violating_nodes: 0,
+    };
+    ontologyMap[o].children.push(ontologyMap[s]);
   }
-  return roots[0];
+
+  // Identify the root nodes
+  const childSet = new Set(subClassOfTriples.map((triple) => triple.s));
+  const roots = Object.values(ontologyMap).filter((node) => !childSet.has(node.name));
+
+  // Populate the nodes with violation counts
+  roots.forEach((root) => traverseTreeAndPopulateViolations(root, numberViolationsPerType));
+
+  // Update the nodes with their cumulative counts
+  roots.forEach(updateCumulativeNodeValues);
+
+  // Return the appropriate root
+  return roots.length > 1
+    ? { name: 'root', children: roots, n_selected_nodes: 0, n_violating_nodes: 0, n_cumulative_selected_nodes: 0, n_cumulative_violating_nodes: 0 }
+    : roots[0];
 }
