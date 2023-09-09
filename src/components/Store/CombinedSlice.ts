@@ -1,5 +1,5 @@
 // CombinedSlice.ts
-import { createSlice, current, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Store, Quad } from 'n3';
 import { createSelector } from 'reselect';
@@ -394,28 +394,37 @@ const combinedSlice = createSlice({
       console.log('set namespaces');
     },
     setSelectedViolationExemplars: (state, action: PayloadAction<string[]>) => {
+      // uses exemplars to select all focus nodes with those exemplars
+      // then uses nodes to select all types and violations of those nodes and their exemplars
       console.log('selectedViolationExemplars', action.payload);
       console.time('setSelectedViolationExemplars');
-      state.selectedViolationExemplars = action.payload;
+      // state.selectedViolationExemplars = action.payload;
 
+      let newSelectedExemplars = action.payload;
       let newSelectedNodes = [];
       let newSelectedTypes = [];
       let newSelectedViolations = [];
 
-      state.selectedViolationExemplars.forEach((exemplar) => {
+      newSelectedExemplars.forEach((exemplar) => {
         newSelectedNodes = [...newSelectedNodes, ...state.exemplarMap[exemplar].nodes];
-        newSelectedTypes = [...newSelectedTypes, ...state.exemplarMap[exemplar].types];
-        newSelectedViolations = [...newSelectedViolations, ...state.exemplarMap[exemplar].violations];
+      });
+
+      newSelectedNodes.forEach((node) => {
+        newSelectedTypes = [...newSelectedTypes, ...state.focusNodeMap[node].types];
+        newSelectedViolations = [...newSelectedViolations, ...state.focusNodeMap[node].violations];
+        newSelectedExemplars = [...newSelectedExemplars, ...state.focusNodeMap[node].exemplars];
       });
 
       // Remove duplicates by converting to a Set and then back to an array
       newSelectedNodes = [...new Set(newSelectedNodes)];
       newSelectedTypes = [...new Set(newSelectedTypes)];
       newSelectedViolations = [...new Set(newSelectedViolations)];
+      newSelectedExemplars = [...new Set(newSelectedExemplars)];
 
       state.selectedNodes = newSelectedNodes;
       state.selectedTypes = newSelectedTypes;
       state.selectedViolations = newSelectedViolations;
+      state.selectedViolationExemplars = newSelectedExemplars;
 
       const newNumberViolationsPerType = calculateNewNumberViolationsPerType(state.samples, state.numberViolationsPerType, state.selectedNodes);
       state.numberViolationsPerType = newNumberViolationsPerType;
@@ -553,28 +562,36 @@ const combinedSlice = createSlice({
     },
 
     setSelectedViolations: (state, action) => {
+      // use violations to select all focus nodes with those violations
+      // then use nodes to select all types and violations of those nodes and their exemplars
       console.log('selectedViolations', action.payload);
       console.time('setSelectedViolations');
-      state.selectedViolations = action.payload;
 
+      let newSelectedViolations = action.payload;
       let newSelectedNodes = [];
       let newSelectedTypes = [];
       let newSelectedViolationExemplars = [];
 
-      state.selectedViolations.forEach((violation) => {
+      newSelectedViolations.forEach((violation) => {
         newSelectedNodes = [...newSelectedNodes, ...state.violationMap[violation].nodes];
-        newSelectedTypes = [...newSelectedTypes, ...state.violationMap[violation].types];
-        newSelectedViolationExemplars = [...newSelectedViolationExemplars, ...state.violationMap[violation].exemplars];
+      });
+
+      newSelectedNodes.forEach((node) => {
+        newSelectedTypes = [...newSelectedTypes, ...state.focusNodeMap[node].types];
+        newSelectedViolationExemplars = [...newSelectedViolationExemplars, ...state.focusNodeMap[node].exemplars];
+        newSelectedViolations = [...newSelectedViolations, ...state.focusNodeMap[node].violations];
       });
 
       // Remove duplicates by converting to a Set and then back to an array
       newSelectedNodes = [...new Set(newSelectedNodes)];
       newSelectedTypes = [...new Set(newSelectedTypes)];
       newSelectedViolationExemplars = [...new Set(newSelectedViolationExemplars)];
+      newSelectedViolations = [...new Set(newSelectedViolations)];
 
       state.selectedNodes = newSelectedNodes;
       state.selectedTypes = newSelectedTypes;
       state.selectedViolationExemplars = newSelectedViolationExemplars;
+      state.selectedViolations = newSelectedViolations;
 
       const newNumberViolationsPerType = calculateNewNumberViolationsPerType(state.samples, state.numberViolationsPerType, state.selectedNodes);
       state.numberViolationsPerType = newNumberViolationsPerType;

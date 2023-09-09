@@ -4,17 +4,9 @@ import { Core } from 'cytoscape';
 import { useStore } from 'react-redux';
 import { IRootState } from '../../types';
 import { getSuccessors } from '../../CytoscapeNodeFactory';
-import { adjustLayout, getFilteredNodes, resetNodes, showCytoElements } from './TreeLayoutHelpers';
+import { adjustLayout, getNodesFromIds, resetNodes, showCytoElements } from './TreeLayoutHelpers';
 import { showAllEdges } from './useCytoscapeViewHelpers';
 import { setSelectedTypes } from '../Store/CombinedSlice';
-
-const extractSelectedData = (state) => {
-  return {
-    selectedTypes: state.combined.selectedTypes,
-    selectedViolationExemplars: state.combined.selectedViolationExemplars,
-    selectedViolations: state.combined.selectedViolations,
-  };
-};
 
 const clearSelectedNodes = (cy: Core) => {
   cy.$(':selected').unselect();
@@ -30,7 +22,6 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
     resetNodes(cy, initialNodeData.current);
   };
 
-  // TODO add const resetCytoAndDispatch which calls resetCyto but also dispatches the selection of an empty types array
   const resetCytoAndDispatch = () => {
     dispatch(setSelectedTypes([]));
     resetCyto();
@@ -40,20 +31,31 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
     // Subscribe to changes
     const unsubscribe = store.subscribe(() => {
       // console.time('cyto useeffect');
-      const state = store.getState();
-      const violationsTypesMap = state.combined.violationTypesMap;
-      const { selectedTypes, selectedViolationExemplars, selectedViolations } = extractSelectedData(state);
+      const state = store.getState().combined;
+      const violationsTypesMap = state.violationTypesMap;
+      // const { selectedTypes, selectedViolationExemplars, selectedViolations } = extractSelectedData(state);
 
       if (cy && initialNodeData.current && initialNodeData.current.size > 0) {
         resetCyto();
+        console.log('reset was just called in usesubscribecyto useeffect');
 
-        const { violationNodes, typeNodes, otherNodes, exemplarNodes } = getFilteredNodes(
-          cy,
-          selectedViolations,
-          violationsTypesMap,
-          selectedTypes,
-          selectedViolationExemplars,
-        );
+        // TODO I think the problem is that this selection of connected nodes is not working properly in case a user selects a single violation or a single exemplar
+        // perhaps it is enough to directly use the maps now that we have them
+        // const { violationNodes, typeNodes, otherNodes, exemplarNodes } = getFilteredNodes(
+        //   cy,
+        //   selectedViolations,
+        //   violationsTypesMap,
+        //   selectedTypes,
+        //   selectedViolationExemplars,
+        // );
+        const violationNodes = cy.nodes().filter((node) => state.selectedViolations.includes(node.id()));
+        const typeNodes = cy.nodes().filter((node) => state.selectedTypes.includes(node.id()));
+        const connectedNodesIds = state.selectedViolations.flatMap((violation) => violationsTypesMap[violation]);
+        const otherNodeIds = connectedNodesIds.filter((node) => !state.selectedTypes.includes(node));
+        const otherNodes = getNodesFromIds(otherNodeIds, cy);
+        const exemplarNodes = cy.nodes().filter((node) => state.selectedViolationExemplars.includes(node.id()));
+        console.log('state.selectedViolationExemplars', state.selectedViolationExemplars);
+        console.log('exemplarNodes', exemplarNodes);
         showCytoElements(violationNodes.union(otherNodes).union(typeNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets()));
         adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes);
 
