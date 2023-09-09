@@ -16,7 +16,6 @@ import {
 } from './CombinedSlice';
 import { RootState } from './Store';
 
-// In your actions.js or equivalent file
 export const fetchAndInitializeData = () => async (dispatch: Dispatch, getState: () => RootState) => {
   const [csvData, violationList, types, focusNodeExemplarDict, exemplarFocusNodeDict] = await Promise.all([
     fetchCSVFile(),

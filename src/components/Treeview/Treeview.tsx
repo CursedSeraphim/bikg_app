@@ -13,7 +13,7 @@ decorators.Header = CustomHeader;
 export default function Treeview() {
   const dispatch = useDispatch();
 
-  const [treeData, setTreeData, selectedTypesRef] = useTreeData(); // Use your new custom hook
+  const [treeData, setTreeData, selectedTypesRef] = useTreeData();
 
   const onToggle = (node, toggled) => {
     // Define function which will remove a node and its children from the list of selected types

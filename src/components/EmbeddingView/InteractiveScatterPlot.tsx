@@ -4,9 +4,9 @@ import createPlotlyComponent from 'react-plotly.js/factory';
 import { BarLoader } from 'react-spinners';
 import { useDispatch } from 'react-redux';
 import _ from 'lodash';
-import { setSelectedFocusNodes } from '../Store/CombinedSlice'; // Import the necessary actions from CombinedSlice
+import { setSelectedFocusNodes } from '../Store/CombinedSlice';
 import { SPINNER_COLOR } from '../../constants';
-import store from '../Store/Store'; // Import your store
+import store from '../Store/Store';
 import { IScatterPlotProps } from '../../types';
 import { getPlotData, plotLayout } from './PlotlyHelpers';
 

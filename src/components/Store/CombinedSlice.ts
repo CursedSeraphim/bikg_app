@@ -689,7 +689,6 @@ const combinedSlice = createSlice({
 
       state.selectedViolations = newSelectedViolations;
 
-      // Your existing functions like updateSelectedViolationExemplars
       updateSelectedViolationExemplars(state);
 
       const newNumberViolationsPerType = calculateNewNumberViolationsPerType(state.samples, state.numberViolationsPerType, state.selectedNodes);
