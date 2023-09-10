@@ -26,6 +26,10 @@ export const UNSELECTED_VIOLATION_NODE_COLOR = '#FFCC99'; // desaturated version
 export const SELECTED_EXEMPLAR_NODE_COLOR = 'red';
 export const UNSELECTED_EXEMPLAR_NODE_COLOR = '#FF7F7F'; // desaturated version
 
+// TODO Cumulative Number of Selected/Violating Node Colors
+export const SELECTED_CUMULATIVE_NODE_COLOR = 'red';
+export const UNSELECTED_CUMULATIVE_NODE_COLOR = '#FF7F7F'; // desaturated version
+
 // children/parent alignment constants
 export const NODE_LAYOUT_OFFSET_X = 500;
 export const DISTANCE_BETWEEN_NODES_Y = 70;

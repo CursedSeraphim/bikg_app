@@ -1,10 +1,15 @@
 /* eslint-disable no-param-reassign */
 import { OntologyMap, ITriple, INumberViolationsPerType, IOntologyNode } from '../../types';
 
+// TODO the variable namlected and violating are swapped in this file
+
 // Formats the node name with the cumulative values
 function formatNodeName(node: IOntologyNode): string {
+  const selectedCount = node.n_selected_nodes !== 0 ? node.n_selected_nodes : node.n_cumulative_selected_nodes;
+  const violatingCount = node.n_violating_nodes !== 0 ? node.n_violating_nodes : node.n_cumulative_violating_nodes;
+
   const originalName = node.name.split(' ')[0];
-  return `${originalName} (${node.n_cumulative_violating_nodes}/${node.n_cumulative_selected_nodes})`;
+  return `${originalName} (${violatingCount}/${selectedCount})`;
 }
 
 // Updates the cumulative values for a node based on its children

@@ -1,3 +1,4 @@
+// CustomHeader.tsx
 import React, { useState } from 'react';
 import {
   SELECTED_TEXT_COLOR,
@@ -6,6 +7,8 @@ import {
   SELECTED_EXEMPLAR_NODE_COLOR,
   UNSELECTED_EXEMPLAR_NODE_COLOR,
   MANTINE_HEADER_COLOR,
+  SELECTED_CUMULATIVE_NODE_COLOR,
+  UNSELECTED_CUMULATIVE_NODE_COLOR,
 } from '../../constants';
 
 export function CustomHeader({ onSelect, style, node }) {
@@ -31,6 +34,12 @@ export function CustomHeader({ onSelect, style, node }) {
     newStyle = { ...newStyle, backgroundColor: SELECTED_TYPE_NODE_COLOR, color: 'white' };
   }
 
+  // Determine the colors based on whether the count is actual or cumulative
+  const actualNodeCountColor = node.n_selected_nodes !== 0 ? SELECTED_EXEMPLAR_NODE_COLOR : SELECTED_CUMULATIVE_NODE_COLOR;
+  const cumulativeNodeCountColor = node.n_selected_nodes !== 0 ? UNSELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_CUMULATIVE_NODE_COLOR;
+  const actualTextDecoration = node.n_selected_nodes !== 0 ? 'underline' : 'none';
+  const cumulativeTextDecoration = node.n_selected_nodes !== 0 ? 'underline' : 'none';
+
   // Split the node name into two parts
   const [nodeName, countTotal] = node.name.split(' ');
 
@@ -47,7 +56,13 @@ export function CustomHeader({ onSelect, style, node }) {
       <div style={node.selected ? { ...style.title, fontWeight: 'bold' } : style.title}>
         <i className={iconClass} style={iconStyle} />
         <span style={{ color: isHovered ? SELECTED_TEXT_COLOR : node.selected ? SELECTED_TYPE_NODE_COLOR : UNSELECTED_TYPE_NODE_COLOR }}>{nodeName}</span>{' '}
-        <span style={{ color: isHovered ? SELECTED_EXEMPLAR_NODE_COLOR : node.selected ? SELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_EXEMPLAR_NODE_COLOR }}>
+        <span
+          style={{
+            color: isHovered ? actualNodeCountColor : node.selected ? actualNodeCountColor : cumulativeNodeCountColor,
+            textDecoration: isHovered ? actualTextDecoration : node.selected ? actualTextDecoration : cumulativeTextDecoration,
+          }}
+        >
+          {' '}
           {countTotal}
         </span>
       </div>
