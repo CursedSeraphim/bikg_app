@@ -113,8 +113,14 @@ export interface IRootState {
   combined: ICombinedState;
 }
 
-export interface INumberViolationsPerType {
-  [key: string]: [violations: number, selected: number];
+export interface INumberViolationsPerTypeValue {
+  violations: number;
+  selected: number;
+  cumulativeViolations: number;
+  cumulativeSelected: number;
+}
+export interface INumberViolationsPerTypeMap {
+  [key: string]: INumberViolationsPerTypeValue;
 }
 
 export interface IFocusNodeSampleMap {
@@ -171,7 +177,7 @@ export interface ICombinedState {
   namespaces: INamespaces;
   types: string[];
   subClassOfTriples: ITriple[];
-  numberViolationsPerType: INumberViolationsPerType;
+  numberViolationsPerType: INumberViolationsPerTypeMap;
   focusNodeSampleMap: IFocusNodeSampleMap;
   violationMap: IViolationMap;
   focusNodeMap: IFocusNodeMap;

@@ -16,12 +16,13 @@ import {
   FocusNodeExemplarDict,
   ExemplarFocusNodeDict,
   INamespaces,
-  INumberViolationsPerType,
+  INumberViolationsPerTypeMap,
   IViolationMap,
   ITypeMap,
   IExemplarMap,
   IFocusNodeMap,
   OntologyTree,
+  INumberViolationsPerTypeValue,
 } from '../../types';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
@@ -243,17 +244,26 @@ const updateSelectedViolationExemplars = (state) => {
   state.selectedViolationExemplars = Array.from(selectedViolationExemplarsSet);
 };
 
+function constructViolationsPerTypeValueObject(): INumberViolationsPerTypeValue {
+  return {
+    violations: 0,
+    selected: 0,
+    cumulativeViolations: 0,
+    cumulativeSelected: 0,
+  };
+}
+
 function setNumberViolationsPerType(state: ICombinedState): void {
-  const numberViolationsPerType: INumberViolationsPerType = {};
+  const numberViolationsPerType: INumberViolationsPerTypeMap = {};
   state.samples.forEach((sample: ICsvData) => {
     const sampleType = String(sample['rdf:type']);
     if (!sampleType) return; // Skip if no type is found
 
     if (!numberViolationsPerType[sampleType]) {
-      numberViolationsPerType[sampleType] = [0, 0]; // Initialize if necessary
+      numberViolationsPerType[sampleType] = constructViolationsPerTypeValueObject(); // Initialize if necessary
     }
 
-    numberViolationsPerType[sampleType][0] += 1; // Increment the total count of violations
+    numberViolationsPerType[sampleType].violations += 1; // Increment the total count of violations
   });
 
   state.numberViolationsPerType = numberViolationsPerType;
@@ -261,17 +271,17 @@ function setNumberViolationsPerType(state: ICombinedState): void {
 
 function setNumberViolationsPerTypeGivenType(state: ICombinedState): void {
   // Create a new object to store the updated numberViolationsPerType
-  const newNumberViolationsPerType: INumberViolationsPerType = { ...state.numberViolationsPerType };
+  const newNumberViolationsPerType: INumberViolationsPerTypeMap = { ...state.numberViolationsPerType };
 
   // Loop through all the keys in numberViolationsPerType to reset 'selected' count to zero
   Object.keys(newNumberViolationsPerType).forEach((type) => {
-    newNumberViolationsPerType[type][1] = 0;
+    newNumberViolationsPerType[type].selected = 0;
   });
 
   // Update 'selected' count in the new object based on new selected types
   state.selectedTypes.forEach((type) => {
     if (newNumberViolationsPerType[type]) {
-      newNumberViolationsPerType[type][1] = newNumberViolationsPerType[type][0];
+      newNumberViolationsPerType[type].selected = newNumberViolationsPerType[type].violations;
     }
   });
 
@@ -290,7 +300,7 @@ function calculateNewNumberViolationsPerType(samples, existingNumberViolationsPe
 
   // Reset the 'selected' counts to 0
   Object.keys(newNumberViolationsPerType).forEach((type) => {
-    newNumberViolationsPerType[type][1] = 0;
+    newNumberViolationsPerType[type].selected = 0;
   });
 
   newSelectedNodes.forEach((selectedNode) => {
@@ -300,7 +310,7 @@ function calculateNewNumberViolationsPerType(samples, existingNumberViolationsPe
 
     const sampleType = String(correspondingSample['rdf:type']);
     if (sampleType && newNumberViolationsPerType[sampleType]) {
-      newNumberViolationsPerType[sampleType][1]++;
+      newNumberViolationsPerType[sampleType].selected++;
     }
   });
 
@@ -516,7 +526,7 @@ const combinedSlice = createSlice({
       const selectedTypesSet: Set<string> = new Set();
 
       // Prepare a new object for updating numberViolationsPerType
-      const newNumberViolationsPerType: INumberViolationsPerType = { ...state.numberViolationsPerType };
+      const newNumberViolationsPerType: INumberViolationsPerTypeMap = { ...state.numberViolationsPerType };
 
       // Reset the 'selected' counts to 0
       Object.keys(newNumberViolationsPerType).forEach((type) => {

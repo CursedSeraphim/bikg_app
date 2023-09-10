@@ -33,12 +33,12 @@ export function CustomHeader({ onSelect, style, node }) {
   if (isActive) {
     newStyle = { ...newStyle, backgroundColor: SELECTED_TYPE_NODE_COLOR, color: 'white' };
   }
-
+  console.log('node', node);
   // Determine the colors based on whether the count is actual or cumulative
-  const actualNodeCountColor = node.n_selected_nodes !== 0 ? SELECTED_EXEMPLAR_NODE_COLOR : SELECTED_CUMULATIVE_NODE_COLOR;
-  const cumulativeNodeCountColor = node.n_selected_nodes !== 0 ? UNSELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_CUMULATIVE_NODE_COLOR;
-  const actualTextDecoration = node.n_selected_nodes !== 0 ? 'underline' : 'none';
-  const cumulativeTextDecoration = node.n_selected_nodes !== 0 ? 'underline' : 'none';
+  const selectedNodeCountColor = node.n_violating_nodes !== 0 ? SELECTED_EXEMPLAR_NODE_COLOR : SELECTED_CUMULATIVE_NODE_COLOR;
+  const unselectedNodeCountColor = node.n_violating_nodes !== 0 ? UNSELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_CUMULATIVE_NODE_COLOR;
+  const selectedTextDecoration = node.n_violating_nodes !== 0 ? 'underline' : 'none';
+  const unselectedTextDecoration = node.n_violating_nodes !== 0 ? 'underline' : 'none';
 
   // Split the node name into two parts
   const [nodeName, countTotal] = node.name.split(' ');
@@ -58,8 +58,8 @@ export function CustomHeader({ onSelect, style, node }) {
         <span style={{ color: isHovered ? SELECTED_TEXT_COLOR : node.selected ? SELECTED_TYPE_NODE_COLOR : UNSELECTED_TYPE_NODE_COLOR }}>{nodeName}</span>{' '}
         <span
           style={{
-            color: isHovered ? actualNodeCountColor : node.selected ? actualNodeCountColor : cumulativeNodeCountColor,
-            textDecoration: isHovered ? actualTextDecoration : node.selected ? actualTextDecoration : cumulativeTextDecoration,
+            color: isHovered ? selectedNodeCountColor : node.selected ? selectedNodeCountColor : unselectedNodeCountColor,
+            textDecoration: isHovered ? selectedTextDecoration : node.selected ? selectedTextDecoration : unselectedTextDecoration,
           }}
         >
           {' '}
