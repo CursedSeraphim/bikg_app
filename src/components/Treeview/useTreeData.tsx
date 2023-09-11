@@ -60,15 +60,17 @@ export default function useTreeData() {
       }
 
       if (shouldUpdateTreeData) {
-        let processedData;
+        let root;
+        let cumulativeNumberViolationsPerType;
         if (newOntology && numberViolationsPerTypeRef.current && Object.keys(numberViolationsPerTypeRef.current).length > 0) {
           // Call the function directly since it's not asynchronous anymore
-          processedData = getTreeDataFromTuples(subClassOfTriplesRef.current, numberViolationsPerTypeRef.current);
-          sortEachLayerAlphabetically(processedData);
+          ({ root, cumulativeNumberViolationsPerType } = getTreeDataFromTuples(subClassOfTriplesRef.current, numberViolationsPerTypeRef.current));
+          console.log('cumulativeNumberViolationsPerType', cumulativeNumberViolationsPerType);
+          sortEachLayerAlphabetically(root);
           if (Array.isArray(newSelectedTypes) && newSelectedTypes.length > 0) {
-            setTreeData(updateTreeDataWithSelectedTypes(processedData, newSelectedTypes));
+            setTreeData(updateTreeDataWithSelectedTypes(root, newSelectedTypes));
           } else {
-            setTreeData(processedData);
+            setTreeData(root);
           }
         } else if (Array.isArray(newSelectedTypes) && newSelectedTypes.length > 0) {
           setTreeData((oldTreeData) => updateTreeDataWithSelectedTypes(oldTreeData, newSelectedTypes));

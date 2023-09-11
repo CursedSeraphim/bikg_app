@@ -27,6 +27,7 @@ import {
 import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
 const initialState: ICombinedState = {
+  cumulativeNumberViolationsPerType: {},
   samples: [],
   originalSamples: [],
   selectedNodes: [],
@@ -244,7 +245,7 @@ const updateSelectedViolationExemplars = (state) => {
   state.selectedViolationExemplars = Array.from(selectedViolationExemplarsSet);
 };
 
-function constructViolationsPerTypeValueObject(): INumberViolationsPerTypeValue {
+export function constructViolationsPerTypeValueObject(): INumberViolationsPerTypeValue {
   return {
     violations: 0,
     selected: 0,
@@ -377,6 +378,9 @@ const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
+    setCumulativeNumberViolationsPerType: (state, action: PayloadAction<INumberViolationsPerTypeMap>) => {
+      state.cumulativeNumberViolationsPerType = action.payload;
+    },
     setOntologyTree: (state, action: PayloadAction<OntologyTree>) => {
       state.ontologyTree = action.payload;
     },
@@ -1104,6 +1108,7 @@ export const {
   setTypeMap,
   setExemplarMap,
   setOntologyTree,
+  setCumulativeNumberViolationsPerType,
 } = combinedSlice.actions;
 
 export default combinedSlice.reducer;

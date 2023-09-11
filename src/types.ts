@@ -184,6 +184,7 @@ export interface ICombinedState {
   typeMap: ITypeMap;
   exemplarMap: IExemplarMap;
   ontologyTree: OntologyTree;
+  cumulativeNumberViolationsPerType: INumberViolationsPerTypeMap;
 }
 
 export interface ITriple {
