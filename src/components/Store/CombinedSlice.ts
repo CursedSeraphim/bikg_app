@@ -379,40 +379,31 @@ const combinedSlice = createSlice({
   reducers: {
     setOntologyTree: (state, action: PayloadAction<OntologyTree>) => {
       state.ontologyTree = action.payload;
-      console.log('setOntologyTree', state.ontologyTree);
     },
     setViolationMap: (state, action: PayloadAction<IViolationMap>) => {
       state.violationMap = action.payload;
-      console.log('setViolationMap', state.violationMap);
     },
     setTypeMap: (state, action: PayloadAction<ITypeMap>) => {
       state.typeMap = action.payload;
-      console.log('setTypeMap', state.typeMap);
     },
     setExemplarMap: (state, action: PayloadAction<IExemplarMap>) => {
       state.exemplarMap = action.payload;
-      console.log('setExemplarMap', state.exemplarMap);
     },
     setFocusNodeMap: (state, action: PayloadAction<IFocusNodeMap>) => {
       state.focusNodeMap = action.payload;
-      console.log('setFocusNodeMap', state.focusNodeMap);
     },
     setSubClassOfTriples: (state, action: PayloadAction<ITriple[]>) => {
       state.subClassOfTriples = action.payload;
-      console.log('setSubClassOfTriples');
     },
     setTypes: (state, action: PayloadAction<string[]>) => {
       state.types = action.payload;
-      console.log('set types');
     },
     setNamespaces: (state, action: PayloadAction<INamespaces>) => {
       state.namespaces = action.payload;
-      console.log('set namespaces');
     },
     setSelectedViolationExemplars: (state, action: PayloadAction<string[]>) => {
       // uses exemplars to select all focus nodes with those exemplars
       // then uses nodes to select all types and violations of those nodes and their exemplars
-      console.log('selectedViolationExemplars', action.payload);
       console.time('setSelectedViolationExemplars');
       // state.selectedViolationExemplars = action.payload;
 
@@ -449,14 +440,11 @@ const combinedSlice = createSlice({
     },
     setEdgeCountDict: (state, action: PayloadAction<EdgeCountDict>) => {
       state.edgeCountDict = action.payload;
-      console.log('setEdgeCountDict');
     },
     setFocusNodeExemplarDict: (state, action: PayloadAction<FocusNodeExemplarDict>) => {
-      console.log('setFocusNodeExemplarDict');
       state.focusNodeExemplarDict = action.payload;
     },
     setExemplarFocusNodeDict: (state, action: PayloadAction<ExemplarFocusNodeDict>) => {
-      console.log('setExemplarFocusNodeDict');
       state.exemplarFocusNodeDict = action.payload;
     },
     setMissingEdgeOption: (state, action: PayloadAction<MissingEdgeOptionType>) => {
@@ -473,19 +461,15 @@ const combinedSlice = createSlice({
       state.filterType = action.payload;
     },
     setViolationTypesMap: (state, action) => {
-      console.log('setViolationTypesMap');
       state.violationTypesMap = action.payload;
     },
     setTypesViolationMap: (state, action) => {
-      console.log('setTypesViolationMap');
       state.typesViolationMap = action.payload;
     },
     setViolations: (state, action) => {
-      console.log('setViolations');
       state.violations = JSON.parse(action.payload);
     },
     setCsvData: (state, action) => {
-      console.log('setCsvData');
       state.originalSamples = action.payload;
       if (state.missingEdgeOption === 'remove') {
         state.samples = removeNanEdges(action.payload);
@@ -496,7 +480,6 @@ const combinedSlice = createSlice({
       updateFocusNodeSampleMap(state);
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
-      console.log('setSelectedFocusNodesUsingFeatureCategories');
       const { selectedNodes, valueCounts } = action.payload;
       state.selectedNodes = selectedNodes;
 
@@ -507,7 +490,6 @@ const combinedSlice = createSlice({
     },
     setSelectedFocusNodes: (state, action) => {
       // TODO rework with new maps
-      console.log('setSelectedFocusNodes');
       const newSelectedNodes = action.payload;
 
       // Convert state.samples into an object for O(1) lookup
@@ -573,14 +555,12 @@ const combinedSlice = createSlice({
       state.selectedViolations = newSelectedViolations;
       state.numberViolationsPerType = newNumberViolationsPerType;
 
-      console.log('updating selected violation exemplars');
       updateSelectedViolationExemplars(state);
     },
 
     setSelectedViolations: (state, action) => {
       // use violations to select all focus nodes with those violations
       // then use nodes to select all types and violations of those nodes and their exemplars
-      console.log('selectedViolations', action.payload);
       console.time('setSelectedViolations');
 
       let newSelectedViolations = action.payload;
@@ -615,7 +595,6 @@ const combinedSlice = createSlice({
       console.timeEnd('setSelectedViolations');
     },
     setSelectedTypes: (state, action) => {
-      console.log('selectedTypes', action.payload);
       console.time('setSelectedTypes');
       state.selectedTypes = action.payload;
       setNumberViolationsPerTypeGivenType(state);
@@ -711,7 +690,6 @@ const combinedSlice = createSlice({
       state.numberViolationsPerType = newNumberViolationsPerType;
     },
     setRdfString: (state, action) => {
-      console.log('setRdfString');
       state.rdfString = action.payload;
     },
   },

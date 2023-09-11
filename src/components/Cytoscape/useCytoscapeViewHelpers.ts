@@ -35,7 +35,6 @@ export const useCytoViewHelpers = (cy: Core | null) => {
   };
 
   const toggleChildren = (node: NodeSingular): void => {
-    console.log('toggleChildren', node);
     const children = node.outgoers().targets();
     const anyChildHidden = children.some((child) => child.hidden());
     toggleVisibility(children, anyChildHidden);

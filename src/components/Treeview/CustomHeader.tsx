@@ -33,7 +33,6 @@ export function CustomHeader({ onSelect, style, node }) {
   if (isActive) {
     newStyle = { ...newStyle, backgroundColor: SELECTED_TYPE_NODE_COLOR, color: 'white' };
   }
-  console.log('node', node);
   // Determine the colors based on whether the count is actual or cumulative
   const selectedNodeCountColor = node.n_violating_nodes !== 0 ? SELECTED_EXEMPLAR_NODE_COLOR : SELECTED_CUMULATIVE_NODE_COLOR;
   const unselectedNodeCountColor = node.n_violating_nodes !== 0 ? UNSELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_CUMULATIVE_NODE_COLOR;

@@ -37,7 +37,6 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
 
       if (cy && initialNodeData.current && initialNodeData.current.size > 0) {
         resetCyto();
-        console.log('reset was just called in usesubscribecyto useeffect');
 
         // TODO I think the problem is that this selection of connected nodes is not working properly in case a user selects a single violation or a single exemplar
         // perhaps it is enough to directly use the maps now that we have them
@@ -54,8 +53,6 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
         const otherNodeIds = connectedNodesIds.filter((node) => !state.selectedTypes.includes(node));
         const otherNodes = getNodesFromIds(otherNodeIds, cy);
         const exemplarNodes = cy.nodes().filter((node) => state.selectedViolationExemplars.includes(node.id()));
-        console.log('state.selectedViolationExemplars', state.selectedViolationExemplars);
-        console.log('exemplarNodes', exemplarNodes);
         showCytoElements(violationNodes.union(otherNodes).union(typeNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets()));
         adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes);
 

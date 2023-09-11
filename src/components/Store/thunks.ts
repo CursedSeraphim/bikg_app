@@ -41,10 +41,6 @@ export const fetchAndInitializeData = () => async (dispatch: Dispatch, getState:
     state.focusNodeExemplarDict,
     state.exemplarFocusNodeDict,
   );
-  console.log('violationMap', violationMap);
-  console.log('typeMap', typeMap);
-  console.log('exemplarMap', exemplarMap);
-  console.log('focusNodeMap', focusNodeMap);
   dispatch(setViolationMap(violationMap));
   dispatch(setTypeMap(typeMap));
   dispatch(setExemplarMap(exemplarMap));

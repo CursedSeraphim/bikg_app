@@ -10,7 +10,6 @@ export function useCytoscapeContextMenu(
   initialNodeData: Map<string, { x: number; y: number; visible: boolean }>,
 ) {
   useEffect(() => {
-    console.log('useEffect called with initialNodeData', initialNodeData);
     if (cy) {
       cy.contextMenus(getContextMenuOptions(contextMenuActions));
     }

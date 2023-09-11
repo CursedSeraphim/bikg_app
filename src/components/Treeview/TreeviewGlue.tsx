@@ -33,9 +33,6 @@ function populateNodeWithViolations(node: IOntologyNode, numberViolationsPerType
   if (numberViolationsPerType[node.name]) {
     const numViolationsObject = numberViolationsPerType[node.name];
     const { selected, violations } = numViolationsObject;
-    console.log('pop/numViolationsObject', numViolationsObject);
-    console.log('pop/selected', selected);
-    console.log('pop/violations', violations);
     node.n_selected_nodes = selected;
     node.n_violating_nodes = violations;
     node.n_cumulative_selected_nodes = selected;
