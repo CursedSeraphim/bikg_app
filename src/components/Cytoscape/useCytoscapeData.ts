@@ -3,7 +3,7 @@ import { Core } from 'cytoscape';
 import React, { useEffect } from 'react';
 import { selectCytoData } from '../Store/CombinedSlice';
 import { createNewCytoscapeInstance, updateCytoscapeInstance } from './CytoscapeInstanceHelpers';
-import { GetShapeForNamespaceFn, SetCyFn } from '../../types';
+import { GetShapeForNamespaceFn, INumberViolationsPerTypeMap, SetCyFn } from '../../types';
 
 interface CytoscapeDataProps {
   rdfOntology: string;
@@ -15,6 +15,7 @@ interface CytoscapeDataProps {
   onLoaded: () => void;
   initialNodeData: React.MutableRefObject<Map<string, { x: number; y: number; visible: boolean }>>;
   setLoading: React.Dispatch<boolean>;
+  cumulativeNumberViolationsPerType: INumberViolationsPerTypeMap;
 }
 
 export function useCytoscapeData({
@@ -27,9 +28,10 @@ export function useCytoscapeData({
   onLoaded,
   initialNodeData,
   setLoading,
+  cumulativeNumberViolationsPerType,
 }: CytoscapeDataProps) {
   useEffect(() => {
-    selectCytoData(rdfOntology, getShapeForNamespace, violations, types)
+    selectCytoData(rdfOntology, getShapeForNamespace, violations, types, cumulativeNumberViolationsPerType)
       .then((data) => {
         cy
           ? updateCytoscapeInstance(cy, data, initialNodeData, onLoaded, setLoading)

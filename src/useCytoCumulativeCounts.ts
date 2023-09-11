@@ -4,9 +4,10 @@ import { Core } from 'cytoscape';
 import { useDispatch } from 'react-redux';
 import _ from 'lodash';
 import store from './components/Store/Store';
+import { getLayout } from './components/Cytoscape/CytoscapeLayout';
 
 // Helper function to get the base node name from the composite key
-function getBaseNodeName(compositeKey: string): string {
+function getBaseId(compositeKey: string): string {
   const parts = compositeKey.split(' ');
   return parts[0];
 }
@@ -22,25 +23,26 @@ export function updateCytoscapeNodesGivenCumulativeCounts(cy: Core, cumulativeNu
   console.log('nodeIdsToUpdate', nodeIdsToUpdate);
   console.log('cumulativeNumberViolationsPerType keys', Object.keys(cumulativeNumberViolationsPerType));
 
+  // TODO handle both cases: where node  contains the count, and where it doesn't
   // Update each node
   for (const id of nodeIdsToUpdate) {
-    // TODO here id might contain sth like node.id()+' (0/1734)' and therefore we aren't getting the node
-    const baseId = id.split(' ')[0];
+    const baseId = getBaseId(id);
     const node = cy.getElementById(baseId);
     if (node.empty()) continue;
 
-    const { cumulativeViolations, cumulativeSelected } = cumulativeNumberViolationsPerType[id];
+    // TODO create a smart mapping of keys where whether the key is a node or a node + count, we get the same value
+    const { cumulativeViolations, cumulativeSelected } = cumulativeNumberViolationsPerType[id] || cumulativeNumberViolationsPerType[baseId];
     const label = id;
-    // console.log(
-    //   'updating node',
-    //   node.id(),
-    //   'with cumulativeViolations',
-    //   cumulativeViolations,
-    //   'and cumulativeSelected',
-    //   cumulativeSelected,
-    //   'and label',
-    //   label,
-    // );
+    console.log(
+      'updating node',
+      node.id(),
+      'with cumulativeViolations',
+      cumulativeViolations,
+      'and cumulativeSelected',
+      cumulativeSelected,
+      'and label',
+      label,
+    );
 
     // Set cumulativeViolations and cumulativeSelected properties directly
     node.json({

@@ -254,7 +254,7 @@ export function constructViolationsPerTypeValueObject(): INumberViolationsPerTyp
   };
 }
 
-function calculateNumberViolationsPerType(state: ICombinedState): void {
+function calculateNumberViolationsPerType(state: ICombinedState): INumberViolationsPerTypeMap {
   const numberViolationsPerType: INumberViolationsPerTypeMap = {};
   state.samples.forEach((sample: ICsvData) => {
     const sampleType = String(sample['rdf:type']);
@@ -268,6 +268,7 @@ function calculateNumberViolationsPerType(state: ICombinedState): void {
   });
 
   state.numberViolationsPerType = numberViolationsPerType;
+  return numberViolationsPerType;
 }
 
 function calculateNumberViolationsPerTypeGivenType(state: ICombinedState): void {
@@ -481,7 +482,19 @@ const combinedSlice = createSlice({
       } else if (state.missingEdgeOption === 'keep') {
         state.samples = action.payload;
       }
-      calculateNumberViolationsPerType(state);
+      const numberViolationsPerTypeMap = calculateNumberViolationsPerType(state);
+      console.log('setting cumulativeNumberViolationsPerType', numberViolationsPerTypeMap, 'from numberViolationsPerType', state.numberViolationsPerType);
+      const updatedObject = Object.keys(numberViolationsPerTypeMap).reduce((acc, key) => {
+        const { violations, selected } = numberViolationsPerTypeMap[key];
+        acc[key] = {
+          cumulativeViolations: violations,
+          cumulativeSelected: selected,
+        };
+        return acc;
+      }, {});
+      console.log('updatedObject', updatedObject);
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      setCumulativeNumberViolationsPerType(updatedObject);
       updateFocusNodeSampleMap(state);
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
@@ -721,6 +734,7 @@ export const selectSelectedViolationExemplars = (state: { combined: ICombinedSta
 export const selectNamespaces = (state: { combined: ICombinedState }) => state.combined.namespaces;
 export const selectTypes = (state: { combined: ICombinedState }) => state.combined.types;
 export const selectSubClassOfTriples = (state: { combined: ICombinedState }) => state.combined.subClassOfTriples;
+export const selectCumulativeNumberViolationsPerType = (state: { combined: ICombinedState }) => state.combined.cumulativeNumberViolationsPerType;
 
 // TODO investigate why we are returning everything here
 // create memoized selector
@@ -1004,8 +1018,9 @@ const calculateObjectProperties = (visibleTriples, hiddenTriples) => {
  * @param {Function} getColorForNamespace - Function to get color for namespace.
  * @param {Array} violations - Array of violations.
  * @param {Array} types - Array of types.
+ * @param {Object} cumulativeNumberViolationsPerType - Object containing cumulative number of violations per type.
  */
-const processTriples = (triples, visible, nodes, edges, objectProperties, getColorForNamespace, violations, types) => {
+const processTriples = (triples, visible, nodes, edges, objectProperties, getColorForNamespace, violations, types, cumulativeNumberViolationsPerType) => {
   triples.forEach((t) => {
     const extractNamespace = (uri) => {
       const match = uri.match(/^([^:]+):/);
@@ -1013,6 +1028,21 @@ const processTriples = (triples, visible, nodes, edges, objectProperties, getCol
     };
 
     const findOrAddNode = (id, label) => {
+      let cumulativeSelected = null;
+      let cumulativeViolations = null;
+
+      // Check if id exists in the cumulativeNumberViolationsPerType map
+      if (
+        Object.hasOwnProperty.call(cumulativeNumberViolationsPerType, id) ||
+        Object.hasOwnProperty.call(cumulativeNumberViolationsPerType, id.split(' ')[0])
+      ) {
+        const { cumulativeSelected: cs, cumulativeViolations: cv } =
+          cumulativeNumberViolationsPerType[id] || cumulativeNumberViolationsPerType[id.split(' ')[0]] || {};
+
+        cumulativeSelected = cs;
+        cumulativeViolations = cv;
+      }
+
       let node = nodes.find((n) => n.data.id === id);
       if (!node) {
         const namespace = extractNamespace(id);
@@ -1021,7 +1051,7 @@ const processTriples = (triples, visible, nodes, edges, objectProperties, getCol
         node = {
           data: {
             id,
-            label,
+            label: cumulativeSelected !== null && cumulativeViolations !== null ? `${label} (${cumulativeSelected}/${cumulativeViolations})` : label,
             visible,
             permanent: visible,
             namespace,
@@ -1069,9 +1099,11 @@ const processTriples = (triples, visible, nodes, edges, objectProperties, getCol
  * @param {string} rdfString string in Resource Description Framework format.
  * @param {Function} getShapeForNamespace - Function to get a shape for a namespace.
  * @param {Array} violations - Array of violations.
+ * @param {Array} types - Array of types.
+ * @param {Object} cumulativeNumberViolationsPerType - Object containing cumulative number of violations per type.
  * @returns {Object} An object containing array of Nodes and Edges.
  */
-export const selectCytoData = async (rdfString, getShapeForNamespace, violations, types) => {
+export const selectCytoData = async (rdfString, getShapeForNamespace, violations, types, cumulativeNumberViolationsPerType) => {
   // ... same as before
   const { visibleTriples, hiddenTriples } = await selectAllTriples(rdfString);
 
@@ -1079,9 +1111,8 @@ export const selectCytoData = async (rdfString, getShapeForNamespace, violations
   const edges = [];
 
   const objectProperties = calculateObjectProperties(visibleTriples, hiddenTriples);
-  processTriples(hiddenTriples, false, nodes, edges, objectProperties, getShapeForNamespace, violations, types);
-  processTriples(visibleTriples, true, nodes, edges, objectProperties, getShapeForNamespace, violations, types);
-
+  processTriples(hiddenTriples, false, nodes, edges, objectProperties, getShapeForNamespace, violations, types, cumulativeNumberViolationsPerType);
+  processTriples(visibleTriples, true, nodes, edges, objectProperties, getShapeForNamespace, violations, types, cumulativeNumberViolationsPerType);
   return { nodes, edges };
 };
 

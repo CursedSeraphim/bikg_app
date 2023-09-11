@@ -30,7 +30,6 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
   useEffect(() => {
     // Subscribe to changes
     const unsubscribe = store.subscribe(() => {
-      // console.time('cyto useeffect');
       const state = store.getState().combined;
       const violationsTypesMap = state.violationTypesMap;
       // const { selectedTypes, selectedViolationExemplars, selectedViolations } = extractSelectedData(state);
