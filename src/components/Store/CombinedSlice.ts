@@ -253,7 +253,7 @@ function constructViolationsPerTypeValueObject(): INumberViolationsPerTypeValue 
   };
 }
 
-function setNumberViolationsPerType(state: ICombinedState): void {
+function calculateNumberViolationsPerType(state: ICombinedState): void {
   const numberViolationsPerType: INumberViolationsPerTypeMap = {};
   state.samples.forEach((sample: ICsvData) => {
     const sampleType = String(sample['rdf:type']);
@@ -269,7 +269,7 @@ function setNumberViolationsPerType(state: ICombinedState): void {
   state.numberViolationsPerType = numberViolationsPerType;
 }
 
-function setNumberViolationsPerTypeGivenType(state: ICombinedState): void {
+function calculateNumberViolationsPerTypeGivenType(state: ICombinedState): void {
   // Create a new object to store the updated numberViolationsPerType
   const newNumberViolationsPerType: INumberViolationsPerTypeMap = { ...state.numberViolationsPerType };
 
@@ -454,7 +454,7 @@ const combinedSlice = createSlice({
       } else if (state.missingEdgeOption === 'keep') {
         state.samples = [...state.originalSamples];
       }
-      setNumberViolationsPerType(state);
+      calculateNumberViolationsPerType(state);
       updateFocusNodeSampleMap(state);
     },
     setFilterType: (state, action: PayloadAction<FilterType>) => {
@@ -476,7 +476,7 @@ const combinedSlice = createSlice({
       } else if (state.missingEdgeOption === 'keep') {
         state.samples = action.payload;
       }
-      setNumberViolationsPerType(state);
+      calculateNumberViolationsPerType(state);
       updateFocusNodeSampleMap(state);
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
@@ -486,7 +486,7 @@ const combinedSlice = createSlice({
       updateSelectedViolations(state, valueCounts);
       updateSelectedTypes(state, valueCounts);
       updateSelectedViolationExemplars(state);
-      setNumberViolationsPerTypeGivenType(state);
+      calculateNumberViolationsPerTypeGivenType(state);
     },
     setSelectedFocusNodes: (state, action) => {
       // TODO rework with new maps
@@ -597,7 +597,7 @@ const combinedSlice = createSlice({
     setSelectedTypes: (state, action) => {
       console.time('setSelectedTypes');
       state.selectedTypes = action.payload;
-      setNumberViolationsPerTypeGivenType(state);
+      calculateNumberViolationsPerTypeGivenType(state);
 
       let newSelectedNodes = [];
       let newSelectedViolations = [];
