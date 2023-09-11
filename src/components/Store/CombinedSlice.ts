@@ -494,6 +494,7 @@ const combinedSlice = createSlice({
       calculateNumberViolationsPerTypeGivenType(state);
     },
     setSelectedFocusNodes: (state, action) => {
+      console.log('settings selected focus nodes');
       // TODO rework with new maps
       const newSelectedNodes = action.payload;
 
@@ -517,7 +518,7 @@ const combinedSlice = createSlice({
 
       // Reset the 'selected' counts to 0
       Object.keys(newNumberViolationsPerType).forEach((type) => {
-        newNumberViolationsPerType[type][1] = 0;
+        newNumberViolationsPerType[type].selected = 0;
       });
 
       // Iterate over selected nodes
@@ -539,7 +540,7 @@ const combinedSlice = createSlice({
 
           // Update the 'selected' count in the new object based on new selected nodes
           if (newNumberViolationsPerType[sampleType]) {
-            newNumberViolationsPerType[sampleType][1]++;
+            newNumberViolationsPerType[sampleType].selected++;
           }
         }
       });
@@ -559,6 +560,7 @@ const combinedSlice = createSlice({
       state.selectedTypes = newSelectedTypes;
       state.selectedViolations = newSelectedViolations;
       state.numberViolationsPerType = newNumberViolationsPerType;
+      console.log('state.numberViolationsPerType', state.numberViolationsPerType);
 
       updateSelectedViolationExemplars(state);
     },

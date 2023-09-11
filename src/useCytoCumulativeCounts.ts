@@ -5,14 +5,57 @@ import { useDispatch } from 'react-redux';
 import _ from 'lodash';
 import store from './components/Store/Store';
 
-function updateCytoscapeNodesGivenCumulativeCounts(cy: Core, cumulativeNumberViolationsPerType: any) {
+// Helper function to get the base node name from the composite key
+function getBaseNodeName(compositeKey: string): string {
+  const parts = compositeKey.split(' ');
+  return parts[0];
+}
+
+export function updateCytoscapeNodesGivenCumulativeCounts(cy: Core, cumulativeNumberViolationsPerType: Record<string, any>) {
   console.log('triggering cytoscape update');
-  // TODO
+  console.log('cy.nodes()', cy.nodes());
+
+  cy.startBatch();
+
+  // Build an array of node IDs to update
+  const nodeIdsToUpdate = Object.keys(cumulativeNumberViolationsPerType);
+  console.log('nodeIdsToUpdate', nodeIdsToUpdate);
+  console.log('cumulativeNumberViolationsPerType keys', Object.keys(cumulativeNumberViolationsPerType));
+
+  // Update each node
+  for (const id of nodeIdsToUpdate) {
+    // TODO here id might contain sth like node.id()+' (0/1734)' and therefore we aren't getting the node
+    const baseId = id.split(' ')[0];
+    const node = cy.getElementById(baseId);
+    if (node.empty()) continue;
+
+    const { cumulativeViolations, cumulativeSelected } = cumulativeNumberViolationsPerType[id];
+    const label = id;
+    // console.log(
+    //   'updating node',
+    //   node.id(),
+    //   'with cumulativeViolations',
+    //   cumulativeViolations,
+    //   'and cumulativeSelected',
+    //   cumulativeSelected,
+    //   'and label',
+    //   label,
+    // );
+
+    // Set cumulativeViolations and cumulativeSelected properties directly
+    node.json({
+      data: {
+        cumulativeViolations,
+        cumulativeSelected,
+        label: `${baseId} (${cumulativeSelected}/${cumulativeViolations})`,
+      },
+    });
+  }
+
+  cy.endBatch();
 }
 
 const useCytoCumulativeCounts = (cy: Core) => {
-  const dispatch = useDispatch();
-  // TODO define a ref for the current cumulativeNumberViolationsPerType
   const cumulativeNumberViolationsPerTypeRef = useRef({});
 
   useEffect(() => {
@@ -28,13 +71,11 @@ const useCytoCumulativeCounts = (cy: Core) => {
       }
 
       if (cy && shouldUpdateTreeData) {
-        // TODO update cy.nodes such that if the node label is in cumulativeNumberViolationsPerType, we add cumulativeViolations cumulativeSelected from cumulativeNumberViolationsPerType to the nodes
         updateCytoscapeNodesGivenCumulativeCounts(cy, cumulativeNumberViolationsPerType);
       }
     });
 
     return () => unsubscribe();
-    // TODO relevant dependencies
   }, [cy]);
 };
 
