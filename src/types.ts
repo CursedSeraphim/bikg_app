@@ -47,6 +47,8 @@ export interface ICytoNode {
     namespace: string;
     defaultColor?: string;
     selectedColor?: string;
+    cumulativeSelected?: number;
+    cumulativeViolations?: number;
   };
   position?: {
     x: number;

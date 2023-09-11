@@ -1,9 +1,11 @@
 // useTreeData.tsx
 import { useState, useEffect, useRef } from 'react';
 import _ from 'lodash';
-import store from '../Store/Store';
+import { useDispatch } from 'react-redux';
+import store, { AppDispatch } from '../Store/Store';
 import { getTreeDataFromTuples } from './TreeviewGlue';
 import { updateTreeDataWithSelectedTypes } from './TreeViewHelpers';
+import { setCumulativeNumberViolationsPerType } from '../Store/CombinedSlice';
 
 function sortEachLayerAlphabetically(tree) {
   if (!tree) return;
@@ -29,6 +31,8 @@ export default function useTreeData() {
   const selectedTypesRef = useRef([]);
   const subClassOfTriplesRef = useRef([]);
   const numberViolationsPerTypeRef = useRef({});
+  const cumulativeNumberViolationsPerTypeRef = useRef({});
+  const dispatch: AppDispatch = useDispatch();
 
   useEffect(() => {
     const unsubscribe = store.subscribe(() => {
@@ -65,7 +69,10 @@ export default function useTreeData() {
         if (newOntology && numberViolationsPerTypeRef.current && Object.keys(numberViolationsPerTypeRef.current).length > 0) {
           // Call the function directly since it's not asynchronous anymore
           ({ root, cumulativeNumberViolationsPerType } = getTreeDataFromTuples(subClassOfTriplesRef.current, numberViolationsPerTypeRef.current));
-          console.log('cumulativeNumberViolationsPerType', cumulativeNumberViolationsPerType);
+          if (!_.isEqual(cumulativeNumberViolationsPerTypeRef.current, cumulativeNumberViolationsPerType)) {
+            cumulativeNumberViolationsPerTypeRef.current = cumulativeNumberViolationsPerType;
+            dispatch(setCumulativeNumberViolationsPerType(cumulativeNumberViolationsPerType));
+          }
           sortEachLayerAlphabetically(root);
           if (Array.isArray(newSelectedTypes) && newSelectedTypes.length > 0) {
             setTreeData(updateTreeDataWithSelectedTypes(root, newSelectedTypes));
@@ -79,7 +86,7 @@ export default function useTreeData() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [dispatch]);
 
   return [treeData, setTreeData, selectedTypesRef];
 }

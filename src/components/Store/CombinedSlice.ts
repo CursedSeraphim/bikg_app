@@ -380,6 +380,7 @@ const combinedSlice = createSlice({
   reducers: {
     setCumulativeNumberViolationsPerType: (state, action: PayloadAction<INumberViolationsPerTypeMap>) => {
       state.cumulativeNumberViolationsPerType = action.payload;
+      console.log('cumulativeNumberViolationsPerType', state.cumulativeNumberViolationsPerType);
     },
     setOntologyTree: (state, action: PayloadAction<OntologyTree>) => {
       state.ontologyTree = action.payload;

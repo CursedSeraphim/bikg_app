@@ -14,6 +14,7 @@ import { useRegisterCytoscapeEventListeners } from './CytoscapeEventHandlers'; /
 import { useSubscribeCytoscape } from './useSubscribeCytoscape';
 import { useCytoscapeData } from './useCytoscapeData';
 import useCytoscapeContextMenu from './useContextMenu';
+import useCytoCumulativeCounts from '../../useCytoCumulativeCounts';
 
 cytoscape.use(viewUtilities);
 cytoscape.use(coseBilkent);
@@ -44,6 +45,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   useRegisterCytoscapeEventListeners(cy, viewHelpers);
   const subScribeCytoscape = useSubscribeCytoscape(cy, initialNodeData);
   useCytoscapeContextMenu(cy, viewHelpers, subScribeCytoscape);
+  useCytoCumulativeCounts(cy);
 
   return <div id="cy" />;
 }
