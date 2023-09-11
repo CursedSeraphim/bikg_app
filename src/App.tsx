@@ -10,24 +10,14 @@ import {
   setViolationTypesMap,
   setTypesViolationMap,
   setEdgeCountDict,
-  setFocusNodeExemplarDict,
   setNamespaces,
-  setTypes,
   setSubClassOfTriples,
 } from './components/Store/CombinedSlice';
 
 import CytoscapeView from './components/Cytoscape/CytoscapeView';
 
 import './styles.css';
-import {
-  fetchOntology,
-  fetchViolationPathNodesDict,
-  fetchEdgeCountDict,
-  fetchFocusNodeExemplarDict,
-  fetchNamespaces,
-  fetchClasses,
-  fetchSubClassOfTriples,
-} from './api';
+import { fetchOntology, fetchViolationPathNodesDict, fetchEdgeCountDict, fetchNamespaces, fetchSubClassOfTriples } from './api';
 import { SPINNER_COLOR } from './constants';
 import { fetchAndInitializeData } from './components/Store/thunks';
 
