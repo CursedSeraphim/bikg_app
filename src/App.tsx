@@ -17,7 +17,7 @@ import {
 import CytoscapeView from './components/Cytoscape/CytoscapeView';
 
 import './styles.css';
-import { fetchOntology, fetchViolationPathNodesDict, fetchEdgeCountDict, fetchNamespaces, fetchSubClassOfTriples } from './api';
+import { fetchOntology, fetchViolationPathNodesDict, fetchEdgeCountDict, fetchNamespaces, fetchSubClassOfTriples, fetchNodeCountDict } from './api';
 import { SPINNER_COLOR } from './constants';
 import { fetchAndInitializeData } from './components/Store/thunks';
 
@@ -36,6 +36,17 @@ export function App() {
         console.error('Failed to fetch sub-class-of triples', error);
       });
   }, [dispatch]);
+
+  // Fetch node count dict and print
+  React.useEffect(() => {
+    fetchNodeCountDict()
+      .then((data) => {
+        console.log('node count dict', data);
+      })
+      .catch((error) => {
+        console.error('Failed to fetch edge count dictionary', error);
+      });
+  });
 
   // // Fetch classes and print
   // React.useEffect(() => {

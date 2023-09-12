@@ -153,3 +153,31 @@ export async function fetchSubClassOfTriples() {
   const data = await response.json();
   return data;
 }
+
+export async function fetchOntologyTree() {
+  const endpoint = `http://localhost:9000/get_ontology_tree`;
+  const response = await fetch(endpoint);
+  const data = await response.json();
+  return data;
+}
+
+export async function fetchNodeCountDict() {
+  const endpoint = `http://localhost:9000/get_node_count_dict`;
+  const response = await fetch(endpoint);
+  const data = await response.json();
+  return data;
+}
+
+export async function fetchViolationExemplarDict() {
+  const endpoint = `http://localhost:9000/get_violation_exemplar_dict`;
+  const response = await fetch(endpoint);
+  const data = await response.json();
+  return data;
+}
+
+export async function fetchTypeViolationDict() {
+  const endpoint = `http://localhost:9000/get_type_violation_dict`;
+  const response = await fetch(endpoint);
+  const data = await response.json();
+  return data;
+}
