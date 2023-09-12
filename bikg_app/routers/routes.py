@@ -60,6 +60,7 @@ overall_violation_value_counts = {
     violation: sum(key * value for key, value in counts.items()) for violation, counts in overall_violation_value_dict.items()
 }
 
+types_list = df["rdf:type"].unique().tolist()
 
 def shorten_uris_in_nested_dict(nested_dict, g: Graph):
     new_dict = {}
@@ -95,6 +96,7 @@ exemplar_focus_node_dict = load_lists_dict(EXEMPLAR_FOCUS_NODE_DICT_JSON_PATH)
 violation_exemplar_dict = shorten_uris_in_nested_dict(load_nested_counts_dict_json(VIOLATION_EXEMPLAR_DICT_PATH), g)
 
 router = APIRouter()
+
 
 def build_type_node_count_dict(df):
     """
@@ -479,8 +481,8 @@ class Node:
             'children': [child.to_dict() for child in self.children]
         }
 
-
-def build_ontology_tree(type_violation_dict, violation_exemplar_dict, g: Graph = g):
+# TODO the problem is that type dict only has keys for those that have violations, because it is built from the df
+def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar_dict, g: Graph = g):
     """
     Uses rdfs:subClassOf to find nodes in the ontology tree.
     Build a tree datastructurte from this ontology.
@@ -502,27 +504,39 @@ def build_ontology_tree(type_violation_dict, violation_exemplar_dict, g: Graph =
     """
 
     parent_child_map = defaultdict(list)
-    all_nodes = set()  # Store all nodes
+    all_type_nodes = set()  # Store all nodes
+    parents = set()
+    children = set()
     for row in g.query(query):
         parent = str(g.namespace_manager.qname(row.o))  # type: ignore
         child = str(g.namespace_manager.qname(row.s))  # type: ignore
         parent_child_map[parent].append(child)
-        all_nodes.add(parent)
-        all_nodes.add(child)
+        all_type_nodes.add(parent)
+        all_type_nodes.add(child)
+        parents.add(parent)
+        children.add(child)
 
-    # Find the roots by taking the set difference
-    roots = all_nodes - set(parent_child_map.keys())
+    roots = parents - children
+
+    # iterate all_type_nodes and add them as keys to type_violation_dict if they are not already in there initializing them with count 0
+    for node in all_type_nodes:
+        if node not in type_count_dict:
+            type_count_dict[node] = 0
 
     node_count_dict = {}
     root = Node("VirtualRoot")
 
-    def build_subClass_tree(current_node, parent_child_map):
+    def build_sub_class_tree(current_node, parent_child_map):
         for child_id in parent_child_map[current_node.id]:
             child_node = Node(child_id)
             current_node.children.append(child_node)
-            build_subClass_tree(child_node, parent_child_map)
+            if child_id in type_count_dict:
+                child_node.count = type_count_dict[child_id]
+            build_sub_class_tree(child_node, parent_child_map)
 
     def add_violations(current_node, type_violation_dict):
+        for child in current_node.children:
+            add_violations(child, type_violation_dict)
         if current_node.id in type_violation_dict:
             for violation, count in type_violation_dict[current_node.id]:
                 violation_node = Node(violation)
@@ -530,6 +544,8 @@ def build_ontology_tree(type_violation_dict, violation_exemplar_dict, g: Graph =
                 current_node.children.append(violation_node)
 
     def add_exemplars(current_node, violation_exemplar_dict):
+        for child in current_node.children:
+            add_exemplars(child, violation_exemplar_dict)
         if current_node.id in violation_exemplar_dict:
             for exemplar, exemplar_count in violation_exemplar_dict[current_node.id].items():
                 exemplar_node = Node(exemplar)
@@ -540,8 +556,11 @@ def build_ontology_tree(type_violation_dict, violation_exemplar_dict, g: Graph =
         for child in current_node.children:
             compute_cumulative_counts(child, type_violation_dict, violation_exemplar_dict)
 
-        if current_node.id in type_violation_dict:  # Current node is a 'type' node
-            current_node.count = type_count_dict[current_node.id]  # Use type_count_dict
+        if current_node.id in all_type_nodes:  # Current node is a 'type' node
+            for child in current_node.children: 
+                if child.id in all_type_nodes:
+                    current_node.count += child.count  # Use child.count directly
+
         elif current_node.id in violation_exemplar_dict:  # Current node is a 'violation' node
             for child in current_node.children:  # Children are 'exemplar' nodes
                 current_node.count += child.count  # Use child.count directly
@@ -554,7 +573,7 @@ def build_ontology_tree(type_violation_dict, violation_exemplar_dict, g: Graph =
     for actual_root in roots:
         root_node = Node(actual_root)
         root.children.append(root_node)
-        build_subClass_tree(root_node, parent_child_map)
+        build_sub_class_tree(root_node, parent_child_map)
 
     for node in root.children:
         add_violations(node, type_violation_dict)
@@ -566,7 +585,9 @@ def build_ontology_tree(type_violation_dict, violation_exemplar_dict, g: Graph =
     return root, node_count_dict
 
 
-ontology_tree, node_count_dict = build_ontology_tree(type_violation_dict, violation_exemplar_dict, g)
+ontology_tree, node_count_dict = build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar_dict, g)
+print(ontology_tree)
+print(node_count_dict)
 
 
 @router.get("/get_ontology_tree")
