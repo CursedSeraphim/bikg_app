@@ -161,7 +161,7 @@ export async function fetchOntologyTree() {
   return data;
 }
 
-export async function fetchNodeCountDict() {
+export async function fetchNodeFocusNodeCountDict() {
   const endpoint = `http://localhost:9000/get_node_count_dict`;
   const response = await fetch(endpoint);
   const data = await response.json();

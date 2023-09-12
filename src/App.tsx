@@ -12,12 +12,13 @@ import {
   setEdgeCountDict,
   setNamespaces,
   setSubClassOfTriples,
+  setCumulativeNumberViolationsPerType,
 } from './components/Store/CombinedSlice';
 
 import CytoscapeView from './components/Cytoscape/CytoscapeView';
 
 import './styles.css';
-import { fetchOntology, fetchViolationPathNodesDict, fetchEdgeCountDict, fetchNamespaces, fetchSubClassOfTriples, fetchNodeCountDict } from './api';
+import { fetchOntology, fetchViolationPathNodesDict, fetchEdgeCountDict, fetchNamespaces, fetchSubClassOfTriples, fetchNodeFocusNodeCountDict } from './api';
 import { SPINNER_COLOR } from './constants';
 import { fetchAndInitializeData } from './components/Store/thunks';
 
@@ -39,9 +40,17 @@ export function App() {
 
   // Fetch node count dict and print
   React.useEffect(() => {
-    fetchNodeCountDict()
-      .then((data) => {
-        console.log('node count dict', data);
+    fetchNodeFocusNodeCountDict()
+      .then((nodeFocusNodeCountDict) => {
+        const updatedObject = Object.keys(nodeFocusNodeCountDict).reduce((acc, key) => {
+          const count = nodeFocusNodeCountDict[key];
+          acc[key] = {
+            cumulativeViolations: count,
+            cumulativeSelected: 0,
+          };
+          return acc;
+        }, {});
+        dispatch(setCumulativeNumberViolationsPerType(updatedObject));
       })
       .catch((error) => {
         console.error('Failed to fetch edge count dictionary', error);

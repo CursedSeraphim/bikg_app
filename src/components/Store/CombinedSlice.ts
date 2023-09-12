@@ -382,6 +382,16 @@ const combinedSlice = createSlice({
     setCumulativeNumberViolationsPerType: (state, action: PayloadAction<INumberViolationsPerTypeMap>) => {
       state.cumulativeNumberViolationsPerType = action.payload;
       console.log('cumulativeNumberViolationsPerType', state.cumulativeNumberViolationsPerType);
+
+      // TODO code for setting state.numberViolationsPerType
+      // TODO code for setting state.numberViolationsPerType
+      Object.keys(state.cumulativeNumberViolationsPerType).forEach((key) => {
+        if (!Object.prototype.hasOwnProperty.call(state.numberViolationsPerType, key)) {
+          state.numberViolationsPerType[key] = constructViolationsPerTypeValueObject();
+        }
+        state.numberViolationsPerType[key].cumulativeViolations = state.cumulativeNumberViolationsPerType[key].cumulativeViolations;
+        state.numberViolationsPerType[key].cumulativeSelected = state.cumulativeNumberViolationsPerType[key].cumulativeSelected;
+      });
     },
     setOntologyTree: (state, action: PayloadAction<OntologyTree>) => {
       state.ontologyTree = action.payload;
@@ -482,19 +492,7 @@ const combinedSlice = createSlice({
       } else if (state.missingEdgeOption === 'keep') {
         state.samples = action.payload;
       }
-      const numberViolationsPerTypeMap = calculateNumberViolationsPerType(state);
-      console.log('setting cumulativeNumberViolationsPerType', numberViolationsPerTypeMap, 'from numberViolationsPerType', state.numberViolationsPerType);
-      const updatedObject = Object.keys(numberViolationsPerTypeMap).reduce((acc, key) => {
-        const { violations, selected } = numberViolationsPerTypeMap[key];
-        acc[key] = {
-          cumulativeViolations: violations,
-          cumulativeSelected: selected,
-        };
-        return acc;
-      }, {});
-      console.log('updatedObject', updatedObject);
-      // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      setCumulativeNumberViolationsPerType(updatedObject);
+      calculateNumberViolationsPerType(state);
       updateFocusNodeSampleMap(state);
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
@@ -1048,6 +1046,7 @@ const processTriples = (triples, visible, nodes, edges, objectProperties, getCol
         const namespace = extractNamespace(id);
         const defaultColor = getColorForNamespace(namespace, false);
         const selectedColor = getColorForNamespace(namespace, true);
+        if (label === 'omics:Study') console.log('omics:Study', cumulativeSelected, cumulativeViolations);
         node = {
           data: {
             id,

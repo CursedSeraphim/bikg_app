@@ -30,7 +30,6 @@ export const fetchAndInitializeData = () => async (dispatch: Dispatch, getState:
   dispatch(setTypes(types));
   dispatch(setFocusNodeExemplarDict(focusNodeExemplarDict));
   dispatch(setExemplarFocusNodeDict(exemplarFocusNodeDict));
-  // TODO update to also fetch and dispatch for the new parameters
 
   // Here, we wait for the Redux state to get updated, and then read it.
   const state = getState().combined;
@@ -41,6 +40,7 @@ export const fetchAndInitializeData = () => async (dispatch: Dispatch, getState:
     state.focusNodeExemplarDict,
     state.exemplarFocusNodeDict,
   );
+
   dispatch(setViolationMap(violationMap));
   dispatch(setTypeMap(typeMap));
   dispatch(setExemplarMap(exemplarMap));

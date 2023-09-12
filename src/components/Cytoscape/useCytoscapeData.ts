@@ -31,6 +31,7 @@ export function useCytoscapeData({
   cumulativeNumberViolationsPerType,
 }: CytoscapeDataProps) {
   useEffect(() => {
+    console.log('calling with cumulativeNumberViolationsPerType', cumulativeNumberViolationsPerType);
     selectCytoData(rdfOntology, getShapeForNamespace, violations, types, cumulativeNumberViolationsPerType)
       .then((data) => {
         cy
@@ -41,5 +42,5 @@ export function useCytoscapeData({
         console.error('Failed to generate Cytoscape data:', error);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rdfOntology, getShapeForNamespace, violations, types, cy, setCy, onLoaded, setLoading]);
+  }, [rdfOntology, getShapeForNamespace, violations, types, cy, setCy, onLoaded, setLoading, cumulativeNumberViolationsPerType]);
 }

@@ -33,16 +33,16 @@ export function updateCytoscapeNodesGivenCumulativeCounts(cy: Core, cumulativeNu
     // TODO create a smart mapping of keys where whether the key is a node or a node + count, we get the same value
     const { cumulativeViolations, cumulativeSelected } = cumulativeNumberViolationsPerType[id] || cumulativeNumberViolationsPerType[baseId];
     const label = id;
-    console.log(
-      'updating node',
-      node.id(),
-      'with cumulativeViolations',
-      cumulativeViolations,
-      'and cumulativeSelected',
-      cumulativeSelected,
-      'and label',
-      label,
-    );
+    // console.log(
+    //   'updating node',
+    //   node.id(),
+    //   'with cumulativeViolations',
+    //   cumulativeViolations,
+    //   'and cumulativeSelected',
+    //   cumulativeSelected,
+    //   'and label',
+    //   label,
+    // );
 
     // Set cumulativeViolations and cumulativeSelected properties directly
     node.json({

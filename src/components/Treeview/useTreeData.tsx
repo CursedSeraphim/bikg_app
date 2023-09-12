@@ -71,6 +71,8 @@ export default function useTreeData() {
           ({ root, cumulativeNumberViolationsPerType } = getTreeDataFromTuples(subClassOfTriplesRef.current, numberViolationsPerTypeRef.current));
           if (!_.isEqual(cumulativeNumberViolationsPerTypeRef.current, cumulativeNumberViolationsPerType)) {
             cumulativeNumberViolationsPerTypeRef.current = cumulativeNumberViolationsPerType;
+            console.log('dispatching setscumulativeNumberViolationsPerType', cumulativeNumberViolationsPerType);
+            // TODO problem this at some point gets dispatched with empty data even though the state.cumulative... is already set and initialized, which causes the weird cytoscape rerender
             dispatch(setCumulativeNumberViolationsPerType(cumulativeNumberViolationsPerType));
           }
           sortEachLayerAlphabetically(root);
