@@ -7,10 +7,10 @@ from collections import defaultdict
 from rdflib import RDF, Graph, Namespace, URIRef
 
 from bikg_app.routers.utils import (
-    load_edge_count_json,
+    load_nested_counts_dict_json,
     process_edge_object_pairs,
-    save_edge_count_json,
-    serialize_edge_count_dict,
+    save_nested_counts_dict_json,
+    serialize_nested_count_dict,
 )
 
 
@@ -73,27 +73,27 @@ class TestProcessEdgeObjectPairs(unittest.TestCase):
 
 class TestSerializeEdgeCountDict(unittest.TestCase):
     def test_empty_dict(self):
-        assert serialize_edge_count_dict({}) == "{}"
+        assert serialize_nested_count_dict({}) == "{}"
 
     def test_simple_dict(self):
         input_dict = {"a": 1, "b": 2}
         expected_output = json.dumps(input_dict)
-        assert serialize_edge_count_dict(input_dict) == expected_output
+        assert serialize_nested_count_dict(input_dict) == expected_output
 
     def test_dict_with_set(self):
         input_dict = {"a": {1, 2}, "b": 2}
         expected_output = json.dumps({"a": [1, 2], "b": 2})
-        assert serialize_edge_count_dict(input_dict) == expected_output
+        assert serialize_nested_count_dict(input_dict) == expected_output
 
     def test_dict_with_nested_dict(self):
         input_dict = {"a": {"nested": 1}, "b": 2}
         expected_output = json.dumps(input_dict)
-        assert serialize_edge_count_dict(input_dict) == expected_output
+        assert serialize_nested_count_dict(input_dict) == expected_output
 
     def test_dict_with_varied_keys(self):
         input_dict = {1: 1, "b": 2}
         expected_output = json.dumps({"1": 1, "b": 2})
-        assert serialize_edge_count_dict(input_dict) == expected_output
+        assert serialize_nested_count_dict(input_dict) == expected_output
 
 
 class TestSaveAndLoadEdgeCountJson(unittest.TestCase):
@@ -106,23 +106,23 @@ class TestSaveAndLoadEdgeCountJson(unittest.TestCase):
 
     def test_save_and_load_empty_dict(self):
         test_dict = {}
-        save_edge_count_json(test_dict, self.test_filename)
+        save_nested_counts_dict_json(test_dict, self.test_filename)
 
-        loaded_dict = load_edge_count_json(self.test_filename)
+        loaded_dict = load_nested_counts_dict_json(self.test_filename)
         assert test_dict == loaded_dict
 
     def test_save_and_load_simple_dict(self):
         test_dict = {"a": 1, "b": 2}
-        save_edge_count_json(test_dict, self.test_filename)
+        save_nested_counts_dict_json(test_dict, self.test_filename)
 
-        loaded_dict = load_edge_count_json(self.test_filename)
+        loaded_dict = load_nested_counts_dict_json(self.test_filename)
         assert test_dict == loaded_dict
 
     def test_save_and_load_complex_dict(self):
         test_dict = {"a": 1, "b": {"nested": 2}, "c": [1, 2, 3]}
-        save_edge_count_json(test_dict, self.test_filename)
+        save_nested_counts_dict_json(test_dict, self.test_filename)
 
-        loaded_dict = load_edge_count_json(self.test_filename)
+        loaded_dict = load_nested_counts_dict_json(self.test_filename)
         assert test_dict == loaded_dict
 
 
@@ -155,9 +155,9 @@ class TestSaveAndLoadEdgeCountWithGraph(unittest.TestCase):
 
     def test_save_and_load_edge_count_with_graph(self):
         self.add_exemplars_to_graph()
-        save_edge_count_json(self.edge_count_dict, self.test_filename)
+        save_nested_counts_dict_json(self.edge_count_dict, self.test_filename)
 
-        loaded_edge_count_dict = load_edge_count_json(self.test_filename)
+        loaded_edge_count_dict = load_nested_counts_dict_json(self.test_filename)
 
         expected_dict = {
             "http://example.com/exemplar1": {"http://example.com/predicate__http://example.com/object": 2},
@@ -194,9 +194,9 @@ class TestProcessEdgeObjectPairsWithSaveAndLoad(unittest.TestCase):
 
     def test_process_edge_object_pairs_with_save_and_load(self):
         self.add_exemplars_using_function()
-        save_edge_count_json(self.edge_count_dict, self.test_filename)
+        save_nested_counts_dict_json(self.edge_count_dict, self.test_filename)
 
-        loaded_edge_count_dict = load_edge_count_json(self.test_filename)
+        loaded_edge_count_dict = load_nested_counts_dict_json(self.test_filename)
 
         expected_dict = {
             "http://example.com/exemplar_func1": {"http://example.com/predicate__http://example.com/object": 2},
@@ -267,9 +267,9 @@ class TestProcessEdgeObjectPairsWithMultiplePairs(unittest.TestCase):
 
     def test_process_edge_object_pairs_with_multiple_pairs(self):
         self.add_multiple_po_pairs()
-        save_edge_count_json(self.edge_count_dict, self.test_filename)
+        save_nested_counts_dict_json(self.edge_count_dict, self.test_filename)
 
-        loaded_edge_count_dict = load_edge_count_json(self.test_filename)
+        loaded_edge_count_dict = load_nested_counts_dict_json(self.test_filename)
 
         expected_dict = {
             "http://example.com/exemplar_multipair1": {

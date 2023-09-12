@@ -12,10 +12,10 @@ from rdflib.namespace import split_uri
 from scipy.stats import chi2_contingency
 
 from bikg_app.routers.utils import (
-    load_edge_count_json,
-    load_uri_set_of_uris_dict,
-    serialize_edge_count_dict,
-    serialize_focus_node_exemplar_dict,
+    load_lists_dict,
+    load_nested_counts_dict_json,
+    serialize_dict_keys_and_values,
+    serialize_nested_count_dict,
 )
 
 SH = Namespace("http://www.w3.org/ns/shacl#")
@@ -29,6 +29,7 @@ ONTOLOGY_TTL_FILE_PATH = "bikg_app/ttl/omics_model_union_violation_exemplar.ttl"
 EXEMPLAR_EDGE_COUNT_JSON_PATH = "bikg_app/json/exemplar_edge_count_dict.json"
 FOCUS_NODE_EXEMPLAR_DICT_JSON_PATH = "bikg_app/json/focus_node_exemplar_dict.json"
 EXEMPLAR_FOCUS_NODE_DICT_JSON_PATH = "bikg_app/json/exemplar_focus_node_dict.json"
+VIOLATION_EXEMPLAR_DICT_PATH = 'bikg_app/json/violation_exemplar_dict.json'
 
 # load the violations
 assert os.path.exists(VIOLATIONS_FILE_PATH)
@@ -60,14 +61,54 @@ overall_violation_value_counts = {
 }
 
 # load the edge_count_dict that gives edge counts within each exemplar
-edge_count_dict = load_edge_count_json(EXEMPLAR_EDGE_COUNT_JSON_PATH)
+edge_count_dict = load_nested_counts_dict_json(EXEMPLAR_EDGE_COUNT_JSON_PATH)
 # load the focus_node_exemplar_dict that gives the exemplars for each focus node
-focus_node_exemplar_dict = load_uri_set_of_uris_dict(FOCUS_NODE_EXEMPLAR_DICT_JSON_PATH)
+focus_node_exemplar_dict = load_lists_dict(FOCUS_NODE_EXEMPLAR_DICT_JSON_PATH)
 # exemplar_focus_node_dict that gives the focus node for each exemplar
-exemplar_focus_node_dict = load_uri_set_of_uris_dict(EXEMPLAR_FOCUS_NODE_DICT_JSON_PATH)
+exemplar_focus_node_dict = load_lists_dict(EXEMPLAR_FOCUS_NODE_DICT_JSON_PATH)
+# violation_exemplar_dict that gives the exemplars and their counts for each violation
+violation_exemplar_dict = load_nested_counts_dict_json(VIOLATION_EXEMPLAR_DICT_PATH)
 
 router = APIRouter()
 
+
+def build_type_violation_dict(df, violations_list):
+    """
+    Description of build_type_violation_dict.
+    :param :df: Dataframe with columns "rdf:type" and v for each v in violations_list
+    :return: A dictionary with types as keys and (violation, violation_count) as values
+    """
+    # Initialize an empty dictionary to store the results
+    type_violation_dict = {}
+    
+    # Loop through each unique RDF type in the DataFrame
+    for rdf_type in df['rdf:type'].unique():
+        # Filter the DataFrame to only include rows with the current RDF type
+        filtered_df = df[df['rdf:type'] == rdf_type]
+        
+        # Initialize an empty list to store violation counts for the current RDF type
+        violation_counts = []
+        
+        # Loop through each violation type in violations_list
+        for violation in violations_list:
+            # Count the number of occurrences of the current violation type
+            # in the filtered DataFrame
+            violation_count = filtered_df[violation].sum()
+            
+            # Append the violation type and its count to violation_counts
+            violation_counts.append((violation, violation_count))
+        
+        # Add the violation counts for the current RDF type to type_violation_dict
+        type_violation_dict[rdf_type] = violation_counts
+    
+    return type_violation_dict
+
+
+type_violation_dict = build_type_violation_dict(df, violations_list)
+print()
+print('type_violation_dict', type_violation_dict)
+print()
+print('violation_exemplar_dict', violation_exemplar_dict)
 
 def get_prefixes(graph: Graph):
     return {prefix: str(namespace) for prefix, namespace in graph.namespaces()}
@@ -153,20 +194,20 @@ def shorten_dict_uris(d, prefixes):
 @router.get("/file/edge_count_dict")
 async def get_edge_count_dict():
     prefixes = get_prefixes(g)  # Get the prefixes from the graph
-    return serialize_edge_count_dict(shorten_dict_uris(edge_count_dict, prefixes))
+    return serialize_nested_count_dict(shorten_dict_uris(edge_count_dict, prefixes))
 
 
 @router.get("/file/focus_node_exemplar_dict")
 async def get_focus_node_exemplar_dict():
     # TODO shorten uris with shorten_dict_uris then return serialized shortened dict
     prefixes = get_prefixes(g)  # Get the prefixes from the graph
-    return serialize_focus_node_exemplar_dict(shorten_dict_uris(focus_node_exemplar_dict, prefixes))
+    return serialize_dict_keys_and_values(shorten_dict_uris(focus_node_exemplar_dict, prefixes))
 
 
 @router.get("/file/exemplar_focus_node_dict")
 async def get_exemplar_focus_node_dict():
     prefixes = get_prefixes(g)  # Get the prefixes from the graph
-    return serialize_focus_node_exemplar_dict(shorten_dict_uris(exemplar_focus_node_dict, prefixes))
+    return serialize_dict_keys_and_values(shorten_dict_uris(exemplar_focus_node_dict, prefixes))
 
 
 @router.get("/file/study")
@@ -370,6 +411,39 @@ async def get_sub_class_of():
                 "o": g.namespace_manager.qname(row.o),  # type: ignore
             }
         )
+
+    return result
+
+
+@router.get("/ontology-tree")
+async def get_ontology_tree():
+    """
+    Retrieves all tuples with the rdfs:SubClassOf predicate using SPARQL and converts them to QNames.
+    Builds a tree of their parent/child relationship.
+    Each node is defined to have the following properties:
+    - id: the name of the node
+    - violation_count: the count of violating focus nodes
+    """
+    g = Graph()
+    g.parse(data=ttl_data, format="turtle")  # Assuming ttl_data is the turtle file content
+
+    query = """
+    SELECT ?s ?o WHERE {
+        ?s rdfs:subClassOf ?o .
+    }
+    """
+
+    result = []
+    for row in g.query(query):
+        result.append(
+            {
+                "s": g.namespace_manager.qname(row.s),  # type: ignore
+                "p": "rdfs:subClassOf",
+                "o": g.namespace_manager.qname(row.o),  # type: ignore
+            }
+        )
+
+    # TODO Build a tree of their parent/child relationship
 
     return result
 

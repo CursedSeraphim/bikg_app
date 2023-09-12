@@ -37,7 +37,7 @@ def get_symmetric_graph_matrix(graph):
     return matrix
 
 
-def serialize_edge_count_dict(d) -> str:
+def serialize_nested_count_dict(d) -> str:
     """Serializes a nested dictionary of edge counts for easier storage.
 
     Args:
@@ -54,7 +54,7 @@ def serialize_edge_count_dict(d) -> str:
     return json.dumps(serialized_dict)
 
 
-def serialize_focus_node_exemplar_dict(d):
+def serialize_dict_keys_and_values(d):
     """Serializes a dictionary that maps focus nodes to exemplar nodes.
 
     Args:
@@ -71,7 +71,7 @@ def serialize_focus_node_exemplar_dict(d):
     return serialized_dict
 
 
-def deserialize_edge_count_dict(d):
+def deserialize_nested_count_dict(d):
     """Deserializes a nested dictionary of edge counts.
 
     Args:
@@ -80,11 +80,13 @@ def deserialize_edge_count_dict(d):
     Returns:
         dict: A deserialized version of the input dictionary.
     """
-    deserialized_dict = json.loads(d)  # Deserialize the JSON string to a Python dictionary
+    deserialized_dict = json.loads(
+        d
+    )  # Deserialize the JSON string to a Python dictionary
     return deserialized_dict
 
 
-def load_edge_count_json(path):
+def load_nested_counts_dict_json(path):
     """Loads edge count information from a JSON file.
 
     Args:
@@ -95,10 +97,10 @@ def load_edge_count_json(path):
     """
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
-    return deserialize_edge_count_dict(data)
+    return deserialize_nested_count_dict(data)
 
 
-def deserialize_focus_node_exemplar_dict(d):
+def deserialize_dict_keys_and_values(d):
     """Deserializes a dictionary that maps focus nodes to exemplar nodes.
 
     Args:
@@ -115,7 +117,7 @@ def deserialize_focus_node_exemplar_dict(d):
     return deserialized_dict
 
 
-def load_uri_set_of_uris_dict(path):
+def load_lists_dict(path):
     """Loads a dictionary that maps URIs to sets of URIs from a JSON file.
 
     Args:
@@ -126,10 +128,10 @@ def load_uri_set_of_uris_dict(path):
     """
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
-    return deserialize_focus_node_exemplar_dict(data)
+    return deserialize_dict_keys_and_values(data)
 
 
-def save_edge_count_json(data, path):
+def save_nested_counts_dict_json(data, path):
     """Saves edge count information to a JSON file.
 
     Args:
@@ -140,10 +142,10 @@ def save_edge_count_json(data, path):
         None
     """
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(serialize_edge_count_dict(dict(data)), f)
+        json.dump(serialize_nested_count_dict(dict(data)), f)
 
 
-def save_uri_set_of_uris_dict(data, path):
+def save_lists_dict(data, path):
     """Saves a dictionary that maps URIs to sets of URIs to a JSON file.
 
     Args:
@@ -154,7 +156,7 @@ def save_uri_set_of_uris_dict(data, path):
         None
     """
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(serialize_focus_node_exemplar_dict(dict(data)), f)
+        json.dump(serialize_dict_keys_and_values(dict(data)), f)
 
 
 def copy_namespaces(source_g, target_g):
@@ -210,11 +212,14 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
         ?violation a sh:ValidationResult .
         }
         """
-    violations = [row[0] for row in violation_report_g.query(violations_query)]  # type: ignore
+    validation_results = [row[0] for row in violation_report_g.query(violations_query)]  # type: ignore
 
     edge_count_dict = defaultdict(lambda: defaultdict(int))
     focus_node_exemplar_dict = defaultdict(set)
     exemplar_focus_node_dict = defaultdict(set)
+    violation_exemplar_dict = defaultdict(
+        lambda: defaultdict(int)
+    )  # New dictionary to keep track of violation-exemplar pairs
 
     ignored_edges = {
         dcterms.date,
@@ -224,10 +229,12 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
 
     exemplar_sets = {}
 
-    for violation in TQDMInstance(violations, desc="Processing violations"):
+    for validation_result in TQDMInstance(
+        validation_results, desc="Processing violations"
+    ):
         violations_query = f"""
             SELECT ?s ?p ?o WHERE {{
-                <{violation}> ?p ?o.
+                <{validation_result}> ?p ?o.
             }}
         """
 
@@ -248,23 +255,33 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
 
         if exemplar_name is None:
             # Use custom exemplar namespace instead of the shape's namespace
-            exemplar_name = URIRef(f"{ex}{shape.split('omics/')[-1]}_exemplar_{len(exemplar_sets)+1}")
+            exemplar_name = URIRef(
+                f"{ex}{shape.split('omics/')[-1]}_exemplar_{len(exemplar_sets)+1}"
+            )
             exemplar_sets[frozenset(edge_object_pairs)] = exemplar_name
 
         focus_node_exemplar_dict[current_focus_node].add(exemplar_name)
         exemplar_focus_node_dict[exemplar_name].add(current_focus_node)
+        violation_exemplar_dict[shape][
+            exemplar_name
+        ] += 1  # Updating the new dictionary to associate the violation with the exemplar and count
 
-        process_edge_object_pairs(ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name)
+        process_edge_object_pairs(
+            ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name
+        )
 
     return (
         ontology_g,
         edge_count_dict,
         focus_node_exemplar_dict,
         exemplar_focus_node_dict,
+        violation_exemplar_dict,
     )
 
 
-def process_edge_object_pairs(ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name):
+def process_edge_object_pairs(
+    ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name
+):
     for p, o in edge_object_pairs:
         po_str = f"{p}__{o}"
         if edge_count_dict[exemplar_name][po_str] == 0:
