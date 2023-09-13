@@ -1,5 +1,5 @@
 /* eslint-disable no-param-reassign */
-import { OntologyMap, ITriple, INumberViolationsPerTypeMap, IOntologyNode } from '../../types';
+import { OntologyMap, ITriple, INumberViolationsPerNodeMap, IOntologyNode } from '../../types';
 
 // Formats the node name with the cumulative values
 function formatNodeName(node: IOntologyNode): string {
@@ -22,7 +22,7 @@ function formatNodeName(node: IOntologyNode): string {
  */
 export const createIOntologyNode = (
   name: string,
-  cumulativeNumberViolationsPerType: INumberViolationsPerTypeMap,
+  cumulativeNumberViolationsPerType: INumberViolationsPerNodeMap,
   children: IOntologyNode[] = [],
 ): IOntologyNode => {
   // Safely access properties using optional chaining and nullish coalescing
@@ -45,7 +45,7 @@ function recursivelyNameNodes(root): void {
   });
 }
 
-export function getTreeDataFromTuples(subClassOfTriples: ITriple[], cumulativeNumberViolationsPerType: INumberViolationsPerTypeMap): IOntologyNode {
+export function getTreeDataFromTuples(subClassOfTriples: ITriple[], cumulativeNumberViolationsPerType: INumberViolationsPerNodeMap): IOntologyNode {
   const ontologyMap: OntologyMap = {};
   for (const { s, o } of subClassOfTriples) {
     ontologyMap[s] = ontologyMap[s] || createIOntologyNode(s, cumulativeNumberViolationsPerType);

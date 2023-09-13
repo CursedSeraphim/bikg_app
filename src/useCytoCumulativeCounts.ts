@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { Core } from 'cytoscape';
 import _ from 'lodash';
 import store from './components/Store/Store';
+import { INumberViolationsPerNodeMap } from './types';
 
 // Helper function to get the base node name from the composite key
 function getBaseId(compositeKey: string): string {
@@ -10,13 +11,13 @@ function getBaseId(compositeKey: string): string {
   return parts[0];
 }
 
-export function updateCytoscapeNodesGivenCumulativeCounts(cy: Core, cumulativeNumberViolationsPerType: Record<string, any>) {
+export function updateCytoscapeNodesGivenCumulativeCounts(cy: Core, numberViolationsPerNode: INumberViolationsPerNodeMap) {
   console.log('triggering cytoscape update');
 
   cy.startBatch();
 
   // Build an array of node IDs to update
-  const nodeIdsToUpdate = Object.keys(cumulativeNumberViolationsPerType);
+  const nodeIdsToUpdate = Object.keys(numberViolationsPerNode);
 
   // TODO handle both cases: where node  contains the count, and where it doesn't
   // Update each node
@@ -26,7 +27,7 @@ export function updateCytoscapeNodesGivenCumulativeCounts(cy: Core, cumulativeNu
     if (node.empty()) continue;
 
     // TODO create a smart mapping of keys where whether the key is a node or a node + count, we get the same value
-    const { cumulativeViolations, cumulativeSelected } = cumulativeNumberViolationsPerType[id] || cumulativeNumberViolationsPerType[baseId];
+    const { cumulativeViolations, cumulativeSelected } = numberViolationsPerNode[id] || numberViolationsPerNode[baseId];
     const label = id;
     // console.log(
     //   'updating node',
@@ -53,22 +54,22 @@ export function updateCytoscapeNodesGivenCumulativeCounts(cy: Core, cumulativeNu
 }
 
 const useCytoCumulativeCounts = (cy: Core) => {
-  const cumulativeNumberViolationsPerTypeRef = useRef({});
+  const numberViolationsPerNodeRef = useRef({});
 
   useEffect(() => {
     const unsubscribe = store.subscribe(() => {
       const currentState = store.getState().combined;
       let shouldUpdateTreeData = false;
-      const { cumulativeNumberViolationsPerType } = currentState;
+      const { numberViolationsPerNode } = currentState;
 
       // check equality to ref using lodash
-      if (!_.isEqual(cumulativeNumberViolationsPerType, cumulativeNumberViolationsPerTypeRef.current)) {
+      if (!_.isEqual(numberViolationsPerNode, numberViolationsPerNodeRef.current)) {
         shouldUpdateTreeData = true;
-        cumulativeNumberViolationsPerTypeRef.current = cumulativeNumberViolationsPerType;
+        numberViolationsPerNodeRef.current = numberViolationsPerNode;
       }
 
       if (cy && shouldUpdateTreeData) {
-        updateCytoscapeNodesGivenCumulativeCounts(cy, cumulativeNumberViolationsPerType);
+        updateCytoscapeNodesGivenCumulativeCounts(cy, numberViolationsPerNode);
       }
     });
 

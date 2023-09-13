@@ -12,7 +12,7 @@ import {
   setEdgeCountDict,
   setNamespaces,
   setSubClassOfTriples,
-  setCumulativeNumberViolationsPerType,
+  setCumulativeNumberViolationsPerNode,
 } from './components/Store/CombinedSlice';
 
 import CytoscapeView from './components/Cytoscape/CytoscapeView';
@@ -50,7 +50,7 @@ export function App() {
           };
           return acc;
         }, {});
-        dispatch(setCumulativeNumberViolationsPerType(updatedObject));
+        dispatch(setCumulativeNumberViolationsPerNode(updatedObject));
       })
       .catch((error) => {
         console.error('Failed to fetch edge count dictionary', error);

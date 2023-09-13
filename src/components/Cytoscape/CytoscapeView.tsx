@@ -6,7 +6,7 @@ import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
 import viewUtilities from 'cytoscape-view-utilities';
 import contextMenus from 'cytoscape-context-menus';
-import { selectCumulativeNumberViolationsPerType, selectTypes, selectViolations } from '../Store/CombinedSlice';
+import { selectCumulativeNumberViolationsPerNode, selectTypes, selectViolations } from '../Store/CombinedSlice';
 
 import { useShapeHandler } from '../components/namespaceHandler';
 import { useCytoViewHelpers } from './useCytoscapeViewHelpers';
@@ -29,7 +29,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
   const initialNodeData = useRef<Map<string, { x: number; y: number; visible: boolean }>>(new Map());
-  const cumulativeNumberViolationsPerType = useSelector(selectCumulativeNumberViolationsPerType);
+  const cumulativeNumberViolationsPerType = useSelector(selectCumulativeNumberViolationsPerNode);
 
   const viewHelpers = useCytoViewHelpers(cy);
   useCytoscapeData({

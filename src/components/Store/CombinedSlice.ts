@@ -16,18 +16,18 @@ import {
   FocusNodeExemplarDict,
   ExemplarFocusNodeDict,
   INamespaces,
-  INumberViolationsPerTypeMap,
+  INumberViolationsPerNodeMap,
   IViolationMap,
   ITypeMap,
   IExemplarMap,
   IFocusNodeMap,
   OntologyTree,
-  INumberViolationsPerTypeValue,
+  INumberViolationsPerNodeValue,
 } from '../../types';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
 const initialState: ICombinedState = {
-  cumulativeNumberViolationsPerType: {},
+  cumulativeNumberViolationsPerNode: {},
   samples: [],
   originalSamples: [],
   selectedNodes: [],
@@ -46,7 +46,7 @@ const initialState: ICombinedState = {
   namespaces: {},
   types: [],
   subClassOfTriples: [],
-  numberViolationsPerType: {},
+  numberViolationsPerNode: {},
   focusNodeSampleMap: {},
   violationMap: {},
   focusNodeMap: {},
@@ -245,7 +245,7 @@ const updateSelectedViolationExemplars = (state) => {
   state.selectedViolationExemplars = Array.from(selectedViolationExemplarsSet);
 };
 
-export function constructViolationsPerTypeValueObject(): INumberViolationsPerTypeValue {
+export function constructViolationsPerNodeValueObject(): INumberViolationsPerNodeValue {
   return {
     violations: 0,
     selected: 0,
@@ -254,54 +254,80 @@ export function constructViolationsPerTypeValueObject(): INumberViolationsPerTyp
   };
 }
 
-function calculateNumberViolationsPerTypeGivenType(state: ICombinedState): void {
-  console.log('called calculateNumberViolationsPerTypeGivenType');
-  // Create a new object to store the updated numberViolationsPerType
-  const newNumberViolationsPerType: INumberViolationsPerTypeMap = { ...state.numberViolationsPerType };
+function calculateNumberViolationsPerNodeGivenType(state: ICombinedState): void {
+  console.log('called calculateNumberViolationsPerNodeGivenType');
+  // Create a new object to store the updated numberViolationsPerNoded
+  const newNumberViolationsPerNode: INumberViolationsPerNodeMap = { ...state.numberViolationsPerNode };
 
-  // Loop through all the keys in numberViolationsPerType to reset 'selected' count to zero
-  Object.keys(newNumberViolationsPerType).forEach((type) => {
-    newNumberViolationsPerType[type].selected = 0;
+  // Loop through all the keys in numberViolationsPerNode to reset 'selected' count to zero
+  Object.keys(newNumberViolationsPerNode).forEach((type) => {
+    newNumberViolationsPerNode[type].selected = 0;
   });
 
   // Update 'selected' count in the new object based on new selected types
   state.selectedTypes.forEach((type) => {
-    if (newNumberViolationsPerType[type]) {
-      newNumberViolationsPerType[type].selected = newNumberViolationsPerType[type].violations;
+    if (newNumberViolationsPerNode[type]) {
+      newNumberViolationsPerNode[type].selected = newNumberViolationsPerNode[type].violations;
     }
   });
 
   // Now, we update the state all at once
-  state.numberViolationsPerType = newNumberViolationsPerType;
+  state.numberViolationsPerNode = newNumberViolationsPerNode;
 }
 
-function calculateNewNumberViolationsPerType(samples, existingNumberViolationsPerType, newSelectedNodes) {
-  console.log('called calculateNewNumberViolationsPerType');
-  const focusNodesSamplesMap = {};
-  samples.forEach((sample) => {
-    focusNodesSamplesMap[sample.focus_node] = sample;
-  });
+/**
+ * Helper function to increment the value for a given key in a map.
+ * Initializes the key with 0 if it's not already in the map.
+ */
+const incrementMapValue = (map, key) => {
+  map.set(key, (map.get(key) || 0) + 1);
+};
 
-  // Initialize newNumberViolationsPerType based on existing state
-  const newNumberViolationsPerType = { ...existingNumberViolationsPerType };
-
-  // Reset the 'selected' counts to 0
-  Object.keys(newNumberViolationsPerType).forEach((type) => {
-    newNumberViolationsPerType[type].selected = 0;
-  });
-
-  newSelectedNodes.forEach((selectedNode) => {
-    const correspondingSample = focusNodesSamplesMap[selectedNode];
-
-    if (!correspondingSample) return;
-
-    const sampleType = String(correspondingSample['rdf:type']);
-    if (sampleType && newNumberViolationsPerType[sampleType]) {
-      newNumberViolationsPerType[sampleType].selected++;
+/**
+ * Helper function to update newNumberViolationsPerNode based on a map.
+ */
+const updateViolationsPerNode = (sourceMap, numberViolationsPerNode) => {
+  console.log('sourceMap', sourceMap);
+  console.log('numberViolationsPerNode', numberViolationsPerNode);
+  sourceMap.forEach((value, key) => {
+    console.log('key', key);
+    if (Object.hasOwnProperty.call(numberViolationsPerNode, key)) {
+      console.log('key exists');
+      numberViolationsPerNode[key].selected = value;
+      numberViolationsPerNode[key].cumulativeSelected = value; // Assuming cumulativeSelected should be the same as selected
     }
   });
+};
 
-  return newNumberViolationsPerType;
+/**
+ * Main function to calculate new number of violations per node.
+ */
+function calculateNewNumberViolationsPerNode(newSelectedNodes, focusNodeMap, numberViolationsPerNode) {
+  // Initialize maps for counting the types, violations, and exemplars.
+  const newSelectedTypesMap = new Map();
+  const newSelectedViolationsMap = new Map();
+  const newSelectedExemplarsMap = new Map();
+
+  // Iterate through each node in newSelectedNodes to populate the maps.
+  newSelectedNodes.forEach((node) => {
+    const { types, violations, exemplars } = focusNodeMap[node];
+
+    types.forEach((type) => incrementMapValue(newSelectedTypesMap, type));
+    violations.forEach((violation) => incrementMapValue(newSelectedViolationsMap, violation));
+    exemplars.forEach((exemplar) => incrementMapValue(newSelectedExemplarsMap, exemplar));
+  });
+
+  // Update newNumberViolationsPerNode based on the populated maps.
+  updateViolationsPerNode(newSelectedTypesMap, numberViolationsPerNode);
+  updateViolationsPerNode(newSelectedViolationsMap, numberViolationsPerNode);
+  updateViolationsPerNode(newSelectedExemplarsMap, numberViolationsPerNode);
+
+  console.log('newSelectedTypesMap', newSelectedTypesMap);
+  console.log('newSelectedViolationsMap', newSelectedViolationsMap);
+  console.log('newSelectedExemplarsMap', newSelectedExemplarsMap);
+  console.log('newNumberViolationsPerNode', numberViolationsPerNode);
+
+  return numberViolationsPerNode;
 }
 
 enum ActionTypes {
@@ -364,17 +390,15 @@ const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
-    setCumulativeNumberViolationsPerType: (state, action: PayloadAction<INumberViolationsPerTypeMap>) => {
-      state.cumulativeNumberViolationsPerType = action.payload;
+    setCumulativeNumberViolationsPerNode: (state, action: PayloadAction<INumberViolationsPerNodeMap>) => {
+      state.cumulativeNumberViolationsPerNode = action.payload;
 
-      // TODO code for setting state.numberViolationsPerType
-      // TODO code for setting state.numberViolationsPerType
-      Object.keys(state.cumulativeNumberViolationsPerType).forEach((key) => {
-        if (!Object.prototype.hasOwnProperty.call(state.numberViolationsPerType, key)) {
-          state.numberViolationsPerType[key] = constructViolationsPerTypeValueObject();
+      Object.keys(state.cumulativeNumberViolationsPerNode).forEach((key) => {
+        if (!Object.prototype.hasOwnProperty.call(state.numberViolationsPerNode, key)) {
+          state.numberViolationsPerNode[key] = constructViolationsPerNodeValueObject();
         }
-        state.numberViolationsPerType[key].cumulativeViolations = state.cumulativeNumberViolationsPerType[key].cumulativeViolations;
-        state.numberViolationsPerType[key].cumulativeSelected = state.cumulativeNumberViolationsPerType[key].cumulativeSelected;
+        state.numberViolationsPerNode[key].cumulativeViolations = state.cumulativeNumberViolationsPerNode[key].cumulativeViolations;
+        state.numberViolationsPerNode[key].cumulativeSelected = state.cumulativeNumberViolationsPerNode[key].cumulativeSelected;
       });
     },
     setOntologyTree: (state, action: PayloadAction<OntologyTree>) => {
@@ -433,8 +457,8 @@ const combinedSlice = createSlice({
       state.selectedViolations = newSelectedViolations;
       state.selectedViolationExemplars = newSelectedExemplars;
 
-      const newNumberViolationsPerType = calculateNewNumberViolationsPerType(state.samples, state.numberViolationsPerType, state.selectedNodes);
-      state.numberViolationsPerType = newNumberViolationsPerType;
+      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(state.selectedNodes, state.focusNodeMap, state.numberViolationsPerNode);
+      state.numberViolationsPerNode = newNumberViolationsPerNode;
 
       console.timeEnd('setSelectedViolationExemplars');
     },
@@ -484,7 +508,7 @@ const combinedSlice = createSlice({
       updateSelectedViolations(state, valueCounts);
       updateSelectedTypes(state, valueCounts);
       updateSelectedViolationExemplars(state);
-      calculateNumberViolationsPerTypeGivenType(state);
+      calculateNumberViolationsPerNodeGivenType(state);
     },
     setSelectedFocusNodes: (state, action) => {
       console.log('settings selected focus nodes');
@@ -506,14 +530,6 @@ const combinedSlice = createSlice({
       // Use a Set to store selected types
       const selectedTypesSet: Set<string> = new Set();
 
-      // Prepare a new object for updating numberViolationsPerType
-      const newNumberViolationsPerType: INumberViolationsPerTypeMap = { ...state.numberViolationsPerType };
-
-      // Reset the 'selected' counts to 0
-      Object.keys(newNumberViolationsPerType).forEach((type) => {
-        newNumberViolationsPerType[type].selected = 0;
-      });
-
       // Iterate over selected nodes
       newSelectedNodes.forEach((selectedNode) => {
         const correspondingSample = focusNodesSamplesMap[selectedNode];
@@ -530,11 +546,6 @@ const combinedSlice = createSlice({
         const sampleType = String(correspondingSample['rdf:type']);
         if (sampleType) {
           selectedTypesSet.add(sampleType);
-
-          // Update the 'selected' count in the new object based on new selected nodes
-          if (newNumberViolationsPerType[sampleType]) {
-            newNumberViolationsPerType[sampleType].selected++;
-          }
         }
       });
 
@@ -552,8 +563,8 @@ const combinedSlice = createSlice({
       state.selectedNodes = newSelectedNodes;
       state.selectedTypes = newSelectedTypes;
       state.selectedViolations = newSelectedViolations;
-      state.numberViolationsPerType = newNumberViolationsPerType;
-      console.log('state.numberViolationsPerType', state.numberViolationsPerType);
+      state.numberViolationsPerNode = calculateNewNumberViolationsPerNode(state.selectedNodes, state.focusNodeMap, state.numberViolationsPerNode);
+      console.log('state.numberViolationsPerNode', state.numberViolationsPerNode);
 
       updateSelectedViolationExemplars(state);
     },
@@ -589,15 +600,15 @@ const combinedSlice = createSlice({
       state.selectedViolationExemplars = newSelectedViolationExemplars;
       state.selectedViolations = newSelectedViolations;
 
-      const newNumberViolationsPerType = calculateNewNumberViolationsPerType(state.samples, state.numberViolationsPerType, state.selectedNodes);
-      state.numberViolationsPerType = newNumberViolationsPerType;
+      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(state.selectedNodes, state.focusNodeMap, state.numberViolationsPerNode);
+      state.numberViolationsPerNode = newNumberViolationsPerNode;
 
       console.timeEnd('setSelectedViolations');
     },
     setSelectedTypes: (state, action) => {
       console.time('setSelectedTypes');
       state.selectedTypes = action.payload;
-      calculateNumberViolationsPerTypeGivenType(state);
+      calculateNumberViolationsPerNodeGivenType(state);
 
       let newSelectedNodes = [];
       let newSelectedViolations = [];
@@ -641,8 +652,8 @@ const combinedSlice = createSlice({
 
       updateSelectedViolationExemplars(state);
 
-      const newNumberViolationsPerType = calculateNewNumberViolationsPerType(state.samples, state.numberViolationsPerType, state.selectedNodes);
-      state.numberViolationsPerType = newNumberViolationsPerType;
+      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(state.selectedNodes, state.focusNodeMap, state.numberViolationsPerNode);
+      state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
     removeSingleSelectedType: (state, action) => {
       const typeToRemove = action.payload;
@@ -686,8 +697,8 @@ const combinedSlice = createSlice({
 
       updateSelectedViolationExemplars(state);
 
-      const newNumberViolationsPerType = calculateNewNumberViolationsPerType(state.samples, state.numberViolationsPerType, state.selectedNodes);
-      state.numberViolationsPerType = newNumberViolationsPerType;
+      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(state.selectedNodes, state.focusNodeMap, state.numberViolationsPerNode);
+      state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
     setRdfString: (state, action) => {
       state.rdfString = action.payload;
@@ -714,7 +725,7 @@ export const selectSelectedViolationExemplars = (state: { combined: ICombinedSta
 export const selectNamespaces = (state: { combined: ICombinedState }) => state.combined.namespaces;
 export const selectTypes = (state: { combined: ICombinedState }) => state.combined.types;
 export const selectSubClassOfTriples = (state: { combined: ICombinedState }) => state.combined.subClassOfTriples;
-export const selectCumulativeNumberViolationsPerType = (state: { combined: ICombinedState }) => state.combined.cumulativeNumberViolationsPerType;
+export const selectCumulativeNumberViolationsPerNode = (state: { combined: ICombinedState }) => state.combined.cumulativeNumberViolationsPerNode;
 
 // TODO investigate why we are returning everything here
 // create memoized selector
@@ -998,9 +1009,9 @@ const calculateObjectProperties = (visibleTriples, hiddenTriples) => {
  * @param {Function} getColorForNamespace - Function to get color for namespace.
  * @param {Array} violations - Array of violations.
  * @param {Array} types - Array of types.
- * @param {Object} cumulativeNumberViolationsPerType - Object containing cumulative number of violations per type.
+ * @param {Object} cumulativeNumberViolationsPerNode - Object containing cumulative number of violations per type.
  */
-const processTriples = (triples, visible, nodes, edges, objectProperties, getColorForNamespace, violations, types, cumulativeNumberViolationsPerType) => {
+const processTriples = (triples, visible, nodes, edges, objectProperties, getColorForNamespace, violations, types, cumulativeNumberViolationsPerNode) => {
   triples.forEach((t) => {
     const extractNamespace = (uri) => {
       const match = uri.match(/^([^:]+):/);
@@ -1011,13 +1022,13 @@ const processTriples = (triples, visible, nodes, edges, objectProperties, getCol
       let cumulativeSelected = null;
       let cumulativeViolations = null;
 
-      // Check if id exists in the cumulativeNumberViolationsPerType map
+      // Check if id exists in the cumulativeNumberViolationsPerNode map
       if (
-        Object.hasOwnProperty.call(cumulativeNumberViolationsPerType, id) ||
-        Object.hasOwnProperty.call(cumulativeNumberViolationsPerType, id.split(' ')[0])
+        Object.hasOwnProperty.call(cumulativeNumberViolationsPerNode, id) ||
+        Object.hasOwnProperty.call(cumulativeNumberViolationsPerNode, id.split(' ')[0])
       ) {
         const { cumulativeSelected: cs, cumulativeViolations: cv } =
-          cumulativeNumberViolationsPerType[id] || cumulativeNumberViolationsPerType[id.split(' ')[0]] || {};
+          cumulativeNumberViolationsPerNode[id] || cumulativeNumberViolationsPerNode[id.split(' ')[0]] || {};
 
         cumulativeSelected = cs;
         cumulativeViolations = cv;
@@ -1028,7 +1039,6 @@ const processTriples = (triples, visible, nodes, edges, objectProperties, getCol
         const namespace = extractNamespace(id);
         const defaultColor = getColorForNamespace(namespace, false);
         const selectedColor = getColorForNamespace(namespace, true);
-        if (label === 'omics:Study') console.log('omics:Study', cumulativeSelected, cumulativeViolations);
         node = {
           data: {
             id,
@@ -1081,10 +1091,10 @@ const processTriples = (triples, visible, nodes, edges, objectProperties, getCol
  * @param {Function} getShapeForNamespace - Function to get a shape for a namespace.
  * @param {Array} violations - Array of violations.
  * @param {Array} types - Array of types.
- * @param {Object} cumulativeNumberViolationsPerType - Object containing cumulative number of violations per type.
+ * @param {Object} cumulativeNumberViolationsPerNode - Object containing cumulative number of violations per type.
  * @returns {Object} An object containing array of Nodes and Edges.
  */
-export const selectCytoData = async (rdfString, getShapeForNamespace, violations, types, cumulativeNumberViolationsPerType) => {
+export const selectCytoData = async (rdfString, getShapeForNamespace, violations, types, cumulativeNumberViolationsPerNode) => {
   // ... same as before
   const { visibleTriples, hiddenTriples } = await selectAllTriples(rdfString);
 
@@ -1092,8 +1102,8 @@ export const selectCytoData = async (rdfString, getShapeForNamespace, violations
   const edges = [];
 
   const objectProperties = calculateObjectProperties(visibleTriples, hiddenTriples);
-  processTriples(hiddenTriples, false, nodes, edges, objectProperties, getShapeForNamespace, violations, types, cumulativeNumberViolationsPerType);
-  processTriples(visibleTriples, true, nodes, edges, objectProperties, getShapeForNamespace, violations, types, cumulativeNumberViolationsPerType);
+  processTriples(hiddenTriples, false, nodes, edges, objectProperties, getShapeForNamespace, violations, types, cumulativeNumberViolationsPerNode);
+  processTriples(visibleTriples, true, nodes, edges, objectProperties, getShapeForNamespace, violations, types, cumulativeNumberViolationsPerNode);
   return { nodes, edges };
 };
 
@@ -1123,7 +1133,7 @@ export const {
   setTypeMap,
   setExemplarMap,
   setOntologyTree,
-  setCumulativeNumberViolationsPerType,
+  setCumulativeNumberViolationsPerNode,
 } = combinedSlice.actions;
 
 export default combinedSlice.reducer;

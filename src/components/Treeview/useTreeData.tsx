@@ -5,7 +5,6 @@ import { useDispatch } from 'react-redux';
 import store, { AppDispatch } from '../Store/Store';
 import { getTreeDataFromTuples } from './TreeviewGlue';
 import { updateTreeDataWithSelectedTypes } from './TreeViewHelpers';
-import { setCumulativeNumberViolationsPerType } from '../Store/CombinedSlice';
 
 function sortEachLayerAlphabetically(tree) {
   if (!tree) return;
@@ -30,8 +29,7 @@ export default function useTreeData() {
   const ontologyRef = useRef('');
   const selectedTypesRef = useRef([]);
   const subClassOfTriplesRef = useRef([]);
-  const numberViolationsPerTypeRef = useRef({});
-  // const cumulativeNumberViolationsPerTypeRef = useRef({});
+  const numberViolationsPerNodeRef = useRef({});
   const dispatch: AppDispatch = useDispatch();
 
   useEffect(() => {
@@ -40,7 +38,7 @@ export default function useTreeData() {
       const newOntology = currentState.combined.rdfString;
       const newSelectedTypes = currentState.combined.selectedTypes;
       const newSubClassOfTriples = currentState.combined.subClassOfTriples;
-      const newNumberViolationsPerType = currentState.combined.numberViolationsPerType;
+      const newNumberViolationsPerNode = currentState.combined.numberViolationsPerNode;
 
       let shouldUpdateTreeData = false;
       if (ontologyRef.current !== newOntology) {
@@ -58,19 +56,18 @@ export default function useTreeData() {
         shouldUpdateTreeData = true;
       }
 
-      if (!_.isEqual(numberViolationsPerTypeRef.current, newNumberViolationsPerType)) {
-        numberViolationsPerTypeRef.current = newNumberViolationsPerType;
+      if (!_.isEqual(numberViolationsPerNodeRef.current, newNumberViolationsPerNode)) {
+        numberViolationsPerNodeRef.current = newNumberViolationsPerNode;
         shouldUpdateTreeData = true;
       }
 
       if (shouldUpdateTreeData) {
         let root;
-        let cumulativeNumberViolationsPerType;
-        if (newOntology && numberViolationsPerTypeRef.current && Object.keys(numberViolationsPerTypeRef.current).length > 0) {
+        if (newOntology && numberViolationsPerNodeRef.current && Object.keys(numberViolationsPerNodeRef.current).length > 0) {
           // Call the function directly since it's not asynchronous anymore
-          root = getTreeDataFromTuples(subClassOfTriplesRef.current, numberViolationsPerTypeRef.current);
+          root = getTreeDataFromTuples(subClassOfTriplesRef.current, numberViolationsPerNodeRef.current);
           sortEachLayerAlphabetically(root);
-          console.log('numberViolationsPerTypeRef.current', numberViolationsPerTypeRef.current);
+          console.log('numberViolationsPerNodeRef.current', numberViolationsPerNodeRef.current);
           if (Array.isArray(newSelectedTypes) && newSelectedTypes.length > 0) {
             setTreeData(updateTreeDataWithSelectedTypes(root, newSelectedTypes));
           } else {
@@ -79,6 +76,7 @@ export default function useTreeData() {
         } else if (Array.isArray(newSelectedTypes) && newSelectedTypes.length > 0) {
           setTreeData((oldTreeData) => updateTreeDataWithSelectedTypes(oldTreeData, newSelectedTypes));
         }
+        // console.log('numberViolationsPerNodeRef.current', numberViolationsPerNodeRef.current);
       }
     });
 
