@@ -1,7 +1,8 @@
 // CombinedSlice.ts
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, current, PayloadAction } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Store, Quad } from 'n3';
+import _ from 'lodash';
 import { createSelector } from 'reselect';
 import { v4 as uuidv4 } from 'uuid';
 import { dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
@@ -21,8 +22,9 @@ import {
   ITypeMap,
   IExemplarMap,
   IFocusNodeMap,
-  OntologyTree,
+  ServerTree,
   INumberViolationsPerNodeValue,
+  IServerTreeNode,
 } from '../../types';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 
@@ -279,53 +281,85 @@ function calculateNumberViolationsPerNodeGivenType(state: ICombinedState): void 
  * Helper function to increment the value for a given key in a map.
  * Initializes the key with 0 if it's not already in the map.
  */
-const incrementMapValue = (map, key) => {
+const incrementMapValue = (map: Map<string, number>, key: string) => {
   map.set(key, (map.get(key) || 0) + 1);
 };
 
 /**
- * Helper function to update newNumberViolationsPerNode based on a map.
+ * Helper function to update numberViolationsPerNode based on a map.
  */
-const updateViolationsPerNode = (sourceMap, numberViolationsPerNode) => {
-  console.log('sourceMap', sourceMap);
-  console.log('numberViolationsPerNode', numberViolationsPerNode);
+const updateViolationsPerNode = (sourceMap: Map<string, number>, numberViolationsPerNode: any) => {
   sourceMap.forEach((value, key) => {
-    console.log('key', key);
     if (Object.hasOwnProperty.call(numberViolationsPerNode, key)) {
-      console.log('key exists');
       numberViolationsPerNode[key].selected = value;
-      numberViolationsPerNode[key].cumulativeSelected = value; // Assuming cumulativeSelected should be the same as selected
+      numberViolationsPerNode[key].cumulativeSelected = value;
     }
   });
 };
 
 /**
+ * Function to update cumulative counts in the tree hierarchy.
+ */
+const updateCumulativeCounts = (node: IServerTreeNode, numberViolationsPerNode: any, knownTypes: Set<string>) => {
+  if (knownTypes.has(node.id)) {
+    let cumulativeCount = 0;
+
+    for (const child of node.children) {
+      updateCumulativeCounts(child, numberViolationsPerNode, knownTypes);
+      if (numberViolationsPerNode[child.id] && knownTypes.has(child.id)) {
+        cumulativeCount += numberViolationsPerNode[child.id].cumulativeSelected;
+      }
+    }
+
+    if (numberViolationsPerNode[node.id]) {
+      numberViolationsPerNode[node.id].cumulativeSelected += cumulativeCount;
+    }
+  } else {
+    for (const child of node.children) {
+      updateCumulativeCounts(child, numberViolationsPerNode, knownTypes);
+    }
+  }
+};
+
+function resetTypesCounts(numberViolationsPerNode: INumberViolationsPerNodeMap, selectedTypesMap: Map<string, number>, knownTypes: Set<string>): void {
+  Object.keys(numberViolationsPerNode).forEach((key) => {
+    if (knownTypes.has(key) && !selectedTypesMap.has(key)) {
+      numberViolationsPerNode[key].selected = 0;
+      numberViolationsPerNode[key].cumulativeSelected = 0;
+    }
+  });
+}
+
+/**
  * Main function to calculate new number of violations per node.
  */
-function calculateNewNumberViolationsPerNode(newSelectedNodes, focusNodeMap, numberViolationsPerNode) {
-  // Initialize maps for counting the types, violations, and exemplars.
-  const newSelectedTypesMap = new Map();
-  const newSelectedViolationsMap = new Map();
-  const newSelectedExemplarsMap = new Map();
+function calculateNewNumberViolationsPerNode(
+  newSelectedNodes: string[],
+  focusNodeMap: any,
+  numberViolationsPerNode: any,
+  ontologyTree: IServerTreeNode,
+  knownTypes: Set<string>,
+) {
+  const newSelectedTypesMap = new Map<string, number>();
+  const newSelectedViolationsMap = new Map<string, number>();
+  const newSelectedExemplarsMap = new Map<string, number>();
 
-  // Iterate through each node in newSelectedNodes to populate the maps.
   newSelectedNodes.forEach((node) => {
     const { types, violations, exemplars } = focusNodeMap[node];
-
-    types.forEach((type) => incrementMapValue(newSelectedTypesMap, type));
-    violations.forEach((violation) => incrementMapValue(newSelectedViolationsMap, violation));
-    exemplars.forEach((exemplar) => incrementMapValue(newSelectedExemplarsMap, exemplar));
+    types.forEach((type: string) => incrementMapValue(newSelectedTypesMap, type));
+    violations.forEach((violation: string) => incrementMapValue(newSelectedViolationsMap, violation));
+    exemplars.forEach((exemplar: string) => incrementMapValue(newSelectedExemplarsMap, exemplar));
   });
 
-  // Update newNumberViolationsPerNode based on the populated maps.
   updateViolationsPerNode(newSelectedTypesMap, numberViolationsPerNode);
   updateViolationsPerNode(newSelectedViolationsMap, numberViolationsPerNode);
   updateViolationsPerNode(newSelectedExemplarsMap, numberViolationsPerNode);
 
-  console.log('newSelectedTypesMap', newSelectedTypesMap);
-  console.log('newSelectedViolationsMap', newSelectedViolationsMap);
-  console.log('newSelectedExemplarsMap', newSelectedExemplarsMap);
-  console.log('newNumberViolationsPerNode', numberViolationsPerNode);
+  console.log('calculateNewNumberViolationsPerNode/newSelectedTypesMap', newSelectedTypesMap);
+  resetTypesCounts(numberViolationsPerNode, newSelectedTypesMap, knownTypes);
+  updateCumulativeCounts(ontologyTree, numberViolationsPerNode, knownTypes);
+
+  console.log('calculateNewNumberViolationsPerNode/numberViolationsPerNode after update', current(numberViolationsPerNode));
 
   return numberViolationsPerNode;
 }
@@ -354,7 +388,7 @@ const calculateNewSelectedViolations = (newViolationCount: Record<string, number
   return (
     Object.entries(newViolationCount)
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      .filter(([_, value]) => value > 0)
+      .filter(([key_, value]) => value > 0)
       .map(([key]) => key)
   );
 };
@@ -401,8 +435,9 @@ const combinedSlice = createSlice({
         state.numberViolationsPerNode[key].cumulativeSelected = state.cumulativeNumberViolationsPerNode[key].cumulativeSelected;
       });
     },
-    setOntologyTree: (state, action: PayloadAction<OntologyTree>) => {
+    setOntologyTree: (state, action: PayloadAction<ServerTree>) => {
       state.ontologyTree = action.payload;
+      console.log('setOntologyTree', state.ontologyTree);
     },
     setViolationMap: (state, action: PayloadAction<IViolationMap>) => {
       state.violationMap = action.payload;
@@ -457,7 +492,13 @@ const combinedSlice = createSlice({
       state.selectedViolations = newSelectedViolations;
       state.selectedViolationExemplars = newSelectedExemplars;
 
-      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(state.selectedNodes, state.focusNodeMap, state.numberViolationsPerNode);
+      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
+        state.selectedNodes,
+        state.focusNodeMap,
+        state.numberViolationsPerNode,
+        state.ontologyTree,
+        new Set(state.types),
+      );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
 
       console.timeEnd('setSelectedViolationExemplars');
@@ -555,15 +596,21 @@ const combinedSlice = createSlice({
       // Set state.selectedViolations to the keys of the map with value > 0
       const newSelectedViolations = Array.from(violationMap.entries())
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .filter(([_, value]) => value > 0)
+        .filter(([key_, value]) => value > 0)
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .map(([key, _]) => key);
+        .map(([key, value_]) => key);
 
       // Now, we assign new values to the state variables.
       state.selectedNodes = newSelectedNodes;
       state.selectedTypes = newSelectedTypes;
       state.selectedViolations = newSelectedViolations;
-      state.numberViolationsPerNode = calculateNewNumberViolationsPerNode(state.selectedNodes, state.focusNodeMap, state.numberViolationsPerNode);
+      state.numberViolationsPerNode = calculateNewNumberViolationsPerNode(
+        state.selectedNodes,
+        state.focusNodeMap,
+        state.numberViolationsPerNode,
+        state.ontologyTree,
+        new Set(state.types),
+      );
       console.log('state.numberViolationsPerNode', state.numberViolationsPerNode);
 
       updateSelectedViolationExemplars(state);
@@ -600,7 +647,13 @@ const combinedSlice = createSlice({
       state.selectedViolationExemplars = newSelectedViolationExemplars;
       state.selectedViolations = newSelectedViolations;
 
-      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(state.selectedNodes, state.focusNodeMap, state.numberViolationsPerNode);
+      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
+        state.selectedNodes,
+        state.focusNodeMap,
+        state.numberViolationsPerNode,
+        state.ontologyTree,
+        new Set(state.types),
+      );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
 
       console.timeEnd('setSelectedViolations');
@@ -652,7 +705,13 @@ const combinedSlice = createSlice({
 
       updateSelectedViolationExemplars(state);
 
-      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(state.selectedNodes, state.focusNodeMap, state.numberViolationsPerNode);
+      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
+        state.selectedNodes,
+        state.focusNodeMap,
+        state.numberViolationsPerNode,
+        state.ontologyTree,
+        new Set(state.types),
+      );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
     removeSingleSelectedType: (state, action) => {
@@ -697,7 +756,13 @@ const combinedSlice = createSlice({
 
       updateSelectedViolationExemplars(state);
 
-      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(state.selectedNodes, state.focusNodeMap, state.numberViolationsPerNode);
+      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
+        state.selectedNodes,
+        state.focusNodeMap,
+        state.numberViolationsPerNode,
+        state.ontologyTree,
+        new Set(state.types),
+      );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
     setRdfString: (state, action) => {

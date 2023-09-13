@@ -11,6 +11,14 @@ export interface IOntologyNode {
   nCumulativeViolatingNodes: number;
 }
 
+export interface IServerTreeNode {
+  id: string;
+  children: IServerTreeNode[];
+  count: number;
+}
+
+export type ServerTree = IServerTreeNode | null;
+
 export type OntologyMap = { [key: string]: IOntologyNode };
 
 export type OntologyTree = IOntologyNode | null;
@@ -185,7 +193,7 @@ export interface ICombinedState {
   focusNodeMap: IFocusNodeMap;
   typeMap: ITypeMap;
   exemplarMap: IExemplarMap;
-  ontologyTree: OntologyTree;
+  ontologyTree: ServerTree;
   cumulativeNumberViolationsPerNode: INumberViolationsPerNodeMap;
 }
 

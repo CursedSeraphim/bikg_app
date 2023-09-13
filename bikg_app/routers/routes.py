@@ -481,6 +481,7 @@ class Node:
             'children': [child.to_dict() for child in self.children]
         }
 
+
 # TODO the problem is that type dict only has keys for those that have violations, because it is built from the df
 def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar_dict, g: Graph = g):
     """

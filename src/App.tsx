@@ -13,12 +13,21 @@ import {
   setNamespaces,
   setSubClassOfTriples,
   setCumulativeNumberViolationsPerNode,
+  setOntologyTree,
 } from './components/Store/CombinedSlice';
 
 import CytoscapeView from './components/Cytoscape/CytoscapeView';
 
 import './styles.css';
-import { fetchOntology, fetchViolationPathNodesDict, fetchEdgeCountDict, fetchNamespaces, fetchSubClassOfTriples, fetchNodeFocusNodeCountDict } from './api';
+import {
+  fetchOntology,
+  fetchViolationPathNodesDict,
+  fetchEdgeCountDict,
+  fetchNamespaces,
+  fetchSubClassOfTriples,
+  fetchNodeFocusNodeCountDict,
+  fetchOntologyTree,
+} from './api';
 import { SPINNER_COLOR } from './constants';
 import { fetchAndInitializeData } from './components/Store/thunks';
 
@@ -38,7 +47,18 @@ export function App() {
       });
   }, [dispatch]);
 
-  // Fetch node count dict and print
+  // Retrieve and display the ontology tree
+  React.useEffect(() => {
+    fetchOntologyTree()
+      .then((data) => {
+        dispatch(setOntologyTree(data));
+      })
+      .catch((fetchError) => {
+        console.error('Error retrieving ontology tree', fetchError);
+      });
+  }, [dispatch]);
+
+  // Fetch node count dict
   React.useEffect(() => {
     fetchNodeFocusNodeCountDict()
       .then((nodeFocusNodeCountDict) => {
