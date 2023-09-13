@@ -1,10 +1,8 @@
 // useCytoCumulativeCounts.ts
 import { useEffect, useRef } from 'react';
 import { Core } from 'cytoscape';
-import { useDispatch } from 'react-redux';
 import _ from 'lodash';
 import store from './components/Store/Store';
-import { getLayout } from './components/Cytoscape/CytoscapeLayout';
 
 // Helper function to get the base node name from the composite key
 function getBaseId(compositeKey: string): string {
@@ -14,14 +12,11 @@ function getBaseId(compositeKey: string): string {
 
 export function updateCytoscapeNodesGivenCumulativeCounts(cy: Core, cumulativeNumberViolationsPerType: Record<string, any>) {
   console.log('triggering cytoscape update');
-  console.log('cy.nodes()', cy.nodes());
 
   cy.startBatch();
 
   // Build an array of node IDs to update
   const nodeIdsToUpdate = Object.keys(cumulativeNumberViolationsPerType);
-  console.log('nodeIdsToUpdate', nodeIdsToUpdate);
-  console.log('cumulativeNumberViolationsPerType keys', Object.keys(cumulativeNumberViolationsPerType));
 
   // TODO handle both cases: where node  contains the count, and where it doesn't
   // Update each node

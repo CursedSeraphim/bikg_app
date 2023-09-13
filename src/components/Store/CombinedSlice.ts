@@ -254,24 +254,8 @@ export function constructViolationsPerTypeValueObject(): INumberViolationsPerTyp
   };
 }
 
-function calculateNumberViolationsPerType(state: ICombinedState): INumberViolationsPerTypeMap {
-  const numberViolationsPerType: INumberViolationsPerTypeMap = {};
-  state.samples.forEach((sample: ICsvData) => {
-    const sampleType = String(sample['rdf:type']);
-    if (!sampleType) return; // Skip if no type is found
-
-    if (!numberViolationsPerType[sampleType]) {
-      numberViolationsPerType[sampleType] = constructViolationsPerTypeValueObject(); // Initialize if necessary
-    }
-
-    numberViolationsPerType[sampleType].violations += 1; // Increment the total count of violations
-  });
-
-  state.numberViolationsPerType = numberViolationsPerType;
-  return numberViolationsPerType;
-}
-
 function calculateNumberViolationsPerTypeGivenType(state: ICombinedState): void {
+  console.log('called calculateNumberViolationsPerTypeGivenType');
   // Create a new object to store the updated numberViolationsPerType
   const newNumberViolationsPerType: INumberViolationsPerTypeMap = { ...state.numberViolationsPerType };
 
@@ -292,6 +276,7 @@ function calculateNumberViolationsPerTypeGivenType(state: ICombinedState): void 
 }
 
 function calculateNewNumberViolationsPerType(samples, existingNumberViolationsPerType, newSelectedNodes) {
+  console.log('called calculateNewNumberViolationsPerType');
   const focusNodesSamplesMap = {};
   samples.forEach((sample) => {
     focusNodesSamplesMap[sample.focus_node] = sample;
@@ -381,7 +366,6 @@ const combinedSlice = createSlice({
   reducers: {
     setCumulativeNumberViolationsPerType: (state, action: PayloadAction<INumberViolationsPerTypeMap>) => {
       state.cumulativeNumberViolationsPerType = action.payload;
-      console.log('cumulativeNumberViolationsPerType', state.cumulativeNumberViolationsPerType);
 
       // TODO code for setting state.numberViolationsPerType
       // TODO code for setting state.numberViolationsPerType
@@ -470,7 +454,6 @@ const combinedSlice = createSlice({
       } else if (state.missingEdgeOption === 'keep') {
         state.samples = [...state.originalSamples];
       }
-      calculateNumberViolationsPerType(state);
       updateFocusNodeSampleMap(state);
     },
     setFilterType: (state, action: PayloadAction<FilterType>) => {
@@ -492,7 +475,6 @@ const combinedSlice = createSlice({
       } else if (state.missingEdgeOption === 'keep') {
         state.samples = action.payload;
       }
-      calculateNumberViolationsPerType(state);
       updateFocusNodeSampleMap(state);
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {

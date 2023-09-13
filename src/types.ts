@@ -5,10 +5,10 @@ export type Position = { x: number; y: number };
 export interface IOntologyNode {
   name: string;
   children: IOntologyNode[];
-  n_selected_nodes: number;
-  n_violating_nodes: number;
-  n_cumulative_selected_nodes: number;
-  n_cumulative_violating_nodes: number;
+  nSelectedNodes: number;
+  nCumulativeSelectedNodes: number;
+  nViolatingNodes: number;
+  nCumulativeViolatingNodes: number;
 }
 
 export type OntologyMap = { [key: string]: IOntologyNode };

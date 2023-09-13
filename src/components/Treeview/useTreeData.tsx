@@ -31,7 +31,7 @@ export default function useTreeData() {
   const selectedTypesRef = useRef([]);
   const subClassOfTriplesRef = useRef([]);
   const numberViolationsPerTypeRef = useRef({});
-  const cumulativeNumberViolationsPerTypeRef = useRef({});
+  // const cumulativeNumberViolationsPerTypeRef = useRef({});
   const dispatch: AppDispatch = useDispatch();
 
   useEffect(() => {
@@ -68,14 +68,9 @@ export default function useTreeData() {
         let cumulativeNumberViolationsPerType;
         if (newOntology && numberViolationsPerTypeRef.current && Object.keys(numberViolationsPerTypeRef.current).length > 0) {
           // Call the function directly since it's not asynchronous anymore
-          ({ root, cumulativeNumberViolationsPerType } = getTreeDataFromTuples(subClassOfTriplesRef.current, numberViolationsPerTypeRef.current));
-          if (!_.isEqual(cumulativeNumberViolationsPerTypeRef.current, cumulativeNumberViolationsPerType)) {
-            cumulativeNumberViolationsPerTypeRef.current = cumulativeNumberViolationsPerType;
-            console.log('dispatching setscumulativeNumberViolationsPerType', cumulativeNumberViolationsPerType);
-            // TODO problem this at some point gets dispatched with empty data even though the state.cumulative... is already set and initialized, which causes the weird cytoscape rerender
-            dispatch(setCumulativeNumberViolationsPerType(cumulativeNumberViolationsPerType));
-          }
+          root = getTreeDataFromTuples(subClassOfTriplesRef.current, numberViolationsPerTypeRef.current);
           sortEachLayerAlphabetically(root);
+          console.log('numberViolationsPerTypeRef.current', numberViolationsPerTypeRef.current);
           if (Array.isArray(newSelectedTypes) && newSelectedTypes.length > 0) {
             setTreeData(updateTreeDataWithSelectedTypes(root, newSelectedTypes));
           } else {
