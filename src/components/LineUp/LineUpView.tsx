@@ -5,7 +5,7 @@ import * as LineUpJS from 'lineupjs';
 // import './LineUpOverrides.sass';
 import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes, selectFilterType, selectMissingEdgeOption } from '../Store/CombinedSlice';
 import { ICsvData, CsvCell, ICanvasOwner } from '../../types';
-import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING } from '../../constants';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, MANTINE_HEADER_COLOR } from '../../constants';
 import { filterAllNanColumns, filterAllUniModalColumns } from './LineUpHelpers';
 
 const columnTypes = {};
@@ -146,24 +146,50 @@ export default function LineUpView() {
     return column;
   }
 
+  type DataType = { [key: string]: any };
+  type CategoryColorMap = { name: string; color: string };
+
   /**
-   * This function constructs a LineUpJS builder with columns built according to the provided data.
-   * For each column, it infers the type, calculates the pixel width based on the label, removes any prefix from the label,
-   * and finally adds a column to the builder with the processed column data.
+   * Build and return a LineUpJS column based on the given data and column name.
    *
-   * @param {Object[]} data - An array of objects that represents the data for the LineUpJS builder. Each object should correspond to a row.
-   * @returns {Object} A LineUpJS builder with the constructed columns.
+   * @param {DataType[]} data - The data rows.
+   * @param {string} column - The column name.
+   * @returns {Object} A LineUpJS column.
    */
-  function buildColumns(data) {
+  function buildColumn(data: DataType[], column: string) {
+    const type = inferType(data, column);
+    const width = calculatePixelWidthFromLabel(column);
+    const label = removePrefix(column);
+
+    if (type === 'categorical') {
+      const uniqueCategories = data.reduce<Set<string>>((acc, row) => acc.add(row[column]), new Set());
+      const categoryColorMap: CategoryColorMap[] = Array.from(uniqueCategories).map((category) => ({
+        name: category,
+        color: MANTINE_HEADER_COLOR,
+      }));
+      return LineUpJS.buildCategoricalColumn(column, categoryColorMap).label(label).width(width);
+    }
+
+    return LineUpJS.buildColumn(type, column).label(label).width(width);
+  }
+
+  /**
+   * Constructs a LineUpJS builder with columns built according to the provided data.
+   * For each column, it infers the type, calculates the pixel width based on the label,
+   * removes any prefix from the label, and adds a column to the builder with the processed column data.
+   *
+   * @param {DataType[]} data - An array of objects representing the data for the LineUpJS builder.
+   * @returns {Object} A LineUpJS builder with constructed columns.
+   */
+  function buildColumns(data: DataType[]): any {
     const builder = LineUpJS.builder(data);
     const columns = Object.keys(data[0]);
-    columns.forEach((column) => {
-      const type = inferType(data, column);
-      const width = calculatePixelWidthFromLabel(column);
-      const label = removePrefix(column);
-      builder.column(LineUpJS.buildColumn(type, column).label(label).width(width));
-    });
+
+    const builtColumns = columns.map((column) => buildColumn(data, column));
+
+    builtColumns.forEach((col) => builder.column(col));
     builder.rowHeight(21);
+
     return builder;
   }
 
