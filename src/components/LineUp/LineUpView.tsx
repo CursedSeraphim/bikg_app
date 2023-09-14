@@ -196,9 +196,16 @@ export default function LineUpView() {
       const width = calculatePixelWidthFromLabel(column);
       const builderFunction = builderMap[type];
 
+      if (column === 'focus_node') {
+        // debug everything
+        console.log('column is focus_node', column, type, width);
+      }
       if (builderFunction) {
         const builtColumn = builderFunction(column, data, width);
         builder.column(builtColumn);
+      } else if (type === 'link') {
+        const label = removePrefix(column);
+        builder.column(LineUpJS.buildColumn(type, column).label(label).width(width));
       }
     });
 

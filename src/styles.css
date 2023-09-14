@@ -162,13 +162,28 @@ body {
   box-shadow: 2px 0 0 0 var(--mantine-header-color), 0 2px 0 0 var(--mantine-header-color), 2px 2px 0 0 var(--mantine-header-color), 2px 0 0 0 var(--mantine-header-color) inset, 0 0 0 2px var(--mantine-header-color) !important;
 }
 
-.lu-cat-color, .lu-histogram-bin div {
+.lu-histogram-bin div {
   background-color: var(--mantine-header-color) !important;
 }
 
+/* .lu-cat-color:hover {
+  background-color: var(--mantine-header-hover-color) !important;
+  color: black !important;
+} */
+
+.lu-cat-color {
+  background-color: var(--mantine-header-color) !important;
+  /* color: white !important; */
+}
+
+/* .lu-bar-label:hover {
+  background-color: var(--mantine-header-hover-color) !important;
+  color: grey !important;
+} */
+
 .lu-bar-label {
   background-color: var(--mantine-header-color) !important;
-  color: var(--mantine-header-hover-color) !important;
+  color: darkgrey !important;
 }
 
 
