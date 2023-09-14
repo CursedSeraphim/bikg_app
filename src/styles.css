@@ -152,6 +152,19 @@ body {
   overflow-x: scroll;
 }
 
+.le-tr:hover, .le-tr.le-highlighted {
+  background-color:#eeeeee;
+  box-shadow: 2px 0 0 0 var(--mantine-header-hover-color), 0 2px 0 0 var(--mantine-header-hover-color), 2px 2px 0 0 var(--mantine-header-hover-color), 2px 0 0 0 var(--mantine-header-hover-color) inset, 0 0 0 2px var(--mantine-header-hover-color) !important;
+}
+
+.le-tr:active{
+  background-color:#eeeeee;
+  box-shadow: 2px 0 0 0 var(--mantine-header-color), 0 2px 0 0 var(--mantine-header-color), 2px 2px 0 0 var(--mantine-header-color), 2px 0 0 0 var(--mantine-header-color) inset, 0 0 0 2px var(--mantine-header-color) !important;
+}
+
+
+/* lu-hr{position:absolute;left:0;top:0;width:1px;height:2px;margin:0;background-color:#00ff00;border:none;transform-origin:left center;display:none;pointer-events:none;user-select:none} */
+
 /* Base Styles */
 .tab-button {
   background-color: white;
