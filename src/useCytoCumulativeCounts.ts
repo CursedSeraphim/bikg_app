@@ -1,4 +1,4 @@
-// useCytoCumulativeCounts.ts
+// useCytoSelectedCounts.ts
 import { useEffect, useRef } from 'react';
 import { Core } from 'cytoscape';
 import _ from 'lodash';
@@ -11,7 +11,7 @@ function getBaseId(compositeKey: string): string {
   return parts[0];
 }
 
-export function updateCytoscapeNodesGivenCumulativeCounts(cy: Core, numberViolationsPerNode: INumberViolationsPerNodeMap) {
+export function updateCytoscapeNodesGivenCounts(cy: Core, numberViolationsPerNode: INumberViolationsPerNodeMap) {
   console.log('triggering cytoscape update');
 
   cy.startBatch();
@@ -19,7 +19,6 @@ export function updateCytoscapeNodesGivenCumulativeCounts(cy: Core, numberViolat
   // Build an array of node IDs to update
   const nodeIdsToUpdate = Object.keys(numberViolationsPerNode);
 
-  // TODO handle both cases: where node  contains the count, and where it doesn't
   // Update each node
   for (const id of nodeIdsToUpdate) {
     const baseId = getBaseId(id);
@@ -28,17 +27,6 @@ export function updateCytoscapeNodesGivenCumulativeCounts(cy: Core, numberViolat
 
     // TODO create a smart mapping of keys where whether the key is a node or a node + count, we get the same value
     const { cumulativeViolations, cumulativeSelected } = numberViolationsPerNode[id] || numberViolationsPerNode[baseId];
-    const label = id;
-    // console.log(
-    //   'updating node',
-    //   node.id(),
-    //   'with cumulativeViolations',
-    //   cumulativeViolations,
-    //   'and cumulativeSelected',
-    //   cumulativeSelected,
-    //   'and label',
-    //   label,
-    // );
 
     // Set cumulativeViolations and cumulativeSelected properties directly
     node.json({
@@ -53,7 +41,7 @@ export function updateCytoscapeNodesGivenCumulativeCounts(cy: Core, numberViolat
   cy.endBatch();
 }
 
-const useCytoCumulativeCounts = (cy: Core) => {
+const useCytoSelectedCounts = (cy: Core) => {
   const numberViolationsPerNodeRef = useRef({});
 
   useEffect(() => {
@@ -69,7 +57,7 @@ const useCytoCumulativeCounts = (cy: Core) => {
       }
 
       if (cy && shouldUpdateTreeData) {
-        updateCytoscapeNodesGivenCumulativeCounts(cy, numberViolationsPerNode);
+        updateCytoscapeNodesGivenCounts(cy, numberViolationsPerNode);
       }
     });
 
@@ -77,4 +65,4 @@ const useCytoCumulativeCounts = (cy: Core) => {
   }, [cy]);
 };
 
-export default useCytoCumulativeCounts;
+export default useCytoSelectedCounts;
