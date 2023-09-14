@@ -6,7 +6,7 @@ import * as LineUpJS from 'lineupjs';
 import { buildBooleanColumn, buildCategoricalColumn, buildDateColumn, buildNumberColumn, buildStringColumn } from 'lineupjs';
 import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes, selectFilterType, selectMissingEdgeOption } from '../Store/CombinedSlice';
 import { ICsvData, CsvCell, ICanvasOwner } from '../../types';
-import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, MANTINE_HEADER_COLOR } from '../../constants';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, MANTINE_HEADER_COLOR, SELECTED_TYPE_NODE_COLOR } from '../../constants';
 import { filterAllNanColumns, filterAllUniModalColumns } from './LineUpHelpers';
 
 const columnTypes = {};
@@ -148,26 +148,39 @@ export default function LineUpView() {
   }
 
   type DataType = { [key: string]: any };
+  type BuilderFunction = (column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }) => any;
 
-  // Implement build functions for each column type
+  const biColorMap: { [key: string]: string } = {
+    'rdf:type': SELECTED_TYPE_NODE_COLOR,
+  };
+
+  // Your original buildBooleanColumnWithSettings
   function buildBooleanColumnWithSettings(column: string, data: DataType[], width: number): any {
     return buildBooleanColumn(column).trueMarker('1').falseMarker('0').width(width);
   }
 
+  // Your original buildNumberColumnWithSettings
   function buildNumberColumnWithSettings(column: string, data: DataType[], width: number): any {
     return buildNumberColumn(column).width(width);
   }
 
+  // Your original buildDateColumnWithSettings
   function buildDateColumnWithSettings(column: string, data: DataType[], width: number): any {
     return buildDateColumn(column).width(width);
   }
 
-  function buildCategoricalColumnWithSettings(column: string, data: DataType[], width: number): any {
+  // Updated buildCategoricalColumnWithSettings function
+  function buildCategoricalColumnWithSettings(column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }): any {
     const uniqueCategories = data.reduce<Set<string>>((acc, row) => acc.add(row[column]), new Set());
+
+    const customColor = colorMap ? colorMap[column] : undefined;
+    const columnColor = customColor || MANTINE_HEADER_COLOR;
+
     const categoryColorMap = Array.from(uniqueCategories).map((category) => ({
       name: category,
-      color: MANTINE_HEADER_COLOR,
+      color: columnColor,
     }));
+
     return buildCategoricalColumn(column, categoryColorMap).width(width);
   }
 
@@ -175,33 +188,28 @@ export default function LineUpView() {
     return buildStringColumn(column).width(width);
   }
 
-  // Create a type map to hold builder functions for each type
-  type BuilderFunction = (column: string, data: DataType[], width: number) => any;
+  // Existing builderMap remains unchanged
   const builderMap: { [key: string]: BuilderFunction } = {
-    // boolean: buildBooleanColumnWithSettings,
-    boolean: buildNumberColumnWithSettings,
+    boolean: buildBooleanColumnWithSettings, // <-- Fixed here
     number: buildNumberColumnWithSettings,
     date: buildDateColumnWithSettings,
     categorical: buildCategoricalColumnWithSettings,
     string: buildStringColumnWithSettings,
   };
 
-  // Build columns
+  // Existing buildColumns remains mostly unchanged
   function buildColumns(data: DataType[]): any {
     const builder = LineUpJS.builder(data);
     const columns = Object.keys(data[0]);
 
     columns.forEach((column) => {
-      const type = inferType(data, column);
+      let type = inferType(data, column);
+      if (type === 'boolean') type = 'number';
       const width = calculatePixelWidthFromLabel(column);
       const builderFunction = builderMap[type];
 
-      if (column === 'focus_node') {
-        // debug everything
-        console.log('column is focus_node', column, type, width);
-      }
       if (builderFunction) {
-        const builtColumn = builderFunction(column, data, width);
+        const builtColumn = builderFunction(column, data, width, biColorMap);
         builder.column(builtColumn);
       } else if (type === 'link') {
         const label = removePrefix(column);
