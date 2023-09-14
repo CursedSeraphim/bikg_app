@@ -1,5 +1,5 @@
 // CombinedSlice.ts
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, current, PayloadAction } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Store, Quad } from 'n3';
 import { createSelector } from 'reselect';
@@ -306,8 +306,6 @@ function resetTypesCounts(numberViolationsPerNode: INumberViolationsPerNodeMap, 
   Object.keys(numberViolationsPerNode).forEach((key) => {
     if (knownTypes.has(key) && !selectedTypesMap.has(key)) {
       // eslint-disable-next-line no-param-reassign
-      numberViolationsPerNode[key].selected = 0;
-      // eslint-disable-next-line no-param-reassign
       numberViolationsPerNode[key].cumulativeSelected = 0;
     }
   });
@@ -413,7 +411,9 @@ const combinedSlice = createSlice({
         }
         state.numberViolationsPerNode[key].cumulativeViolations = state.cumulativeNumberViolationsPerNode[key].cumulativeViolations;
         state.numberViolationsPerNode[key].cumulativeSelected = state.cumulativeNumberViolationsPerNode[key].cumulativeSelected;
+        state.numberViolationsPerNode[key].violations = state.cumulativeNumberViolationsPerNode[key].violations;
       });
+      console.log('state.numberViolationsPerNode after setting cumulativeViolations', current(state.numberViolationsPerNode));
     },
     setOntologyTree: (state, action: PayloadAction<ServerTree>) => {
       state.ontologyTree = action.payload;

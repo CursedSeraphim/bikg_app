@@ -63,11 +63,13 @@ export function App() {
     fetchNodeFocusNodeCountDict()
       .then((nodeFocusNodeCountDict) => {
         const updatedObject = Object.keys(nodeFocusNodeCountDict).reduce((acc, key) => {
-          const count = nodeFocusNodeCountDict[key];
+          const { count } = nodeFocusNodeCountDict[key];
+          const cumulativeCount = nodeFocusNodeCountDict[key].cumulative_count;
           // eslint-disable-next-line no-param-reassign
           acc[key] = {
-            cumulativeViolations: count,
+            cumulativeViolations: cumulativeCount,
             cumulativeSelected: 0,
+            violations: count,
           };
           return acc;
         }, {});

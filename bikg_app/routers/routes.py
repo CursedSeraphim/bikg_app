@@ -62,6 +62,7 @@ overall_violation_value_counts = {
 
 types_list = df["rdf:type"].unique().tolist()
 
+
 def shorten_uris_in_nested_dict(nested_dict, g: Graph):
     new_dict = {}
     for outer_key, inner_dict in nested_dict.items():
@@ -467,9 +468,10 @@ class Node:
         self.id = id
         self.children = []
         self.count = 0
+        self.cumulative_count = 0  # New field
 
     def __str__(self, level=0):
-        ret = "\t" * level + repr(self.id) + f' (Count: {self.count})\n'
+        ret = "\t" * level + repr(self.id) + f' (Count: {self.count}, Cumulative Count: {self.cumulative_count})\n'
         for child in self.children:
             ret += child.__str__(level + 1)
         return ret
@@ -478,39 +480,20 @@ class Node:
         return {
             'id': self.id,
             'count': self.count,
+            'cumulative_count': self.cumulative_count,  # New field
             'children': [child.to_dict() for child in self.children]
         }
 
-
-# TODO the problem is that type dict only has keys for those that have violations, because it is built from the df
-def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar_dict, g: Graph = g):
-    """
-    Uses rdfs:subClassOf to find nodes in the ontology tree.
-    Build a tree datastructurte from this ontology.
-    While doing so, uses type_violation_dict and violation_exemplar_dict to add the actual counts of violating focus nodes and cumulative counts that sum up the children counts to the nodes.
-    Builds a tree of their parent/child relationship.
-    Each node is defined to have the following properties:
-    - id: the name of the node
-    - count: the count of violating focus nodes
-    Also fills a dictionary of node: count while traversing the tree.
-    :param type_violation_dict: A dictionary with types as keys and a list of (violation, violation_count) as values
-    :param violation_exemplar_dict: A dictionary with violations as keys with a nested dict of exemplar: exemplar_count
-    :return: A tree datastructure of the ontology and a dictionary of node: count
-    """
-
-    query = """
-    SELECT ?s ?o WHERE {
-        ?s rdfs:subClassOf ?o .
-    }
-    """
-
+def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar_dict, g):
+    query = """SELECT ?s ?o WHERE { ?s rdfs:subClassOf ?o . }"""
     parent_child_map = defaultdict(list)
-    all_type_nodes = set()  # Store all nodes
+    all_type_nodes = set()
     parents = set()
     children = set()
+
     for row in g.query(query):
-        parent = str(g.namespace_manager.qname(row.o))  # type: ignore
-        child = str(g.namespace_manager.qname(row.s))  # type: ignore
+        parent = str(g.namespace_manager.qname(row.o))
+        child = str(g.namespace_manager.qname(row.s))
         parent_child_map[parent].append(child)
         all_type_nodes.add(parent)
         all_type_nodes.add(child)
@@ -519,7 +502,6 @@ def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar
 
     roots = parents - children
 
-    # iterate all_type_nodes and add them as keys to type_violation_dict if they are not already in there initializing them with count 0
     for node in all_type_nodes:
         if node not in type_count_dict:
             type_count_dict[node] = 0
@@ -527,62 +509,59 @@ def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar
     node_count_dict = {}
     root = Node("VirtualRoot")
 
-    def build_sub_class_tree(current_node, parent_child_map):
+    def build_sub_class_tree(current_node):
         for child_id in parent_child_map[current_node.id]:
             child_node = Node(child_id)
-            current_node.children.append(child_node)
             if child_id in type_count_dict:
                 child_node.count = type_count_dict[child_id]
-            build_sub_class_tree(child_node, parent_child_map)
+            current_node.children.append(child_node)
+            build_sub_class_tree(child_node)
 
-    def add_violations(current_node, type_violation_dict):
+    def add_violations(current_node):
         for child in current_node.children:
-            add_violations(child, type_violation_dict)
+            add_violations(child)
         if current_node.id in type_violation_dict:
             for violation, count in type_violation_dict[current_node.id]:
                 violation_node = Node(violation)
-                # violation_node.count = count
+                violation_node.count = count
                 current_node.children.append(violation_node)
 
-    def add_exemplars(current_node, violation_exemplar_dict):
+    def add_exemplars(current_node):
         for child in current_node.children:
-            add_exemplars(child, violation_exemplar_dict)
+            add_exemplars(child)
         if current_node.id in violation_exemplar_dict:
             for exemplar, exemplar_count in violation_exemplar_dict[current_node.id].items():
                 exemplar_node = Node(exemplar)
                 exemplar_node.count = exemplar_count
                 current_node.children.append(exemplar_node)
 
-    def compute_cumulative_counts(current_node, type_violation_dict, violation_exemplar_dict):
+    def compute_cumulative_counts(current_node):
         for child in current_node.children:
-            compute_cumulative_counts(child, type_violation_dict, violation_exemplar_dict)
-
-        if current_node.id in all_type_nodes:  # Current node is a 'type' node
-            for child in current_node.children: 
+            compute_cumulative_counts(child)
+        
+        current_node.cumulative_count = current_node.count
+        if current_node.id in all_type_nodes:
+            for child in current_node.children:
                 if child.id in all_type_nodes:
-                    current_node.count += child.count  # Use child.count directly
+                    current_node.cumulative_count += child.cumulative_count
 
-        elif current_node.id in violation_exemplar_dict:  # Current node is a 'violation' node
-            for child in current_node.children:  # Children are 'exemplar' nodes
-                current_node.count += child.count  # Use child.count directly
-        # else:  # Current node is an 'exemplar' node
+        node_count_dict[current_node.id] = {
+            'count': current_node.count,
+            'cumulative_count': current_node.cumulative_count  # Store both count and cumulative_count
+        }
 
-        node_count_dict[current_node.id] = current_node.count
-
-
-    # Start from the actual roots of the subclass tree and build the tree upwards
     for actual_root in roots:
         root_node = Node(actual_root)
         root.children.append(root_node)
-        build_sub_class_tree(root_node, parent_child_map)
+        build_sub_class_tree(root_node)
 
     for node in root.children:
-        add_violations(node, type_violation_dict)
+        add_violations(node)
         for violation_node in node.children:
-            add_exemplars(violation_node, violation_exemplar_dict)
+            add_exemplars(violation_node)
 
-    compute_cumulative_counts(root, type_violation_dict, violation_exemplar_dict)
-
+    compute_cumulative_counts(root)
+    
     return root, node_count_dict
 
 

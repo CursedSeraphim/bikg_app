@@ -34,10 +34,11 @@ export function CustomHeader({ onSelect, style, node }) {
     newStyle = { ...newStyle, backgroundColor: SELECTED_TYPE_NODE_COLOR, color: 'white' };
   }
   // Determine the colors based on whether the count is actual or cumulative
-  const selectedNodeCountColor = node.n_violating_nodes !== 0 ? SELECTED_EXEMPLAR_NODE_COLOR : SELECTED_CUMULATIVE_NODE_COLOR;
-  const unselectedNodeCountColor = node.n_violating_nodes !== 0 ? UNSELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_CUMULATIVE_NODE_COLOR;
-  const selectedTextDecoration = node.n_violating_nodes !== 0 ? 'underline' : 'none';
-  const unselectedTextDecoration = node.n_violating_nodes !== 0 ? 'underline' : 'none';
+  console.log('node', node);
+  const selectedNodeCountColor = node.nViolatingNodes !== 0 ? SELECTED_EXEMPLAR_NODE_COLOR : SELECTED_CUMULATIVE_NODE_COLOR;
+  const unselectedNodeCountColor = node.nViolatingNodes !== 0 ? UNSELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_CUMULATIVE_NODE_COLOR;
+  const selectedTextDecoration = node.nViolatingNodes !== 0 ? 'underline' : 'none';
+  const unselectedTextDecoration = node.nViolatingNodes !== 0 ? 'underline' : 'none';
 
   // Split the node name into two parts
   const [nodeName, countTotal] = node.name.split(' ');
