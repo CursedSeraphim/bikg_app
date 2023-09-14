@@ -3,6 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import * as LineUpJS from 'lineupjs';
 // import './LineUpOverrides.sass';
+import { buildBooleanColumn, buildCategoricalColumn, buildDateColumn, buildNumberColumn, buildStringColumn } from 'lineupjs';
 import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes, selectFilterType, selectMissingEdgeOption } from '../Store/CombinedSlice';
 import { ICsvData, CsvCell, ICanvasOwner } from '../../types';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, MANTINE_HEADER_COLOR } from '../../constants';
@@ -147,49 +148,61 @@ export default function LineUpView() {
   }
 
   type DataType = { [key: string]: any };
-  type CategoryColorMap = { name: string; color: string };
 
-  /**
-   * Build and return a LineUpJS column based on the given data and column name.
-   *
-   * @param {DataType[]} data - The data rows.
-   * @param {string} column - The column name.
-   * @returns {Object} A LineUpJS column.
-   */
-  function buildColumn(data: DataType[], column: string) {
-    const type = inferType(data, column);
-    const width = calculatePixelWidthFromLabel(column);
-    const label = removePrefix(column);
-
-    if (type === 'categorical') {
-      const uniqueCategories = data.reduce<Set<string>>((acc, row) => acc.add(row[column]), new Set());
-      const categoryColorMap: CategoryColorMap[] = Array.from(uniqueCategories).map((category) => ({
-        name: category,
-        color: MANTINE_HEADER_COLOR,
-      }));
-      return LineUpJS.buildCategoricalColumn(column, categoryColorMap).label(label).width(width);
-    }
-
-    return LineUpJS.buildColumn(type, column).label(label).width(width);
+  // Implement build functions for each column type
+  function buildBooleanColumnWithSettings(column: string, data: DataType[], width: number): any {
+    return buildBooleanColumn(column).trueMarker('1').falseMarker('0').width(width);
   }
 
-  /**
-   * Constructs a LineUpJS builder with columns built according to the provided data.
-   * For each column, it infers the type, calculates the pixel width based on the label,
-   * removes any prefix from the label, and adds a column to the builder with the processed column data.
-   *
-   * @param {DataType[]} data - An array of objects representing the data for the LineUpJS builder.
-   * @returns {Object} A LineUpJS builder with constructed columns.
-   */
+  function buildNumberColumnWithSettings(column: string, data: DataType[], width: number): any {
+    return buildNumberColumn(column).width(width);
+  }
+
+  function buildDateColumnWithSettings(column: string, data: DataType[], width: number): any {
+    return buildDateColumn(column).width(width);
+  }
+
+  function buildCategoricalColumnWithSettings(column: string, data: DataType[], width: number): any {
+    const uniqueCategories = data.reduce<Set<string>>((acc, row) => acc.add(row[column]), new Set());
+    const categoryColorMap = Array.from(uniqueCategories).map((category) => ({
+      name: category,
+      color: MANTINE_HEADER_COLOR,
+    }));
+    return buildCategoricalColumn(column, categoryColorMap).width(width);
+  }
+
+  function buildStringColumnWithSettings(column: string, data: DataType[], width: number): any {
+    return buildStringColumn(column).width(width);
+  }
+
+  // Create a type map to hold builder functions for each type
+  type BuilderFunction = (column: string, data: DataType[], width: number) => any;
+  const builderMap: { [key: string]: BuilderFunction } = {
+    // boolean: buildBooleanColumnWithSettings,
+    boolean: buildNumberColumnWithSettings,
+    number: buildNumberColumnWithSettings,
+    date: buildDateColumnWithSettings,
+    categorical: buildCategoricalColumnWithSettings,
+    string: buildStringColumnWithSettings,
+  };
+
+  // Build columns
   function buildColumns(data: DataType[]): any {
     const builder = LineUpJS.builder(data);
     const columns = Object.keys(data[0]);
 
-    const builtColumns = columns.map((column) => buildColumn(data, column));
+    columns.forEach((column) => {
+      const type = inferType(data, column);
+      const width = calculatePixelWidthFromLabel(column);
+      const builderFunction = builderMap[type];
 
-    builtColumns.forEach((col) => builder.column(col));
+      if (builderFunction) {
+        const builtColumn = builderFunction(column, data, width);
+        builder.column(builtColumn);
+      }
+    });
+
     builder.rowHeight(21);
-
     return builder;
   }
 
