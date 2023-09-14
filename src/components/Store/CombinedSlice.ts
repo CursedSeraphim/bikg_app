@@ -1055,90 +1055,58 @@ const calculateObjectProperties = (visibleTriples, hiddenTriples) => {
   return objectProperties;
 };
 
-/**
- * Process the triples and create nodes and edges based on triples and its visibility.
- *
- * @param {Array} triples - Array of triples.
- * @param {boolean} visible - Boolean value representing the visibility of the node.
- * @param {Array} nodes - Array of Nodes.
- * @param {Array} edges - Array of Edges.
- * @param {Map} objectProperties - Map containing object properties.
- * @param {Function} getColorForNamespace - Function to get color for namespace.
- * @param {Array} violations - Array of violations.
- * @param {Array} types - Array of types.
- * @param {Object} numberViolationsPerNode - Object containing cumulative number of violations per type.
- */
-const processTriples = (triples, visible, nodes, edges, objectProperties, getColorForNamespace, violationsList, types, numberViolationsPerNode) => {
+// Helper function to extract namespace from a URI
+const extractNamespace = (uri) => {
+  const match = uri.match(/^([^:]+):/);
+  return match ? match[1] : '';
+};
+
+// Helper function to find or add node
+const findOrAddNode = (id, label, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList) => {
+  const { cumulativeSelected = 0, cumulativeViolations = 0, violations = 0 } = numberViolationsPerNode[id] || numberViolationsPerNode[id.split(' ')[0]] || {};
+
+  const hasCounts = cumulativeSelected !== 0 || cumulativeViolations !== 0;
+  const labelSuffix = hasCounts ? ` (${cumulativeSelected}/${cumulativeViolations})` : '';
+  const marker = hasCounts && violations === 0 ? '*' : '';
+  const computedLabel = `${label}${labelSuffix}${marker}`;
+
+  let node = nodes.find((n) => n.data.id === id);
+  if (!node) {
+    const namespace = extractNamespace(id);
+    const defaultColor = getColorForNamespace(namespace, false);
+    const selectedColor = getColorForNamespace(namespace, true);
+    node = {
+      data: {
+        id,
+        label: computedLabel,
+        visible,
+        permanent: visible,
+        namespace,
+        defaultColor,
+        selectedColor,
+        violation: violationList.includes(id),
+        exemplar: namespace === 'ex',
+        type: types.includes(id),
+      },
+    };
+    nodes.push(node);
+  } else if (visible) {
+    node.data.visible = visible;
+    node.data.permanent = visible;
+  }
+};
+
+// Main function to process triples
+const processTriples = (triples, visible, nodes, edges, objectProperties, getColorForNamespace, types, numberViolationsPerNode, violationList) => {
   triples.forEach((t) => {
-    const extractNamespace = (uri) => {
-      const match = uri.match(/^([^:]+):/);
-      return match ? match[1] : '';
-    };
-
-    const findOrAddNode = (id, label) => {
-      let cumulativeSelected = 0;
-      let cumulativeViolations = 0;
-      let violations = 0;
-
-      // Check if id exists in the cumulativeNumberViolationsPerNode map
-      if (Object.hasOwnProperty.call(numberViolationsPerNode, id) || Object.hasOwnProperty.call(numberViolationsPerNode, id.split(' ')[0])) {
-        const {
-          cumulativeSelected: cs,
-          cumulativeViolations: cv,
-          violations: v,
-        } = numberViolationsPerNode[id] || numberViolationsPerNode[id.split(' ')[0]] || {};
-
-        cumulativeSelected = cs;
-        cumulativeViolations = cv;
-        if (v) {
-          violations = v;
-        }
-      }
-
-      // Apply the label and marker logic
-      const labelSuffix =
-        cumulativeSelected !== null && cumulativeViolations !== null && (cumulativeSelected !== 0 || cumulativeViolations !== 0)
-          ? ` (${cumulativeSelected}/${cumulativeViolations})`
-          : '';
-      const marker =
-        cumulativeSelected !== null && cumulativeViolations !== null && (cumulativeSelected !== 0 || cumulativeViolations !== 0) && violations === 0 ? '*' : '';
-      const computedLabel = `${label}${labelSuffix}${marker}`;
-      console.log('violations for node', id, violations, 'label is', computedLabel);
-
-      let node = nodes.find((n) => n.data.id === id);
-      if (!node) {
-        const namespace = extractNamespace(id);
-        const defaultColor = getColorForNamespace(namespace, false);
-        const selectedColor = getColorForNamespace(namespace, true);
-        node = {
-          data: {
-            id,
-            label: computedLabel,
-            visible,
-            permanent: visible,
-            namespace,
-            defaultColor,
-            selectedColor,
-            violation: violations > 0,
-            exemplar: namespace === 'ex',
-            type: types.includes(id),
-          },
-        };
-        nodes.push(node);
-      } else if (visible) {
-        node.data.visible = visible;
-        node.data.permanent = visible;
-      }
-    };
-
-    findOrAddNode(t.s, t.s);
+    findOrAddNode(t.s, t.s, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList);
 
     if (objectProperties.has(t.o)) {
-      findOrAddNode(t.o, t.o);
+      findOrAddNode(t.o, t.o, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList);
     }
 
     const uniqueId = objectProperties.has(t.o) ? t.o : `${t.o}_${uuidv4()}`;
-    findOrAddNode(uniqueId, t.o);
+    findOrAddNode(uniqueId, t.o, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList);
 
     edges.push({
       data: {
@@ -1154,27 +1122,16 @@ const processTriples = (triples, visible, nodes, edges, objectProperties, getCol
   });
 };
 
-/**
- * Method to select and create CytoData based on the provided rdfString.
- * This function creates Nodes and Edges based on visible and hidden triples and returns.
- *
- * @param {string} rdfString string in Resource Description Framework format.
- * @param {Function} getShapeForNamespace - Function to get a shape for a namespace.
- * @param {Array} violations - Array of violations.
- * @param {Array} types - Array of types.
- * @param {Object} cumulativeNumberViolationsPerNode - Object containing cumulative number of violations per type.
- * @returns {Object} An object containing array of Nodes and Edges.
- */
-export const selectCytoData = async (rdfString, getShapeForNamespace, violations, types, cumulativeNumberViolationsPerNode) => {
-  // ... same as before
+// The main exported function
+export const selectCytoData = async (rdfString, getColorForNamespace, types, numberViolationsPerNode, violationList) => {
   const { visibleTriples, hiddenTriples } = await selectAllTriples(rdfString);
-
+  const objectProperties = calculateObjectProperties(visibleTriples, hiddenTriples);
   const nodes = [];
   const edges = [];
 
-  const objectProperties = calculateObjectProperties(visibleTriples, hiddenTriples);
-  processTriples(hiddenTriples, false, nodes, edges, objectProperties, getShapeForNamespace, violations, types, cumulativeNumberViolationsPerNode);
-  processTriples(visibleTriples, true, nodes, edges, objectProperties, getShapeForNamespace, violations, types, cumulativeNumberViolationsPerNode);
+  processTriples(hiddenTriples, false, nodes, edges, objectProperties, getColorForNamespace, types, numberViolationsPerNode, violationList);
+  processTriples(visibleTriples, true, nodes, edges, objectProperties, getColorForNamespace, types, numberViolationsPerNode, violationList);
+
   return { nodes, edges };
 };
 

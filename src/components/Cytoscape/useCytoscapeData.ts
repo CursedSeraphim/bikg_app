@@ -32,7 +32,7 @@ export function useCytoscapeData({
 }: CytoscapeDataProps) {
   useEffect(() => {
     // console.log('useCytoscapeData called with cumulativeNumberViolationsPerType', cumulativeNumberViolationsPerType);
-    selectCytoData(rdfOntology, getShapeForNamespace, violations, types, cumulativeNumberViolationsPerType)
+    selectCytoData(rdfOntology, getShapeForNamespace, types, cumulativeNumberViolationsPerType, violations)
       .then((data) => {
         cy
           ? updateCytoscapeInstance(cy, data, initialNodeData, onLoaded, setLoading)

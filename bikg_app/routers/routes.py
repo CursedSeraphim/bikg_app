@@ -483,6 +483,7 @@ class Node:
             'cumulative_count': self.cumulative_count,  # New field
             'children': [child.to_dict() for child in self.children]
         }
+    
 
 def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar_dict, g):
     query = """SELECT ?s ?o WHERE { ?s rdfs:subClassOf ?o . }"""
