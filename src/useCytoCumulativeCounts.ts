@@ -1,63 +1,56 @@
-// useCytoSelectedCounts.ts
 import { useEffect, useRef } from 'react';
 import { Core } from 'cytoscape';
 import _ from 'lodash';
 import store from './components/Store/Store';
 import { INumberViolationsPerNodeMap } from './types';
 
-// Helper function to get the base node name from the composite key
-function getBaseId(compositeKey: string): string {
-  const parts = compositeKey.split(' ');
-  return parts[0];
-}
+// Gets the base node name from the composite key
+const getBaseId = (compositeKey: string): string => compositeKey.split(' ')[0];
 
-export function updateCytoscapeNodesGivenCounts(cy: Core, numberViolationsPerNode: INumberViolationsPerNodeMap) {
-  console.log('triggering cytoscape update');
+const updateNodeLabel = (node: any, baseId: string, cumulativeSelected: number, cumulativeViolations: number, violations: number) => {
+  const labelSuffix = cumulativeSelected !== 0 || cumulativeViolations !== 0 ? ` (${cumulativeSelected}/${cumulativeViolations})` : '';
+  const marker = (cumulativeSelected !== 0 || cumulativeViolations !== 0) && violations === 0 ? '*' : '';
+  const label = `${baseId}${labelSuffix}${marker}`;
 
+  node.json({
+    data: {
+      cumulativeViolations,
+      cumulativeSelected,
+      label,
+    },
+  });
+};
+
+export const updateCytoscapeNodesGivenCounts = (cy: Core, numberViolationsPerNode: INumberViolationsPerNodeMap) => {
   cy.startBatch();
 
-  // Build an array of node IDs to update
   const nodeIdsToUpdate = Object.keys(numberViolationsPerNode);
-
-  // Update each node
   for (const id of nodeIdsToUpdate) {
     const baseId = getBaseId(id);
     const node = cy.getElementById(baseId);
+
     if (node.empty()) continue;
 
-    // TODO create a smart mapping of keys where whether the key is a node or a node + count, we get the same value
-    const { cumulativeViolations, cumulativeSelected } = numberViolationsPerNode[id] || numberViolationsPerNode[baseId];
-
-    // Set cumulativeViolations and cumulativeSelected properties directly
-    node.json({
-      data: {
-        cumulativeViolations,
-        cumulativeSelected,
-        label: `${baseId} (${cumulativeSelected}/${cumulativeViolations})`,
-      },
-    });
+    const { cumulativeViolations = 0, cumulativeSelected = 0, violations = 0 } = numberViolationsPerNode[id] ?? {};
+    updateNodeLabel(node, baseId, cumulativeSelected, cumulativeViolations, violations);
   }
 
   cy.endBatch();
-}
+};
 
 const useCytoSelectedCounts = (cy: Core) => {
-  const numberViolationsPerNodeRef = useRef({});
+  const numberViolationsPerNodeRef = useRef<INumberViolationsPerNodeMap>({});
 
   useEffect(() => {
     const unsubscribe = store.subscribe(() => {
-      const currentState = store.getState().combined;
-      let shouldUpdateTreeData = false;
-      const { numberViolationsPerNode } = currentState;
+      const { numberViolationsPerNode } = store.getState().combined;
+      const shouldUpdateTreeData = !_.isEqual(numberViolationsPerNode, numberViolationsPerNodeRef.current);
 
-      // check equality to ref using lodash
-      if (!_.isEqual(numberViolationsPerNode, numberViolationsPerNodeRef.current)) {
-        shouldUpdateTreeData = true;
+      if (shouldUpdateTreeData) {
         numberViolationsPerNodeRef.current = numberViolationsPerNode;
-      }
-
-      if (cy && shouldUpdateTreeData) {
-        updateCytoscapeNodesGivenCounts(cy, numberViolationsPerNode);
+        if (cy) {
+          updateCytoscapeNodesGivenCounts(cy, numberViolationsPerNode);
+        }
       }
     });
 

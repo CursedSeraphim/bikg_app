@@ -1066,9 +1066,9 @@ const calculateObjectProperties = (visibleTriples, hiddenTriples) => {
  * @param {Function} getColorForNamespace - Function to get color for namespace.
  * @param {Array} violations - Array of violations.
  * @param {Array} types - Array of types.
- * @param {Object} cumulativeNumberViolationsPerNode - Object containing cumulative number of violations per type.
+ * @param {Object} numberViolationsPerNode - Object containing cumulative number of violations per type.
  */
-const processTriples = (triples, visible, nodes, edges, objectProperties, getColorForNamespace, violations, types, cumulativeNumberViolationsPerNode) => {
+const processTriples = (triples, visible, nodes, edges, objectProperties, getColorForNamespace, violationsList, types, numberViolationsPerNode) => {
   triples.forEach((t) => {
     const extractNamespace = (uri) => {
       const match = uri.match(/^([^:]+):/);
@@ -1076,20 +1076,34 @@ const processTriples = (triples, visible, nodes, edges, objectProperties, getCol
     };
 
     const findOrAddNode = (id, label) => {
-      let cumulativeSelected = null;
-      let cumulativeViolations = null;
+      let cumulativeSelected = 0;
+      let cumulativeViolations = 0;
+      let violations = 0;
 
       // Check if id exists in the cumulativeNumberViolationsPerNode map
-      if (
-        Object.hasOwnProperty.call(cumulativeNumberViolationsPerNode, id) ||
-        Object.hasOwnProperty.call(cumulativeNumberViolationsPerNode, id.split(' ')[0])
-      ) {
-        const { cumulativeSelected: cs, cumulativeViolations: cv } =
-          cumulativeNumberViolationsPerNode[id] || cumulativeNumberViolationsPerNode[id.split(' ')[0]] || {};
+      if (Object.hasOwnProperty.call(numberViolationsPerNode, id) || Object.hasOwnProperty.call(numberViolationsPerNode, id.split(' ')[0])) {
+        const {
+          cumulativeSelected: cs,
+          cumulativeViolations: cv,
+          violations: v,
+        } = numberViolationsPerNode[id] || numberViolationsPerNode[id.split(' ')[0]] || {};
 
         cumulativeSelected = cs;
         cumulativeViolations = cv;
+        if (v) {
+          violations = v;
+        }
       }
+
+      // Apply the label and marker logic
+      const labelSuffix =
+        cumulativeSelected !== null && cumulativeViolations !== null && (cumulativeSelected !== 0 || cumulativeViolations !== 0)
+          ? ` (${cumulativeSelected}/${cumulativeViolations})`
+          : '';
+      const marker =
+        cumulativeSelected !== null && cumulativeViolations !== null && (cumulativeSelected !== 0 || cumulativeViolations !== 0) && violations === 0 ? '*' : '';
+      const computedLabel = `${label}${labelSuffix}${marker}`;
+      console.log('violations for node', id, violations, 'label is', computedLabel);
 
       let node = nodes.find((n) => n.data.id === id);
       if (!node) {
@@ -1099,13 +1113,13 @@ const processTriples = (triples, visible, nodes, edges, objectProperties, getCol
         node = {
           data: {
             id,
-            label: cumulativeSelected !== null && cumulativeViolations !== null ? `${label} (${cumulativeSelected}/${cumulativeViolations})` : label,
+            label: computedLabel,
             visible,
             permanent: visible,
             namespace,
             defaultColor,
             selectedColor,
-            violation: violations.includes(id),
+            violation: violations > 0,
             exemplar: namespace === 'ex',
             type: types.includes(id),
           },
