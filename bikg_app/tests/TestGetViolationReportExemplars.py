@@ -235,7 +235,7 @@ class TestGetViolationReportExemplars(unittest.TestCase):
 
                 g_v = Graph()
                 g_v.parse(test_case["violation_report_file"], format="ttl")
-                result_graph, _, _, _ = get_violation_report_exemplars(g, g_v)
+                result_graph, _, _, _, _ = get_violation_report_exemplars(g, g_v)
                 expected_graph = Graph()
                 expected_graph.parse(test_case["result_graph_file"], format="turtle")
                 if not isomorphic(result_graph, expected_graph):
@@ -261,7 +261,7 @@ class TestGetViolationReportExemplars(unittest.TestCase):
 
                 g_v = Graph()
                 g_v.parse(test_case["violation_report_file"], format="ttl")
-                _, edge_count_dict, _, _ = get_violation_report_exemplars(g, g_v)
+                _, edge_count_dict, _, _, _ = get_violation_report_exemplars(g, g_v)
                 expected_edge_count_dict = test_case["expected_edge_count_dict"]
                 # print('\nsorted(edge_count_dict)')
                 # print_defaultdict_human_readable(edge_count_dict)
@@ -277,7 +277,7 @@ class TestGetViolationReportExemplars(unittest.TestCase):
 
                 g_v = Graph()
                 g_v.parse(test_case["violation_report_file"], format="ttl")
-                _, _, focus_node_exemplar_dict, _ = get_violation_report_exemplars(g, g_v)
+                _, _, focus_node_exemplar_dict, _, _ = get_violation_report_exemplars(g, g_v)
                 exepected_focus_node_exemplar_dict = test_case["expected_focus_node_exemplar_dict"]
                 # print('\n tcprint focus_node_exemplar_dict')
                 # [print(k,v) for k,v in focus_node_exemplar_dict.items()]
@@ -295,7 +295,7 @@ class TestGetViolationReportExemplars(unittest.TestCase):
 
                 g_v = Graph()
                 g_v.parse(test_case["violation_report_file"], format="ttl")
-                _, _, _, exemplar_focus_node_dict = get_violation_report_exemplars(g, g_v)
+                _, _, _, exemplar_focus_node_dict, _ = get_violation_report_exemplars(g, g_v)
                 expected_exemplar_focus_node_dict = test_case["expected_exemplar_focus_node_dict"]
                 # print('\n tcprint exemplar_focus_node_dict')
                 # [print(k,v) for k,v in exemplar_focus_node_dict.items()]
