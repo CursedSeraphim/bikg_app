@@ -4,9 +4,16 @@ import { useDispatch, useSelector } from 'react-redux';
 import * as LineUpJS from 'lineupjs';
 // import './LineUpOverrides.sass';
 import { buildBooleanColumn, buildCategoricalColumn, buildDateColumn, buildNumberColumn, buildStringColumn } from 'lineupjs';
-import { selectCsvData, setSelectedFocusNodes, selectSelectedFocusNodes, selectFilterType, selectMissingEdgeOption } from '../Store/CombinedSlice';
+import {
+  selectCsvData,
+  setSelectedFocusNodes,
+  selectSelectedFocusNodes,
+  selectFilterType,
+  selectMissingEdgeOption,
+  selectViolations,
+} from '../Store/CombinedSlice';
 import { ICsvData, CsvCell, ICanvasOwner } from '../../types';
-import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, MANTINE_HEADER_COLOR, SELECTED_TYPE_NODE_COLOR } from '../../constants';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, MANTINE_HEADER_COLOR, SELECTED_TYPE_NODE_COLOR, SELECTED_VIOLATION_NODE_COLOR } from '../../constants';
 import { filterAllNanColumns, filterAllUniModalColumns } from './LineUpHelpers';
 
 const columnTypes = {};
@@ -23,6 +30,7 @@ export default function LineUpView() {
   const reduxCsvData = useSelector(selectCsvData);
   const filterType = useSelector(selectFilterType);
   const missingEdgeOption = useSelector(selectMissingEdgeOption);
+  const violationList = useSelector(selectViolations);
 
   // Local state to hold csvData
   const [csvData, setCsvData] = useState(reduxCsvData);
@@ -153,6 +161,9 @@ export default function LineUpView() {
   const biColorMap: { [key: string]: string } = {
     'rdf:type': SELECTED_TYPE_NODE_COLOR,
   };
+  violationList.forEach((violation) => {
+    biColorMap[violation] = SELECTED_VIOLATION_NODE_COLOR;
+  });
 
   // Your original buildBooleanColumnWithSettings
   function buildBooleanColumnWithSettings(column: string, data: DataType[], width: number): any {
@@ -204,7 +215,7 @@ export default function LineUpView() {
 
     columns.forEach((column) => {
       let type = inferType(data, column);
-      if (type === 'boolean') type = 'number';
+      if (type === 'boolean') type = 'categorical';
       const width = calculatePixelWidthFromLabel(column);
       const builderFunction = builderMap[type];
 

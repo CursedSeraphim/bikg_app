@@ -397,6 +397,18 @@ function updateFocusNodeSampleMap(state) {
   });
 }
 
+function turnBooleanIntoFalseTrue(csvData: ICsvData[]): ICsvData[] {
+  return csvData.map((row) => {
+    const transformedRow: ICsvData = { ...row };
+    for (const [key, value] of Object.entries(row)) {
+      if (value === 0 || value === 1) {
+        transformedRow[key] = value === 1 ? 'True' : 'False';
+      }
+    }
+    return transformedRow;
+  });
+}
+
 // TODO set types of payloadaction for all reducers
 const combinedSlice = createSlice({
   name: 'combined',
@@ -413,11 +425,9 @@ const combinedSlice = createSlice({
         state.numberViolationsPerNode[key].cumulativeSelected = state.cumulativeNumberViolationsPerNode[key].cumulativeSelected;
         state.numberViolationsPerNode[key].violations = state.cumulativeNumberViolationsPerNode[key].violations;
       });
-      console.log('state.numberViolationsPerNode after setting cumulativeViolations', current(state.numberViolationsPerNode));
     },
     setOntologyTree: (state, action: PayloadAction<ServerTree>) => {
       state.ontologyTree = action.payload;
-      console.log('setOntologyTree', state.ontologyTree);
     },
     setViolationMap: (state, action: PayloadAction<IViolationMap>) => {
       state.violationMap = action.payload;
@@ -514,12 +524,17 @@ const combinedSlice = createSlice({
       state.violations = JSON.parse(action.payload);
     },
     setCsvData: (state, action) => {
-      state.originalSamples = action.payload;
+      // Transform boolean columns
+      const transformedData = turnBooleanIntoFalseTrue(action.payload);
+
+      state.originalSamples = transformedData;
+
       if (state.missingEdgeOption === 'remove') {
-        state.samples = removeNanEdges(action.payload);
+        state.samples = removeNanEdges(transformedData);
       } else if (state.missingEdgeOption === 'keep') {
-        state.samples = action.payload;
+        state.samples = transformedData;
       }
+
       updateFocusNodeSampleMap(state);
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
@@ -597,7 +612,6 @@ const combinedSlice = createSlice({
         state.ontologyTree,
         new Set(state.types),
       );
-      console.log('state.numberViolationsPerNode', state.numberViolationsPerNode);
 
       updateSelectedViolationExemplars(state);
     },
