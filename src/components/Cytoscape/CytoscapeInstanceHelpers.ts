@@ -12,7 +12,7 @@ export function createNewCytoscapeInstance(
   setLoading: SetLoadingFn,
   getShapeForNamespace: GetShapeForNamespaceFn,
 ): void {
-  const newCy = cytoscape({
+  const cy = cytoscape({
     container: document.getElementById('cy'),
     wheelSensitivity: 0.2,
     elements: data,
@@ -20,11 +20,11 @@ export function createNewCytoscapeInstance(
     layout: getLayout(),
   });
 
-  setCy(newCy);
-  newCy.ready(() => {
+  setCy(cy);
+  cy.ready(() => {
     onLoaded();
     setLoading(false);
-    newCy.fit();
+    cy.fit();
   });
 }
 

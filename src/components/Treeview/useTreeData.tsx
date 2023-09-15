@@ -67,7 +67,6 @@ export default function useTreeData() {
           // Call the function directly since it's not asynchronous anymore
           root = getTreeDataFromTuples(subClassOfTriplesRef.current, numberViolationsPerNodeRef.current);
           sortEachLayerAlphabetically(root);
-          console.log('numberViolationsPerNodeRef.current', numberViolationsPerNodeRef.current);
           if (Array.isArray(newSelectedTypes) && newSelectedTypes.length > 0) {
             setTreeData(updateTreeDataWithSelectedTypes(root, newSelectedTypes));
           } else {
@@ -76,7 +75,6 @@ export default function useTreeData() {
         } else if (Array.isArray(newSelectedTypes) && newSelectedTypes.length > 0) {
           setTreeData((oldTreeData) => updateTreeDataWithSelectedTypes(oldTreeData, newSelectedTypes));
         }
-        // console.log('numberViolationsPerNodeRef.current', numberViolationsPerNodeRef.current);
       }
     });
 
