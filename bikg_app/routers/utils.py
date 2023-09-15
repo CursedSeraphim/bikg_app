@@ -80,9 +80,7 @@ def deserialize_nested_count_dict(d):
     Returns:
         dict: A deserialized version of the input dictionary.
     """
-    deserialized_dict = json.loads(
-        d
-    )  # Deserialize the JSON string to a Python dictionary
+    deserialized_dict = json.loads(d)  # Deserialize the JSON string to a Python dictionary
     return deserialized_dict
 
 
@@ -217,9 +215,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
     edge_count_dict = defaultdict(lambda: defaultdict(int))
     focus_node_exemplar_dict = defaultdict(set)
     exemplar_focus_node_dict = defaultdict(set)
-    violation_exemplar_dict = defaultdict(
-        lambda: defaultdict(int)
-    )  # New dictionary to keep track of violation-exemplar pairs
+    violation_exemplar_dict = defaultdict(lambda: defaultdict(int))  # New dictionary to keep track of violation-exemplar pairs
 
     ignored_edges = {
         dcterms.date,
@@ -229,9 +225,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
 
     exemplar_sets = {}
 
-    for validation_result in TQDMInstance(
-        validation_results, desc="Processing violations"
-    ):
+    for validation_result in TQDMInstance(validation_results, desc="Processing violations"):
         violations_query = f"""
             SELECT ?s ?p ?o WHERE {{
                 <{validation_result}> ?p ?o.
@@ -255,9 +249,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
 
         if exemplar_name is None:
             # Use custom exemplar namespace instead of the shape's namespace
-            exemplar_name = URIRef(
-                f"{ex}{shape.split('omics/')[-1]}_exemplar_{len(exemplar_sets)+1}"
-            )
+            exemplar_name = URIRef(f"{ex}{shape.split('omics/')[-1]}_exemplar_{len(exemplar_sets)+1}")
             exemplar_sets[frozenset(edge_object_pairs)] = exemplar_name
 
         focus_node_exemplar_dict[current_focus_node].add(exemplar_name)
@@ -266,9 +258,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
             exemplar_name
         ] += 1  # Updating the new dictionary to associate the violation with the exemplar and count
 
-        process_edge_object_pairs(
-            ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name
-        )
+        process_edge_object_pairs(ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name)
 
     return (
         ontology_g,
@@ -279,9 +269,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
     )
 
 
-def process_edge_object_pairs(
-    ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name
-):
+def process_edge_object_pairs(ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name):
     for p, o in edge_object_pairs:
         po_str = f"{p}__{o}"
         if edge_count_dict[exemplar_name][po_str] == 0:
