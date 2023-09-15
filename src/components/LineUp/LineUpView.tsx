@@ -155,7 +155,7 @@ export default function LineUpView() {
     return column;
   }
 
-  type DataType = { [key: string]: any };
+  type DataType = { [key: string]: number | string | boolean | null }; // TODO check whether this should alawys be string
 
   type BuilderFunction = (column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }) => LineUpJS.ColumnBuilder;
 
@@ -179,7 +179,7 @@ export default function LineUpView() {
   }
 
   function buildCategoricalColumnWithSettings(column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }): LineUpJS.ColumnBuilder {
-    const uniqueCategories = data.reduce<Set<string>>((acc, row) => acc.add(row[column]), new Set());
+    const uniqueCategories = data.reduce<Set<string>>((acc, row) => acc.add(String(row[column])), new Set());
 
     const customColor = colorMap ? colorMap[column] : undefined;
     const columnColor = customColor || MANTINE_HEADER_COLOR;
