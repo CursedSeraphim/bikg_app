@@ -37,15 +37,6 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
       if (cy && initialNodeData.current && initialNodeData.current.size > 0) {
         resetCyto();
 
-        // TODO I think the problem is that this selection of connected nodes is not working properly in case a user selects a single violation or a single exemplar
-        // perhaps it is enough to directly use the maps now that we have them
-        // const { violationNodes, typeNodes, otherNodes, exemplarNodes } = getFilteredNodes(
-        //   cy,
-        //   selectedViolations,
-        //   violationsTypesMap,
-        //   selectedTypes,
-        //   selectedViolationExemplars,
-        // );
         const violationNodes = cy.nodes().filter((node) => state.selectedViolations.includes(node.id()));
         const typeNodes = cy.nodes().filter((node) => state.selectedTypes.includes(node.id()));
         const connectedNodesIds = state.selectedViolations.flatMap((violation) => violationsTypesMap[violation]);
