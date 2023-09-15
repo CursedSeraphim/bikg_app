@@ -67,7 +67,6 @@ except KeyError:
     print("Column 'rdf:type' not found.")
 
 
-
 def shorten_uris_in_nested_dict(nested_dict, g: Graph):
     new_dict = {}
     for outer_key, inner_dict in nested_dict.items():
