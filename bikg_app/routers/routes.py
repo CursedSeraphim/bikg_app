@@ -108,7 +108,8 @@ def build_type_node_count_dict(df):
     :return: A dictionary with types as keys and violation counts as values
     """
     if "rdf:type" not in df.columns:
-        raise ValueError("The dataframe must contain a 'rdf:type' column.")
+        print("Warning: 'rdf:type' column not found in the DataFrame. Returning an empty dictionary.")
+        return {}
 
     # Use the value_counts method to get the count of each unique type in the 'rdf:type' column
     type_counts = df["rdf:type"].value_counts()
