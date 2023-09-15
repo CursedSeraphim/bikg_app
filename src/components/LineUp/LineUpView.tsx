@@ -354,9 +354,22 @@ export default function LineUpView() {
     });
   }
 
+  function turnBooleanIntoFalseTrue(data: ICsvData[]): ICsvData[] {
+    return data.map((row) => {
+      const transformedRow: ICsvData = { ...row };
+      for (const [key, value] of Object.entries(row)) {
+        if (value === 0 || value === 1) {
+          transformedRow[key] = value === 1 ? 'True' : 'False';
+        }
+      }
+      return transformedRow;
+    });
+  }
+
   useEffect(() => {
     if (reduxCsvData && reduxCsvData.length > 0) {
-      setCsvData(reduxCsvData);
+      const transformedData = turnBooleanIntoFalseTrue(reduxCsvData);
+      setCsvData(transformedData);
       preprocessColumnTypes(reduxCsvData);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

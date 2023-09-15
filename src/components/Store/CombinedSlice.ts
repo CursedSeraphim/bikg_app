@@ -397,18 +397,6 @@ function updateFocusNodeSampleMap(state) {
   });
 }
 
-function turnBooleanIntoFalseTrue(csvData: ICsvData[]): ICsvData[] {
-  return csvData.map((row) => {
-    const transformedRow: ICsvData = { ...row };
-    for (const [key, value] of Object.entries(row)) {
-      if (value === 0 || value === 1) {
-        transformedRow[key] = value === 1 ? 'True' : 'False';
-      }
-    }
-    return transformedRow;
-  });
-}
-
 // TODO set types of payloadaction for all reducers
 const combinedSlice = createSlice({
   name: 'combined',
@@ -520,17 +508,12 @@ const combinedSlice = createSlice({
       state.violations = JSON.parse(action.payload);
     },
     setCsvData: (state, action) => {
-      // Transform boolean columns
-      const transformedData = turnBooleanIntoFalseTrue(action.payload);
-
-      state.originalSamples = transformedData;
-
+      state.originalSamples = action.payload;
       if (state.missingEdgeOption === 'remove') {
-        state.samples = removeNanEdges(transformedData);
+        state.samples = removeNanEdges(action.payload);
       } else if (state.missingEdgeOption === 'keep') {
-        state.samples = transformedData;
+        state.samples = action.payload;
       }
-
       updateFocusNodeSampleMap(state);
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
