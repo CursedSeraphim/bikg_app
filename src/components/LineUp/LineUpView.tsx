@@ -12,7 +12,7 @@ import {
   selectMissingEdgeOption,
   selectViolations,
 } from '../Store/CombinedSlice';
-import { ICsvData, CsvCell, ICanvasOwner } from '../../types';
+import { ICsvData, ICanvasOwner } from '../../types';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, MANTINE_HEADER_COLOR, SELECTED_TYPE_NODE_COLOR, SELECTED_VIOLATION_NODE_COLOR } from '../../constants';
 import { filterAllNanColumns, filterAllUniModalColumns } from './LineUpHelpers';
 
@@ -156,7 +156,8 @@ export default function LineUpView() {
   }
 
   type DataType = { [key: string]: any };
-  type BuilderFunction = (column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }) => any;
+
+  type BuilderFunction = (column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }) => LineUpJS.ColumnBuilder;
 
   const biColorMap: { [key: string]: string } = {
     'rdf:type': SELECTED_TYPE_NODE_COLOR,
@@ -165,23 +166,19 @@ export default function LineUpView() {
     biColorMap[violation] = SELECTED_VIOLATION_NODE_COLOR;
   });
 
-  // Your original buildBooleanColumnWithSettings
-  function buildBooleanColumnWithSettings(column: string, data: DataType[], width: number): any {
+  function buildBooleanColumnWithSettings(column: string, data: DataType[], width: number): LineUpJS.ColumnBuilder {
     return buildBooleanColumn(column).trueMarker('1').falseMarker('0').width(width);
   }
 
-  // Your original buildNumberColumnWithSettings
-  function buildNumberColumnWithSettings(column: string, data: DataType[], width: number): any {
+  function buildNumberColumnWithSettings(column: string, data: DataType[], width: number): LineUpJS.ColumnBuilder {
     return buildNumberColumn(column).width(width);
   }
 
-  // Your original buildDateColumnWithSettings
-  function buildDateColumnWithSettings(column: string, data: DataType[], width: number): any {
+  function buildDateColumnWithSettings(column: string, data: DataType[], width: number): LineUpJS.ColumnBuilder {
     return buildDateColumn(column).width(width);
   }
 
-  // Updated buildCategoricalColumnWithSettings function
-  function buildCategoricalColumnWithSettings(column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }): any {
+  function buildCategoricalColumnWithSettings(column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }): LineUpJS.ColumnBuilder {
     const uniqueCategories = data.reduce<Set<string>>((acc, row) => acc.add(row[column]), new Set());
 
     const customColor = colorMap ? colorMap[column] : undefined;
@@ -195,13 +192,13 @@ export default function LineUpView() {
     return buildCategoricalColumn(column, categoryColorMap).width(width);
   }
 
-  function buildStringColumnWithSettings(column: string, data: DataType[], width: number): any {
+  function buildStringColumnWithSettings(column: string, data: DataType[], width: number): LineUpJS.ColumnBuilder {
     return buildStringColumn(column).width(width);
   }
 
   // Existing builderMap remains unchanged
   const builderMap: { [key: string]: BuilderFunction } = {
-    boolean: buildBooleanColumnWithSettings, // <-- Fixed here
+    boolean: buildBooleanColumnWithSettings,
     number: buildNumberColumnWithSettings,
     date: buildDateColumnWithSettings,
     categorical: buildCategoricalColumnWithSettings,
@@ -209,7 +206,7 @@ export default function LineUpView() {
   };
 
   // Existing buildColumns remains mostly unchanged
-  function buildColumns(data: DataType[]): any {
+  function buildColumns(data: DataType[]): LineUpJS.DataBuilder {
     const builder = LineUpJS.builder(data);
     const columns = Object.keys(data[0]);
 
