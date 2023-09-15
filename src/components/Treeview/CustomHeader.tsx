@@ -1,12 +1,10 @@
 // CustomHeader.tsx
 import React, { useState } from 'react';
 import {
-  SELECTED_TEXT_COLOR,
   SELECTED_TYPE_NODE_COLOR,
   UNSELECTED_TYPE_NODE_COLOR,
   SELECTED_EXEMPLAR_NODE_COLOR,
   UNSELECTED_EXEMPLAR_NODE_COLOR,
-  MANTINE_HEADER_COLOR,
   SELECTED_CUMULATIVE_NODE_COLOR,
   UNSELECTED_CUMULATIVE_NODE_COLOR,
 } from '../../constants';
@@ -26,13 +24,10 @@ export function CustomHeader({ onSelect, style, node }) {
     newStyle = { ...newStyle, color: UNSELECTED_TYPE_NODE_COLOR, fontWeight: 'normal' };
   }
 
-  if (isHovered) {
-    newStyle = { ...newStyle, backgroundColor: UNSELECTED_TYPE_NODE_COLOR, color: 'white' };
-  }
-
-  if (isActive) {
+  if (isHovered || isActive) {
     newStyle = { ...newStyle, backgroundColor: SELECTED_TYPE_NODE_COLOR, color: 'white' };
   }
+
   // Determine the colors based on whether the count is actual or cumulative
   const selectedNodeCountColor = node.nViolatingNodes !== 0 ? SELECTED_EXEMPLAR_NODE_COLOR : SELECTED_CUMULATIVE_NODE_COLOR;
   const unselectedNodeCountColor = node.nViolatingNodes !== 0 ? UNSELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_CUMULATIVE_NODE_COLOR;
@@ -54,11 +49,12 @@ export function CustomHeader({ onSelect, style, node }) {
     >
       <div style={node.selected ? { ...style.title, fontWeight: 'bold' } : style.title}>
         <i className={iconClass} style={iconStyle} />
-        <span style={{ color: isHovered ? SELECTED_TEXT_COLOR : node.selected ? SELECTED_TYPE_NODE_COLOR : UNSELECTED_TYPE_NODE_COLOR }}>{nodeName}</span>{' '}
+        {/* Completed TODO: make color of text white when isHovered and when isActive */}
+        <span style={{ color: isHovered || isActive ? 'white' : node.selected ? SELECTED_TYPE_NODE_COLOR : UNSELECTED_TYPE_NODE_COLOR }}>{nodeName}</span>{' '}
         <span
           style={{
             color: isHovered ? selectedNodeCountColor : node.selected ? selectedNodeCountColor : unselectedNodeCountColor,
-            textDecoration: isHovered ? selectedTextDecoration : node.selected ? selectedTextDecoration : unselectedTextDecoration,
+            textDecoration: node.selected ? selectedTextDecoration : unselectedTextDecoration,
           }}
         >
           {' '}
