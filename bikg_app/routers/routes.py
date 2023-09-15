@@ -60,7 +60,12 @@ overall_violation_value_counts = {
     violation: sum(key * value for key, value in counts.items()) for violation, counts in overall_violation_value_dict.items()
 }
 
-types_list = df["rdf:type"].unique().tolist()
+try:
+    types_list = df["rdf:type"].unique().tolist()
+except KeyError:
+    types_list = []
+    print("Column 'rdf:type' not found.")
+
 
 
 def shorten_uris_in_nested_dict(nested_dict, g: Graph):
