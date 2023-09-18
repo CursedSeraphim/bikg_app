@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
+import { useDispatch } from 'react-redux';
 import { UNSELECTED_EXEMPLAR_NODE_COLOR } from '../../constants';
+import { setSelectedFocusNodes } from '../Store/CombinedSlice';
 
 interface IScatterNode {
   text: string;
@@ -15,6 +17,7 @@ interface IScatterPlotProps {
 function ScatterPlot({ data }: IScatterPlotProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver(() => {
@@ -84,9 +87,17 @@ function ScatterPlot({ data }: IScatterPlotProps) {
 
         const [[x1, y1], [x2, y2]] = selection as [[number, number], [number, number]];
 
+        const selectedNodes: IScatterNode[] = [];
+
         svg.selectAll('circle').classed('selected', (d) => {
-          return xScale(d.x) >= x1 && xScale(d.x) <= x2 && yScale(d.y) >= y1 && yScale(d.y) <= y2;
+          const isSelected = xScale(d.x) >= x1 && xScale(d.x) <= x2 && yScale(d.y) >= y1 && yScale(d.y) <= y2;
+          if (isSelected) {
+            selectedNodes.push(d.text);
+          }
+          return isSelected;
         });
+
+        dispatch(setSelectedFocusNodes(selectedNodes));
       });
 
     // Clear existing brush elements before adding new ones
@@ -94,7 +105,7 @@ function ScatterPlot({ data }: IScatterPlotProps) {
 
     // Append brush to SVG
     svg.append('g').attr('class', 'brush').call(brush);
-  }, [data, dimensions]);
+  }, [data, dimensions, dispatch]);
 
   return <svg ref={svgRef} style={{ width: '100%', height: '100%' }} />;
 }
