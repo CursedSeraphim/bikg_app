@@ -441,5 +441,5 @@ body {
 }
 
 .selected {
-  fill: red !important;
+  fill: var(--selected-exemplar-node-color) !important;
 }
