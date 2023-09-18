@@ -12,7 +12,7 @@ interface IScatterPlotProps {
   data: IScatterNode[];
 }
 
-function ScatterPlot({ data }) {
+function ScatterPlot({ data }: IScatterPlotProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
 
@@ -40,15 +40,18 @@ function ScatterPlot({ data }) {
 
     const svg = d3.select(svgRef.current);
 
-    // Create scales
+    const xMin = d3.min(data, (d) => d.x);
+    const xMax = d3.max(data, (d) => d.x);
+    const yMin = d3.min(data, (d) => d.y);
+    const yMax = d3.max(data, (d) => d.y);
     // Create scales
     const xScale = d3
       .scaleLinear()
-      .domain([d3.min(data, (d) => d.x)!, d3.max(data, (d) => d.x)!])
+      .domain([xMin !== undefined ? xMin : 0, xMax !== undefined ? xMax : 0])
       .range([0, width]);
     const yScale = d3
       .scaleLinear()
-      .domain([d3.min(data, (d) => d.y)!, d3.max(data, (d) => d.y)!])
+      .domain([yMin !== undefined ? yMin : height, yMax !== undefined ? yMax : 0])
       .range([height, 0]);
 
     // Data Join
@@ -58,7 +61,7 @@ function ScatterPlot({ data }) {
     circles
       .enter()
       .append('circle')
-      .attr('r', 5)
+      .attr('r', 2)
       // Update
       .merge(circles)
       .attr('cx', (d) => xScale(d.x))
