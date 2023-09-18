@@ -23,14 +23,6 @@ function InteractiveScatterPlot({ data }) {
     return () => unsubscribe();
   }, []);
 
-  const handleMouseUp = (e, payload) => {
-    // TODO: Perform lasso-like logic here to determine selected points
-    // Update Redux store based on the selected points
-    // For demonstration, selecting points with x and y > 50
-    const selectedNodes = data.filter((d) => d.x > 50 && d.y > 50).map((d) => d.text);
-    dispatch(setSelectedFocusNodes(selectedNodes));
-  };
-
   if (data.length === 0) {
     return <BarLoader color={SPINNER_COLOR} loading />;
   }
@@ -41,7 +33,7 @@ function InteractiveScatterPlot({ data }) {
         <XAxis dataKey="x" type="number" hide />
         <YAxis dataKey="y" type="number" hide />
         <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-        <Scatter data={data} onMouseUp={handleMouseUp}>
+        <Scatter data={data}>
           {data.map((entry) => {
             const color = selectedFocusNodesRef.current.includes(entry.text) ? SELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_EXEMPLAR_NODE_COLOR;
             return <Cell key={entry.text} fill={color} />;
