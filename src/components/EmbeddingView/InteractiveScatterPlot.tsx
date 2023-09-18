@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
 import { useStore } from 'react-redux';
+import _ from 'lodash';
 import { UNSELECTED_EXEMPLAR_NODE_COLOR } from '../../constants';
 import { setSelectedFocusNodes } from '../Store/CombinedSlice';
 import { IRootState } from '../../types';
@@ -20,6 +21,8 @@ function ScatterPlot({ data }: IScatterPlotProps) {
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
   const store = useStore<IRootState>();
   const { dispatch } = store;
+  const prevSelectedNodesRef = useRef<string[]>([]); // Ref to hold previous selected nodes
+  const brushRef = useRef<any>(null); // Ref to hold the brush object, TODO use correct type
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver(() => {
@@ -46,13 +49,18 @@ function ScatterPlot({ data }: IScatterPlotProps) {
       const { selectedNodes } = state.combined;
 
       const svg = d3.select(svgRef.current);
-      // TODO somewhere here add a check to compare whether previous selection and new selection are the same. if necessary use lodash cloneDeep
-      if (svg) {
-        // TODO make sure the brush gets removed and called again
-        svg.selectAll('circle').classed('selected', function (d: IScatterNode) {
-          return selectedNodes.includes(d.text);
-        });
+      // always reset brush on selection change
+      if (brushRef.current) {
+        brushRef.current.move(svg.select('.brush'), null);
       }
+
+      if (_.isEqual(selectedNodes, prevSelectedNodesRef.current)) return;
+
+      prevSelectedNodesRef.current = selectedNodes; // Update previous selected nodes
+
+      svg.selectAll('circle').classed('selected', (d: IScatterNode) => {
+        return selectedNodes.includes(d.text);
+      });
     });
 
     const { width, height } = dimensions;
@@ -91,7 +99,7 @@ function ScatterPlot({ data }: IScatterPlotProps) {
     circles.exit().remove();
 
     // Brush Logic
-    const brush = d3
+    brushRef.current = d3
       .brush()
       .extent([
         [0, 0],
@@ -117,12 +125,12 @@ function ScatterPlot({ data }: IScatterPlotProps) {
       });
 
     // Clear existing brush elements before adding new ones
-    svg.select('.brush').remove();
+    d3.select(svgRef.current).select('.brush').remove();
 
     // Append brush to SVG
-    svg.append('g').attr('class', 'brush').call(brush);
+    d3.select(svgRef.current).append('g').attr('class', 'brush').call(brushRef.current);
 
-    // Cleanup TODO error function expected no return value
+    // Cleanup
     return () => {
       unsubscribe();
     };
