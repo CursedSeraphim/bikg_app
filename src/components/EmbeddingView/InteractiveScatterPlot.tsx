@@ -22,7 +22,7 @@ function ScatterPlot({ data }: IScatterPlotProps) {
   const store = useStore<IRootState>();
   const { dispatch } = store;
   const prevSelectedNodesRef = useRef<string[]>([]); // Ref to hold previous selected nodes
-  const brushRef = useRef<any>(null); // Ref to hold the brush object, TODO use correct type
+  const brushRef = useRef<d3.BrushBehavior<[number, number]>>(null);
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver(() => {
