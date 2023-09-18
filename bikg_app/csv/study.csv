@@ -1,5 +1,5 @@
-,http://data.boehringer.com/ontology/omics/violation1,http://data.boehringer.com/ontology/omics/violation2,http://example.org/relation/author,focus_node,x,y
-http://example.org/books/Huckleberry_Finn,1.0,0.0,,http://example.org/books/Huckleberry_Finn,12.7637615,29.773727
-http://example.org/books/LOTR,0.0,1.0,,http://example.org/books/LOTR,0.18366784,8.453548
-http://example.org/person/JRR_Tolkien,0.0,1.0,http://example.org/books/LOTR,http://example.org/person/JRR_Tolkien,0.6591104,8.928954
-http://example.org/person/Mark_Twain,1.0,0.0,http://example.org/books/Huckleberry_Finn,http://example.org/person/Mark_Twain,12.2663145,29.276297
+,http://data.boehringer.com/ontology/omics/violation1,http://data.boehringer.com/ontology/omics/violation2,http://example.org/relation/author,focus_node,rdf:type,x,y
+http://example.org/books/Huckleberry_Finn,1.0,0.0,,http://example.org/books/Huckleberry_Finn,http://example.org/books/123456,12.7637615,29.773727
+http://example.org/books/LOTR,0.0,1.0,,http://example.org/books/LOTR,http://example.org/books/123456,0.18366784,8.453548
+http://example.org/person/JRR_Tolkien,0.0,1.0,http://example.org/books/LOTR,http://example.org/person/JRR_Tolkien,http://example.org/books/123456,0.6591104,8.928954
+http://example.org/person/Mark_Twain,1.0,0.0,http://example.org/books/Huckleberry_Finn,http://example.org/person/Mark_Twain,http://example.org/books/123456,12.2663145,29.276297
