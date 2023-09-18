@@ -4,7 +4,7 @@ import * as N3 from 'n3';
 import { NamedNode, Store, Quad } from 'n3';
 import { createSelector } from 'reselect';
 import { v4 as uuidv4 } from 'uuid';
-import { dataToScatterDataArray } from '../EmbeddingView/csvToPlotlyScatterData';
+import { dataToScatterDataArray } from '../EmbeddingView/csvToScatterData';
 import {
   ICombinedState,
   IRdfState,
