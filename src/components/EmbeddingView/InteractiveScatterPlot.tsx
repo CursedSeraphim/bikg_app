@@ -1,8 +1,9 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
-import { useDispatch } from 'react-redux';
+import { useStore } from 'react-redux';
 import { UNSELECTED_EXEMPLAR_NODE_COLOR } from '../../constants';
 import { setSelectedFocusNodes } from '../Store/CombinedSlice';
+import { IRootState } from '../../types';
 
 interface IScatterNode {
   text: string;
@@ -17,7 +18,8 @@ interface IScatterPlotProps {
 function ScatterPlot({ data }: IScatterPlotProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
-  const dispatch = useDispatch();
+  const store = useStore<IRootState>();
+  const { dispatch } = store;
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver(() => {
@@ -37,7 +39,21 @@ function ScatterPlot({ data }: IScatterPlotProps) {
   }, []);
 
   useEffect(() => {
-    if (!dimensions || !svgRef.current) return;
+    if (!dimensions || !svgRef.current) return () => {};
+
+    const unsubscribe = store.subscribe(() => {
+      const state = store.getState();
+      const { selectedNodes } = state.combined;
+
+      const svg = d3.select(svgRef.current);
+      // TODO somewhere here add a check to compare whether previous selection and new selection are the same. if necessary use lodash cloneDeep
+      if (svg) {
+        // TODO make sure the brush gets removed and called again
+        svg.selectAll('circle').classed('selected', function (d: IScatterNode) {
+          return selectedNodes.includes(d.text);
+        });
+      }
+    });
 
     const { width, height } = dimensions;
 
@@ -105,6 +121,12 @@ function ScatterPlot({ data }: IScatterPlotProps) {
 
     // Append brush to SVG
     svg.append('g').attr('class', 'brush').call(brush);
+
+    // Cleanup TODO error function expected no return value
+    return () => {
+      unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, dimensions, dispatch]);
 
   return <svg ref={svgRef} style={{ width: '100%', height: '100%' }} />;
