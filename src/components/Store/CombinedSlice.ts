@@ -69,6 +69,8 @@ export function createMaps(
   const tempExemplarMap: { [key: string]: { focusNodes: Set<string>; types: Set<string>; violations: Set<string> } } = {};
   const tempFocusNodeMap: { [key: string]: { types: Set<string>; violations: Set<string>; exemplars: Set<string> } } = {};
 
+  // TODO transcriptomicsstudy exists in the csv instance data but is not initialized in types because it is not in the ontology?
+
   // Initialize the tempViolationMap with empty Sets
   violations.forEach((violation) => {
     tempViolationMap[violation] = { focusNodes: new Set(), types: new Set(), exemplars: new Set() };
@@ -94,7 +96,10 @@ export function createMaps(
     const type = String(sample['rdf:type']);
     const focusNode = sample.focus_node;
     const exemplars = focusNodeExemplarDict[focusNode] || [];
-
+    // there might be types in the instance data that do not appear in the ontology
+    if (!tempTypeMap[type]) {
+      tempTypeMap[type] = { focusNodes: new Set(), violations: new Set(), exemplars: new Set() };
+    }
     tempTypeMap[type].focusNodes.add(focusNode);
     exemplars.forEach((exemplar) => tempTypeMap[type].exemplars.add(exemplar));
 
@@ -514,6 +519,15 @@ const combinedSlice = createSlice({
       } else if (state.missingEdgeOption === 'keep') {
         state.samples = action.payload;
       }
+      // const newTypes = [...state.types];
+      // state.samples.forEach((sample) => {
+      //   // if sample['rdf_type'] not in type push it to newTypes
+      //   if (!newTypes.includes(sample['rdf:type'] as string)) {
+      //     newTypes.push(sample['rdf:type'] as string);
+      //   }
+      // });
+      // state.types = Object.values(newTypes);
+      // console.log('state types after set csv data', state.types);
       updateFocusNodeSampleMap(state);
     },
     setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
