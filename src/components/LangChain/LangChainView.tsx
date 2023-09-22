@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { OpenAI } from 'langchain/llms/openai';
 import { initializeAgentExecutorWithOptions } from 'langchain/agents';
-import { WolframAlphaTool } from 'langchain/tools';
+import { Tool, DynamicTool, WolframAlphaTool } from 'langchain/tools';
 import './Chatbot.css';
 import { v4 as uuidv4 } from 'uuid';
+import { setSelectedTypes } from '../Store/CombinedSlice';
 
 // Initialize the language model
 const model = new OpenAI({ temperature: 0, modelName: 'gpt-3.5-turbo-0613', openAIApiKey: process.env.OPENAI_API_KEY });
@@ -11,14 +12,51 @@ const model = new OpenAI({ temperature: 0, modelName: 'gpt-3.5-turbo-0613', open
 // Initialize the WolframAlpha tool
 const wolframTool = new WolframAlphaTool({ appid: process.env.WOLFRAM_ALPHA_APPID });
 
+const reverseString = (a) => a.split('').reverse().join('');
+
 // Define your tools
-const tools = [wolframTool];
+const tools = [
+  wolframTool,
+  new DynamicTool({
+    name: 'reverse_string',
+    func: reverseString,
+    description: 'useful for when you need to reverse a string',
+  }),
+];
 
 // Initialize the agent executor
 let executor;
 initializeAgentExecutorWithOptions(tools, model, { agentType: 'zero-shot-react-description', verbose: true }).then((res) => {
   executor = res;
 });
+
+// const parseArrayString = (arrayString) => {
+//   // Remove brackets and spaces, then split by comma
+//   const array = arrayString.replace(/[\[\]\s]/g, '').split(',');
+
+//   // Filter out empty strings and convert to numbers
+//   return array.filter((item) => item).map(Number);
+// };
+
+// const handleLLMSetTypes = (arrayString) => {
+//   try {
+//     // Parse the string into an array using the new function
+//     const parsedArray = parseArrayString(arrayString);
+
+//     // Check if the parsed value is an array
+//     if (Array.isArray(parsedArray)) {
+//       // Get the language model's answer
+//       const llmAnswer = executor.call({ input: parsedArray });
+
+//       // Dispatch the setSelectedTypes action with the language model's answer
+//       dispatch(setSelectedTypes(llmAnswer));
+//     } else {
+//       console.error('Parsed value is not an array');
+//     }
+//   } catch (error) {
+//     console.error('Failed to parse array string', error);
+//   }
+// };
 
 function LangchainComponent() {
   const [input, setInput] = useState('');
