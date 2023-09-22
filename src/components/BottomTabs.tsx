@@ -29,7 +29,7 @@ function BottomTabs() {
       {
         id: 3,
         tabTitle: 'LangChain',
-        title: 'LangChain',
+        title: 'AI Chat',
         content: <MemoizedLangChain />,
       },
     ],
