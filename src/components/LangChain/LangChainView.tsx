@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { OpenAI } from 'langchain/llms/openai';
 import { initializeAgentExecutorWithOptions } from 'langchain/agents';
 import { WolframAlphaTool } from 'langchain/tools';
+import './Chatbot.css';
+import { v4 as uuidv4 } from 'uuid';
 
 // Initialize the language model
 const model = new OpenAI({ temperature: 0, modelName: 'gpt-3.5-turbo-0613', openAIApiKey: process.env.OPENAI_API_KEY });
@@ -20,7 +22,7 @@ initializeAgentExecutorWithOptions(tools, model, { agentType: 'zero-shot-react-d
 
 function LangchainComponent() {
   const [input, setInput] = useState('');
-  const [output, setOutput] = useState('');
+  const [messages, setMessages] = useState([]);
 
   const handleInputChange = (event) => {
     setInput(event.target.value);
@@ -29,19 +31,29 @@ function LangchainComponent() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     const result = await executor.call({ input });
-    setOutput(result.output);
+
+    // Add user's message to the messages array with unique ID
+    setMessages((prevMessages) => [...prevMessages, { id: uuidv4(), content: input, isUser: true }]);
+
+    // Add bot's reply to the messages array with unique ID
+    setMessages((prevMessages) => [...prevMessages, { id: uuidv4(), content: result.output, isUser: false }]);
+
+    setInput(''); // Clear the input field
   };
 
   return (
-    <div>
-      <form onSubmit={handleSubmit}>
-        <label>
-          Input:
-          <input type="text" value={input} onChange={handleInputChange} />
-        </label>
-        <input type="submit" value="Submit" />
+    <div className="chat-container">
+      <div className="chat-history">
+        {messages.map((message) => (
+          <div key={message.id} className={`chat-message ${message.isUser ? 'user' : 'bot'}`}>
+            {message.content}
+          </div>
+        ))}
+      </div>
+      <form onSubmit={handleSubmit} className="chat-input">
+        <input type="text" value={input} onChange={handleInputChange} placeholder="Type your message..." />
+        <button type="submit">Send</button>
       </form>
-      <div>Output: {output}</div>
     </div>
   );
 }
