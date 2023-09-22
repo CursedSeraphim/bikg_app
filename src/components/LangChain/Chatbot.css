@@ -32,11 +32,20 @@
   margin-bottom: 10px;
   padding: 8px 10px;
   border-radius: 4px;
+  max-width: 75%; /* Set a max width. Adjust as per design needs. */
+  word-wrap: break-word; /* To break the word and wrap onto next line */
+  white-space: normal; /* Overrides any parent elements that might set this differently */
+  overflow: hidden; /* Ensure overflow is hidden */
+}
+
+.user, .bot {
+  word-wrap: break-word; /* Make sure text wraps within bubble */
 }
 
 .user {
   align-self: flex-end;
-  background-color: #e6f7ff;
+  background-color: var(--mantine-header-color);
+  color: white;
 }
 
 .bot {
