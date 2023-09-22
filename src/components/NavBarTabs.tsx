@@ -2,12 +2,14 @@
 import React, { useState, useMemo } from 'react';
 import Treeview from './Treeview/Treeview';
 import SettingsTab from './SettingsTab/SettingsTab';
+import LangchainComponent from './LangChain/LangChainView';
 
 function NavBarTabs() {
   const [currentTab, setCurrentTab] = useState('1');
 
   const MemoizedTreeView = React.memo(Treeview);
   const MemoizedSettingsTab = React.memo(SettingsTab);
+  const MemoizedLangChain = React.memo(LangchainComponent);
 
   const tabs = useMemo(
     () => [
@@ -22,6 +24,12 @@ function NavBarTabs() {
         tabTitle: 'Settings',
         title: 'Settings',
         content: <MemoizedSettingsTab />,
+      },
+      {
+        id: 3,
+        tabTitle: 'LangChain',
+        title: 'LangChain',
+        content: <MemoizedLangChain />,
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
