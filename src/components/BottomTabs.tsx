@@ -3,12 +3,14 @@ import { useSelector } from 'react-redux';
 import { selectCsvDataForPlotly } from './Store/CombinedSlice';
 import InteractiveScatterPlot from './EmbeddingView/InteractiveScatterPlot';
 import LineUpView from './LineUp/LineUpView';
+import LangchainComponent from './LangChain/LangChainView';
 
 function BottomTabs() {
   const [currentTab, setCurrentTab] = useState('1');
   const plotlyData = useSelector(selectCsvDataForPlotly);
 
   const MemoizedScatterPlot = React.memo(InteractiveScatterPlot);
+  const MemoizedLangChain = React.memo(LangchainComponent);
 
   const tabs = useMemo(
     () => [
@@ -23,6 +25,12 @@ function BottomTabs() {
         tabTitle: 'LineUp',
         title: 'Tabular View of Joined Violation and Instance Data',
         content: <LineUpView />,
+      },
+      {
+        id: 3,
+        tabTitle: 'LangChain',
+        title: 'LangChain',
+        content: <MemoizedLangChain />,
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps

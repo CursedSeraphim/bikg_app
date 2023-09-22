@@ -35,6 +35,11 @@
   --unfolded-subtree-bounding-box-margin: 100;
 }
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+
 
 #cy {
   width: 100%;

@@ -1,38 +1,58 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 .chat-container {
   display: flex;
   flex-direction: column;
-  width: 80%;
-  margin: 50px auto;
+  width: 100%;
+  margin: 0px auto;
   border: 1px solid #ccc;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  height: 100%; /* Added to make sure it fills the available space of its parent */
 }
 
 .chat-history {
-  flex: 1;
-  overflow-y: auto;
+  flex: 1; /* Makes it take the available space after accounting for other elements */
+  overflow-y: auto; /* This will allow scrolling on overflow */
   padding: 20px;
 }
+
 
 .chat-input {
   display: flex;
   padding: 10px;
   border-top: 1px solid #ccc;
+  align-items: center; /* ensure alignment of input and button is centered vertically */
 }
 
 .chat-input input {
-  flex: 1;
+  flex: 1; /* allows input to grow */
   padding: 10px;
   border-radius: 4px;
   border: 1px solid #ccc;
   margin-right: 10px;
+  flex-shrink: 1; /* allows input to shrink if necessary */
 }
+
+.chat-input button {
+  padding: 10px 15px; /* give it some space */
+  background-color: var(--mantine-header-color); /* using the mantine color */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer; /* indicates clickability */
+  flex-shrink: 0; /* prevent button from shrinking */
+  white-space: nowrap; /* prevent text inside button from breaking to next line */
+}
+
 
 .chat-message {
   margin-bottom: 10px;
   padding: 8px 10px;
   border-radius: 4px;
-  max-width: 75%; /* Set a max width. Adjust as per design needs. */
+  max-width: 100%; /* Set a max width. Adjust as per design needs. */
   word-wrap: break-word; /* To break the word and wrap onto next line */
   white-space: normal; /* Overrides any parent elements that might set this differently */
   overflow: hidden; /* Ensure overflow is hidden */
