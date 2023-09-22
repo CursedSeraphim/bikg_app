@@ -72,3 +72,8 @@
   align-self: flex-start;
   background-color: #f4f4f4;
 }
+
+.typing-indicator {
+  font-style: italic;
+  color: #aaa;
+}

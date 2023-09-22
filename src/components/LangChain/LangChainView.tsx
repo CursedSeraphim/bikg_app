@@ -23,6 +23,7 @@ initializeAgentExecutorWithOptions(tools, model, { agentType: 'zero-shot-react-d
 function LangchainComponent() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
+  const [isBotTyping, setIsBotTyping] = useState(false); // New state to handle loading indication
 
   const handleInputChange = (event) => {
     setInput(event.target.value);
@@ -30,15 +31,19 @@ function LangchainComponent() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const result = await executor.call({ input });
 
-    // Add user's message to the messages array with unique ID
+    // Immediately add user's message to the messages array with unique ID
     setMessages((prevMessages) => [...prevMessages, { id: uuidv4(), content: input, isUser: true }]);
+
+    setInput(''); // Clear the input field
+    setIsBotTyping(true); // Show the loading indicator
+
+    const result = await executor.call({ input });
 
     // Add bot's reply to the messages array with unique ID
     setMessages((prevMessages) => [...prevMessages, { id: uuidv4(), content: result.output, isUser: false }]);
 
-    setInput(''); // Clear the input field
+    setIsBotTyping(false); // Hide the loading indicator
   };
 
   return (
@@ -49,6 +54,7 @@ function LangchainComponent() {
             {message.content}
           </div>
         ))}
+        {isBotTyping && <div className="chat-message bot typing-indicator">Typing...</div>} {/* Loading indicator */}
       </div>
       <form onSubmit={handleSubmit} className="chat-input">
         <input type="text" value={input} onChange={handleInputChange} placeholder="Type your message..." />
