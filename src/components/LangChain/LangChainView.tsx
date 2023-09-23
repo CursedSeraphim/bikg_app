@@ -1,67 +1,58 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux'; // Importing useDispatch
 import { OpenAI } from 'langchain/llms/openai';
 import { initializeAgentExecutorWithOptions } from 'langchain/agents';
-import { Tool, DynamicTool, WolframAlphaTool } from 'langchain/tools';
+import { DynamicTool, WolframAlphaTool } from 'langchain/tools';
 import './Chatbot.css';
 import { v4 as uuidv4 } from 'uuid';
 import { setSelectedTypes } from '../Store/CombinedSlice';
 
-// Initialize the language model
 const model = new OpenAI({ temperature: 0, modelName: 'gpt-3.5-turbo-0613', openAIApiKey: process.env.OPENAI_API_KEY });
+// const wolframTool = new WolframAlphaTool({ appid: process.env.WOLFRAM_ALPHA_APPID });
 
-// Initialize the WolframAlpha tool
-const wolframTool = new WolframAlphaTool({ appid: process.env.WOLFRAM_ALPHA_APPID });
-
-const reverseString = (a) => a.split('').reverse().join('');
-
-// Define your tools
-const tools = [
-  wolframTool,
-  new DynamicTool({
-    name: 'reverse_string',
-    func: reverseString,
-    description: 'useful for when you need to reverse a string',
-  }),
-];
-
-// Initialize the agent executor
 let executor;
-initializeAgentExecutorWithOptions(tools, model, { agentType: 'zero-shot-react-description', verbose: true }).then((res) => {
-  executor = res;
-});
-
-// const parseArrayString = (arrayString) => {
-//   // Remove brackets and spaces, then split by comma
-//   const array = arrayString.replace(/[\[\]\s]/g, '').split(',');
-
-//   // Filter out empty strings and convert to numbers
-//   return array.filter((item) => item).map(Number);
-// };
-
-// const handleLLMSetTypes = (arrayString) => {
-//   try {
-//     // Parse the string into an array using the new function
-//     const parsedArray = parseArrayString(arrayString);
-
-//     // Check if the parsed value is an array
-//     if (Array.isArray(parsedArray)) {
-//       // Get the language model's answer
-//       const llmAnswer = executor.call({ input: parsedArray });
-
-//       // Dispatch the setSelectedTypes action with the language model's answer
-//       dispatch(setSelectedTypes(llmAnswer));
-//     } else {
-//       console.error('Parsed value is not an array');
-//     }
-//   } catch (error) {
-//     console.error('Failed to parse array string', error);
-//   }
-// };
 
 function LangchainComponent() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [isBotTyping, setIsBotTyping] = useState(false); // New state to handle loading indication
+  const dispatch = useDispatch();
+
+  const parseArrayString = (arrayString) => {
+    const array = arrayString.replace(/[\[\]\s]/g, '').split(',');
+    const lowerCaseFirstLetter = (str) => {
+      // Remove surrounding quotes if present
+      const strippedStr = str.replace(/^"|"$/g, '');
+      // Convert first letter to lowercase and return
+      return strippedStr.charAt(0).toLowerCase() + strippedStr.slice(1);
+    };
+    return array.filter((item) => item).map(lowerCaseFirstLetter);
+  };
+
+  const handleLLMSetTypes = (a) => {
+    const parsedArray = parseArrayString(a);
+    dispatch(setSelectedTypes(parsedArray));
+    console.log('returning "Selected types have been set."');
+    return a;
+  }; // this has the type error
+
+  // Define tools inside the component to access handleLLMSetTypes
+  const tools = [
+    // wolframTool,
+    new DynamicTool({
+      name: 'select_types',
+      func: handleLLMSetTypes,
+      description:
+        'useful for when you need to select an array of certain type or owl:Class nodes in the knowledge graph ontology, e.g., ["Omics:Donor", "Omics:Sample"]',
+    }),
+  ];
+
+  useEffect(() => {
+    initializeAgentExecutorWithOptions(tools, model, { agentType: 'zero-shot-react-description', verbose: true }).then((res) => {
+      executor = res;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // [] means run once on component mount
 
   const handleInputChange = (event) => {
     setInput(event.target.value);
