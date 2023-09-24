@@ -1,30 +1,28 @@
 // LangChainView.tsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useDispatch } from 'react-redux';
 import { OpenAI } from 'langchain/llms/openai';
 import { AgentExecutor, initializeAgentExecutorWithOptions } from 'langchain/agents';
 import './Chatbot.css';
 import { v4 as uuidv4 } from 'uuid';
-import { createTools } from './tools';
+import useTools from './tools';
 
 function LangchainComponent() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [isBotTyping, setIsBotTyping] = useState(false);
-  const dispatch = useDispatch();
   const executorRef = useRef<AgentExecutor | null>(null);
 
   const model = useMemo(
     () =>
       new OpenAI({
         temperature: 0,
-        modelName: 'gpt-3.5-turbo-0613',
+        modelName: 'gpt-4-0613',
         openAIApiKey: process.env.OPENAI_API_KEY,
       }),
     [],
   );
 
-  const tools = useMemo(() => createTools(dispatch), [dispatch]);
+  const tools = useTools();
 
   useEffect(() => {
     initializeAgentExecutorWithOptions(tools, model, {
