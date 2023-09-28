@@ -16,7 +16,7 @@ function LangchainComponent() {
     () =>
       new OpenAI({
         temperature: 0,
-        modelName: 'gpt-4-0613',
+        modelName: 'gpt-3.5-turbo-0613',
         openAIApiKey: process.env.OPENAI_API_KEY,
       }),
     [],

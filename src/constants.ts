@@ -8,7 +8,7 @@ export const SPINNER_COLOR = MANTINE_HEADER_COLOR;
 
 // Default Node Colors
 export const UNSELECTED_DEFAULT_COLOR = '#aaa';
-export const SELECTED_DEFAULT_COLOR = '#888';
+export const SELECTED_DEFAULT_COLOR = '#777';
 
 // Text Colors
 export const SELECTED_TEXT_COLOR = 'black';
