@@ -11,6 +11,34 @@ function LangchainComponent() {
   const [messages, setMessages] = useState([]);
   const [isBotTyping, setIsBotTyping] = useState(false);
   const executorRef = useRef<AgentExecutor | null>(null);
+  // 1. Add a ref to track the chat history container
+  const chatHistoryRef = useRef<HTMLDivElement | null>(null);
+  // 2. Add a state to track if the user has scrolled up manually
+  const [hasUserScrolled, setHasUserScrolled] = useState(false);
+
+  useEffect(() => {
+    const chatHistoryEl = chatHistoryRef.current;
+
+    const handleScroll = () => {
+      // Check if the user has scrolled up, i.e., if scrollTop + offsetHeight is less than the scrollHeight.
+      if (chatHistoryEl) {
+        setHasUserScrolled(chatHistoryEl.scrollTop + chatHistoryEl.offsetHeight < chatHistoryEl.scrollHeight);
+      }
+    };
+
+    // Automatically scroll down when a new message is added and user has not scrolled up
+    if (chatHistoryEl && !hasUserScrolled) {
+      chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+    }
+
+    // Add an event listener to the chat history container
+    chatHistoryEl?.addEventListener('scroll', handleScroll);
+
+    // Cleanup - remove the event listener when component unmounts
+    return () => {
+      chatHistoryEl?.removeEventListener('scroll', handleScroll);
+    };
+  }, [messages, hasUserScrolled]); // Re-run effect when messages change or hasUserScrolled state changes
 
   const model = useMemo(
     () =>
@@ -54,7 +82,8 @@ function LangchainComponent() {
 
   return (
     <div className="chat-container">
-      <div className="chat-history">
+      {/* 3. Add a ref to the chat history container */}
+      <div ref={chatHistoryRef} className="chat-history">
         {messages.map((message) => (
           <div key={message.id} className={`chat-message ${message.isUser ? 'user' : 'bot'}`}>
             {message.content}
