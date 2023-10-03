@@ -5,7 +5,7 @@ import { setSelectedTypes, setSelectedViolationExemplars, setSelectedViolations 
 import { IRootState } from '../../types';
 
 const parseArrayString = (arrayString) => {
-  const array = arrayString.replace(/[\[\]\s]/g, '').split(',');
+  const array = arrayString.replace(/[[\]\s]/g, '').split(',');
   const lowerCaseFirstLetter = (str) => {
     // Remove surrounding quotes if present
     const strippedStr = str.replace(/^"|"$/g, '');
@@ -37,50 +37,50 @@ const useTools = () => {
     return exemplars;
   };
 
-  const getExistingTypes = () => {
+  const getExistingTypes = async (): Promise<string> => {
     const state = store.getState();
     const { types } = state.combined;
-    return types;
+    return JSON.stringify(types);
   };
 
-  const getExistingViolations = () => {
+  const getExistingViolations = async (): Promise<string> => {
     const state = store.getState();
     const { violations } = state.combined;
-    return violations;
+    return JSON.stringify(violations);
   };
 
-  const getExistingExemplars = () => {
+  const getExistingExemplars = async (): Promise<string> => {
     const state = store.getState();
     const { exemplarMap } = state.combined;
     const exemplarKeys = Object.keys(exemplarMap);
-    return exemplarKeys;
+    return JSON.stringify(exemplarKeys);
   };
 
-  const getOntologyTree = () => {
-    const state = store.getState();
-    const { ontologyTree } = state.combined;
-    return ontologyTree;
-  };
+  // const getOntologyTree = async (input: string): Promise<string> => {
+  //   const state = store.getState();
+  //   const { ontologyTree } = state.combined;
+  //   return JSON.stringify(ontologyTree);
+  // };
 
-  const getSelectedTypes = () => {
+  const getSelectedTypes = async (): Promise<string> => {
     const state = store.getState();
     const { selectedTypes } = state.combined;
-    return selectedTypes;
+    return JSON.stringify(selectedTypes);
   };
 
-  const getSelectedViolations = () => {
+  const getSelectedViolations = async (): Promise<string> => {
     const state = store.getState();
     const { selectedViolations } = state.combined;
-    return selectedViolations;
+    return JSON.stringify(selectedViolations);
   };
 
-  const getSelectedViolationExemplars = () => {
+  const getSelectedViolationExemplars = async (): Promise<string> => {
     const state = store.getState();
     const { selectedViolationExemplars } = state.combined;
-    return selectedViolationExemplars;
+    return JSON.stringify(selectedViolationExemplars);
   };
 
-  const getNumberViolationsPerNode = () => {
+  const getNumberViolationsPerNode = async (): Promise<string> => {
     const state = store.getState();
     const { numberViolationsPerNode } = state.combined;
     let ret = '';
@@ -91,47 +91,47 @@ const useTools = () => {
     return ret;
   };
 
-  const findNodeByIdSubstring = (tree, substr) => {
-    let path = [];
+  // const findNodeByIdSubstring = (tree, substr) => {
+  //   let path = [];
 
-    function traverse(node, currentPath) {
-      if (node.id.includes(substr)) {
-        path = [...currentPath, node.id];
-        return node;
-      }
+  //   function traverse(node, currentPath) {
+  //     if (node.id.includes(substr)) {
+  //       path = [...currentPath, node.id];
+  //       return node;
+  //     }
 
-      for (const child of node.children || []) {
-        const result = traverse(child, [...currentPath, node.id]);
-        if (result) {
-          return result;
-        }
-      }
+  //     for (const child of node.children || []) {
+  //       const result = traverse(child, [...currentPath, node.id]);
+  //       if (result) {
+  //         return result;
+  //       }
+  //     }
 
-      return null;
-    }
+  //     return null;
+  //   }
 
-    const foundNode = traverse(tree, []);
+  //   const foundNode = traverse(tree, []);
 
-    if (!foundNode) {
-      return 'Node not found';
-    }
+  //   if (!foundNode) {
+  //     return 'Node not found';
+  //   }
 
-    let output = `Node ID: ${foundNode.id}\n`;
+  //   let output = `Node ID: ${foundNode.id}\n`;
 
-    if (path.length > 1) {
-      output += `Parents: ${path.slice(0, -1).join(' -> ')}\n`;
-    } else {
-      output += 'No parents\n';
-    }
+  //   if (path.length > 1) {
+  //     output += `Parents: ${path.slice(0, -1).join(' -> ')}\n`;
+  //   } else {
+  //     output += 'No parents\n';
+  //   }
 
-    if (foundNode.children && foundNode.children.length) {
-      output += `Children: ${foundNode.children.map((child) => child.id).join(', ')}\n`;
-    } else {
-      output += 'No children\n';
-    }
+  //   if (foundNode.children && foundNode.children.length) {
+  //     output += `Children: ${foundNode.children.map((child) => child.id).join(', ')}\n`;
+  //   } else {
+  //     output += 'No children\n';
+  //   }
 
-    return output;
-  };
+  //   return output;
+  // };
 
   return [
     new DynamicTool({
