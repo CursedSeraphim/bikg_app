@@ -5,6 +5,7 @@ import { AgentExecutor, initializeAgentExecutorWithOptions } from 'langchain/age
 import './Chatbot.css';
 import { v4 as uuidv4 } from 'uuid';
 import useTools from './tools';
+import { ChatUI } from './ChatUI';
 
 function LangchainComponent() {
   const [input, setInput] = useState('');
@@ -68,28 +69,27 @@ function LangchainComponent() {
     setInput('');
     setIsBotTyping(true);
 
-    const result = await executorRef.current.call({ input });
-
-    setMessages((prevMessages) => [...prevMessages, { id: uuidv4(), content: result.output, isUser: false }]);
-
-    setIsBotTyping(false);
+    try {
+      const result = await executorRef.current.call({ input });
+      setMessages((prevMessages) => [...prevMessages, { id: uuidv4(), content: result.output, isUser: false }]);
+    } catch (error) {
+      console.log('error', error);
+      setMessages((prevMessages) => [...prevMessages, { id: uuidv4(), content: JSON.stringify(error.message), isUser: false }]);
+    } finally {
+      setIsBotTyping(false);
+    }
   };
 
   return (
-    <div className="chat-container">
-      <div ref={chatHistoryRef} className="chat-history">
-        {messages.map((message) => (
-          <div key={message.id} className={`chat-message ${message.isUser ? 'user' : 'bot'}`}>
-            {message.content}
-          </div>
-        ))}
-        {isBotTyping && <div className="chat-message bot typing-indicator">Typing...</div>}
-      </div>
-      <form onSubmit={handleSubmit} className="chat-input">
-        <input type="text" value={input} onChange={handleInputChange} placeholder="Type your message..." />
-        <button type="submit">Send</button>
-      </form>
-    </div>
+    <ChatUI
+      messages={messages}
+      isBotTyping={isBotTyping}
+      onSendMessage={handleSubmit}
+      chatHistoryRef={chatHistoryRef}
+      handleInputChange={handleInputChange}
+      handleSubmit={handleSubmit}
+      input={input}
+    />
   );
 }
 
