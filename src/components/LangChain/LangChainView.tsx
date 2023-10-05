@@ -1,19 +1,20 @@
 // LangChainView.tsx
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { OpenAI } from 'langchain/llms/openai';
+import React, { useState, useEffect, useRef } from 'react';
 import { AgentExecutor, initializeAgentExecutorWithOptions } from 'langchain/agents';
 import './Chatbot.css';
-import { v4 as uuidv4 } from 'uuid';
 import useTools from './tools';
 import { ChatUI } from './ChatUI';
+import { useOpenAIModel } from './useOpenAIModel';
+import { useChat } from './UseChat';
 
 function LangchainComponent() {
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([]);
+  const { messages, addMessage } = useChat();
   const [isBotTyping, setIsBotTyping] = useState(false);
   const executorRef = useRef<AgentExecutor | null>(null);
   const chatHistoryRef = useRef<HTMLDivElement | null>(null);
   const [hasUserScrolled, setHasUserScrolled] = useState(false);
+  const openAIApiKey = process.env.OPENAI_API_KEY;
 
   // code for auto-scrolling behavior
   useEffect(() => {
@@ -36,15 +37,7 @@ function LangchainComponent() {
     };
   }, [messages, hasUserScrolled]);
 
-  const model = useMemo(
-    () =>
-      new OpenAI({
-        temperature: 0,
-        modelName: 'gpt-3.5-turbo-0613',
-        openAIApiKey: process.env.OPENAI_API_KEY,
-      }),
-    [],
-  );
+  const model = useOpenAIModel(openAIApiKey);
 
   const tools = useTools();
 
@@ -64,17 +57,17 @@ function LangchainComponent() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    setMessages((prevMessages) => [...prevMessages, { id: uuidv4(), content: input, isUser: true }]);
+    addMessage(input, true);
 
     setInput('');
     setIsBotTyping(true);
 
     try {
       const result = await executorRef.current.call({ input });
-      setMessages((prevMessages) => [...prevMessages, { id: uuidv4(), content: result.output, isUser: false }]);
+      addMessage(result.output, false);
     } catch (error) {
       console.log('error', error);
-      setMessages((prevMessages) => [...prevMessages, { id: uuidv4(), content: JSON.stringify(error.message), isUser: false }]);
+      addMessage(JSON.stringify(error.message), false);
     } finally {
       setIsBotTyping(false);
     }
