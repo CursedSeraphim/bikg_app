@@ -8,6 +8,7 @@ export function useInitializeAgentExecutor(tools, model, executorRef) {
       agentType: 'zero-shot-react-description',
       verbose: true,
     }).then((res) => {
+      // eslint-disable-next-line no-param-reassign
       executorRef.current = res;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

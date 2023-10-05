@@ -1,17 +1,22 @@
-// useOpenAIModel.ts
 import { useMemo } from 'react';
 import { OpenAI } from 'langchain/llms/openai';
 
 export const useOpenAIModel = (openAIApiKey, modelName = 'gpt-3.5-turbo-0613') => {
-  // TODO Add potential error handling for null/undefined apiKey
+  const model = useMemo(() => {
+    if (!openAIApiKey) {
+      return null;
+    }
 
-  return useMemo(
-    () =>
-      new OpenAI({
+    try {
+      return new OpenAI({
         temperature: 0,
         modelName,
         openAIApiKey,
-      }),
-    [openAIApiKey, modelName],
-  );
+      });
+    } catch (e) {
+      return null;
+    }
+  }, [openAIApiKey, modelName]);
+
+  return model;
 };

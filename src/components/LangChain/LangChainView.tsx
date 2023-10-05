@@ -17,6 +17,7 @@ function LangchainComponent() {
   const executorRef = useRef<AgentExecutor | null>(null);
   const chatHistoryRef = useRef<HTMLDivElement | null>(null);
   const openAIApiKey = process.env.OPENAI_API_KEY;
+  console.log('openAIApiKey', openAIApiKey);
 
   // code for auto-scrolling behavior
   useAutoScroll(messages, chatHistoryRef);
@@ -28,6 +29,9 @@ function LangchainComponent() {
     setInput(event.target.value);
   };
   const handleSubmit = useMessageSubmitHandler(input, executorRef, setIsBotTyping, addMessage, setInput);
+  if (!model) {
+    return <div>Model is not loaded, please check your API key.</div>;
+  }
 
   return (
     <ChatUI
