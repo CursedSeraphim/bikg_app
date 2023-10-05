@@ -7,6 +7,7 @@ import { ChatUI } from './ChatUI';
 import { useOpenAIModel } from './useOpenAIModel';
 import { useChat } from './UseChat';
 import { useInitializeAgentExecutor } from './useInitializeAgentExecutor';
+import { useMessageSubmitHandler } from './useMessageSubmitHandler';
 
 function LangchainComponent() {
   const [input, setInput] = useState('');
@@ -46,24 +47,7 @@ function LangchainComponent() {
     setInput(event.target.value);
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-
-    addMessage(input, true);
-
-    setInput('');
-    setIsBotTyping(true);
-
-    try {
-      const result = await executorRef.current.call({ input });
-      addMessage(result.output, false);
-    } catch (error) {
-      console.log('error', error);
-      addMessage(JSON.stringify(error.message), false);
-    } finally {
-      setIsBotTyping(false);
-    }
-  };
+  const handleSubmit = useMessageSubmitHandler(input, executorRef, setIsBotTyping, addMessage, setInput);
 
   return (
     <ChatUI
