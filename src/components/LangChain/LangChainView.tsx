@@ -19,9 +19,7 @@ function LangchainComponent() {
   const openAIApiKey = process.env.OPENAI_API_KEY;
   console.log('openAIApiKey', openAIApiKey);
 
-  // code for auto-scrolling behavior
   useAutoScroll(messages, chatHistoryRef);
-
   const model = useOpenAIModel(openAIApiKey);
   const tools = useTools();
   useInitializeAgentExecutor(tools, model, executorRef);
