@@ -67,6 +67,7 @@
     "langchain": "^0.0.153",
     "lineupjs": "^4.7.0",
     "n3": "^1.16.3",
+    "openai": "^4.11.1",
     "papaparse": "^5.4.0",
     "plotly.js-dist": "^2.20.0",
     "prop-types": "^15.8.1",
