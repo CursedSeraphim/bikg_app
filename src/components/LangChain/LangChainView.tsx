@@ -1,11 +1,12 @@
 // LangChainView.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { AgentExecutor, initializeAgentExecutorWithOptions } from 'langchain/agents';
-import './Chatbot.css';
+import './ChatStyle.css';
 import useTools from './tools';
 import { ChatUI } from './ChatUI';
 import { useOpenAIModel } from './useOpenAIModel';
 import { useChat } from './UseChat';
+import { useInitializeAgentExecutor } from './useInitializeAgentExecutor';
 
 function LangchainComponent() {
   const [input, setInput] = useState('');
@@ -38,17 +39,8 @@ function LangchainComponent() {
   }, [messages, hasUserScrolled]);
 
   const model = useOpenAIModel(openAIApiKey);
-
   const tools = useTools();
-
-  useEffect(() => {
-    initializeAgentExecutorWithOptions(tools, model, {
-      agentType: 'zero-shot-react-description',
-      verbose: true,
-    }).then((res) => {
-      executorRef.current = res;
-    });
-  }, [tools, model]);
+  useInitializeAgentExecutor(tools, model, executorRef);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInput(event.target.value);
@@ -77,7 +69,6 @@ function LangchainComponent() {
     <ChatUI
       messages={messages}
       isBotTyping={isBotTyping}
-      onSendMessage={handleSubmit}
       chatHistoryRef={chatHistoryRef}
       handleInputChange={handleInputChange}
       handleSubmit={handleSubmit}
