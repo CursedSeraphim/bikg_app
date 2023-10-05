@@ -123,6 +123,12 @@ export interface IRootState {
   combined: ICombinedState;
 }
 
+export interface AIChatMessage {
+  id: string;
+  isUser: boolean;
+  content: string;
+}
+
 export interface INumberViolationsPerNodeValue {
   violations: number;
   selected: number;
