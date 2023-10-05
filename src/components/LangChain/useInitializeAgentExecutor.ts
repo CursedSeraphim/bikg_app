@@ -3,7 +3,6 @@ import { initializeAgentExecutorWithOptions } from 'langchain/agents';
 import { useEffect } from 'react';
 
 export function useInitializeAgentExecutor(tools, model, executorRef) {
-  console.log('tools', tools);
   useEffect(() => {
     initializeAgentExecutorWithOptions(tools, model, {
       agentType: 'zero-shot-react-description',
