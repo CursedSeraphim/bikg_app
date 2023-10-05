@@ -1,7 +1,7 @@
 // ChatUI.tsx
 import React from 'react';
 
-export function ChatUI({ messages, isBotTyping, onSendMessage, chatHistoryRef, handleInputChange, handleSubmit, input }) {
+export function ChatUI({ messages, isBotTyping, chatHistoryRef, handleInputChange, handleSubmit, input }) {
   return (
     <div className="chat-container">
       <div ref={chatHistoryRef} className="chat-history">
