@@ -17,7 +17,6 @@ function LangchainComponent() {
   const executorRef = useRef<AgentExecutor | null>(null);
   const chatHistoryRef = useRef<HTMLDivElement | null>(null);
   const openAIApiKey = process.env.OPENAI_API_KEY;
-  console.log('openAIApiKey', openAIApiKey);
 
   useAutoScroll(messages, chatHistoryRef);
   const model = useOpenAIModel(openAIApiKey);
