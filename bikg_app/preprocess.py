@@ -67,23 +67,23 @@ def preprocess(input_dir, output_base_dir):
             shutil.copy2(file_path, output_file_path)
 
     # Define output file paths
-    VIOLATION_LIST_FILE = os.path.join(
+    violation_list_file = os.path.join(
         output_base_dir, "json", "violation_list.json"
     )
-    STUDY_CSV_FILE = os.path.join(output_base_dir, "csv", "study.csv")
-    OMICS_MODEL_UNION_VIOLATION_EXEMPLAR_TTL_PATH = os.path.join(
+    study_csv_file = os.path.join(output_base_dir, "csv", "study.csv")
+    omics_model_union_violation_exemplar_ttl_path = os.path.join(
         output_base_dir, "ttl", "omics_model_union_violation_exemplar.ttl"
     )
-    EXEMPLAR_EDGE_COUNT_DICT_PATH = os.path.join(
+    exemplar_edge_count_dict_path = os.path.join(
         output_base_dir, "json", "exemplar_edge_count_dict.json"
     )
-    FOCUS_NODE_EXEMPLAR_DICT_PATH = os.path.join(
+    focus_node_exemplar_dict_path = os.path.join(
         output_base_dir, "json", "focus_node_exemplar_dict.json"
     )
-    EXEMPLAR_FOCUS_NODE_DICT_PATH = os.path.join(
+    exemplar_focus_node_dict_path = os.path.join(
         output_base_dir, "json", "exemplar_focus_node_dict.json"
     )
-    VIOLATION_EXEMPLAR_DICT_PATH = os.path.join(
+    violation_exemplar_dict_path = os.path.join(
         output_base_dir, "json", "violation_exemplar_dict.json"
     )
 
@@ -112,7 +112,7 @@ def preprocess(input_dir, output_base_dir):
     # %%
 
     # Read the input file
-    with open(omics_model_ttl_path, "r") as file:
+    with open(omics_model_ttl_path) as file:
         data = file.read()
 
     # Define backup file path
@@ -167,18 +167,6 @@ def preprocess(input_dir, output_base_dir):
     # read ontology into a graph
     ontology_g = Graph()
     ontology_g.parse(omics_model_ttl_path, format="ttl")
-
-    # take namespace prefix for sh and omics from the graph
-    sh = Namespace("http://www.w3.org/ns/shacl#")
-    omics = Namespace("http://data.boehringer.com/ontology/omics#")
-    owl = Namespace("http://www.w3.org/2002/07/owl#")
-
-    # define prefixes and corresponding namespaces
-    prefixes = {
-        "sh": "http://www.w3.org/ns/shacl#",
-        "omics": "http://data.boehringer.com/ontology/omics#",
-        "owl": "http://www.w3.org/2002/07/owl#",
-    }
 
     def convert_to_prefixed(graph, uri):
         """Convert a URI to its prefixed form using a rdflib graph's namespace manager."""
@@ -289,7 +277,7 @@ def preprocess(input_dir, output_base_dir):
 
     def create_aggregated_edges_dict(tree):
         agg_edges_dict = {}
-        for node in tree.keys():
+        for node in tree:
             agg_edges_dict[node] = aggregate_edges(node, tree)
         return agg_edges_dict
 
@@ -360,7 +348,7 @@ def preprocess(input_dir, output_base_dir):
 
     # %%
 
-    SH = Namespace("http://www.w3.org/ns/shacl#")
+    sh = Namespace("http://www.w3.org/ns/shacl#")
 
     def count_violations(violations: Graph):
         d_focus_node_d_source_shape_counts = defaultdict(
@@ -371,10 +359,10 @@ def preprocess(input_dir, output_base_dir):
         violation_list = []
 
         for s, p, o in tqdm(violations, desc="Processing Graph Once"):
-            if p == SH.sourceShape:
+            if p == sh.sourceShape:
                 d_violation_source_shape[str(s)] = str(o)
                 violation_list += [str(o)]
-            elif p == SH.focusNode:
+            elif p == sh.focusNode:
                 d_violation_focus_node[str(s)] = str(o)
 
         # for key in violation_focus_node dict
@@ -390,7 +378,7 @@ def preprocess(input_dir, output_base_dir):
         return d_focus_node_d_source_shape_counts, violation_list
 
     def save_violation_list(violation_list):
-        with open(VIOLATION_LIST_FILE, "w") as f:
+        with open(violation_list_file, "w") as f:
             json.dump(violation_list, f)
 
     def create_study_dataframe(
@@ -480,7 +468,7 @@ def preprocess(input_dir, output_base_dir):
         return study_df
 
     def save_study_dataframe(study_df):
-        study_df.to_csv(STUDY_CSV_FILE)
+        study_df.to_csv(study_csv_file)
 
     def tabularize_graphs(study: Graph, violations: Graph):
         print("study graph triples:", len(study))  # type: ignore
@@ -498,11 +486,11 @@ def preprocess(input_dir, output_base_dir):
         save_study_dataframe(study_df)
         return d_focus_node_d_source_shape_counts
 
-    d_focus_node_d_source_shape_counts = tabularize_graphs(
+    tabularize_graphs(
         study_g, violations_g
     )
 
-    study_df = pd.read_csv(STUDY_CSV_FILE, index_col=0)
+    study_df = pd.read_csv(study_csv_file, index_col=0)
     study_df.head()
 
     # %% [markdown]
@@ -510,7 +498,7 @@ def preprocess(input_dir, output_base_dir):
 
     # %%
 
-    SH = Namespace("http://www.w3.org/ns/shacl#")
+    sh = Namespace("http://www.w3.org/ns/shacl#")
 
     class TestCountViolations(unittest.TestCase):
         def setUp(self):
@@ -528,31 +516,31 @@ def preprocess(input_dir, output_base_dir):
 
             # Add triples to the violations graph
             self.violations.add(
-                (self.violation1, SH.focusNode, self.focusNode1)
+                (self.violation1, sh.focusNode, self.focusNode1)
             )
             self.violations.add(
-                (self.violation1, SH.sourceShape, self.sourceShape1)
-            )
-
-            self.violations.add(
-                (self.violation2, SH.focusNode, self.focusNode2)
-            )
-            self.violations.add(
-                (self.violation2, SH.sourceShape, self.sourceShape2)
+                (self.violation1, sh.sourceShape, self.sourceShape1)
             )
 
             self.violations.add(
-                (self.violation3, SH.focusNode, self.focusNode1)
+                (self.violation2, sh.focusNode, self.focusNode2)
             )
             self.violations.add(
-                (self.violation3, SH.sourceShape, self.sourceShape1)
+                (self.violation2, sh.sourceShape, self.sourceShape2)
             )
 
             self.violations.add(
-                (self.violation4, SH.focusNode, self.focusNode2)
+                (self.violation3, sh.focusNode, self.focusNode1)
             )
             self.violations.add(
-                (self.violation4, SH.sourceShape, self.sourceShape1)
+                (self.violation3, sh.sourceShape, self.sourceShape1)
+            )
+
+            self.violations.add(
+                (self.violation4, sh.focusNode, self.focusNode2)
+            )
+            self.violations.add(
+                (self.violation4, sh.sourceShape, self.sourceShape1)
             )
             violation_counts, violation_list = count_violations(self.violations)
             expected_counts = {
@@ -582,24 +570,24 @@ def preprocess(input_dir, output_base_dir):
 
             # Add triples to the violations graph
             self.violations.add(
-                (self.violation1, SH.focusNode, self.focusNode1)
+                (self.violation1, sh.focusNode, self.focusNode1)
             )
             self.violations.add(
-                (self.violation1, SH.sourceShape, self.sourceShape1)
-            )
-
-            self.violations.add(
-                (self.violation2, SH.focusNode, self.focusNode2)
-            )
-            self.violations.add(
-                (self.violation2, SH.sourceShape, self.sourceShape2)
+                (self.violation1, sh.sourceShape, self.sourceShape1)
             )
 
             self.violations.add(
-                (self.violation3, SH.focusNode, self.focusNode3)
+                (self.violation2, sh.focusNode, self.focusNode2)
             )
             self.violations.add(
-                (self.violation3, SH.sourceShape, self.sourceShape3)
+                (self.violation2, sh.sourceShape, self.sourceShape2)
+            )
+
+            self.violations.add(
+                (self.violation3, sh.focusNode, self.focusNode3)
+            )
+            self.violations.add(
+                (self.violation3, sh.sourceShape, self.sourceShape3)
             )
 
             violation_counts, violation_list = count_violations(self.violations)
@@ -678,11 +666,11 @@ def preprocess(input_dir, output_base_dir):
         """
 
         # load violation_list
-        with open(VIOLATION_LIST_FILE, "r") as f:
+        with open(violation_list_file, "r") as f:
             violation_list = json.load(f)
 
         # read study_df tabularized data
-        study_df = pd.read_csv(STUDY_CSV_FILE, index_col=0)
+        study_df = pd.read_csv(study_csv_file, index_col=0)
 
         # Create a new graph to combine namespaces
         combined_graph = Graph()
@@ -733,23 +721,23 @@ def preprocess(input_dir, output_base_dir):
                 pass
 
         # store tabular graph as csv
-        study_df.to_csv(STUDY_CSV_FILE)
+        study_df.to_csv(study_csv_file)
 
         # store violation_list as json
-        with open(VIOLATION_LIST_FILE, "w") as f:
+        with open(violation_list_file, "w") as f:
             json.dump(violation_list, f)
 
     abbreviate_using_namespaces(study_g, violations_g)
 
     # %%
-    with open(VIOLATION_LIST_FILE, "r") as f:
+    with open(violation_list_file, "r") as f:
         violation_list = json.load(f)
 
     print("unique violations (" + str(len(violation_list)) + "):\n")
     print("\n".join([str(v) for v in violation_list]))
 
     # %%
-    study_df = pd.read_csv(STUDY_CSV_FILE, index_col=0)
+    study_df = pd.read_csv(study_csv_file, index_col=0)
     study_df.head()
 
     # %% [markdown]
@@ -759,10 +747,10 @@ def preprocess(input_dir, output_base_dir):
 
     def create_embedding():
         # read study.csv
-        study_df = pd.read_csv(STUDY_CSV_FILE, index_col=0)
+        study_df = pd.read_csv(study_csv_file, index_col=0)
 
         # read violation_list.json
-        with open(VIOLATION_LIST_FILE, "r") as f:
+        with open(violation_list_file, "r") as f:
             violation_columns = json.load(f)
 
         view_df = study_df[
@@ -793,11 +781,11 @@ def preprocess(input_dir, output_base_dir):
         study_df["x"] = embedding[:, 0]
         study_df["y"] = embedding[:, 1]
 
-        study_df.to_csv(STUDY_CSV_FILE)
-        print("UMAP embedding created and saved to", STUDY_CSV_FILE)
+        study_df.to_csv(study_csv_file)
+        print("UMAP embedding created and saved to", study_csv_file)
 
     def plot_embedding():
-        study_df = pd.read_csv(STUDY_CSV_FILE, index_col=0)
+        study_df = pd.read_csv(study_csv_file, index_col=0)
 
         plt.scatter(study_df["x"], study_df["y"])
         plt.show()
@@ -818,9 +806,9 @@ def preprocess(input_dir, output_base_dir):
     ]
 
     # read tabularized graph .csv as a dataframe, and violations list .json as a list
-    study_df = pd.read_csv(STUDY_CSV_FILE, index_col=0)
+    study_df = pd.read_csv(study_csv_file, index_col=0)
 
-    with open(VIOLATION_LIST_FILE, "r") as f:
+    with open(violation_list_file, "r") as f:
         violation_columns = json.load(f)
 
     # Create a new graph to combine namespaces
@@ -863,8 +851,8 @@ def preprocess(input_dir, output_base_dir):
     violation_columns = [label_dict.get(x, x) for x in violation_columns]
 
     # store dataframe back to .csv and violations list back to .json
-    study_df.to_csv(STUDY_CSV_FILE)
-    with open(VIOLATION_LIST_FILE, "w") as f:
+    study_df.to_csv(study_csv_file)
+    with open(violation_list_file, "w") as f:
         json.dump(violation_columns, f)
 
     # %% [markdown]
@@ -967,15 +955,15 @@ def preprocess(input_dir, output_base_dir):
 
     # %%
     ontology_union_violation_exemplars_g.serialize(
-        destination=OMICS_MODEL_UNION_VIOLATION_EXEMPLAR_TTL_PATH, format="ttl"
+        destination=omics_model_union_violation_exemplar_ttl_path, format="ttl"
     )
 
     # %%
-    save_nested_counts_dict_json(edge_count_dict, EXEMPLAR_EDGE_COUNT_DICT_PATH)
-    save_lists_dict(focus_node_exemplar_dict, FOCUS_NODE_EXEMPLAR_DICT_PATH)
-    save_lists_dict(exemplar_focus_node_dict, EXEMPLAR_FOCUS_NODE_DICT_PATH)
+    save_nested_counts_dict_json(edge_count_dict, exemplar_edge_count_dict_path)
+    save_lists_dict(focus_node_exemplar_dict, focus_node_exemplar_dict_path)
+    save_lists_dict(exemplar_focus_node_dict, exemplar_focus_node_dict_path)
     save_nested_counts_dict_json(
-        violation_exemplar_dict, VIOLATION_EXEMPLAR_DICT_PATH
+        violation_exemplar_dict, violation_exemplar_dict_path
     )
 
 
