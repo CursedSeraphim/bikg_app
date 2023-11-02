@@ -1,13 +1,13 @@
 // api.tsx
 export async function fetchCSVFile() {
-  const endpoint = `http://localhost:9000/file/study`;
+  const endpoint = `/api/bikg/file/study`;
   const response = await fetch(endpoint);
   const data = await response.text();
   return data;
 }
 
 export async function fetchViolationPathNodesDict() {
-  const endpoint = `http://localhost:9000/violation_path_nodes_dict`;
+  const endpoint = `/api/bikg/violation_path_nodes_dict`;
   const response = await fetch(endpoint);
   const data = await response.json();
   return data;
@@ -15,7 +15,7 @@ export async function fetchViolationPathNodesDict() {
 
 export async function fetchViolationValueCountsGivenSelection(selectedNodes) {
   // Changed endpoint to use a more appropriate one for fetching bar plot data
-  const endpoint = `http://localhost:9000/plot/bar/violations`;
+  const endpoint = `/api/bikg/plot/bar/violations`;
 
   // Send a POST request with selectedNodes as part of the body
   const response = await fetch(endpoint, {
@@ -34,7 +34,7 @@ export async function fetchViolationValueCountsGivenSelection(selectedNodes) {
 
 export async function fetchBarPlotDataGivenSelection(selectedNodes) {
   // Changed endpoint to use a more appropriate one for fetching bar plot data
-  const endpoint = `http://localhost:9000/plot/bar`;
+  const endpoint = `/api/bikg/plot/bar`;
 
   // Send a POST request with selectedNodes as part of the body
   const response = await fetch(endpoint, {
@@ -53,7 +53,7 @@ export async function fetchBarPlotDataGivenSelection(selectedNodes) {
 
 export async function fetchSelectedNodesAndValueCountsGivenFeatureCategorySelection(feature, categories) {
   // Changed endpoint to use a more appropriate one for fetching bar plot data
-  const endpoint = `http://localhost:9000/FeatureCategorySelection`;
+  const endpoint = `/api/bikg/FeatureCategorySelection`;
 
   // Send a POST request with selectedNodes as part of the body
   const response = await fetch(endpoint, {
@@ -73,7 +73,7 @@ export async function fetchSelectedNodesAndValueCountsGivenFeatureCategorySelect
 
 export async function fetchSelectedNodesAndValueCountsGivenViolationSelection(feature, categories) {
   // Changed endpoint to use a more appropriate one for fetching bar plot data
-  const endpoint = `http://localhost:9000/ViolationSelection`;
+  const endpoint = `/api/bikg/ViolationSelection`;
 
   // Send a POST request with selectedNodes as part of the body
   const response = await fetch(endpoint, {
@@ -92,91 +92,91 @@ export async function fetchSelectedNodesAndValueCountsGivenViolationSelection(fe
 }
 
 export async function fetchJSONFile(file_path) {
-  const endpoint = `http://localhost:9000/file/json/${file_path}`;
+  const endpoint = `/api/bikg/file/json/${file_path}`;
   const response = await fetch(endpoint);
   const data = await response.text();
   return data;
 }
 
 export async function fetchViolationList() {
-  const endpoint = `http://localhost:9000/violation_list`;
+  const endpoint = `/api/bikg/violation_list`;
   const response = await fetch(endpoint);
   const data = await response.text();
   return data;
 }
 
 export async function fetchOntology() {
-  const endpoint = `http://localhost:9000/file/ontology`;
+  const endpoint = `/api/bikg/file/ontology`;
   const response = await fetch(endpoint);
   const data = await response.text();
   return data;
 }
 
 export async function fetchEdgeCountDict() {
-  const endpoint = `http://localhost:9000/file/edge_count_dict`;
+  const endpoint = `/api/bikg/file/edge_count_dict`;
   const response = await fetch(endpoint);
   const data = await response.json();
   return data;
 }
 
 export async function fetchFocusNodeExemplarDict() {
-  const endpoint = `http://localhost:9000/file/focus_node_exemplar_dict`;
+  const endpoint = `/api/bikg/file/focus_node_exemplar_dict`;
   const response = await fetch(endpoint);
   const data = await response.json();
   return data;
 }
 
 export async function fetchExemplarFocusNodeDict() {
-  const endpoint = `http://localhost:9000/file/exemplar_focus_node_dict`;
+  const endpoint = `/api/bikg/file/exemplar_focus_node_dict`;
   const response = await fetch(endpoint);
   const data = await response.json();
   return data;
 }
 
 export async function fetchNamespaces() {
-  const endpoint = `http://localhost:9000/namespaces`;
+  const endpoint = `/api/bikg/namespaces`;
   const response = await fetch(endpoint);
   const data = await response.json();
   return data;
 }
 
 export async function fetchClasses() {
-  const endpoint = `http://localhost:9000/owl:Class`;
+  const endpoint = `/api/bikg/owl:Class`;
   const response = await fetch(endpoint);
   const data = await response.json();
   return data;
 }
 
 export async function fetchSubClassOfTriples() {
-  const endpoint = `http://localhost:9000/sub-class-of`;
+  const endpoint = `/api/bikg/sub-class-of`;
   const response = await fetch(endpoint);
   const data = await response.json();
   return data;
 }
 
 export async function fetchOntologyTree() {
-  const endpoint = `http://localhost:9000/get_ontology_tree`;
+  const endpoint = `/api/bikg/get_ontology_tree`;
   const response = await fetch(endpoint);
   const data = await response.json();
   return data;
 }
 
 export async function fetchNodeFocusNodeCountDict() {
-  const endpoint = `http://localhost:9000/get_node_count_dict`;
+  const endpoint = `/api/bikg/get_node_count_dict`;
   const response = await fetch(endpoint);
   const data = await response.json();
   return data;
 }
 
 export async function fetchViolationExemplarDict() {
-  const endpoint = `http://localhost:9000/get_violation_exemplar_dict`;
+  const endpoint = `/api/bikg/get_violation_exemplar_dict`;
   const response = await fetch(endpoint);
   const data = await response.json();
   return data;
 }
 
 export async function fetchTypeViolationDict() {
-  const endpoint = `http://localhost:9000/get_type_violation_dict`;
+  const endpoint = `/api/bikg/get_type_violation_dict`;
   const response = await fetch(endpoint);
   const data = await response.json();
   return data;
