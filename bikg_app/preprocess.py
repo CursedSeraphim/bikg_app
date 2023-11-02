@@ -5,6 +5,7 @@
 import argparse
 import json
 import os
+import shutil
 import unittest
 from collections import defaultdict
 
@@ -14,26 +15,77 @@ import pandas as pd
 import umap
 from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import NamespaceManager, split_uri
-from routers.utils import get_violation_report_exemplars, save_lists_dict, save_nested_counts_dict_json
+from routers.utils import (
+    get_violation_report_exemplars,
+    save_lists_dict,
+    save_nested_counts_dict_json,
+)
 from scipy.sparse import coo_matrix
 from tqdm import tqdm
 
 
-def preprocess(
-        study_ttl_path="./ttl/study.ttl",
-        violation_report_ttl_path="./ttl/violation_report.ttl",
-        omics_model_ttl_path="./ttl/omics_model.ttl"
-        ):
-    # output
-    output_base_dir = "./"
+def ensure_dir(directory_path):
+    """Ensure the directory exists; if not, create it."""
+    if not os.path.exists(directory_path):
+        print("creating directory", directory_path)
+        os.makedirs(directory_path)
 
-    VIOLATION_LIST_FILE = os.path.join(output_base_dir, "json", "violation_list.json")
+
+def preprocess(input_dir, output_base_dir):
+    # Define the paths of the input files
+    study_ttl_path = os.path.join(input_dir, "study.ttl")
+    violation_report_ttl_path = os.path.join(input_dir, "violation_report.ttl")
+    omics_model_ttl_path = os.path.join(input_dir, "omics_model.ttl")
+
+    # Check if all the necessary files exist in the input directory
+    for file_path in [
+        study_ttl_path,
+        violation_report_ttl_path,
+        omics_model_ttl_path,
+    ]:
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(f"Required file not found: {file_path}")
+
+    # Create subdirectories for output files
+    for sub_dir in ["csv", "json", "ttl"]:
+        sub_dir_path = os.path.join(output_base_dir, sub_dir)
+        ensure_dir(sub_dir_path)
+
+    # Check if output directory is the same as input directory
+    # Copy files to the output directory if it is not the same
+    if os.path.normpath(input_dir) != os.path.normpath(output_base_dir):
+        ttl_output_dir = os.path.join(output_base_dir, "ttl")
+        ensure_dir(ttl_output_dir)  # Ensure the output ttl directory exists
+        for file_path in [
+            study_ttl_path,
+            violation_report_ttl_path,
+            omics_model_ttl_path,
+        ]:
+            output_file_path = os.path.join(
+                ttl_output_dir, os.path.basename(file_path)
+            )
+            shutil.copy2(file_path, output_file_path)
+
+    # Define output file paths
+    VIOLATION_LIST_FILE = os.path.join(
+        output_base_dir, "json", "violation_list.json"
+    )
     STUDY_CSV_FILE = os.path.join(output_base_dir, "csv", "study.csv")
-    OMICS_MODEL_UNION_VIOLATION_EXEMPLAR_TTL_PATH = os.path.join(output_base_dir, "ttl", "omics_model_union_violation_exemplar.ttl")
-    EXEMPLAR_EDGE_COUNT_DICT_PATH = os.path.join(output_base_dir, "json", "exemplar_edge_count_dict.json")
-    FOCUS_NODE_EXEMPLAR_DICT_PATH = os.path.join(output_base_dir, "json", "focus_node_exemplar_dict.json")
-    EXEMPLAR_FOCUS_NODE_DICT_PATH = os.path.join(output_base_dir, "json", "exemplar_focus_node_dict.json")
-    VIOLATION_EXEMPLAR_DICT_PATH = os.path.join(output_base_dir, "json", "violation_exemplar_dict.json")
+    OMICS_MODEL_UNION_VIOLATION_EXEMPLAR_TTL_PATH = os.path.join(
+        output_base_dir, "ttl", "omics_model_union_violation_exemplar.ttl"
+    )
+    EXEMPLAR_EDGE_COUNT_DICT_PATH = os.path.join(
+        output_base_dir, "json", "exemplar_edge_count_dict.json"
+    )
+    FOCUS_NODE_EXEMPLAR_DICT_PATH = os.path.join(
+        output_base_dir, "json", "focus_node_exemplar_dict.json"
+    )
+    EXEMPLAR_FOCUS_NODE_DICT_PATH = os.path.join(
+        output_base_dir, "json", "exemplar_focus_node_dict.json"
+    )
+    VIOLATION_EXEMPLAR_DICT_PATH = os.path.join(
+        output_base_dir, "json", "violation_exemplar_dict.json"
+    )
 
     # %% [markdown]
     # # Read & Parse Graphs
@@ -128,12 +180,10 @@ def preprocess(
         "owl": "http://www.w3.org/2002/07/owl#",
     }
 
-
     def convert_to_prefixed(graph, uri):
         """Convert a URI to its prefixed form using a rdflib graph's namespace manager."""
         prefix, namespace, name = graph.namespace_manager.compute_qname(uri)
         return f"{prefix}:{name}"
-
 
     def select_direct_possible_edges(node):
         select_statement = (
@@ -151,7 +201,6 @@ def preprocess(
         )
         return [str(result[0].n3(ontology_g.namespace_manager)) for result in ontology_g.query(select_statement)]  # type: ignore
 
-
     def select_direct_parents(node):
         select_statement = (
             """
@@ -163,7 +212,6 @@ def preprocess(
             % node
         )
         return [str(result[0].n3(ontology_g.namespace_manager)) for result in ontology_g.query(select_statement)]  # type: ignore
-
 
     def select_direct_children(node):
         select_statement = (
@@ -177,7 +225,6 @@ def preprocess(
         )
         return [str(result[0].n3(ontology_g.namespace_manager)) for result in ontology_g.query(select_statement)]  # type: ignore
 
-
     def select_roots():
         select_statement = """
         SELECT ?root
@@ -186,7 +233,6 @@ def preprocess(
         }
         """
         return [str(result[0].n3(ontology_g.namespace_manager)) for result in ontology_g.query(select_statement)]  # type: ignore
-
 
     def select_root_classes():
         select_statement = """
@@ -198,7 +244,6 @@ def preprocess(
         """
         return [str(result[0].n3(ontology_g.namespace_manager)) for result in ontology_g.query(select_statement)]  # type: ignore
 
-
     # use the functions
     roots = select_root_classes()
     edges = select_direct_possible_edges("PrimaryCellSpecimen")
@@ -209,7 +254,6 @@ def preprocess(
     print("Edges:", edges)
     print("Parents:", parents)
     print("Children:", children)
-
 
     # %%
     class OntologyTree:
@@ -225,7 +269,6 @@ def preprocess(
                 self.tree[parent]["children"].append(child)
             else:
                 self.tree[parent] = {"edges": [], "children": [child]}
-
 
     def aggregate_edges(node, tree):
         edges = set(tree[node]["edges"])
@@ -244,13 +287,11 @@ def preprocess(
             ]
         return edges
 
-
     def create_aggregated_edges_dict(tree):
         agg_edges_dict = {}
         for node in tree.keys():
             agg_edges_dict[node] = aggregate_edges(node, tree)
         return agg_edges_dict
-
 
     def convert_to_full_uri(graph, abbreviated_uri):
         """Converts a prefixed URI to a full URI using a rdflib graph's namespace manager."""
@@ -258,12 +299,10 @@ def preprocess(
         namespace = graph.namespace_manager.store.namespace(prefix)
         return namespace + uri
 
-
     def remove_prefix(uri):
         if ":" in uri:
             return uri.split(":", 1)[1]
         return uri
-
 
     def build_tree(root_nodes, ontology_tree):
         queue = root_nodes
@@ -278,7 +317,6 @@ def preprocess(
             for child in children:
                 queue.append(child)
 
-
     # %%
     roots = select_root_classes()
     ontology_tree = OntologyTree()
@@ -288,7 +326,6 @@ def preprocess(
     # %%
     full_uri = convert_to_full_uri(ontology_g, "omics:hasCellType")
     print(full_uri)  # Outputs: http://[blabla...]/omics:hasCellType
-
 
     # %%
     def select_all_focus_nodes_and_classes(graph):
@@ -304,7 +341,6 @@ def preprocess(
         }
         return focus_nodes_classes_dict
 
-
     focus_nodes_class_dict = select_all_focus_nodes_and_classes(study_g)
 
     # %%
@@ -319,7 +355,6 @@ def preprocess(
     )  # should return omics:TranscriptOmicsSample
     print(agg_edges_dict[convert_to_prefixed(ontology_g, x)])
 
-
     # %% [markdown]
     # # Tabularize & Join Study + Violations Graphs
 
@@ -327,9 +362,10 @@ def preprocess(
 
     SH = Namespace("http://www.w3.org/ns/shacl#")
 
-
     def count_violations(violations: Graph):
-        d_focus_node_d_source_shape_counts = defaultdict(lambda: defaultdict(int))
+        d_focus_node_d_source_shape_counts = defaultdict(
+            lambda: defaultdict(int)
+        )
         d_violation_focus_node = defaultdict((str))
         d_violation_source_shape = defaultdict((str))
         violation_list = []
@@ -353,11 +389,9 @@ def preprocess(
         violation_list = list(set(violation_list))
         return d_focus_node_d_source_shape_counts, violation_list
 
-
     def save_violation_list(violation_list):
         with open(VIOLATION_LIST_FILE, "w") as f:
             json.dump(violation_list, f)
-
 
     def create_study_dataframe(
         study: Graph,
@@ -445,10 +479,8 @@ def preprocess(
 
         return study_df
 
-
     def save_study_dataframe(study_df):
         study_df.to_csv(STUDY_CSV_FILE)
-
 
     def tabularize_graphs(study: Graph, violations: Graph):
         print("study graph triples:", len(study))  # type: ignore
@@ -466,12 +498,12 @@ def preprocess(
         save_study_dataframe(study_df)
         return d_focus_node_d_source_shape_counts
 
-
-    d_focus_node_d_source_shape_counts = tabularize_graphs(study_g, violations_g)
+    d_focus_node_d_source_shape_counts = tabularize_graphs(
+        study_g, violations_g
+    )
 
     study_df = pd.read_csv(STUDY_CSV_FILE, index_col=0)
     study_df.head()
-
 
     # %% [markdown]
     # # Unit Tests for Violation Counting
@@ -479,7 +511,6 @@ def preprocess(
     # %%
 
     SH = Namespace("http://www.w3.org/ns/shacl#")
-
 
     class TestCountViolations(unittest.TestCase):
         def setUp(self):
@@ -496,22 +527,30 @@ def preprocess(
             self.violation4 = BNode()
 
             # Add triples to the violations graph
-            self.violations.add((self.violation1, SH.focusNode, self.focusNode1))
+            self.violations.add(
+                (self.violation1, SH.focusNode, self.focusNode1)
+            )
             self.violations.add(
                 (self.violation1, SH.sourceShape, self.sourceShape1)
             )
 
-            self.violations.add((self.violation2, SH.focusNode, self.focusNode2))
+            self.violations.add(
+                (self.violation2, SH.focusNode, self.focusNode2)
+            )
             self.violations.add(
                 (self.violation2, SH.sourceShape, self.sourceShape2)
             )
 
-            self.violations.add((self.violation3, SH.focusNode, self.focusNode1))
+            self.violations.add(
+                (self.violation3, SH.focusNode, self.focusNode1)
+            )
             self.violations.add(
                 (self.violation3, SH.sourceShape, self.sourceShape1)
             )
 
-            self.violations.add((self.violation4, SH.focusNode, self.focusNode2))
+            self.violations.add(
+                (self.violation4, SH.focusNode, self.focusNode2)
+            )
             self.violations.add(
                 (self.violation4, SH.sourceShape, self.sourceShape1)
             )
@@ -542,17 +581,23 @@ def preprocess(
             self.violation3 = BNode()
 
             # Add triples to the violations graph
-            self.violations.add((self.violation1, SH.focusNode, self.focusNode1))
+            self.violations.add(
+                (self.violation1, SH.focusNode, self.focusNode1)
+            )
             self.violations.add(
                 (self.violation1, SH.sourceShape, self.sourceShape1)
             )
 
-            self.violations.add((self.violation2, SH.focusNode, self.focusNode2))
+            self.violations.add(
+                (self.violation2, SH.focusNode, self.focusNode2)
+            )
             self.violations.add(
                 (self.violation2, SH.sourceShape, self.sourceShape2)
             )
 
-            self.violations.add((self.violation3, SH.focusNode, self.focusNode3))
+            self.violations.add(
+                (self.violation3, SH.focusNode, self.focusNode3)
+            )
             self.violations.add(
                 (self.violation3, SH.sourceShape, self.sourceShape3)
             )
@@ -574,16 +619,13 @@ def preprocess(
                 set(violation_list), set(expected_list)
             )  # Use set to ignore order
 
-
     suite = unittest.TestLoader().loadTestsFromTestCase(TestCountViolations)
     unittest.TextTestRunner().run(suite)
-
 
     # %% [markdown]
     # # Abbreviation using QNames
 
     # %%
-
 
     def namespace_in_nsm(nsm, namespace):
         """
@@ -600,7 +642,6 @@ def preprocess(
             if str(ns) == str(namespace):
                 return True
         return False
-
 
     def get_qname(nsm, uri):
         """
@@ -624,8 +665,9 @@ def preprocess(
         else:
             return uri
 
-
-    def abbreviate_using_namespaces(study_graph: Graph, violations_graph: Graph):
+    def abbreviate_using_namespaces(
+        study_graph: Graph, violations_graph: Graph
+    ):
         """
         Replaces URIs in a DataFrame and a list of violations with QNames if their namespaces
         are found in two provided RDF graphs. Saves the updated DataFrame and the list back to disk.
@@ -697,7 +739,6 @@ def preprocess(
         with open(VIOLATION_LIST_FILE, "w") as f:
             json.dump(violation_list, f)
 
-
     abbreviate_using_namespaces(study_g, violations_g)
 
     # %%
@@ -715,7 +756,6 @@ def preprocess(
     # # Compute Violation Embedding
 
     # %%
-
 
     def create_embedding():
         # read study.csv
@@ -756,17 +796,14 @@ def preprocess(
         study_df.to_csv(STUDY_CSV_FILE)
         print("UMAP embedding created and saved to", STUDY_CSV_FILE)
 
-
     def plot_embedding():
         study_df = pd.read_csv(STUDY_CSV_FILE, index_col=0)
 
         plt.scatter(study_df["x"], study_df["y"])
         plt.show()
 
-
     create_embedding()
     # plot_embedding()
-
 
     # %% [markdown]
     # # Replace URIs with Label Data
@@ -808,13 +845,17 @@ def preprocess(
             for s, p, o in study_g.triples((None, label_predicate, None))
         }
         # replace the temp_dict keys with their corresponding QNames
-        temp_dict = {get_qname(nsm_combined, k): v for k, v in temp_dict.items()}
+        temp_dict = {
+            get_qname(nsm_combined, k): v for k, v in temp_dict.items()
+        }
         # Update label_dict with temp_dict, overwriting existing keys
         label_dict.update(temp_dict)
 
     # replace all column names, indices, and cell values in the dataframe with their corresponding labels
     study_df.columns = [label_dict.get(col, col) for col in study_df.columns]
-    study_df.index = pd.Index([label_dict.get(idx, idx) for idx in study_df.index])
+    study_df.index = pd.Index(
+        [label_dict.get(idx, idx) for idx in study_df.index]
+    )
     for col in study_df.columns:
         study_df[col] = study_df[col].apply(lambda x: label_dict.get(x, x))
 
@@ -826,12 +867,10 @@ def preprocess(
     with open(VIOLATION_LIST_FILE, "w") as f:
         json.dump(violation_columns, f)
 
-
     # %% [markdown]
     # # Create Union of Ontology and Violation Report Exemplars
 
     # %%
-
 
     def replace_uris_with_labels(data, label_dict, data_type="graph"):
         new_values = None
@@ -874,7 +913,6 @@ def preprocess(
 
         return data
 
-
     def add_labels_to_graph(graph, label_dict):
         for uri, label in label_dict.items():
             graph.add(
@@ -885,7 +923,6 @@ def preprocess(
                 )
             )
         return graph
-
 
     # %%
     (
@@ -943,15 +980,25 @@ def preprocess(
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Preprocess TTL files.')
-    parser.add_argument('--study_ttl_path', default="./ttl/study.ttl", help='Path to the study TTL file.')
-    parser.add_argument('--violation_report_ttl_path', default="./ttl/violation_report.ttl", help='Path to the violation report TTL file.')
-    parser.add_argument('--omics_model_ttl_path', default="./ttl/omics_model.ttl", help='Path to the omics model TTL file.')
-    
+    parser = argparse.ArgumentParser(description="Preprocess TTL files.")
+    parser.add_argument(
+        "--input_dir",
+        required=True,
+        help="Input directory containing study.ttl, violation_report.ttl, and omics_model.ttl.",
+    )
+    parser.add_argument(
+        "--output_base_dir",
+        default="./",
+        help="Output directory to store processed files. Directories /csv, /json, and /ttl will be created here.",
+    )
+
     args = parser.parse_args()
-    
-    preprocess(args.study_ttl_path, args.violation_report_ttl_path, args.omics_model_ttl_path)
+
+    preprocess(
+        args.input_dir,
+        args.output_base_dir,
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
