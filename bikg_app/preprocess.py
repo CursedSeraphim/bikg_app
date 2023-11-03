@@ -62,31 +62,17 @@ def preprocess(input_dir, output_base_dir):
             violation_report_ttl_path,
             omics_model_ttl_path,
         ]:
-            output_file_path = os.path.join(
-                ttl_output_dir, os.path.basename(file_path)
-            )
+            output_file_path = os.path.join(ttl_output_dir, os.path.basename(file_path))
             shutil.copy2(file_path, output_file_path)
 
     # Define output file paths
-    violation_list_file = os.path.join(
-        output_base_dir, "json", "violation_list.json"
-    )
+    violation_list_file = os.path.join(output_base_dir, "json", "violation_list.json")
     study_csv_file = os.path.join(output_base_dir, "csv", "study.csv")
-    omics_model_union_violation_exemplar_ttl_path = os.path.join(
-        output_base_dir, "ttl", "omics_model_union_violation_exemplar.ttl"
-    )
-    exemplar_edge_count_dict_path = os.path.join(
-        output_base_dir, "json", "exemplar_edge_count_dict.json"
-    )
-    focus_node_exemplar_dict_path = os.path.join(
-        output_base_dir, "json", "focus_node_exemplar_dict.json"
-    )
-    exemplar_focus_node_dict_path = os.path.join(
-        output_base_dir, "json", "exemplar_focus_node_dict.json"
-    )
-    violation_exemplar_dict_path = os.path.join(
-        output_base_dir, "json", "violation_exemplar_dict.json"
-    )
+    omics_model_union_violation_exemplar_ttl_path = os.path.join(output_base_dir, "ttl", "omics_model_union_violation_exemplar.ttl")
+    exemplar_edge_count_dict_path = os.path.join(output_base_dir, "json", "exemplar_edge_count_dict.json")
+    focus_node_exemplar_dict_path = os.path.join(output_base_dir, "json", "focus_node_exemplar_dict.json")
+    exemplar_focus_node_dict_path = os.path.join(output_base_dir, "json", "exemplar_focus_node_dict.json")
+    violation_exemplar_dict_path = os.path.join(output_base_dir, "json", "violation_exemplar_dict.json")
 
     # %% [markdown]
     # # Read & Parse Graphs
@@ -261,19 +247,11 @@ def preprocess(input_dir, output_base_dir):
 
     def aggregate_edges(node, tree):
         edges = set(tree[node]["edges"])
-        queue = [
-            parent_node
-            for parent_node in tree
-            if node in tree[parent_node]["children"]
-        ]
+        queue = [parent_node for parent_node in tree if node in tree[parent_node]["children"]]
         while queue:
             parent_node = queue.pop(0)
             edges |= set(tree[parent_node]["edges"])
-            queue += [
-                grand_parent
-                for grand_parent in tree
-                if parent_node in tree[grand_parent]["children"]
-            ]
+            queue += [grand_parent for grand_parent in tree if parent_node in tree[grand_parent]["children"]]
         return edges
 
     def create_aggregated_edges_dict(tree):
@@ -325,23 +303,15 @@ def preprocess(input_dir, output_base_dir):
         }
         """
         results = graph.query(select_statement)
-        focus_nodes_classes_dict = {
-            str(result[0]): str(result[1]) for result in results
-        }
+        focus_nodes_classes_dict = {str(result[0]): str(result[1]) for result in results}
         return focus_nodes_classes_dict
 
     focus_nodes_class_dict = select_all_focus_nodes_and_classes(study_g)
 
     # %%
-    x = focus_nodes_class_dict[
-        "http://data.boehringer.com/uuid/TranscriptOmicsSample/sample-EX51-EX51_545"
-    ]
-    print(
-        x
-    )  # this returns http://data.boehringer.com/ontology/omics/TranscriptOmicsSample
-    print(
-        convert_to_prefixed(ontology_g, x)
-    )  # should return omics:TranscriptOmicsSample
+    x = focus_nodes_class_dict["http://data.boehringer.com/uuid/TranscriptOmicsSample/sample-EX51-EX51_545"]
+    print(x)  # this returns http://data.boehringer.com/ontology/omics/TranscriptOmicsSample
+    print(convert_to_prefixed(ontology_g, x))  # should return omics:TranscriptOmicsSample
     print(agg_edges_dict[convert_to_prefixed(ontology_g, x)])
 
     # %% [markdown]
@@ -352,9 +322,7 @@ def preprocess(input_dir, output_base_dir):
     sh = Namespace("http://www.w3.org/ns/shacl#")
 
     def count_violations(violations: Graph):
-        d_focus_node_d_source_shape_counts = defaultdict(
-            lambda: defaultdict(int)
-        )
+        d_focus_node_d_source_shape_counts = defaultdict(lambda: defaultdict(int))
         d_violation_focus_node = defaultdict((str))
         d_violation_source_shape = defaultdict((str))
         violation_list = []
@@ -367,13 +335,9 @@ def preprocess(input_dir, output_base_dir):
                 d_violation_focus_node[str(s)] = str(o)
 
         # for key in violation_focus_node dict
-        for key in tqdm(
-            d_violation_focus_node, desc="Going Over Violation Instances"
-        ):
+        for key in tqdm(d_violation_focus_node, desc="Going Over Violation Instances"):
             # init with 1 or add 1 if already exists
-            d_focus_node_d_source_shape_counts[d_violation_focus_node[key]][
-                d_violation_source_shape[key]
-            ] += 1
+            d_focus_node_d_source_shape_counts[d_violation_focus_node[key]][d_violation_source_shape[key]] += 1
 
         violation_list = list(set(violation_list))
         return d_focus_node_d_source_shape_counts, violation_list
@@ -422,13 +386,9 @@ def preprocess(input_dir, output_base_dir):
 
             # get class of focus node
             focus_node_class = focus_nodes_class_dict.get(str(s), None)
-            assert (
-                focus_node_class is not None
-            ), f"The focus_node_class for {str(s)} was None, but expected a value."
+            assert focus_node_class is not None, f"The focus_node_class for {str(s)} was None, but expected a value."
             # get allowed edges
-            focus_node_edges = agg_edges_dict.get(
-                convert_to_prefixed(ontology_g, focus_node_class), set()
-            )
+            focus_node_edges = agg_edges_dict.get(convert_to_prefixed(ontology_g, focus_node_class), set())
             assert len(focus_node_edges) > 0
 
             # if edge is allowed (and object is present otherwise we wouldn't get here), set value study_df.at[str(s), str(p)] = str(o)
@@ -445,9 +405,7 @@ def preprocess(input_dir, output_base_dir):
                 study_df.at[str(s), str(p)] = str(o)
                 count_not_allowed_exists += 1
             else:
-                raise Exception(
-                    "should not happen: " + str(s) + " " + str(p) + " " + str(o)
-                )
+                raise Exception("should not happen: " + str(s) + " " + str(p) + " " + str(o))
 
         print(f"count_skipped = {count_skipped}")
         print(f"count_not_skipped = {count_not_skipped}")
@@ -456,9 +414,7 @@ def preprocess(input_dir, output_base_dir):
         print(f"count_not_allowed_empty = {count_not_allowed_empty}")
 
         assert study_df.isin([""]).sum().sum() == 0
-        assert (
-            study_df.isnull().sum().sum() == 0
-        ), f"study_df.isnull().sum().sum() = {study_df.isnull().sum().sum()}"
+        assert study_df.isnull().sum().sum() == 0, f"study_df.isnull().sum().sum() = {study_df.isnull().sum().sum()}"
 
         # add focus_node column, set it to the study_df.index, and move it to the very left of the dataframe
         study_df["focus_node"] = study_df.index
@@ -474,9 +430,7 @@ def preprocess(input_dir, output_base_dir):
     def tabularize_graphs(study: Graph, violations: Graph):
         print("study graph triples:", len(study))  # type: ignore
         print("violations graph triples:", len(violations))  # type: ignore
-        d_focus_node_d_source_shape_counts, violation_list = count_violations(
-            violations
-        )
+        d_focus_node_d_source_shape_counts, violation_list = count_violations(violations)
         save_violation_list(violation_list)
         study_df = create_study_dataframe(
             study,
@@ -514,33 +468,17 @@ def preprocess(input_dir, output_base_dir):
             self.violation4 = BNode()
 
             # Add triples to the violations graph
-            self.violations.add(
-                (self.violation1, sh.focusNode, self.focusNode1)
-            )
-            self.violations.add(
-                (self.violation1, sh.sourceShape, self.sourceShape1)
-            )
+            self.violations.add((self.violation1, sh.focusNode, self.focusNode1))
+            self.violations.add((self.violation1, sh.sourceShape, self.sourceShape1))
 
-            self.violations.add(
-                (self.violation2, sh.focusNode, self.focusNode2)
-            )
-            self.violations.add(
-                (self.violation2, sh.sourceShape, self.sourceShape2)
-            )
+            self.violations.add((self.violation2, sh.focusNode, self.focusNode2))
+            self.violations.add((self.violation2, sh.sourceShape, self.sourceShape2))
 
-            self.violations.add(
-                (self.violation3, sh.focusNode, self.focusNode1)
-            )
-            self.violations.add(
-                (self.violation3, sh.sourceShape, self.sourceShape1)
-            )
+            self.violations.add((self.violation3, sh.focusNode, self.focusNode1))
+            self.violations.add((self.violation3, sh.sourceShape, self.sourceShape1))
 
-            self.violations.add(
-                (self.violation4, sh.focusNode, self.focusNode2)
-            )
-            self.violations.add(
-                (self.violation4, sh.sourceShape, self.sourceShape1)
-            )
+            self.violations.add((self.violation4, sh.focusNode, self.focusNode2))
+            self.violations.add((self.violation4, sh.sourceShape, self.sourceShape1))
             violation_counts, violation_list = count_violations(self.violations)
             expected_counts = {
                 str(self.focusNode1): {str(self.sourceShape1): 2},
@@ -552,9 +490,7 @@ def preprocess(input_dir, output_base_dir):
             expected_list = [str(self.sourceShape1), str(self.sourceShape2)]
 
             assert violation_counts == expected_counts
-            assert set(violation_list) == set(
-                expected_list
-            )  # Use set to ignore order
+            assert set(violation_list) == set(expected_list)  # Use set to ignore order
 
         def test_count_violations_basic(self):
             self.focusNode1 = BNode()
@@ -568,26 +504,14 @@ def preprocess(input_dir, output_base_dir):
             self.violation3 = BNode()
 
             # Add triples to the violations graph
-            self.violations.add(
-                (self.violation1, sh.focusNode, self.focusNode1)
-            )
-            self.violations.add(
-                (self.violation1, sh.sourceShape, self.sourceShape1)
-            )
+            self.violations.add((self.violation1, sh.focusNode, self.focusNode1))
+            self.violations.add((self.violation1, sh.sourceShape, self.sourceShape1))
 
-            self.violations.add(
-                (self.violation2, sh.focusNode, self.focusNode2)
-            )
-            self.violations.add(
-                (self.violation2, sh.sourceShape, self.sourceShape2)
-            )
+            self.violations.add((self.violation2, sh.focusNode, self.focusNode2))
+            self.violations.add((self.violation2, sh.sourceShape, self.sourceShape2))
 
-            self.violations.add(
-                (self.violation3, sh.focusNode, self.focusNode3)
-            )
-            self.violations.add(
-                (self.violation3, sh.sourceShape, self.sourceShape3)
-            )
+            self.violations.add((self.violation3, sh.focusNode, self.focusNode3))
+            self.violations.add((self.violation3, sh.sourceShape, self.sourceShape3))
 
             violation_counts, violation_list = count_violations(self.violations)
             expected_counts = {
@@ -602,9 +526,7 @@ def preprocess(input_dir, output_base_dir):
             ]
 
             assert violation_counts == expected_counts
-            assert set(violation_list) == set(
-                expected_list
-            )  # Use set to ignore order
+            assert set(violation_list) == set(expected_list)  # Use set to ignore order
 
     suite = unittest.TestLoader().loadTestsFromTestCase(TestCountViolations)
     unittest.TextTestRunner().run(suite)
@@ -649,9 +571,7 @@ def preprocess(input_dir, output_base_dir):
         else:
             return uri
 
-    def abbreviate_using_namespaces(
-        study_graph: Graph, violations_graph: Graph
-    ):
+    def abbreviate_using_namespaces(study_graph: Graph, violations_graph: Graph):
         """
         Replaces URIs in a DataFrame and a list of violations with QNames if their namespaces
         are found in two provided RDF graphs. Saves the updated DataFrame and the list back to disk.
@@ -684,24 +604,18 @@ def preprocess(input_dir, output_base_dir):
         # Change column names
         for col in study_df.columns:
             with suppress(Exception):
-                study_df.rename(
-                    columns={col: get_qname(nsm_combined, col)}, inplace=True
-                )
+                study_df.rename(columns={col: get_qname(nsm_combined, col)}, inplace=True)
 
         # Change indices and cell values
         for col in study_df.columns:
             for idx in study_df.index:
                 with suppress(Exception):
-                    study_df.loc[idx, col] = get_qname(
-                        nsm_combined, study_df.loc[idx, col]
-                    )
+                    study_df.loc[idx, col] = get_qname(nsm_combined, study_df.loc[idx, col])
 
         # change index
         for idx in study_df.index:
             with suppress(Exception):
-                study_df.rename(
-                    index={idx: get_qname(nsm_combined, str(idx))}, inplace=True
-                )
+                study_df.rename(index={idx: get_qname(nsm_combined, str(idx))}, inplace=True)
 
         # change violation_list
         for i in range(len(violation_list)):
@@ -741,9 +655,7 @@ def preprocess(input_dir, output_base_dir):
         with open(violation_list_file) as f:
             violation_columns = json.load(f)
 
-        view_df = study_df[
-            violation_columns
-        ]  # view of study dataframe with only violation columns
+        view_df = study_df[violation_columns]  # view of study dataframe with only violation columns
 
         print("Creating UMAP embedding... (this may take some time)")
         reducer = umap.UMAP(
@@ -816,22 +728,15 @@ def preprocess(input_dir, output_base_dir):
     label_dict = {}
     # pylint: disable=E1133
     for label_predicate in label_predicates:
-        temp_dict = {
-            str(s): str(o)
-            for s, p, o in study_g.triples((None, label_predicate, None))
-        }
+        temp_dict = {str(s): str(o) for s, p, o in study_g.triples((None, label_predicate, None))}
         # replace the temp_dict keys with their corresponding QNames
-        temp_dict = {
-            get_qname(nsm_combined, k): v for k, v in temp_dict.items()
-        }
+        temp_dict = {get_qname(nsm_combined, k): v for k, v in temp_dict.items()}
         # Update label_dict with temp_dict, overwriting existing keys
         label_dict.update(temp_dict)
 
     # replace all column names, indices, and cell values in the dataframe with their corresponding labels
     study_df.columns = [label_dict.get(col, col) for col in study_df.columns]
-    study_df.index = pd.Index(
-        [label_dict.get(idx, idx) for idx in study_df.index]
-    )
+    study_df.index = pd.Index([label_dict.get(idx, idx) for idx in study_df.index])
     for col in study_df.columns:
         study_df[col] = study_df[col].apply(lambda x: label_dict.get(x, x))
 
@@ -922,37 +827,25 @@ def preprocess(input_dir, output_base_dir):
 
     # %%
     # For the graph
-    ontology_union_violation_exemplars_g = add_labels_to_graph(
-        ontology_union_violation_exemplars_g, label_dict
-    )
+    ontology_union_violation_exemplars_g = add_labels_to_graph(ontology_union_violation_exemplars_g, label_dict)
 
     # For the dictionaries
-    edge_count_dict = replace_uris_with_labels(
-        edge_count_dict, label_dict, data_type="dict"
-    )
-    focus_node_exemplar_dict = replace_uris_with_labels(
-        focus_node_exemplar_dict, label_dict, data_type="dict"
-    )
-    exemplar_focus_node_dict = replace_uris_with_labels(
-        exemplar_focus_node_dict, label_dict, data_type="dict"
-    )
+    edge_count_dict = replace_uris_with_labels(edge_count_dict, label_dict, data_type="dict")
+    focus_node_exemplar_dict = replace_uris_with_labels(focus_node_exemplar_dict, label_dict, data_type="dict")
+    exemplar_focus_node_dict = replace_uris_with_labels(exemplar_focus_node_dict, label_dict, data_type="dict")
     # if necessary add code for replacing uris with labels in violation_exemplar_dict
 
     # %% [markdown]
     # ## Store
 
     # %%
-    ontology_union_violation_exemplars_g.serialize(
-        destination=omics_model_union_violation_exemplar_ttl_path, format="ttl"
-    )
+    ontology_union_violation_exemplars_g.serialize(destination=omics_model_union_violation_exemplar_ttl_path, format="ttl")
 
     # %%
     save_nested_counts_dict_json(edge_count_dict, exemplar_edge_count_dict_path)
     save_lists_dict(focus_node_exemplar_dict, focus_node_exemplar_dict_path)
     save_lists_dict(exemplar_focus_node_dict, exemplar_focus_node_dict_path)
-    save_nested_counts_dict_json(
-        violation_exemplar_dict, violation_exemplar_dict_path
-    )
+    save_nested_counts_dict_json(violation_exemplar_dict, violation_exemplar_dict_path)
 
 
 def main():
