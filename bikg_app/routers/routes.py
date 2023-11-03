@@ -208,6 +208,14 @@ def get_prefix_ns_node_edge_counts(graph: Graph):
     return ns_info
 
 
+@router.get("/example")
+def get_example():
+    """
+    A simple example endpoint that returns a message.
+    """
+    return {"message": "example"}
+
+
 @router.get("/namespaces")
 def send_namespace_dict():
     """
