@@ -15,11 +15,7 @@ import pandas as pd
 import umap
 from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import NamespaceManager, split_uri
-from routers.utils import (
-    get_violation_report_exemplars,
-    save_lists_dict,
-    save_nested_counts_dict_json,
-)
+from routers.utils import get_violation_report_exemplars, save_lists_dict, save_nested_counts_dict_json
 from scipy.sparse import coo_matrix
 from tqdm import tqdm
 
@@ -552,9 +548,9 @@ def preprocess(input_dir, output_base_dir):
             }
             expected_list = [str(self.sourceShape1), str(self.sourceShape2)]
 
-            self.assertEqual(violation_counts, expected_counts)
-            self.assertEqual(
-                set(violation_list), set(expected_list)
+            assert violation_counts == expected_counts
+            assert set(violation_list) == set(
+                expected_list
             )  # Use set to ignore order
 
         def test_count_violations_basic(self):
@@ -602,10 +598,10 @@ def preprocess(input_dir, output_base_dir):
                 str(self.sourceShape3),
             ]
 
-            self.assertEqual(violation_counts, expected_counts)
-            self.assertEqual(
-                set(violation_list), set(expected_list)
-            )  # Use set to ignore order
+            assert violation_counts == expected_counts
+            assert set(violation_list) == set(
+                expected_list
+            ) # Use set to ignore order
 
     suite = unittest.TestLoader().loadTestsFromTestCase(TestCountViolations)
     unittest.TextTestRunner().run(suite)
@@ -626,10 +622,7 @@ def preprocess(input_dir, output_base_dir):
         Returns:
         bool: True if the namespace is in the NamespaceManager, False otherwise
         """
-        for prefix, ns in nsm.namespaces():
-            if str(ns) == str(namespace):
-                return True
-        return False
+        return any(str(ns) == str(namespace) for prefix, ns in nsm.namespaces())
 
     def get_qname(nsm, uri):
         """
