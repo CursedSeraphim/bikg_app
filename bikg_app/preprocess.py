@@ -681,8 +681,6 @@ def preprocess(input_dir, output_base_dir):
         # Now use the NamespaceManager of the combined graph
         nsm_combined = NamespaceManager(combined_graph)
 
-        from contextlib import suppress
-
         # Change column names
         for col in study_df.columns:
             with suppress(Exception):
