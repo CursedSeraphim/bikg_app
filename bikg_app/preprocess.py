@@ -8,6 +8,7 @@ import os
 import shutil
 import unittest
 from collections import defaultdict
+from contextlib import suppress
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -486,9 +487,7 @@ def preprocess(input_dir, output_base_dir):
         save_study_dataframe(study_df)
         return d_focus_node_d_source_shape_counts
 
-    tabularize_graphs(
-        study_g, violations_g
-    )
+    tabularize_graphs(study_g, violations_g)
 
     study_df = pd.read_csv(study_csv_file, index_col=0)
     study_df.head()
@@ -605,7 +604,7 @@ def preprocess(input_dir, output_base_dir):
             assert violation_counts == expected_counts
             assert set(violation_list) == set(
                 expected_list
-            ) # Use set to ignore order
+            )  # Use set to ignore order
 
     suite = unittest.TestLoader().loadTestsFromTestCase(TestCountViolations)
     unittest.TextTestRunner().run(suite)
@@ -682,40 +681,34 @@ def preprocess(input_dir, output_base_dir):
         # Now use the NamespaceManager of the combined graph
         nsm_combined = NamespaceManager(combined_graph)
 
+        from contextlib import suppress
+
         # Change column names
         for col in study_df.columns:
-            try:
+            with suppress(Exception):
                 study_df.rename(
                     columns={col: get_qname(nsm_combined, col)}, inplace=True
                 )
-            except Exception:
-                pass
 
         # Change indices and cell values
         for col in study_df.columns:
             for idx in study_df.index:
-                try:
+                with suppress(Exception):
                     study_df.loc[idx, col] = get_qname(
                         nsm_combined, study_df.loc[idx, col]
                     )
-                except Exception:
-                    pass
 
         # change index
         for idx in study_df.index:
-            try:
+            with suppress(Exception):
                 study_df.rename(
                     index={idx: get_qname(nsm_combined, str(idx))}, inplace=True
                 )
-            except Exception:
-                pass
 
         # change violation_list
         for i in range(len(violation_list)):
-            try:
+            with suppress(Exception):
                 violation_list[i] = get_qname(nsm_combined, violation_list[i])
-            except Exception:
-                pass
 
         # store tabular graph as csv
         study_df.to_csv(study_csv_file)
