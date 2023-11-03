@@ -9,7 +9,7 @@ class VisynPlugin(AVisynPlugin):
         # Register anything related the the FastAPI here, i.e. routers, middlewares, events, etc.
         from .example_router import example_router
 
-        app.include_router(example_router, prefix="/api/app")
+        app.include_router(example_router, prefix="/api/bikg")
 
     def register(self, registry: RegHelper):
         pass
