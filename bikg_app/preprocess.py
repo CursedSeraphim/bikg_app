@@ -15,7 +15,11 @@ import pandas as pd
 import umap
 from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import NamespaceManager, split_uri
-from routers.utils import get_violation_report_exemplars, save_lists_dict, save_nested_counts_dict_json
+from routers.utils import (
+    get_violation_report_exemplars,
+    save_lists_dict,
+    save_nested_counts_dict_json,
+)
 from scipy.sparse import coo_matrix
 from tqdm import tqdm
 
@@ -659,7 +663,7 @@ def preprocess(input_dir, output_base_dir):
         """
 
         # load violation_list
-        with open(violation_list_file, "r") as f:
+        with open(violation_list_file) as f:
             violation_list = json.load(f)
 
         # read study_df tabularized data
@@ -723,7 +727,7 @@ def preprocess(input_dir, output_base_dir):
     abbreviate_using_namespaces(study_g, violations_g)
 
     # %%
-    with open(violation_list_file, "r") as f:
+    with open(violation_list_file) as f:
         violation_list = json.load(f)
 
     print("unique violations (" + str(len(violation_list)) + "):\n")
@@ -743,7 +747,7 @@ def preprocess(input_dir, output_base_dir):
         study_df = pd.read_csv(study_csv_file, index_col=0)
 
         # read violation_list.json
-        with open(violation_list_file, "r") as f:
+        with open(violation_list_file) as f:
             violation_columns = json.load(f)
 
         view_df = study_df[
@@ -801,7 +805,7 @@ def preprocess(input_dir, output_base_dir):
     # read tabularized graph .csv as a dataframe, and violations list .json as a list
     study_df = pd.read_csv(study_csv_file, index_col=0)
 
-    with open(violation_list_file, "r") as f:
+    with open(violation_list_file) as f:
         violation_columns = json.load(f)
 
     # Create a new graph to combine namespaces
