@@ -16,11 +16,7 @@ import pandas as pd
 import umap
 from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import NamespaceManager, split_uri
-from routers.utils import (
-    get_violation_report_exemplars,
-    save_lists_dict,
-    save_nested_counts_dict_json,
-)
+from routers.utils import get_violation_report_exemplars, save_lists_dict, save_nested_counts_dict_json
 from scipy.sparse import coo_matrix
 from tqdm import tqdm
 
@@ -63,7 +59,22 @@ def preprocess(input_dir, output_base_dir):
             omics_model_ttl_path,
         ]:
             output_file_path = os.path.join(ttl_output_dir, os.path.basename(file_path))
-            shutil.copy2(file_path, output_file_path)
+            # Check if both paths point to the same file
+            if os.path.exists(output_file_path):
+                try:
+                    if os.path.samefile(file_path, output_file_path):
+                        print("The source and destination files are the same. No action taken.")
+                    else:
+                        # The files are different, so overwrite the destination with the source
+                        shutil.copy2(file_path, output_file_path)
+                        print("File overwritten successfully.")
+                except OSError as e:
+                    # This can happen if the output file does not exist and thus cannot be compared
+                    print(f"An error occurred: {e}")
+            else:
+                # If the output file does not exist, just copy the file
+                shutil.copy2(file_path, output_file_path)
+                print("File copied successfully.")
 
     # Define output file paths
     violation_list_file = os.path.join(output_base_dir, "json", "violation_list.json")
