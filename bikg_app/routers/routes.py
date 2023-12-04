@@ -129,6 +129,11 @@ def build_type_violation_dict(df, violations_list):
     :param :df: Dataframe with columns "rdf:type" and v for each v in violations_list
     :return: A dictionary with types as keys and (violation, violation_count) as values
     """
+     # Check if 'rdf:type' column exists in the DataFrame
+    if "rdf:type" not in df.columns:
+        print("Warning: 'rdf:type' column not found in the DataFrame. Returning an empty dictionary.")
+        return {}
+
     # Initialize an empty dictionary to store the results
     type_violation_dict = {}
 
