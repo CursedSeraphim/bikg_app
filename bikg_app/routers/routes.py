@@ -27,12 +27,8 @@ VIOLATIONS_FILE_PATH = os.path.join("bikg_app/json", "violation_list.json")
 STUDY_CSV_FILE_PATH = "bikg_app/csv/study.csv"
 ONTOLOGY_TTL_FILE_PATH = "bikg_app/ttl/omics_model_union_violation_exemplar.ttl"
 EXEMPLAR_EDGE_COUNT_JSON_PATH = "bikg_app/json/exemplar_edge_count_dict.json"
-FOCUS_NODE_EXEMPLAR_DICT_JSON_PATH = (
-    "bikg_app/json/focus_node_exemplar_dict.json"
-)
-EXEMPLAR_FOCUS_NODE_DICT_JSON_PATH = (
-    "bikg_app/json/exemplar_focus_node_dict.json"
-)
+FOCUS_NODE_EXEMPLAR_DICT_JSON_PATH = "bikg_app/json/focus_node_exemplar_dict.json"
+EXEMPLAR_FOCUS_NODE_DICT_JSON_PATH = "bikg_app/json/exemplar_focus_node_dict.json"
 VIOLATION_EXEMPLAR_DICT_PATH = "bikg_app/json/violation_exemplar_dict.json"
 
 # load the violations
@@ -61,8 +57,7 @@ g.parse(ONTOLOGY_TTL_FILE_PATH, format="ttl")
 ttl_data = g.serialize(format="turtle")
 
 overall_violation_value_counts = {
-    violation: sum(key * value for key, value in counts.items())
-    for violation, counts in overall_violation_value_dict.items()
+    violation: sum(key * value for key, value in counts.items()) for violation, counts in overall_violation_value_dict.items()
 }
 
 try:
@@ -84,11 +79,7 @@ def shorten_uris_in_nested_dict(nested_dict, g: Graph):
             new_inner_key = str(g.namespace_manager.qname(inner_key))
 
             # Shorten the inner value URI if it's a URI
-            new_value = (
-                str(g.namespace_manager.qname(value))
-                if isinstance(value, str)
-                else value
-            )
+            new_value = str(g.namespace_manager.qname(value)) if isinstance(value, str) else value
 
             new_inner_dict[new_inner_key] = new_value
 
@@ -104,9 +95,7 @@ focus_node_exemplar_dict = load_lists_dict(FOCUS_NODE_EXEMPLAR_DICT_JSON_PATH)
 # exemplar_focus_node_dict that gives the focus node for each exemplar
 exemplar_focus_node_dict = load_lists_dict(EXEMPLAR_FOCUS_NODE_DICT_JSON_PATH)
 # violation_exemplar_dict that gives the exemplars and their counts for each violation
-violation_exemplar_dict = shorten_uris_in_nested_dict(
-    load_nested_counts_dict_json(VIOLATION_EXEMPLAR_DICT_PATH), g
-)
+violation_exemplar_dict = shorten_uris_in_nested_dict(load_nested_counts_dict_json(VIOLATION_EXEMPLAR_DICT_PATH), g)
 
 router = APIRouter()
 
@@ -119,9 +108,7 @@ def build_type_node_count_dict(df):
     :return: A dictionary with types as keys and violation counts as values
     """
     if "rdf:type" not in df.columns:
-        print(
-            "Warning: 'rdf:type' column not found in the DataFrame. Returning an empty dictionary."
-        )
+        print("Warning: 'rdf:type' column not found in the DataFrame. Returning an empty dictionary.")
         return {}
 
     # Use the value_counts method to get the count of each unique type in the 'rdf:type' column
@@ -144,9 +131,7 @@ def build_type_violation_dict(df, violations_list):
     """
     # Check if 'rdf:type' column exists in the DataFrame
     if "rdf:type" not in df.columns:
-        print(
-            "Warning: 'rdf:type' column not found in the DataFrame. Returning an empty dictionary."
-        )
+        print("Warning: 'rdf:type' column not found in the DataFrame. Returning an empty dictionary.")
         return {}
 
     # Initialize an empty dictionary to store the results
@@ -257,9 +242,7 @@ def shorten_dict_uris(d, prefixes):
 
     def process_item(item):
         if isinstance(item, dict):
-            return {
-                shorten(key): process_item(value) for key, value in item.items()
-            }
+            return {shorten(key): process_item(value) for key, value in item.items()}
         elif isinstance(item, list):
             return [process_item(value) for value in item]
         elif isinstance(item, str):
@@ -273,26 +256,20 @@ def shorten_dict_uris(d, prefixes):
 @router.get("/file/edge_count_dict")
 async def get_edge_count_dict():
     prefixes = get_prefixes(g)  # Get the prefixes from the graph
-    return serialize_nested_count_dict(
-        shorten_dict_uris(edge_count_dict, prefixes)
-    )
+    return serialize_nested_count_dict(shorten_dict_uris(edge_count_dict, prefixes))
 
 
 @router.get("/file/focus_node_exemplar_dict")
 async def get_focus_node_exemplar_dict():
     # TODO shorten uris with shorten_dict_uris then return serialized shortened dict
     prefixes = get_prefixes(g)  # Get the prefixes from the graph
-    return serialize_dict_keys_and_values(
-        shorten_dict_uris(focus_node_exemplar_dict, prefixes)
-    )
+    return serialize_dict_keys_and_values(shorten_dict_uris(focus_node_exemplar_dict, prefixes))
 
 
 @router.get("/file/exemplar_focus_node_dict")
 async def get_exemplar_focus_node_dict():
     prefixes = get_prefixes(g)  # Get the prefixes from the graph
-    return serialize_dict_keys_and_values(
-        shorten_dict_uris(exemplar_focus_node_dict, prefixes)
-    )
+    return serialize_dict_keys_and_values(shorten_dict_uris(exemplar_focus_node_dict, prefixes))
 
 
 @router.get("/file/study")
@@ -363,9 +340,7 @@ async def get_nodes_violations_types_from_violations(request: Request):
 @router.post("/plot/bar/violations")
 async def get_violations_bar_plot_data_given_selected_nodes(request: Request):
     selected_nodes = await request.json()  # selected_nodes is a dictionary here
-    selected_nodes = selected_nodes.get(
-        "selectedNodes", []
-    )  # Extracting the list from the dictionary
+    selected_nodes = selected_nodes.get("selectedNodes", [])  # Extracting the list from the dictionary
 
     # Select rows from df using selected_nodes as indices
     selected_df = df.loc[selected_nodes]
@@ -373,32 +348,23 @@ async def get_violations_bar_plot_data_given_selected_nodes(request: Request):
     # Process the selected data: for each column, count the occurrences of each category
     selection_violation_value_counts = {}
     for col in violations_list:
-        selection_violation_value_counts[col] = (
-            selected_df[col].value_counts().to_dict()
-        )
+        selection_violation_value_counts[col] = selected_df[col].value_counts().to_dict()
 
     # Convert selection_value_counts into a dictionary where the key is the violation
     # and the value is the number of times (weighted sum of counts) that the violation has occurred.
     selection_violation_counts = {
-        violation: sum(key * value for key, value in counts.items())
-        for violation, counts in selection_violation_value_counts.items()
+        violation: sum(key * value for key, value in counts.items()) for violation, counts in selection_violation_value_counts.items()
     }
 
     # Compute chi square score per column
     chi_scores = {}
-    chi_scores["violations"] = chi_square_score(
-        selection_violation_counts, overall_violation_value_counts
-    )
+    chi_scores["violations"] = chi_square_score(selection_violation_counts, overall_violation_value_counts)
 
     # Transform the result into a format that can be used by plotly.
     plotly_data = {}
     plotly_data = {
-        "selected": value_counts_to_plotly_data(
-            selection_violation_counts, "Selected Nodes", "steelblue"
-        ),
-        "overall": value_counts_to_plotly_data(
-            overall_violation_value_counts, "Overall Distribution", "lightgrey"
-        ),
+        "selected": value_counts_to_plotly_data(selection_violation_counts, "Selected Nodes", "steelblue"),
+        "overall": value_counts_to_plotly_data(overall_violation_value_counts, "Overall Distribution", "lightgrey"),
     }
     # Send the processed data to the client
     return {
@@ -416,9 +382,7 @@ async def get_bar_plot_data_given_selected_nodes(request: Request):
     """
     time.time()
     selected_nodes = await request.json()  # selected_nodes is a dictionary here
-    selected_nodes = selected_nodes.get(
-        "selectedNodes", []
-    )  # Extracting the list from the dictionary
+    selected_nodes = selected_nodes.get("selectedNodes", [])  # Extracting the list from the dictionary
 
     # Select rows from df using selected_nodes as indices
     selected_df = df.loc[selected_nodes]
@@ -431,20 +395,14 @@ async def get_bar_plot_data_given_selected_nodes(request: Request):
     # Compute chi square score per column
     chi_scores = {}
     for col in filtered_columns:
-        chi_scores[col] = chi_square_score(
-            selection_value_counts[col], overall_value_counts[col]
-        )
+        chi_scores[col] = chi_square_score(selection_value_counts[col], overall_value_counts[col])
 
     # Transform the result into a format that can be used by plotly.
     plotly_data = {}
     for col in filtered_columns:
         plotly_data[col] = {
-            "selected": value_counts_to_plotly_data(
-                selection_value_counts[col], "Selected Nodes", "steelblue"
-            ),
-            "overall": value_counts_to_plotly_data(
-                overall_value_counts[col], "Overall Distribution", "lightgrey"
-            ),
+            "selected": value_counts_to_plotly_data(selection_value_counts[col], "Selected Nodes", "steelblue"),
+            "overall": value_counts_to_plotly_data(overall_value_counts[col], "Overall Distribution", "lightgrey"),
         }
 
     time.time()
@@ -464,21 +422,9 @@ def chi_square_score(selection_data, overall_data):
     # create observed frequency table
     categories = set(list(selection_data.keys()) + list(overall_data.keys()))
     observed = np.array(
-        [
-            selection_data.get(category, 1e-7)
-            if selection_data.get(category, 1e-7) != 0
-            else 1e-7
-            for category in categories
-        ]
+        [selection_data.get(category, 1e-7) if selection_data.get(category, 1e-7) != 0 else 1e-7 for category in categories]
     )
-    expected = np.array(
-        [
-            overall_data.get(category, 1e-7)
-            if overall_data.get(category, 1e-7) != 0
-            else 1e-7
-            for category in categories
-        ]
-    )
+    expected = np.array([overall_data.get(category, 1e-7) if overall_data.get(category, 1e-7) != 0 else 1e-7 for category in categories])
 
     # Compute chi-square scores
     chi2, _, _, _ = chi2_contingency([observed, expected])
@@ -516,9 +462,7 @@ async def get_sub_class_of():
     Retrieves all tuples with the rdfs:SubClassOf predicate using SPARQL and converts them to QNames.
     """
     g = Graph()
-    g.parse(
-        data=ttl_data, format="turtle"
-    )  # Assuming ttl_data is the turtle file content
+    g.parse(data=ttl_data, format="turtle")  # Assuming ttl_data is the turtle file content
 
     query = """
     SELECT ?s ?o WHERE {
@@ -547,11 +491,7 @@ class Node:
         self.cumulative_count = 0  # New field
 
     def __str__(self, level=0):
-        ret = (
-            "\t" * level
-            + repr(self.id)
-            + f" (Count: {self.count}, Cumulative Count: {self.cumulative_count})\n"
-        )
+        ret = "\t" * level + repr(self.id) + f" (Count: {self.count}, Cumulative Count: {self.cumulative_count})\n"
         for child in self.children:
             ret += child.__str__(level + 1)
         return ret
@@ -565,9 +505,7 @@ class Node:
         }
 
 
-def build_ontology_tree(
-    type_violation_dict, type_count_dict, violation_exemplar_dict, g
-):
+def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar_dict, g):
     query = """SELECT ?s ?o WHERE { ?s rdfs:subClassOf ?o . }"""
     parent_child_map = defaultdict(list)
     all_type_nodes = set()
@@ -613,9 +551,7 @@ def build_ontology_tree(
         for child in current_node.children:
             add_exemplars(child)
         if current_node.id in violation_exemplar_dict:
-            for exemplar, exemplar_count in violation_exemplar_dict[
-                current_node.id
-            ].items():
+            for exemplar, exemplar_count in violation_exemplar_dict[current_node.id].items():
                 exemplar_node = Node(exemplar)
                 exemplar_node.count = exemplar_count
                 current_node.children.append(exemplar_node)
@@ -650,9 +586,7 @@ def build_ontology_tree(
     return root, node_count_dict
 
 
-ontology_tree, node_count_dict = build_ontology_tree(
-    type_violation_dict, type_count_dict, violation_exemplar_dict, g
-)
+ontology_tree, node_count_dict = build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar_dict, g)
 
 
 @router.get("/get_ontology_tree")
@@ -694,9 +628,7 @@ def get_ttl_file(response: Response):
     """
     sends the contents of the ttl file serialized to the client
     """
-    response.headers[
-        "Content-Disposition"
-    ] = "attachment; filename=omics_model.ttl"
+    response.headers["Content-Disposition"] = "attachment; filename=omics_model.ttl"
     return Response(content=ttl_data, media_type="text/turtle")
 
 
