@@ -54,6 +54,7 @@ const initialState: ICombinedState = {
   typeMap: {},
   exemplarMap: {},
   ontologyTree: null,
+  hiddenLabels: [],
 };
 
 export function createMaps(
@@ -418,6 +419,18 @@ const combinedSlice = createSlice({
         state.numberViolationsPerNode[key].cumulativeSelected = state.cumulativeNumberViolationsPerNode[key].cumulativeSelected;
         state.numberViolationsPerNode[key].violations = state.cumulativeNumberViolationsPerNode[key].violations;
       });
+    },
+    setHiddenLabels: (state, action: PayloadAction<string[]>) => {
+      state.hiddenLabels = action.payload;
+    },
+    addHiddenLabel: (state, action: PayloadAction<string>) => {
+      state.hiddenLabels.push(action.payload);
+    },
+    removeHiddenLabel: (state, action: PayloadAction<string>) => {
+      const index = state.hiddenLabels.indexOf(action.payload);
+      if (index > -1) {
+        state.hiddenLabels.splice(index, 1);
+      }
     },
     setOntologyTree: (state, action: PayloadAction<ServerTree>) => {
       state.ontologyTree = action.payload;
@@ -784,6 +797,7 @@ export const selectNamespaces = (state: { combined: ICombinedState }) => state.c
 export const selectTypes = (state: { combined: ICombinedState }) => state.combined.types;
 export const selectSubClassOfTriples = (state: { combined: ICombinedState }) => state.combined.subClassOfTriples;
 export const selectCumulativeNumberViolationsPerNode = (state: { combined: ICombinedState }) => state.combined.cumulativeNumberViolationsPerNode;
+export const selectHiddenLabels = (state: { combined: ICombinedState }) => state.combined.hiddenLabels;
 
 // TODO investigate why we are returning everything here
 // create memoized selector
@@ -1158,6 +1172,9 @@ export const {
   setExemplarMap,
   setOntologyTree,
   setCumulativeNumberViolationsPerNode,
+  setHiddenLabels,
+  addHiddenLabel,
+  removeHiddenLabel,
 } = combinedSlice.actions;
 
 export default combinedSlice.reducer;

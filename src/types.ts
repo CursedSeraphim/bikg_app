@@ -201,6 +201,7 @@ export interface ICombinedState {
   exemplarMap: IExemplarMap;
   ontologyTree: ServerTree;
   cumulativeNumberViolationsPerNode: INumberViolationsPerNodeMap;
+  hiddenLabels: string[];
 }
 
 export interface ITriple {

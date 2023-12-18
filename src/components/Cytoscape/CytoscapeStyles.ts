@@ -129,6 +129,18 @@ export function getStyle(getShapeForNamespace) {
         display: 'element',
       },
     },
+    {
+      selector: 'node[?hiddenByLabel]',
+      style: {
+        display: 'none',
+      },
+    },
+    {
+      selector: 'node[?hiddenByLabel].visible',
+      style: {
+        display: 'none',
+      },
+    },
 
     // Base edge style
     {
