@@ -448,3 +448,50 @@ body {
 .selected {
   fill: var(--selected-exemplar-node-color) !important;
 }
+
+
+.blacklist-manager {
+  border-top: 1px solid lightgrey; /* Add a top border */
+  width: 95%; /* Example: Reduce width */
+  padding: 10px 10px; /* Example: Adjust padding */
+}
+
+.blacklist-input {
+  width: calc(100% - 10px); /* Full width minus padding */
+  padding: 10px;
+  margin-bottom: 10px; /* Space below the input field */
+  border: 1px solid lightgrey; /* Border similar to other input fields */
+  border-radius: 4px; /* Rounded corners */
+}
+
+.blacklisted-labels-list {
+  list-style-type: none; /* Remove bullet points */
+  padding: 0;
+}
+
+.blacklist-item {
+  cursor: pointer;
+  margin-bottom: 2px; /* Reduced margin for compactness */
+  padding: 2px; /* Reduced padding for compactness */
+  border: 1px solid lightgrey; /* Optionally, you could remove the border for more compactness */
+  border-radius: 4px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.blacklist-item:hover {
+  background-color: var(--mantine-header-hover-color);
+  color: white;
+  text-decoration: none; /* Removing underline on hover */
+}
+
+.blacklist-item:active {
+  background-color: var(--mantine-header-color);
+  color: white;
+}
+
+/* Styles for the scrollable container */
+.blacklisted-labels-container {
+  max-height: 150px; /* Adjust as needed */
+  overflow-y: auto; /* Scrollbar for overflow */
+  margin-top: 0px;
+}

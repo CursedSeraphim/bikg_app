@@ -32,26 +32,34 @@ function BlacklistManager() {
     dispatch(removeHiddenLabels([label]));
   };
 
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' && newLabel) {
+      handleAddLabel();
+    }
+  };
+
   return (
-    <div className="blacklist-manager">
+    <div className="blacklist-manager settingsSectionContainer">
+      <div className="settingsTitle">Nodes Hidden by Label</div>
       <div className="add-blacklist-label">
-        <input type="text" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="Enter label to hide nodes" />
-        <button type="button" onClick={handleAddLabel}>
-          Add to Blacklist
-        </button>
+        <input
+          type="text"
+          value={newLabel}
+          onChange={(e) => setNewLabel(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Enter label to hide nodes"
+          className="blacklist-input"
+        />
       </div>
-      <ul className="blacklisted-labels-list">
-        {blacklistedLabels.map((label) => (
-          <li key={label}>
-            {' '}
-            {/* Use label as key */}
-            {label}
-            <button type="button" onClick={() => handleRemoveLabel(label)}>
-              Remove
-            </button>
-          </li>
-        ))}
-      </ul>
+      <div className="blacklisted-labels-container">
+        <ul className="blacklisted-labels-list">
+          {blacklistedLabels.map((label) => (
+            <li key={label} className="blacklist-item" onClick={() => handleRemoveLabel(label)}>
+              {label}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
