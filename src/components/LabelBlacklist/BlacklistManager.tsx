@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
+import Autocomplete from 'react-autocomplete';
 import store from '../Store/Store';
 import { addHiddenLabels, removeHiddenLabels } from '../Store/CombinedSlice';
 
 function BlacklistManager() {
   const [blacklistedLabels, setBlacklistedLabels] = useState<string[]>([]);
   const [newLabel, setNewLabel] = useState('');
+  const [isItemHighlighted, setIsItemHighlighted] = useState(false);
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -21,10 +23,11 @@ function BlacklistManager() {
     return () => unsubscribe(); // Unsubscribe when the component is unmounted
   }, [blacklistedLabels]);
 
-  const handleAddLabel = () => {
-    if (newLabel) {
-      dispatch(addHiddenLabels([newLabel]));
-      setNewLabel('');
+  const handleAddLabel = (label) => {
+    if (label) {
+      dispatch(addHiddenLabels([label]));
+      setNewLabel(''); // Reset the input field
+      setIsItemHighlighted(false); // Reset the highlighted state
     }
   };
 
@@ -32,9 +35,9 @@ function BlacklistManager() {
     dispatch(removeHiddenLabels([label]));
   };
 
-  const handleKeyDown = (event) => {
-    if (event.key === 'Enter' && newLabel) {
-      handleAddLabel();
+  const handleKeyDown = (event, highlightedItem) => {
+    if (event.key === 'Enter') {
+      handleAddLabel(isItemHighlighted ? highlightedItem : newLabel);
     }
   };
 
@@ -42,13 +45,27 @@ function BlacklistManager() {
     <div className="blacklist-manager settingsSectionContainer">
       <div className="settingsTitle">Nodes Hidden by Label</div>
       <div className="add-blacklist-label">
-        <input
-          type="text"
+        <Autocomplete
           value={newLabel}
+          inputProps={{
+            placeholder: 'Enter label to hide nodes',
+          }}
+          items={['abc', 'def', 'ghi']} // Replace with your items
+          getItemValue={(item) => item}
+          shouldItemRender={(item, value) => item.toLowerCase().indexOf(value.toLowerCase()) > -1}
+          renderMenu={(children) => <div className="autocomplete-menu">{children}</div>}
+          renderItem={(item, isHighlighted) => (
+            <div
+              key={item}
+              className={`autocomplete-item ${isHighlighted ? 'item-highlighted' : ''}`}
+              onMouseEnter={() => setIsItemHighlighted(true)}
+              onMouseLeave={() => setIsItemHighlighted(false)}
+            >
+              {item}
+            </div>
+          )}
           onChange={(e) => setNewLabel(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Enter label to hide nodes"
-          className="blacklist-input"
+          onSelect={(value) => handleAddLabel(value)}
         />
       </div>
       <div className="blacklisted-labels-container">
