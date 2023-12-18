@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Core, NodeSingular } from 'cytoscape';
 import { useDispatch } from 'react-redux';
-import { addHiddenLabels, removeHiddenLabels, setSelectedTypes, setSelectedViolationExemplars, setSelectedViolations } from '../Store/CombinedSlice';
+import { addHiddenLabels, setSelectedTypes, setSelectedViolationExemplars, setSelectedViolations } from '../Store/CombinedSlice';
 import { getContextMenuOptions } from './CytoscapeContextMenu';
 import { ActionFunctionMap } from '../../types';
 
@@ -14,25 +14,6 @@ const selectConnectedViolations = (node: NodeSingular, dispatch): void => {
   }
   if (node.data('type')) {
     dispatch(setSelectedTypes([node.id()]));
-  }
-};
-
-const showNodesWithSameLabelPermanently = (node: NodeSingular, cy: Core, dispatch): void => {
-  const targetLabel = node.data('label');
-  const labelsToShow = new Set<string>();
-
-  cy.nodes().each((n) => {
-    if (n.data('label') === targetLabel && n.data('blacklistedLabel')) {
-      labelsToShow.add(n.data('label'));
-      n.removeData('blacklistedLabel');
-      n.removeClass('hidden');
-      n.addClass('visible');
-    }
-  });
-
-  // Dispatch a single action with all labels to show
-  if (labelsToShow.size > 0) {
-    dispatch(removeHiddenLabels(Array.from(labelsToShow)));
   }
 };
 

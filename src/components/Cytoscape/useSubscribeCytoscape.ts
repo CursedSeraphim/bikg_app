@@ -12,7 +12,7 @@ const clearSelectedNodes = (cy: Core) => {
   cy.$(':selected').unselect();
 };
 
-export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
+export const useSubscribeCytoscape = (cy: Core | null, initialNodeData, blacklistedLabelsRef) => {
   const store = useStore<IRootState>();
   const { dispatch } = store;
 
@@ -37,7 +37,6 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
     const unsubscribe = store.subscribe(() => {
       const state = store.getState().combined;
       const violationsTypesMap = state.violationTypesMap;
-      // const { selectedTypes, selectedViolationExemplars, selectedViolations } = extractSelectedData(state);
 
       if (cy && initialNodeData.current && initialNodeData.current.size > 0) {
         resetCyto();
@@ -52,6 +51,22 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
         adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes);
 
         violationNodes.union(typeNodes).union(otherNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes)).select();
+      }
+
+      const newBlacklistedLabels = state.hiddenLabels;
+      if (cy && JSON.stringify(newBlacklistedLabels) !== JSON.stringify(blacklistedLabelsRef.current)) {
+        cy.nodes().each((n) => {
+          const label = n.data('label');
+          if (newBlacklistedLabels.includes(label) && !n.data('blacklistedLabel')) {
+            n.data('blacklistedLabel', true);
+            n.addClass('hidden');
+          } else if (!newBlacklistedLabels.includes(label) && n.data('blacklistedLabel')) {
+            n.removeData('blacklistedLabel');
+            n.removeClass('hidden');
+          }
+        });
+        // eslint-disable-next-line no-param-reassign
+        blacklistedLabelsRef.current = newBlacklistedLabels;
       }
     });
 

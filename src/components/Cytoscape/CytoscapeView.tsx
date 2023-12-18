@@ -29,6 +29,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
   const initialNodeData = useRef<Map<string, { x: number; y: number; visible: boolean }>>(new Map());
+  const blacklistedLabelsRef = useRef<string[]>([]); // Ref to track previous blacklisted labels
   const cumulativeNumberViolationsPerType = useSelector(selectCumulativeNumberViolationsPerNode);
 
   const viewHelpers = useCytoViewHelpers(cy);
@@ -45,7 +46,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
     cumulativeNumberViolationsPerType,
   });
   useRegisterCytoscapeEventListeners(cy, viewHelpers);
-  const subScribeCytoscape = useSubscribeCytoscape(cy, initialNodeData);
+  const subScribeCytoscape = useSubscribeCytoscape(cy, initialNodeData, blacklistedLabelsRef);
   useCytoscapeContextMenu(cy, viewHelpers, subScribeCytoscape);
   useCytoCumulativeCounts(cy);
 
