@@ -67,7 +67,7 @@ export function filterAllUniModalColumns(data: ICsvData[]) {
 export function filterAllNanColumns(data: ICsvData[]) {
   const notMissingEdgeColumns = new Map<string, boolean>();
 
-  // Preprocess data and track columns with non-dash values
+  // Preprocess data and track columns with non-empty / non-missing-edge values
   const preprocessedData = data.map((sample) => {
     const processedSample: ICsvData = { Id: sample.Id };
 

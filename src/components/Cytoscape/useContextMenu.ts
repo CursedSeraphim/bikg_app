@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Core, NodeSingular } from 'cytoscape';
 import { useDispatch } from 'react-redux';
-import { setSelectedTypes, setSelectedViolationExemplars, setSelectedViolations } from '../Store/CombinedSlice';
+import { addHiddenLabels, removeHiddenLabels, setSelectedTypes, setSelectedViolationExemplars, setSelectedViolations } from '../Store/CombinedSlice';
 import { getContextMenuOptions } from './CytoscapeContextMenu';
 import { ActionFunctionMap } from '../../types';
 
@@ -17,54 +17,42 @@ const selectConnectedViolations = (node: NodeSingular, dispatch): void => {
   }
 };
 
-const showNodesWithSameLabelPermanently = (node: NodeSingular, cy: Core): void => {
+const showNodesWithSameLabelPermanently = (node: NodeSingular, cy: Core, dispatch): void => {
   const targetLabel = node.data('label');
+  const labelsToShow = new Set<string>();
 
   cy.nodes().each((n) => {
-    if (n.data('label') === targetLabel && n.data('hiddenByLabel')) {
-      console.log('n', n);
-      n.removeData('hiddenByLabel');
-      n.removeClass('hidden'); // Remove 'hidden' class from the node
-      n.addClass('visible'); // Add 'visible' class to the node
+    if (n.data('label') === targetLabel && n.data('blacklistedLabel')) {
+      labelsToShow.add(n.data('label'));
+      n.removeData('blacklistedLabel');
+      n.removeClass('hidden');
+      n.addClass('visible');
     }
   });
+
+  // Dispatch a single action with all labels to show
+  if (labelsToShow.size > 0) {
+    dispatch(removeHiddenLabels(Array.from(labelsToShow)));
+  }
 };
 
-const hideNodesWithSameLabelPermanently = (node: NodeSingular, cy: Core): void => {
+const blacklistNodesWithSameLabel = (node: NodeSingular, cy: Core, dispatch): void => {
   const targetLabel = node.data('label');
+  const labelsToHide = new Set<string>();
 
   cy.nodes().each((n) => {
     if (n.data('label') === targetLabel) {
-      console.log('n', n);
-      n.data('hiddenByLabel', true);
-      n.removeClass('visible'); // Remove 'visible' class from the node
-      n.addClass('hidden'); // Add 'hidden' class to the node
+      labelsToHide.add(n.data('label'));
+      n.data('blacklistedLabel', true);
+      n.removeClass('visible');
+      n.addClass('hidden');
     }
   });
-};
 
-const showNodesWithSameLabel = (node: NodeSingular, cy: Core): void => {
-  const targetLabel = node.data('label'); // Get the label of the clicked node
-  console.log('targetLabel', targetLabel);
-
-  cy.nodes().each((n) => {
-    if (n.data('label') === targetLabel) {
-      n.removeClass('hidden'); // Remove 'hidden' class from the node
-      n.addClass('visible'); // Add 'visible' class to the node
-    }
-  });
-};
-
-const hideNodesWithSameLabel = (node: NodeSingular, cy: Core): void => {
-  const targetLabel = node.data('label'); // Get the label of the clicked node
-  console.log('targetLabel', targetLabel);
-
-  cy.nodes().each((n) => {
-    if (n.data('label') === targetLabel) {
-      n.removeClass('visible'); // Remove 'visible' class from the node
-      n.addClass('hidden'); // Add 'hidden' class to the node
-    }
-  });
+  // Dispatch a single action with all labels to hide
+  if (labelsToHide.size > 0) {
+    dispatch(addHiddenLabels(Array.from(labelsToHide)));
+  }
 };
 
 const useCytoscapeContextMenu = (cy: Core, viewHelpers: ActionFunctionMap, subscribeCytoscape: ActionFunctionMap) => {
@@ -78,8 +66,7 @@ const useCytoscapeContextMenu = (cy: Core, viewHelpers: ActionFunctionMap, subsc
         'Toggle children': { action: viewHelpers.toggleChildren, args: [], coreAsWell: false },
         'Toggle parents': { action: viewHelpers.toggleParents, args: [], coreAsWell: false },
         'Select connected focus nodes': { action: selectConnectedViolations, args: [dispatch], coreAsWell: false },
-        'Hide nodes with same label': { action: hideNodesWithSameLabelPermanently, args: [cy], coreAsWell: false },
-        'Show nodes with same label': { action: showNodesWithSameLabelPermanently, args: [cy], coreAsWell: false },
+        'Hide nodes with same label': { action: blacklistNodesWithSameLabel, args: [cy, dispatch], coreAsWell: false },
         Reset: { action: subscribeCytoscape.resetCytoAndDispatch, args: [], coreAsWell: true },
         'Center View': { action: subscribeCytoscape.centerView, args: [], coreAsWell: true },
       };

@@ -423,14 +423,15 @@ const combinedSlice = createSlice({
     setHiddenLabels: (state, action: PayloadAction<string[]>) => {
       state.hiddenLabels = action.payload;
     },
-    addHiddenLabel: (state, action: PayloadAction<string>) => {
-      state.hiddenLabels.push(action.payload);
+    addHiddenLabels: (state, action: PayloadAction<string[]>) => {
+      action.payload.forEach((label) => {
+        if (!state.hiddenLabels.includes(label)) {
+          state.hiddenLabels.push(label);
+        }
+      });
     },
-    removeHiddenLabel: (state, action: PayloadAction<string>) => {
-      const index = state.hiddenLabels.indexOf(action.payload);
-      if (index > -1) {
-        state.hiddenLabels.splice(index, 1);
-      }
+    removeHiddenLabels: (state, action: PayloadAction<string[]>) => {
+      state.hiddenLabels = state.hiddenLabels.filter((label) => !action.payload.includes(label));
     },
     setOntologyTree: (state, action: PayloadAction<ServerTree>) => {
       state.ontologyTree = action.payload;
@@ -559,7 +560,6 @@ const combinedSlice = createSlice({
       );
     },
     setSelectedFocusNodes: (state, action) => {
-      console.log('settings selected focus nodes');
       // TODO rework with new maps
       const newSelectedNodes = action.payload;
 
@@ -1173,8 +1173,8 @@ export const {
   setOntologyTree,
   setCumulativeNumberViolationsPerNode,
   setHiddenLabels,
-  addHiddenLabel,
-  removeHiddenLabel,
+  addHiddenLabels,
+  removeHiddenLabels,
 } = combinedSlice.actions;
 
 export default combinedSlice.reducer;

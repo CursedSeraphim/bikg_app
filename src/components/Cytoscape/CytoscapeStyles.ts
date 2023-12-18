@@ -130,13 +130,13 @@ export function getStyle(getShapeForNamespace) {
       },
     },
     {
-      selector: 'node[?hiddenByLabel]',
+      selector: 'node[?blacklistedLabel]',
       style: {
         display: 'none',
       },
     },
     {
-      selector: 'node[?hiddenByLabel].visible',
+      selector: 'node[?blacklistedLabel].visible',
       style: {
         display: 'none',
       },
