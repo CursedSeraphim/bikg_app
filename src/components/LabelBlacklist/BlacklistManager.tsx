@@ -35,12 +35,6 @@ function BlacklistManager() {
     dispatch(removeHiddenLabels([label]));
   };
 
-  const handleKeyDown = (event, highlightedItem) => {
-    if (event.key === 'Enter') {
-      handleAddLabel(isItemHighlighted ? highlightedItem : newLabel);
-    }
-  };
-
   return (
     <div className="blacklist-manager settingsSectionContainer">
       <div className="settingsTitle">Nodes Hidden by Label</div>
