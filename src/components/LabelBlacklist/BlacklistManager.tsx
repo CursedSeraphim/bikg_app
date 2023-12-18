@@ -50,7 +50,7 @@ function BlacklistManager() {
           inputProps={{
             placeholder: 'Enter label to hide nodes',
           }}
-          items={['abc', 'def', 'ghi']} // Replace with your items
+          items={['rlog:ERROR', 'sh:Violation', 'sh:PropertyShape']} // Replace with your items
           getItemValue={(item) => item}
           shouldItemRender={(item, value) => item.toLowerCase().indexOf(value.toLowerCase()) > -1}
           renderMenu={(children) => <div className="autocomplete-menu">{children}</div>}
