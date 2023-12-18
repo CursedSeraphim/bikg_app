@@ -27,6 +27,11 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
     resetCyto();
   };
 
+  const centerView = () => {
+    cy.fit();
+    cy.center();
+  };
+
   useEffect(() => {
     // Subscribe to changes
     const unsubscribe = store.subscribe(() => {
@@ -59,5 +64,6 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData) => {
 
   return {
     resetCytoAndDispatch,
+    centerView,
   };
 };
