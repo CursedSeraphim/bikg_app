@@ -1,8 +1,44 @@
+:root {
+  
+  /* Other constants */
+  --spinner-color: grey;
+  --mantine-header-color: #495057;
+  --mantine-header-hover-color: #92a0ad;
+
+  /* Default Node Colors */
+  --unselected-default-color: #aaa;
+  --selected-default-color: #888;
+
+  /* Text Colors */
+  --selected-text-color: black;
+  --unselected-text-color: grey;
+
+  /* Type Node Colors */
+  --selected-type-node-color: steelblue;
+  --unselected-type-node-color: lightsteelblue;
+
+  /* Violation Node Colors */
+  --selected-violation-node-color: orange;
+  --unselected-violation-node-color: #FFCC99;
+
+  /* Exemplar Node Colors */
+  --selected-exemplar-node-color: red;
+  --unselected-exemplar-node-color: #FF7F7F;
+
+  /* Children/parent alignment constants */
+  --node-layout-offset-x: 500;
+  --distance-between-nodes-y: 70;
+
+  /* Tree layout constants */
+  --unfolded-subtree-bounding-box-margin: 100;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
 .chat-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -76,4 +112,65 @@
 .typing-indicator {
   font-style: italic;
   color: #aaa;
+}
+
+.api-key-wrapper {
+  position: absolute;
+  top: 5;
+  left: auto;
+  right: 0;
+  padding: 0px 0px 0 0px;
+  box-sizing: border-box;
+  z-index: 10; /* Ensure it's above other elements */
+  transition: padding 0.3s ease-in-out, opacity 0.3s ease-in-out; /* Transition for padding and opacity */
+
+}
+
+.api-key-input {
+  max-width: 300px; /* Adjust as needed */
+  margin: 0;
+  display: flex;
+  justify-content: flex-end;
+  opacity: 0.3; /* Initially less visible */
+  transition: opacity 0.3s ease-in-out;
+}
+
+.api-key-input input,
+.api-key-input button {
+  flex: 1;
+  margin: 0 0px;
+}
+
+.api-key-input button {
+  background-color: white;
+  border: 1px solid #d1d1d1;
+  cursor: pointer;
+  box-sizing: border-box;
+  color: black;
+  transition: background-color 0.15s ease, color 0.15s ease; /* Smoother transitions */
+  font-size: 1rem; /* Readability */
+}
+
+/* Hover Effect */
+.api-key-input button:hover {
+  background-color: var(--mantine-header-hover-color);
+  color: white;
+  border: 1px solid grey;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* subtle shadow as in tabs */
+}
+
+/* Active State */
+.api-key-input button:active {
+  color: white;
+  background-color: var(--mantine-header-color);
+  border: 1px solid grey;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* subtle shadow as in tabs */
+}
+
+/* When hovering over the entire wrapper */
+.api-key-wrapper:hover .api-key-input,
+/* When the input or button inside api-key-input is focused */
+.api-key-input input:focus,
+.api-key-input button:focus {
+  opacity: 1; /* Fully visible */
 }

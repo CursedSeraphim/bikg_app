@@ -40,18 +40,6 @@ function LangchainComponent() {
     setApiKeyError(true);
   }
 
-  if (apiKeyError) {
-    return (
-      <div>
-        <div>API Key Error. Please enter a valid OpenAI API key.</div>
-        <input type="text" value={apiKey} onChange={handleApiKeyChange} />
-        <button type="button" onClick={handleApiKeySubmit}>
-          Submit
-        </button>
-      </div>
-    );
-  }
-
   return (
     <ChatUI
       messages={messages}
@@ -60,6 +48,9 @@ function LangchainComponent() {
       handleInputChange={handleInputChange}
       handleSubmit={handleSubmit}
       input={input}
+      apiKey={apiKey}
+      handleApiKeyChange={handleApiKeyChange}
+      handleApiKeySubmit={handleApiKeySubmit}
     />
   );
 }
