@@ -10,8 +10,8 @@ function SettingsTab() {
   return (
     <div className="settingsTab">
       <FilterSettings />
-      <MemoizedLegend />
       <BlacklistManager />
+      <MemoizedLegend />
       {/* <MissingEdgeSettings /> */}
     </div>
   );
