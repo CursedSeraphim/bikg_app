@@ -424,11 +424,9 @@ const combinedSlice = createSlice({
     },
     setNodeLabels: (state, action: PayloadAction<string[]>) => {
       state.nodeLabels = action.payload;
-      console.log('node label set', state.nodeLabels);
     },
     setEdgeLabels: (state, action: PayloadAction<string[]>) => {
       state.edgeLabels = action.payload;
-      console.log('edge label set', state.edgeLabels);
     },
     setHiddenLabels: (state, action: PayloadAction<string[]>) => {
       state.hiddenLabels = action.payload;

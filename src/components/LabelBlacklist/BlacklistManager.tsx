@@ -36,6 +36,8 @@ function BlacklistManager() {
     dispatch(removeHiddenLabels([label]));
   };
 
+  const options = ['', ...nodeLabels];
+
   return (
     <div className="blacklist-manager settingsSectionContainer">
       <div className="settingsTitle">Nodes Hidden by Label</div>
@@ -43,7 +45,7 @@ function BlacklistManager() {
         <Autocomplete
           value={newLabel}
           onChange={handleAddLabel}
-          options={nodeLabels}
+          options={options}
           getOptionLabel={(option) => option}
           renderInput={(params) => <TextField {...params} label="Enter label to hide nodes" variant="outlined" />}
         />
