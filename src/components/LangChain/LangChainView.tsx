@@ -16,26 +16,32 @@ function LangchainComponent() {
   const [isBotTyping, setIsBotTyping] = useState(false);
   const executorRef = useRef<AgentExecutor | null>(null);
   const chatHistoryRef = useRef<HTMLDivElement | null>(null);
-  // const openAIApiKey = process.env.OPENAI_API_KEY;
   const [apiKey, setApiKey] = useState(process.env.OPENAI_API_KEY);
-  const [apiKeyError, setApiKeyError] = useState(false); // New state for API key error
+  const [tempApiKey, setTempApiKey] = useState(''); // Temporary state for API key
+  const [apiKeyError, setApiKeyError] = useState(false);
 
   useAutoScroll(messages, chatHistoryRef);
   const model = useOpenAIModel(apiKey);
   const tools = useTools();
   useInitializeAgentExecutor(tools, model, executorRef);
+
   const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setApiKey(event.target.value);
+    setTempApiKey(event.target.value);
   };
+
   const handleApiKeySubmit = () => {
-    // Update your environment variable here or send the key to your backend
-    // Reset the error state
+    setApiKey(tempApiKey); // Set the actual API key for use
+    setTempApiKey(''); // Clear the temporary key
     setApiKeyError(false);
+    // Reinitialize your model or services here
   };
+
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInput(event.target.value);
   };
+
   const handleSubmit = useMessageSubmitHandler(input, executorRef, setIsBotTyping, addMessage, setInput);
+
   if (!model && !apiKeyError) {
     setApiKeyError(true);
   }
@@ -48,7 +54,7 @@ function LangchainComponent() {
       handleInputChange={handleInputChange}
       handleSubmit={handleSubmit}
       input={input}
-      apiKey={apiKey}
+      apiKey={tempApiKey} // Pass tempApiKey to ChatUI
       handleApiKeyChange={handleApiKeyChange}
       handleApiKeySubmit={handleApiKeySubmit}
     />
