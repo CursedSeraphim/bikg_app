@@ -456,6 +456,29 @@ def value_counts_to_plotly_data(value_counts, distribution_name, marker_color):
     }
 
 
+@router.get("/get_node_label_set")
+async def get_node_label_set(g=g):
+    """
+    Retrieves all the node labels in the ontology
+    """
+    subjects = list(g.subjects())
+    objects = list(g.objects())
+    # use qname to shorten the URIs and send set of concatenated subjects and objects
+    all_uris = subjects + objects
+    print("all_uris", all_uris)
+    return set(uri_to_qname(g, uri) for uri in all_uris)  # type: ignore
+
+
+@router.get("/get_edge_label_set")
+async def get_edge_label_set(g=g):
+    """
+    Retrieves all the edge labels in the ontology
+    """
+    predicates = list(g.predicates())
+    # use qname to shorten the URIs and send set of predicates
+    return set(uri_to_qname(g, uri) for uri in predicates)  # type: ignore
+
+
 @router.get("/sub-class-of")
 async def get_sub_class_of():
     """

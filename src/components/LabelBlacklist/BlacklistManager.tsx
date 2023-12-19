@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import Autocomplete from 'react-autocomplete';
+import { useDispatch, useSelector } from 'react-redux';
+import TextField from '@material-ui/core/TextField';
+import Autocomplete from '@material-ui/lab/Autocomplete';
 import store from '../Store/Store';
-import { addHiddenLabels, removeHiddenLabels } from '../Store/CombinedSlice';
+import { addHiddenLabels, removeHiddenLabels, selectNodeLabels } from '../Store/CombinedSlice';
 
 function BlacklistManager() {
   const [blacklistedLabels, setBlacklistedLabels] = useState<string[]>([]);
   const [newLabel, setNewLabel] = useState('');
-  const [isItemHighlighted, setIsItemHighlighted] = useState(false);
   const dispatch = useDispatch();
+
+  const nodeLabels = useSelector(selectNodeLabels);
 
   useEffect(() => {
     const unsubscribe = store.subscribe(() => {
@@ -23,11 +25,10 @@ function BlacklistManager() {
     return () => unsubscribe(); // Unsubscribe when the component is unmounted
   }, [blacklistedLabels]);
 
-  const handleAddLabel = (label) => {
-    if (label) {
-      dispatch(addHiddenLabels([label]));
+  const handleAddLabel = (event, value) => {
+    if (value) {
+      dispatch(addHiddenLabels([value]));
       setNewLabel(''); // Reset the input field
-      setIsItemHighlighted(false); // Reset the highlighted state
     }
   };
 
@@ -41,25 +42,10 @@ function BlacklistManager() {
       <div className="add-blacklist-label">
         <Autocomplete
           value={newLabel}
-          inputProps={{
-            placeholder: 'Enter label to hide nodes',
-          }}
-          items={['rlog:ERROR', 'sh:Violation', 'sh:PropertyShape']} // Replace with your items
-          getItemValue={(item) => item}
-          shouldItemRender={(item, value) => item.toLowerCase().indexOf(value.toLowerCase()) > -1}
-          renderMenu={(children) => <div className="autocomplete-menu">{children}</div>}
-          renderItem={(item, isHighlighted) => (
-            <div
-              key={item}
-              className={`autocomplete-item ${isHighlighted ? 'item-highlighted' : ''}`}
-              onMouseEnter={() => setIsItemHighlighted(true)}
-              onMouseLeave={() => setIsItemHighlighted(false)}
-            >
-              {item}
-            </div>
-          )}
-          onChange={(e) => setNewLabel(e.target.value)}
-          onSelect={(value) => handleAddLabel(value)}
+          onChange={handleAddLabel}
+          options={nodeLabels}
+          getOptionLabel={(option) => option}
+          renderInput={(params) => <TextField {...params} label="Enter label to hide nodes" variant="outlined" />}
         />
       </div>
       <div className="blacklisted-labels-container">

@@ -181,3 +181,17 @@ export async function fetchTypeViolationDict() {
   const data = await response.json();
   return data;
 }
+
+export async function fetchNodeLabelSet() {
+  const endpoint = `/api/bikg/get_node_label_set`;
+  const response = await fetch(endpoint);
+  const data = await response.json();
+  return data;
+}
+
+export async function fetchEdgeLabelSet() {
+  const endpoint = `/api/bikg/get_edge_label_set`;
+  const response = await fetch(endpoint);
+  const data = await response.json();
+  return data;
+}

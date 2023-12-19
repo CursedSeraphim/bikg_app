@@ -510,6 +510,7 @@ body {
 .autocomplete-item {
   padding: 5px;
   cursor: pointer;
+  word-wrap: break-word;
 }
 
 .item-highlighted {

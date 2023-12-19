@@ -14,6 +14,8 @@ import {
   setSubClassOfTriples,
   setCumulativeNumberViolationsPerNode,
   setOntologyTree,
+  setNodeLabels,
+  setEdgeLabels,
 } from './components/Store/CombinedSlice';
 
 import CytoscapeView from './components/Cytoscape/CytoscapeView';
@@ -27,6 +29,8 @@ import {
   fetchSubClassOfTriples,
   fetchNodeFocusNodeCountDict,
   fetchOntologyTree,
+  fetchNodeLabelSet,
+  fetchEdgeLabelSet,
 } from './api';
 import { SPINNER_COLOR } from './constants';
 import { fetchAndInitializeData } from './components/Store/thunks';
@@ -57,6 +61,26 @@ export function App() {
         console.error('Error retrieving ontology tree', fetchError);
       });
   }, [dispatch]);
+
+  React.useEffect(() => {
+    fetchNodeLabelSet()
+      .then((data) => {
+        dispatch(setNodeLabels(data));
+      })
+      .catch((fetchError) => {
+        console.error('Error retrieving node label set', fetchError);
+      });
+  }, []);
+
+  React.useEffect(() => {
+    fetchEdgeLabelSet()
+      .then((data) => {
+        dispatch(setEdgeLabels(data));
+      })
+      .catch((fetchError) => {
+        console.error('Error retrieving edge label set', fetchError);
+      });
+  }, []);
 
   // Fetch node count dict
   React.useEffect(() => {
