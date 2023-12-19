@@ -70,7 +70,7 @@ export function App() {
       .catch((fetchError) => {
         console.error('Error retrieving node label set', fetchError);
       });
-  }, []);
+  }, [dispatch]);
 
   React.useEffect(() => {
     fetchEdgeLabelSet()
@@ -80,7 +80,7 @@ export function App() {
       .catch((fetchError) => {
         console.error('Error retrieving edge label set', fetchError);
       });
-  }, []);
+  }, [dispatch]);
 
   // Fetch node count dict
   React.useEffect(() => {
