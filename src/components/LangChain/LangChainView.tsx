@@ -16,18 +16,40 @@ function LangchainComponent() {
   const [isBotTyping, setIsBotTyping] = useState(false);
   const executorRef = useRef<AgentExecutor | null>(null);
   const chatHistoryRef = useRef<HTMLDivElement | null>(null);
-  const openAIApiKey = process.env.OPENAI_API_KEY;
+  // const openAIApiKey = process.env.OPENAI_API_KEY;
+  const [apiKey, setApiKey] = useState(process.env.OPENAI_API_KEY);
+  const [apiKeyError, setApiKeyError] = useState(false); // New state for API key error
 
   useAutoScroll(messages, chatHistoryRef);
-  const model = useOpenAIModel(openAIApiKey);
+  const model = useOpenAIModel(apiKey);
   const tools = useTools();
   useInitializeAgentExecutor(tools, model, executorRef);
+  const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setApiKey(event.target.value);
+  };
+  const handleApiKeySubmit = () => {
+    // Update your environment variable here or send the key to your backend
+    // Reset the error state
+    setApiKeyError(false);
+  };
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInput(event.target.value);
   };
   const handleSubmit = useMessageSubmitHandler(input, executorRef, setIsBotTyping, addMessage, setInput);
-  if (!model) {
-    return <div>Model is not loaded, please check your API key.</div>;
+  if (!model && !apiKeyError) {
+    setApiKeyError(true);
+  }
+
+  if (apiKeyError) {
+    return (
+      <div>
+        <div>API Key Error. Please enter a valid OpenAI API key.</div>
+        <input type="text" value={apiKey} onChange={handleApiKeyChange} />
+        <button type="button" onClick={handleApiKeySubmit}>
+          Submit
+        </button>
+      </div>
+    );
   }
 
   return (
