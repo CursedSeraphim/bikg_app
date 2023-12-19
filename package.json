@@ -50,6 +50,7 @@
   },
   "dependencies": {
     "@material-ui/core": "^4.12.4",
+    "@material-ui/lab": "^4.0.0-alpha.61",
     "@mui/material": "^5.2.1",
     "@mui/utils": "^5.2.1",
     "@reduxjs/toolkit": "^1.9.2",
