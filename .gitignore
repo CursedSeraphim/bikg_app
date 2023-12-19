@@ -48,3 +48,5 @@ bikg_app/rdf*/
 /bikg_app/ttl*/
 bikg_app/ttl*/
 /bikg_app/json*/
+/bikg_app/data*/
+/bikg_app/data/
