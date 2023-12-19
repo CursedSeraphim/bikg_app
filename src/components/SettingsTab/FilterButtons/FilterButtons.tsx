@@ -12,13 +12,13 @@ export function FilterButtons() {
       <label className={`filterLabel ${filterType === 'unimodal' ? 'activeFilter' : ''}`}>
         <input type="radio" value="unimodal" checked={filterType === 'unimodal'} onChange={() => dispatch(setFilterType('unimodal'))} />
         {/* {filterType === 'unimodal' ? 'Unimodal Filtering Active' : 'Activate Unimodal Filtering'} */}
-        Filter Single-Value Columns
+        Filter Single-Value Cols
       </label>
 
       <label className={`filterLabel ${filterType === 'nan' ? 'activeFilter' : ''}`}>
         <input type="radio" value="nan" checked={filterType === 'nan'} onChange={() => dispatch(setFilterType('nan'))} />
         {/* {filterType === 'nan' ? 'NaN Filtering Active' : 'Activate NaN Filtering'} */}
-        Filter Empty Columns
+        Filter Empty Cols
       </label>
 
       <label className={`filterLabel ${filterType === 'none' ? 'activeFilter' : ''}`}>

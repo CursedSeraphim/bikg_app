@@ -15,7 +15,7 @@ const SHAPES = {
 const COLORS = {
   'Type / owl:Class': SELECTED_TYPE_NODE_COLOR,
   'Violation / sh:PropertyShape': SELECTED_VIOLATION_NODE_COLOR,
-  'Focus Node / Violation Exemplar': SELECTED_EXEMPLAR_NODE_COLOR,
+  'Focus Nodes / Exemplar': SELECTED_EXEMPLAR_NODE_COLOR,
 };
 
 function Legend() {
