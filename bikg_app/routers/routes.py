@@ -466,7 +466,7 @@ async def get_node_label_set(g=g):
     # use qname to shorten the URIs and send set of concatenated subjects and objects
     all_uris = subjects + objects
     print("all_uris", all_uris)
-    return set(uri_to_qname(g, uri) for uri in all_uris)  # type: ignore
+    return {uri_to_qname(g, uri) for uri in all_uris}  # type: ignore
 
 
 @router.get("/get_edge_label_set")
@@ -476,7 +476,7 @@ async def get_edge_label_set(g=g):
     """
     predicates = list(g.predicates())
     # use qname to shorten the URIs and send set of predicates
-    return set(uri_to_qname(g, uri) for uri in predicates)  # type: ignore
+    return {uri_to_qname(g, uri) for uri in predicates}  # type: ignore
 
 
 @router.get("/sub-class-of")
