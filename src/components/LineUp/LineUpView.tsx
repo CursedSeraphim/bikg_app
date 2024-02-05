@@ -66,6 +66,36 @@ export default function LineUpView() {
     const columnValues = data.map((row) => row[column]);
     const uniqueValues = [...new Set(columnValues)];
 
+    // if row[column] starts with '[' print it
+    // // Check if column data is an array (indicative of a set column)
+    if (columnValues.some((value) => typeof value === 'string' && value.startsWith('['))) {
+      return 'set';
+    }
+    // Attempt to parse string as JSON and check if it results in an array
+    // const mightBeSet = columnValues.some((value) => {
+    //   if (typeof value === 'string') {
+    //     try {
+    //       const parsed = JSON.parse(value);
+    //       return Array.isArray(parsed);
+    //     } catch (e) {
+    //       // Not a JSON string, ignore the error
+    //     }
+    //   }
+    //   return false;
+    // });
+
+    // if (mightBeSet) {
+    //   console.log('Column', column, 'is a set column qwe');
+    //   return 'set';
+    // }
+
+    // // Check if column data is an array (indicative of a set column)
+    // const isSet = data.every((row) => Array.isArray(row[column]));
+    // if (isSet) {
+    //   console.log('Column', column, 'is a set column');
+    //   return 'set';
+    // }
+
     // Check if all non-null values are boolean (true, false, 0, or 1)
     const allBooleans = columnValues.every(
       (value) =>
@@ -155,7 +185,73 @@ export default function LineUpView() {
     return column;
   }
 
-  type DataType = { [key: string]: number | string | boolean | null }; // TODO check whether this should alawys be string
+  type DataType = { [key: string]: number | string | boolean | null | Array<string> }; // TODO check whether this should alawys be string
+
+  function safelyParseStringifiedArray(value: string): Array<string> | null {
+    try {
+      // Basic check to see if it looks like an array
+      if (value.startsWith('[') && value.endsWith(']')) {
+        // Remove the brackets and split the string into an array
+        const elements = value.substring(1, value.length - 1).split(',');
+        // Further processing might be needed depending on the format of elements
+        // For example, trimming whitespace and removing quotes if necessary
+        return elements.map((element) => element.trim().replace(/^['"]|['"]$/g, ''));
+      }
+    } catch (e) {
+      // Log errors or handle them as needed
+      console.error('Error parsing stringified array:', e);
+    }
+    return null; // Return null if parsing fails
+  }
+
+  function buildSetColumnDescriptor(column: string, data: DataType[]): any {
+    console.log('Building set column descriptor for column:', column);
+    const uniqueValues = new Set<string>();
+    data.forEach((row) => {
+      const values = row[column];
+      if (typeof values === 'string') {
+        // Attempt to parse stringified arrays
+        const parsedValues = safelyParseStringifiedArray(values);
+        if (parsedValues) {
+          // If parsing was successful, add each value to the set of unique values
+          parsedValues.forEach((value) => uniqueValues.add(value));
+        } else {
+          // If parsing failed, treat it as a single value
+          uniqueValues.add(values);
+        }
+      } else if (Array.isArray(values)) {
+        // If the value is an array, add each element to the set of unique values
+        values.forEach((value) => uniqueValues.add(value));
+      } else if (values !== null && values !== undefined) {
+        // Treat non-string, non-array values as single values
+        uniqueValues.add(String(values));
+      }
+    });
+    console.log('uniqueValues:', uniqueValues);
+
+    const categories = Array.from(uniqueValues).map((value, index) => ({
+      name: value,
+      label: value,
+      color: `hsl(${360 * (index / uniqueValues.size)}, 100%, 70%)`,
+    }));
+
+    // Wrap the descriptor within a 'desc' object to match expected structure
+    const setColumnConfig = {
+      type: 'set',
+      label: column,
+      column,
+      categories,
+      renderer: 'catheatmap',
+      groupRenderer: 'categorical',
+      // Add any additional properties as needed
+    };
+
+    return setColumnConfig;
+
+    // return {
+    //   desc: setColumnConfig,
+    // };
+  }
 
   type BuilderFunction = (column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }) => LineUpJS.ColumnBuilder;
 
@@ -212,12 +308,20 @@ export default function LineUpView() {
 
     columns.forEach((column) => {
       let type = inferType(data, column);
-      if (type === 'boolean') type = 'categorical';
+      if (type === 'set') {
+        console.log('Building set column descriptor for column:', column);
+        const setColumnDescriptor = buildSetColumnDescriptor(column, data);
+        builder.column(setColumnDescriptor);
+        console.log('setColumnDescriptor:', setColumnDescriptor);
+      } else if (type === 'boolean') {
+        type = 'categorical';
+      }
       const width = calculatePixelWidthFromLabel(column);
       const builderFunction = builderMap[type];
 
       if (builderFunction) {
         const builtColumn = builderFunction(column, data, width, biColorMap);
+        console.log('builtColumn, column:', builtColumn, column);
         builder.column(builtColumn);
       } else if (type === 'link') {
         const label = removePrefix(column);
