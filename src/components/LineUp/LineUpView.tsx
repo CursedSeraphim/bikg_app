@@ -63,45 +63,15 @@ export default function LineUpView() {
    * @returns {string} - The inferred data type for the column.
    */
   function inferType(data, column) {
-    console.log('inferType on column:', column, typeof data[0][column]);
 
     const columnValues = data.map((row) => row[column]);
     const uniqueValues = [...new Set(columnValues)];
 
-    // if row[column] starts with '[' print it
-    // // Check if column data is an array (indicative of a set column)
-    // if (columnValues.some((value) => typeof value === 'string' && value.startsWith('['))) {
-    //   return 'set';
-    // }
-    // Attempt to parse string as JSON and check if it results in an array
-
-    // if column is rdf:type print the columnValues
-    // if (column === 'rdf:type') {
-    //   console.log('columnValues:', columnValues);
-    // }
-
-    const mightBeSet = columnValues.some((value) => {
-      if (typeof value === 'string') {
-        try {
-          const parsed = JSON.parse(value);
-          return Array.isArray(parsed);
-        } catch (e) {
-          // Not a JSON string, ignore the error
-        }
-      }
-      return false;
-    });
-
-    if (mightBeSet) {
+    // Directly check if any value in the column is an array
+    const isSet = columnValues.some((value) => Array.isArray(value));
+    if (isSet) {
       return 'set';
     }
-
-    // Check if column data is an array (indicative of a set column)
-    // const isSet = data.every((row) => Array.isArray(row[column]));
-    // if (isSet) {
-    //   console.log('Column', column, 'is a set column');
-    //   return 'set';
-    // }
 
     // Check if all non-null values are boolean (true, false, 0, or 1)
     const allBooleans = columnValues.every(
@@ -247,16 +217,12 @@ export default function LineUpView() {
       label: column,
       column,
       categories,
-      renderer: 'catheatmap',
+      renderer: 'set',
       groupRenderer: 'categorical',
       // Add any additional properties as needed
     };
 
     return setColumnConfig;
-
-    // return {
-    //   desc: setColumnConfig,
-    // };
   }
 
   type BuilderFunction = (column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }) => LineUpJS.ColumnBuilder;

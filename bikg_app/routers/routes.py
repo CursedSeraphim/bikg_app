@@ -280,10 +280,30 @@ async def get_exemplar_focus_node_dict():
     prefixes = get_prefixes(g)  # Get the prefixes from the graph
     return serialize_dict_keys_and_values(shorten_dict_uris(exemplar_focus_node_dict, prefixes))
 
+def dynamically_parse_array_columns(df):
+    """
+    Dynamically parses columns of a DataFrame, converting string representations
+    of lists into actual lists wherever possible.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame to process.
+
+    Returns:
+    pd.DataFrame: A copy of the DataFrame with string representations of lists converted to lists.
+    """
+    df_copy = df.copy()
+    for column in df_copy.columns:
+        # Attempt to parse each cell in the column if it looks like a string representation of a list
+        df_copy[column] = df_copy[column].apply(
+            lambda x: ast.literal_eval(x) if isinstance(x, str) and x.startswith('[') and x.endswith(']') else x
+        )
+    return df_copy
+
 
 @router.get("/file/study")
 async def read_csv_file():
-    return df.to_json(orient="records")
+    parsed_df = dynamically_parse_array_columns(df)
+    return parsed_df.to_json(orient="records")
 
 
 @router.get("/owl:Class")
@@ -558,7 +578,6 @@ def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar
         if node not in type_count_dict:
             type_count_dict[node] = 0
 
-    print("type_count_dict:", type_count_dict)
 
     node_count_dict = {}
     root = Node("VirtualRoot")
@@ -635,10 +654,6 @@ async def get_ontology_tree():
 async def get_type_node_count_dict():
     if node_count_dict is None:
         return {"error": "node count dict not built yet"}
-    
-    print()
-    print("node_count_dict:", node_count_dict)
-
     return node_count_dict
 
 
