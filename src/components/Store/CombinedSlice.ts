@@ -97,13 +97,28 @@ export function createMaps(
   // Iterate through samples to populate the maps
   samples.forEach((sample) => {
     // Ensure sampleTypes is treated as an array, even if it's a single value
-    const sampleTypes = Array.isArray(sample['rdf:type']) ? sample['rdf:type'].map(String) : [String(sample['rdf:type'])];
+    // Check if sample['rdf:type'] is a string that represents an array
+    // TODO this might not have to be checked if we first parse the csv as json
+    let sampleTypes;
+    if (typeof sample['rdf:type'] === 'string' && sample['rdf:type'].startsWith('[') && sample['rdf:type'].endsWith(']')) {
+      try {
+        // Attempt to parse the string as an array
+        sampleTypes = JSON.parse(sample['rdf:type'].replace(/'/g, '"'));
+      } catch (error) {
+        // Fallback if parsing fails - treat it as a single-element array
+        sampleTypes = [sample['rdf:type']];
+      }
+    } else {
+      // Handle as before if it's not a string representation of an array
+      sampleTypes = Array.isArray(sample['rdf:type']) ? sample['rdf:type'].map(String) : [String(sample['rdf:type'])];
+    }
     const focusNode = sample.focus_node;
     const exemplars = focusNodeExemplarDict[focusNode] || [];
 
     sampleTypes.forEach((type) => {
       // Iterate over each type in sampleTypes
       // There might be types in the instance data that do not appear in the ontology
+      // console.log('type from sampleTypes', type);
       if (!tempTypeMap[type]) {
         tempTypeMap[type] = { focusNodes: new Set(), violations: new Set(), exemplars: new Set() };
       }
@@ -287,7 +302,6 @@ const incrementMapValue = (map: Map<string, number>, key: string) => {
  * Helper function to update numberViolationsPerNode based on a map.
  */
 const updateViolationsPerNode = (sourceMap: Map<string, number>, numberViolationsPerNode: INumberViolationsPerNodeMap) => {
-  console.log('sourceMap', sourceMap, 'numberViolationsPerNode', numberViolationsPerNode);
   sourceMap.forEach((value, key) => {
     if (Object.hasOwnProperty.call(numberViolationsPerNode, key)) {
       // eslint-disable-next-line no-param-reassign
@@ -403,7 +417,22 @@ const calculateSelectedNodesAndViolations = (
   const newViolationCount = initializeViolationCount(violations);
 
   samples.forEach((sample) => {
-    if (selectedTypes.includes(String(sample['rdf:type']))) {
+    // Parse sample['rdf:type'] to handle both string and string representation of an array
+    let sampleTypes;
+    if (typeof sample['rdf:type'] === 'string' && sample['rdf:type'].startsWith('[') && sample['rdf:type'].endsWith(']')) {
+      try {
+        // Attempt to parse the string as an array
+        sampleTypes = JSON.parse(sample['rdf:type'].replace(/'/g, '"'));
+      } catch (error) {
+        // Fallback if parsing fails
+        sampleTypes = [sample['rdf:type']];
+      }
+    } else {
+      sampleTypes = Array.isArray(sample['rdf:type']) ? sample['rdf:type'] : [sample['rdf:type']];
+    }
+
+    // Check if any of the types in sampleTypes is included in selectedTypes
+    if (sampleTypes.some((type) => selectedTypes.includes(String(type)))) {
       newSelectedNodes.push(sample.focus_node);
       updateViolationCount(sample, newViolationCount, actionType);
     }

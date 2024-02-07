@@ -97,7 +97,6 @@ export function App() {
           };
           return acc;
         }, {});
-        console.log('updatedObject', updatedObject);        
         dispatch(setCumulativeNumberViolationsPerNode(updatedObject));
       })
       .catch((error) => {

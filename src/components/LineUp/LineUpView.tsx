@@ -91,7 +91,6 @@ export default function LineUpView() {
     });
 
     if (mightBeSet) {
-      console.log('Column', column, 'is a set column qwe');
       return 'set';
     }
 
@@ -211,7 +210,6 @@ export default function LineUpView() {
   }
 
   function buildSetColumnDescriptor(column: string, data: DataType[]): any {
-    console.log('Building set column descriptor for column:', column);
     const uniqueValues = new Set<string>();
     data.forEach((row) => {
       const values = row[column];
@@ -233,7 +231,7 @@ export default function LineUpView() {
         uniqueValues.add(String(values));
       }
     });
-    console.log('uniqueValues:', uniqueValues);
+    console.log('dbg1 column, uniqueValues:', column, uniqueValues);
 
     const categories = Array.from(uniqueValues).map((value, index) => ({
       name: value,
@@ -315,7 +313,6 @@ export default function LineUpView() {
     columns.forEach((column) => {
       let type = inferType(data, column);
       if (type === 'set') {
-        console.log('Building set column descriptor for column:', column);
         const setColumnDescriptor = buildSetColumnDescriptor(column, data);
         builder.column(setColumnDescriptor);
         // console.log('setColumnDescriptor:', setColumnDescriptor);
