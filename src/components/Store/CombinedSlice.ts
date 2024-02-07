@@ -96,39 +96,51 @@ export function createMaps(
 
   // Iterate through samples to populate the maps
   samples.forEach((sample) => {
-    const type = String(sample['rdf:type']);
+    // Ensure sampleTypes is treated as an array, even if it's a single value
+    const sampleTypes = Array.isArray(sample['rdf:type']) ? sample['rdf:type'].map(String) : [String(sample['rdf:type'])];
     const focusNode = sample.focus_node;
     const exemplars = focusNodeExemplarDict[focusNode] || [];
-    // there might be types in the instance data that do not appear in the ontology
-    if (!tempTypeMap[type]) {
-      tempTypeMap[type] = { focusNodes: new Set(), violations: new Set(), exemplars: new Set() };
-    }
-    tempTypeMap[type].focusNodes.add(focusNode);
-    exemplars.forEach((exemplar) => tempTypeMap[type].exemplars.add(exemplar));
 
-    tempFocusNodeMap[focusNode].types.add(type);
-    exemplars.forEach((exemplar) => tempFocusNodeMap[focusNode].exemplars.add(exemplar));
+    sampleTypes.forEach((type) => {
+      // Iterate over each type in sampleTypes
+      // There might be types in the instance data that do not appear in the ontology
+      if (!tempTypeMap[type]) {
+        tempTypeMap[type] = { focusNodes: new Set(), violations: new Set(), exemplars: new Set() };
+      }
+      tempTypeMap[type].focusNodes.add(focusNode);
+      exemplars.forEach((exemplar) => tempTypeMap[type].exemplars.add(exemplar));
 
-    exemplars.forEach((exemplar) => {
-      tempExemplarMap[exemplar].focusNodes.add(focusNode);
-      tempExemplarMap[exemplar].types.add(type);
+      // Since a focus node can belong to multiple types, add all types to it
+      tempFocusNodeMap[focusNode].types.add(type);
+      exemplars.forEach((exemplar) => tempFocusNodeMap[focusNode].exemplars.add(exemplar));
+
+      exemplars.forEach((exemplar) => {
+        tempExemplarMap[exemplar].focusNodes.add(focusNode);
+        tempExemplarMap[exemplar].types.add(type);
+      });
     });
 
+    // Handle violations
     violations.forEach((violation) => {
       if ((sample[violation] as number) > 0) {
-        tempTypeMap[type].violations.add(violation);
+        sampleTypes.forEach((type) => {
+          // Apply violation logic for each type in sampleTypes
+          tempTypeMap[type].violations.add(violation);
+        });
 
         tempFocusNodeMap[focusNode].violations.add(violation);
 
         exemplars.forEach((exemplar) => tempExemplarMap[exemplar].violations.add(violation));
 
-        // Add to the focus node list
+        // Add to the focus node list for each violation
         tempViolationMap[violation].focusNodes.add(sample.focus_node);
 
-        // Add to the type list
-        tempViolationMap[violation].types.add(type);
+        // Add to the type list for each violation and type in sampleTypes
+        sampleTypes.forEach((type) => {
+          tempViolationMap[violation].types.add(type);
+        });
 
-        // Add to the exemplar list using FocusNodeExemplarDict
+        // Add to the exemplar list using FocusNodeExemplarDict for each violation
         exemplars.forEach((exemplar) => tempViolationMap[violation].exemplars.add(exemplar));
       }
     });
@@ -275,6 +287,7 @@ const incrementMapValue = (map: Map<string, number>, key: string) => {
  * Helper function to update numberViolationsPerNode based on a map.
  */
 const updateViolationsPerNode = (sourceMap: Map<string, number>, numberViolationsPerNode: INumberViolationsPerNodeMap) => {
+  console.log('sourceMap', sourceMap, 'numberViolationsPerNode', numberViolationsPerNode);
   sourceMap.forEach((value, key) => {
     if (Object.hasOwnProperty.call(numberViolationsPerNode, key)) {
       // eslint-disable-next-line no-param-reassign

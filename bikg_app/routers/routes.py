@@ -2,6 +2,7 @@
 import json
 import os
 import time
+import ast
 from collections import defaultdict
 
 import numpy as np
@@ -102,19 +103,22 @@ router = APIRouter()
 
 def build_type_node_count_dict(df):
     """
-    Description of build_violation_node_count_dict.
-    Calculates how many focus nodes exist for each type
-    :param df: Dataframe with one row per focus node with the column 'rdf:type'
-    :return: A dictionary with types as keys and violation counts as values
+    Adjusted to handle string representations of lists in the 'rdf:type' column. 
+    Converts string representations of lists to actual lists, then counts occurrences of each type.
     """
     if "rdf:type" not in df.columns:
         print("Warning: 'rdf:type' column not found in the DataFrame. Returning an empty dictionary.")
         return {}
 
-    # Use the value_counts method to get the count of each unique type in the 'rdf:type' column
-    type_counts = df["rdf:type"].value_counts()
+    # Convert string representations of lists to actual lists in a temporary way
+    # Using .apply() with ast.literal_eval to safely evaluate the string representation
+    temp_series = df["rdf:type"].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
 
-    # Convert the Series object to a dictionary
+    # Now that we have a series with actual lists, we can explode and then count occurrences
+    flattened_types = temp_series.explode()
+    type_counts = flattened_types.value_counts()
+
+    # Convert to dictionary
     type_count_dict = type_counts.to_dict()
 
     return type_count_dict
@@ -125,38 +129,43 @@ type_count_dict = build_type_node_count_dict(df)
 
 def build_type_violation_dict(df, violations_list):
     """
-    Description of build_type_violation_dict.
-    :param :df: Dataframe with columns "rdf:type" and v for each v in violations_list
+    Adjusts to handle string representations of lists in the 'rdf:type' column by converting them to actual lists,
+    then counts occurrences of each violation per type.
+    :param df: DataFrame with columns "rdf:type" and v for each v in violations_list
+    :param violations_list: List of columns that represent different types of violations
     :return: A dictionary with types as keys and (violation, violation_count) as values
     """
-    # Check if 'rdf:type' column exists in the DataFrame
     if "rdf:type" not in df.columns:
         print("Warning: 'rdf:type' column not found in the DataFrame. Returning an empty dictionary.")
         return {}
 
+    # Convert string representations of lists in 'rdf:type' to actual lists temporarily
+    df_temp = df.copy()
+    df_temp["rdf:type"] = df_temp["rdf:type"].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+
+    # Explode the 'rdf:type' column to work with individual types
+    df_exploded = df_temp.explode("rdf:type")
+
     # Initialize an empty dictionary to store the results
     type_violation_dict = {}
 
-    # Loop through each unique RDF type in the DataFrame
-    for rdf_type in df["rdf:type"].unique():
-        # Filter the DataFrame to only include rows with the current RDF type
-        filtered_df = df[df["rdf:type"] == rdf_type]
-
-        # Initialize an empty list to store violation counts for the current RDF type
-        violation_counts = []
+    # Loop through each RDF type in the exploded DataFrame
+    for rdf_type in df_exploded["rdf:type"].unique():
+        # Initialize a dictionary to hold violation counts for this type
+        violation_counts = {}
 
         # Loop through each violation type in violations_list
         for violation in violations_list:
-            # Count the number of occurrences of the current violation type
-            # in the filtered DataFrame
-            violation_count = filtered_df[violation].sum()
+            if violation in df_exploded.columns:
+                # Count the number of occurrences of the current violation for the current RDF type
+                violation_count = df_exploded[df_exploded["rdf:type"] == rdf_type][violation].sum()
+                if violation_count > 0:
+                    # Add the violation count for this type to the dictionary
+                    violation_counts[violation] = violation_count
 
-            # Append the violation type and its count to violation_counts
-            if violation_count > 0:
-                violation_counts.append((violation, violation_count))
-
-        # Add the violation counts for the current RDF type to type_violation_dict
-        type_violation_dict[rdf_type] = violation_counts
+        # Add the dictionary of violation counts for the current RDF type to the main dictionary
+        if violation_counts:
+            type_violation_dict[rdf_type] = violation_counts
 
     return type_violation_dict
 
@@ -465,7 +474,6 @@ async def get_node_label_set(g=g):
     objects = list(g.objects())
     # use qname to shorten the URIs and send set of concatenated subjects and objects
     all_uris = subjects + objects
-    print("all_uris", all_uris)
     return {uri_to_qname(g, uri) for uri in all_uris}  # type: ignore
 
 
@@ -550,6 +558,8 @@ def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar
         if node not in type_count_dict:
             type_count_dict[node] = 0
 
+    print("type_count_dict:", type_count_dict)
+
     node_count_dict = {}
     root = Node("VirtualRoot")
 
@@ -565,7 +575,7 @@ def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar
         for child in current_node.children:
             add_violations(child)
         if current_node.id in type_violation_dict:
-            for violation, count in type_violation_dict[current_node.id]:
+            for violation, count in type_violation_dict[current_node.id].items():
                 violation_node = Node(violation)
                 violation_node.count = count
                 current_node.children.append(violation_node)
@@ -625,6 +635,9 @@ async def get_ontology_tree():
 async def get_type_node_count_dict():
     if node_count_dict is None:
         return {"error": "node count dict not built yet"}
+    
+    print()
+    print("node_count_dict:", node_count_dict)
 
     return node_count_dict
 
@@ -659,7 +672,7 @@ def uri_to_qname(graph, uri):
     try:
         return graph.namespace_manager.qname(uri)
     except ValueError:
-        print("uri_to_qname failed for uri:", uri)
+        # print("uri_to_qname failed for uri:", uri)
         return uri
 
 

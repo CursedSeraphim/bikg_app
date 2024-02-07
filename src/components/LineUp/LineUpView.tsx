@@ -68,28 +68,34 @@ export default function LineUpView() {
 
     // if row[column] starts with '[' print it
     // // Check if column data is an array (indicative of a set column)
-    if (columnValues.some((value) => typeof value === 'string' && value.startsWith('['))) {
-      return 'set';
-    }
-    // Attempt to parse string as JSON and check if it results in an array
-    // const mightBeSet = columnValues.some((value) => {
-    //   if (typeof value === 'string') {
-    //     try {
-    //       const parsed = JSON.parse(value);
-    //       return Array.isArray(parsed);
-    //     } catch (e) {
-    //       // Not a JSON string, ignore the error
-    //     }
-    //   }
-    //   return false;
-    // });
-
-    // if (mightBeSet) {
-    //   console.log('Column', column, 'is a set column qwe');
+    // if (columnValues.some((value) => typeof value === 'string' && value.startsWith('['))) {
     //   return 'set';
     // }
+    // Attempt to parse string as JSON and check if it results in an array
 
-    // // Check if column data is an array (indicative of a set column)
+    // if column is rdf:type print the columnValues
+    // if (column === 'rdf:type') {
+    //   console.log('columnValues:', columnValues);
+    // }
+
+    const mightBeSet = columnValues.some((value) => {
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed);
+        } catch (e) {
+          // Not a JSON string, ignore the error
+        }
+      }
+      return false;
+    });
+
+    if (mightBeSet) {
+      console.log('Column', column, 'is a set column qwe');
+      return 'set';
+    }
+
+    // Check if column data is an array (indicative of a set column)
     // const isSet = data.every((row) => Array.isArray(row[column]));
     // if (isSet) {
     //   console.log('Column', column, 'is a set column');
@@ -312,7 +318,7 @@ export default function LineUpView() {
         console.log('Building set column descriptor for column:', column);
         const setColumnDescriptor = buildSetColumnDescriptor(column, data);
         builder.column(setColumnDescriptor);
-        console.log('setColumnDescriptor:', setColumnDescriptor);
+        // console.log('setColumnDescriptor:', setColumnDescriptor);
       } else if (type === 'boolean') {
         type = 'categorical';
       }
@@ -321,7 +327,7 @@ export default function LineUpView() {
 
       if (builderFunction) {
         const builtColumn = builderFunction(column, data, width, biColorMap);
-        console.log('builtColumn, column:', builtColumn, column);
+        // console.log('builtColumn, column:', builtColumn, column);
         builder.column(builtColumn);
       } else if (type === 'link') {
         const label = removePrefix(column);
