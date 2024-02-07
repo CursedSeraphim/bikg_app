@@ -63,6 +63,8 @@ export default function LineUpView() {
    * @returns {string} - The inferred data type for the column.
    */
   function inferType(data, column) {
+    console.log('inferType on column:', column, typeof data[0][column]);
+
     const columnValues = data.map((row) => row[column]);
     const uniqueValues = [...new Set(columnValues)];
 
@@ -82,7 +84,6 @@ export default function LineUpView() {
       if (typeof value === 'string') {
         try {
           const parsed = JSON.parse(value);
-          console.log('column, parsed:', column, parsed);
           return Array.isArray(parsed);
         } catch (e) {
           // Not a JSON string, ignore the error

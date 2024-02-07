@@ -25,7 +25,7 @@ export const fetchAndInitializeData = () => async (dispatch: Dispatch, getState:
     fetchExemplarFocusNodeDict(),
   ]);
 
-  dispatch(setCsvData(JSON.parse(csvData).data));
+  dispatch(setCsvData(JSON.parse(csvData)));
   dispatch(setViolations(violationList));
   dispatch(setTypes(types));
   dispatch(setFocusNodeExemplarDict(focusNodeExemplarDict));
