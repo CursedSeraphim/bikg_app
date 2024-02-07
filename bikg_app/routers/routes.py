@@ -283,7 +283,7 @@ async def get_exemplar_focus_node_dict():
 
 @router.get("/file/study")
 async def read_csv_file():
-    return {"data": df.to_dict(orient="records")}
+    return df.to_json(orient="records")
 
 
 @router.get("/owl:Class")
