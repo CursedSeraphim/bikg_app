@@ -610,7 +610,6 @@ const combinedSlice = createSlice({
       );
     },
     setSelectedFocusNodes: (state, action) => {
-      // TODO rework with new maps
       const newSelectedNodes = action.payload;
 
       // Convert state.samples into an object for O(1) lookup
@@ -626,7 +625,7 @@ const combinedSlice = createSlice({
       });
 
       // Use a Set to store selected types
-      const selectedTypesSet: Set<string> = new Set();
+      const selectedTypesSet = new Set();
 
       // Iterate over selected nodes
       newSelectedNodes.forEach((selectedNode) => {
@@ -640,22 +639,35 @@ const combinedSlice = createSlice({
           }
         });
 
-        // If the sample has a type, add it to the selectedTypes set
-        const sampleType = String(correspondingSample['rdf:type']);
-        if (sampleType) {
-          selectedTypesSet.add(sampleType);
+        // Parse sample['rdf:type'] to correctly handle string representation of an array
+        let sampleTypes;
+        if (
+          typeof correspondingSample['rdf:type'] === 'string' &&
+          correspondingSample['rdf:type'].startsWith('[') &&
+          correspondingSample['rdf:type'].endsWith(']')
+        ) {
+          try {
+            // Attempt to parse the string as an array
+            sampleTypes = JSON.parse(correspondingSample['rdf:type'].replace(/'/g, '"'));
+          } catch (error) {
+            // Fallback if parsing fails
+            sampleTypes = [correspondingSample['rdf:type']];
+          }
+        } else {
+          sampleTypes = Array.isArray(correspondingSample['rdf:type']) ? correspondingSample['rdf:type'] : [correspondingSample['rdf:type']];
         }
+
+        // Add all types to the selectedTypes set
+        sampleTypes.forEach((type) => selectedTypesSet.add(String(type)));
       });
 
       // Convert selectedTypes set back to array
-      const newSelectedTypes = Array.from(selectedTypesSet);
+      const newSelectedTypes = Array.from(selectedTypesSet) as string[];
 
       // Set state.selectedViolations to the keys of the map with value > 0
       const newSelectedViolations = Array.from(violationMap.entries())
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .filter(([key_, value]) => value > 0)
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .map(([key, value_]) => key);
+        .filter(([_, value]) => value > 0)
+        .map(([key, _]) => key);
 
       // Now, we assign new values to the state variables.
       state.selectedNodes = newSelectedNodes;
