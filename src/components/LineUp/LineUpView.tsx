@@ -63,7 +63,6 @@ export default function LineUpView() {
    * @returns {string} - The inferred data type for the column.
    */
   function inferType(data, column) {
-
     const columnValues = data.map((row) => row[column]);
     const uniqueValues = [...new Set(columnValues)];
 
@@ -203,7 +202,8 @@ export default function LineUpView() {
         uniqueValues.add(String(values));
       }
     });
-    console.log('dbg1 column, uniqueValues:', column, uniqueValues);
+    const numUniqueValues = uniqueValues.size;
+    const categoryString = numUniqueValues === 1 ? 'set' : numUniqueValues < 6 ? 'set' : numUniqueValues < 30 ? 'upset' : 'string';
 
     const categories = Array.from(uniqueValues).map((value, index) => ({
       name: value,
@@ -217,7 +217,7 @@ export default function LineUpView() {
       label: column,
       column,
       categories,
-      renderer: 'set',
+      renderer: categoryString,
       groupRenderer: 'categorical',
       // Add any additional properties as needed
     };
