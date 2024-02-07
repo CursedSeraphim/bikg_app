@@ -82,6 +82,7 @@ export default function LineUpView() {
       if (typeof value === 'string') {
         try {
           const parsed = JSON.parse(value);
+          console.log('column, parsed:', column, parsed);
           return Array.isArray(parsed);
         } catch (e) {
           // Not a JSON string, ignore the error
