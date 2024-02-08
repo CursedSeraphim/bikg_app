@@ -265,6 +265,45 @@ export default function LineUpView() {
     return buildCategoricalColumn(column, categoryColorMap).width(width);
   }
 
+  function buildSetColumnWithSettings(column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }): LineUpJS.ColumnBuilder {
+    // const uniqueCategories = data.reduce<Set<string>>((acc, row) => acc.add(String(row[column])), new Set());
+    const uniqueCategories = new Set<string>();
+    data.forEach((row) => {
+      const values = row[column];
+      if (typeof values === 'string') {
+        // Attempt to parse stringified arrays
+        const parsedValues = safelyParseStringifiedArray(values);
+        if (parsedValues) {
+          // If parsing was successful, add each value to the set of unique values
+          parsedValues.forEach((value) => uniqueCategories.add(value));
+        } else {
+          // If parsing failed, treat it as a single value
+          uniqueCategories.add(values);
+        }
+      } else if (Array.isArray(values)) {
+        // If the value is an array, add each element to the set of unique values
+        values.forEach((value) => uniqueCategories.add(value));
+      } else if (values !== null && values !== undefined) {
+        // Treat non-string, non-array values as single values
+        uniqueCategories.add(String(values));
+      }
+    });
+
+    if (uniqueCategories.size > 29) {
+      return buildStringColumn(column).width(width);
+    }
+
+    const customColor = colorMap ? colorMap[column] : undefined;
+    const columnColor = customColor || MANTINE_HEADER_COLOR;
+
+    const categoryColorMap = Array.from(uniqueCategories).map((category) => ({
+      name: category,
+      color: columnColor,
+    }));
+
+    return buildCategoricalColumn(column, categoryColorMap).width(width).asSet();
+  }
+
   function buildStringColumnWithSettings(column: string, data: DataType[], width: number): LineUpJS.ColumnBuilder {
     return buildStringColumn(column).width(width);
   }
@@ -276,6 +315,7 @@ export default function LineUpView() {
     date: buildDateColumnWithSettings,
     categorical: buildCategoricalColumnWithSettings,
     string: buildStringColumnWithSettings,
+    set: buildSetColumnWithSettings,
   };
 
   // Existing buildColumns remains mostly unchanged
@@ -285,11 +325,8 @@ export default function LineUpView() {
 
     columns.forEach((column) => {
       let type = inferType(data, column);
-      if (type === 'set') {
-        const setColumnDescriptor = buildSetColumnDescriptor(column, data);
-        builder.column(setColumnDescriptor);
-        // console.log('setColumnDescriptor:', setColumnDescriptor);
-      } else if (type === 'boolean') {
+
+      if (type === 'boolean') {
         type = 'categorical';
       }
       const width = calculatePixelWidthFromLabel(column);
@@ -297,7 +334,6 @@ export default function LineUpView() {
 
       if (builderFunction) {
         const builtColumn = builderFunction(column, data, width, biColorMap);
-        // console.log('builtColumn, column:', builtColumn, column);
         builder.column(builtColumn);
       } else if (type === 'link') {
         const label = removePrefix(column);
