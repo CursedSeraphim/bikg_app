@@ -204,7 +204,7 @@ export default function LineUpView() {
       }
     });
     const numUniqueValues = uniqueValues.size;
-    const categoryString = numUniqueValues === 1 ? 'set' : numUniqueValues < 6 ? 'set' : numUniqueValues < 30 ? 'upset' : 'string';
+    const categoryString = numUniqueValues < 6 ? 'set' : numUniqueValues < 30 ? 'upset' : 'string';
 
     const categories = Array.from(uniqueValues).map((value, index) => ({
       name: value,
@@ -220,8 +220,12 @@ export default function LineUpView() {
       categories,
       renderer: categoryString,
       groupRenderer: 'categorical',
-      // Add any additional properties as needed
+      summaryRenderer: 'categorical',
     };
+
+    if (numUniqueValues >= 30) {
+      setColumnConfig.summaryRenderer = 'None';
+    }
 
     return setColumnConfig;
   }
