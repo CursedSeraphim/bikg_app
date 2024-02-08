@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { Treebeard, decorators } from 'react-treebeard';
 import { BarLoader } from 'react-spinners';
 import _ from 'lodash';
-import { addSingleSelectedType, removeSingleSelectedType } from '../Store/CombinedSlice';
+import { addSingleSelectedType, removeMultipleSelectedTypes, removeSingleSelectedType } from '../Store/CombinedSlice';
 import { lightTheme } from './lightTheme';
 import { CustomHeader } from './CustomHeader'; // Import CustomHeader
 import { SPINNER_COLOR } from '../../constants';
@@ -16,23 +16,23 @@ export default function Treeview() {
   const [treeData, setTreeData] = useTreeData();
 
   const onToggle = (node, toggled) => {
-    // Define function which will remove a node and its children from the list of selected types
-    const removeNodeAndChildrenFromList = (n) => {
+    const collectTypesToRemove = (n, types = []) => {
       const typeToRemove = n.name.split(' ')[0];
-      dispatch(removeSingleSelectedType(typeToRemove));
+      types.push(typeToRemove);
 
       if (n.children) {
-        n.children.forEach(removeNodeAndChildrenFromList);
+        n.children.forEach((child) => collectTypesToRemove(child, types));
       }
+
+      return types;
     };
 
     if (toggled) {
-      // If the node is toggled, i.e., selected, add it to the list of selected types
       const typeToAdd = node.name.split(' ')[0];
       dispatch(addSingleSelectedType(typeToAdd));
     } else {
-      // If the node is not toggled, i.e., not selected, remove it and its children from the list of selected types
-      removeNodeAndChildrenFromList(node);
+      const typesToRemove = collectTypesToRemove(node);
+      dispatch(removeMultipleSelectedTypes(typesToRemove)); // Dispatch a single action with all types to remove
     }
 
     // Update the tree data to reflect the toggled state of the node

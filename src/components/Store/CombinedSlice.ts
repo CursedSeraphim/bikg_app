@@ -776,6 +776,60 @@ const combinedSlice = createSlice({
       );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
+    removeMultipleSelectedTypes: (state, action) => {
+      const typesToRemove = action.payload; // This is now an array of types
+      typesToRemove.forEach((typeToRemove) => {
+        const index = state.selectedTypes.indexOf(typeToRemove);
+        if (index > -1) {
+          state.selectedTypes.splice(index, 1);
+        }
+      });
+
+      // Extend the logic to calculate selected nodes and violations once, based on the entire array of typesToRemove
+      const { newSelectedNodes, newViolationCount } = calculateSelectedNodesAndViolations(
+        typesToRemove, // Pass the entire array
+        state.violations,
+        state.samples,
+        ActionTypes.REMOVE, // Remove from existing
+        state.selectedNodes,
+      );
+
+      const nodesToRemove = new Set(newSelectedNodes);
+      state.selectedNodes = state.selectedNodes.filter((node) => !nodesToRemove.has(node));
+
+      const currentSelectedViolationsCount = initializeViolationCount(state.violations);
+
+      state.selectedNodes.forEach((node) => {
+        const correspondingSample = state.focusNodeSampleMap[node];
+        if (correspondingSample) {
+          updateViolationCount(correspondingSample, currentSelectedViolationsCount, ActionTypes.APPEND);
+        }
+      });
+
+      const newSelectedViolations = [];
+
+      for (const [key, value] of Object.entries(newViolationCount)) {
+        if (Object.prototype.hasOwnProperty.call(currentSelectedViolationsCount, key)) {
+          currentSelectedViolationsCount[key] += value;
+        }
+        if (currentSelectedViolationsCount[key] > 0) {
+          newSelectedViolations.push(key);
+        }
+      }
+
+      state.selectedViolations = newSelectedViolations;
+
+      updateSelectedViolationExemplars(state);
+
+      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
+        state.selectedNodes,
+        state.focusNodeMap,
+        state.numberViolationsPerNode,
+        state.ontologyTree,
+        new Set(state.types),
+      );
+      state.numberViolationsPerNode = newNumberViolationsPerNode;
+    },
     removeSingleSelectedType: (state, action) => {
       const typeToRemove = action.payload;
       const index = state.selectedTypes.indexOf(typeToRemove);
@@ -1211,6 +1265,7 @@ export const {
   setSelectedFocusNodes,
   setSelectedTypes,
   addSingleSelectedType,
+  removeMultipleSelectedTypes,
   removeSingleSelectedType,
   setRdfString,
   setViolationTypesMap,
