@@ -31,6 +31,7 @@ export default function LineUpView() {
   const filterType = useSelector(selectFilterType);
   const missingEdgeOption = useSelector(selectMissingEdgeOption);
   const violationList = useSelector(selectViolations);
+  const initialColumnsRef = useRef(null);
 
   // Local state to hold csvData
   const [csvData, setCsvData] = useState(reduxCsvData);
@@ -407,10 +408,25 @@ export default function LineUpView() {
 
     // Call a function that takes the allDataFromFocusNodeSet and the allData, and returns allData without the columns based on column filter criteria in csvDataFromFocusNodeSet
     const filteredCsvData = filterColumns(csvDataFromFocusNodeSet, allData);
+    // names of columns that are left afte filtering
+    const remainingCols = Object.keys(filteredCsvData[0]);
+    // console.log('remainingCols', remainingCols);
 
-    // Set up the lineup instance with the filtered allData
-    createLineUpWithListener(lineupInstanceRef, lineupRef, filteredCsvData);
+    const initialColumns = initialColumnsRef.current;
+    const ranking = lineupInstanceRef.current.data.getFirstRanking();
 
+    for (let i = 3; i < initialColumns.length; i++) {
+      ranking.columns[i].hide();
+    }
+
+    for (let i = 3; i < initialColumns.length; i++) {
+      // if col is in the remainingCols, add it to the ranking
+      if (remainingCols.includes(initialColumns[i].desc.column)) {
+        ranking.columns[i].show();
+      }
+    }
+
+    // but we still need all of this below
     // Precompute a map for focus_node to index mapping for fast lookup
     const csvDataIndexMap = new Map(allData.map((row, index) => [row.focus_node, index]));
     const filteredCsvDataIndices = csvDataFromFocusNodeSet.map((row) => csvDataIndexMap.get(row.focus_node));
@@ -456,6 +472,11 @@ export default function LineUpView() {
   useEffect(() => {
     if (lineupRef.current && csvData.length > 0) {
       createLineUpWithListener(lineupInstanceRef, lineupRef, csvData);
+
+      // Clone and store the initial columns configuration in the ref
+      const initialColumns = lineupInstanceRef.current.data.getFirstRanking().children.map((col) => col);
+      initialColumnsRef.current = initialColumns; // Store the columns in the ref
+      console.log('initialColumns', initialColumnsRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lineupRef, csvData, dispatch]);
