@@ -77,7 +77,6 @@ export default function useTreeData() {
         }
       }
     });
-
     return () => unsubscribe();
   }, [dispatch]);
 

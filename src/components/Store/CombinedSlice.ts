@@ -479,6 +479,7 @@ const combinedSlice = createSlice({
     },
     setOntologyTree: (state, action: PayloadAction<ServerTree>) => {
       state.ontologyTree = action.payload;
+      console.log('state.ontologyTree', state.ontologyTree);
     },
     setViolationMap: (state, action: PayloadAction<IViolationMap>) => {
       state.violationMap = action.payload;

@@ -61,6 +61,7 @@ export default function Treeview() {
 
   // This will expand the treeview by default
   treeData.toggled = true;
+  console.log('treeData before rendering:', treeData);
   // Here we return the JSX that will be rendered
   return (
     <div className="treeview-container">

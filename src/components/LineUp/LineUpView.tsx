@@ -181,54 +181,54 @@ export default function LineUpView() {
     return null; // Return null if parsing fails
   }
 
-  function buildSetColumnDescriptor(column: string, data: DataType[]): any {
-    const uniqueValues = new Set<string>();
-    data.forEach((row) => {
-      const values = row[column];
-      if (typeof values === 'string') {
-        // Attempt to parse stringified arrays
-        const parsedValues = safelyParseStringifiedArray(values);
-        if (parsedValues) {
-          // If parsing was successful, add each value to the set of unique values
-          parsedValues.forEach((value) => uniqueValues.add(value));
-        } else {
-          // If parsing failed, treat it as a single value
-          uniqueValues.add(values);
-        }
-      } else if (Array.isArray(values)) {
-        // If the value is an array, add each element to the set of unique values
-        values.forEach((value) => uniqueValues.add(value));
-      } else if (values !== null && values !== undefined) {
-        // Treat non-string, non-array values as single values
-        uniqueValues.add(String(values));
-      }
-    });
-    const numUniqueValues = uniqueValues.size;
-    const categoryString = numUniqueValues < 6 ? 'set' : numUniqueValues < 30 ? 'upset' : 'string';
+  // function buildSetColumnDescriptor(column: string, data: DataType[]): any {
+  //   const uniqueValues = new Set<string>();
+  //   data.forEach((row) => {
+  //     const values = row[column];
+  //     if (typeof values === 'string') {
+  //       // Attempt to parse stringified arrays
+  //       const parsedValues = safelyParseStringifiedArray(values);
+  //       if (parsedValues) {
+  //         // If parsing was successful, add each value to the set of unique values
+  //         parsedValues.forEach((value) => uniqueValues.add(value));
+  //       } else {
+  //         // If parsing failed, treat it as a single value
+  //         uniqueValues.add(values);
+  //       }
+  //     } else if (Array.isArray(values)) {
+  //       // If the value is an array, add each element to the set of unique values
+  //       values.forEach((value) => uniqueValues.add(value));
+  //     } else if (values !== null && values !== undefined) {
+  //       // Treat non-string, non-array values as single values
+  //       uniqueValues.add(String(values));
+  //     }
+  //   });
+  //   const numUniqueValues = uniqueValues.size;
+  //   const categoryString = numUniqueValues < 6 ? 'set' : numUniqueValues < 30 ? 'upset' : 'string';
 
-    const categories = Array.from(uniqueValues).map((value, index) => ({
-      name: value,
-      label: value,
-      color: `hsl(${360 * (index / uniqueValues.size)}, 100%, 70%)`,
-    }));
+  //   const categories = Array.from(uniqueValues).map((value, index) => ({
+  //     name: value,
+  //     label: value,
+  //     color: `hsl(${360 * (index / uniqueValues.size)}, 100%, 70%)`,
+  //   }));
 
-    // Wrap the descriptor within a 'desc' object to match expected structure
-    const setColumnConfig = {
-      type: 'set',
-      label: column,
-      column,
-      categories,
-      renderer: categoryString,
-      groupRenderer: 'categorical',
-      summaryRenderer: 'categorical',
-    };
+  //   // Wrap the descriptor within a 'desc' object to match expected structure
+  //   const setColumnConfig = {
+  //     type: 'set',
+  //     label: column,
+  //     column,
+  //     categories,
+  //     renderer: categoryString,
+  //     groupRenderer: 'categorical',
+  //     summaryRenderer: 'categorical',
+  //   };
 
-    if (numUniqueValues >= 30) {
-      setColumnConfig.summaryRenderer = 'None';
-    }
+  //   if (numUniqueValues >= 30) {
+  //     setColumnConfig.summaryRenderer = 'None';
+  //   }
 
-    return setColumnConfig;
-  }
+  //   return setColumnConfig;
+  // }
 
   type BuilderFunction = (column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }) => LineUpJS.ColumnBuilder;
 
