@@ -406,6 +406,11 @@ const calculateNewSelectedViolations = (newViolationCount: Record<string, number
   );
 };
 
+// Helper function to ensure the input is treated as an array
+function ensureArray<T>(input: T | T[]): T[] {
+  return Array.isArray(input) ? input : [input];
+}
+
 const calculateSelectedNodesAndViolations = (
   selectedTypes: string[],
   violations: string[],
@@ -417,19 +422,8 @@ const calculateSelectedNodesAndViolations = (
   const newViolationCount = initializeViolationCount(violations);
 
   samples.forEach((sample) => {
-    // Parse sample['rdf:type'] to handle both string and string representation of an array
-    let sampleTypes;
-    if (typeof sample['rdf:type'] === 'string' && sample['rdf:type'].startsWith('[') && sample['rdf:type'].endsWith(']')) {
-      try {
-        // Attempt to parse the string as an array
-        sampleTypes = JSON.parse(sample['rdf:type'].replace(/'/g, '"'));
-      } catch (error) {
-        // Fallback if parsing fails
-        sampleTypes = [sample['rdf:type']];
-      }
-    } else {
-      sampleTypes = Array.isArray(sample['rdf:type']) ? sample['rdf:type'] : [sample['rdf:type']];
-    }
+    // Ensure sampleTypes is always an array
+    const sampleTypes = ensureArray(sample['rdf:type']);
 
     // Check if any of the types in sampleTypes is included in selectedTypes
     if (sampleTypes.some((type) => selectedTypes.includes(String(type)))) {
