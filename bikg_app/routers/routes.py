@@ -344,15 +344,19 @@ async def get_classes():
     Retrieves all the classes in the ontology
     """
     # Convert string representations of lists to actual lists
-    df['rdf:type'] = df['rdf:type'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
-    
+    df["rdf:type"] = df["rdf:type"].apply(
+        lambda x: ast.literal_eval(x) if isinstance(x, str) else x
+    )
+
     # Now that 'rdf:type' contains actual lists, explode can be used
-    unique_types = df.explode('rdf:type')['rdf:type'].unique().tolist()
+    unique_types = df.explode("rdf:type")["rdf:type"].unique().tolist()
 
     # Assuming 'g' is your graph and has been defined elsewhere
     classes_from_ontology_graph_list = [str(g.namespace_manager.qname(c)) for c in g.subjects(predicate=RDF.type, object=OWL.Class)]  # type: ignore
 
-    final_set = set(unique_types + classes_from_ontology_graph_list + ['missing']) 
+    final_set = set(
+        unique_types + classes_from_ontology_graph_list + ["missing"]
+    )
 
     return final_set
 
@@ -610,13 +614,15 @@ async def get_sub_class_of():
     classes_from_ontology_graph_list = set([str(g.namespace_manager.qname(c)) for c in g.subjects(predicate=RDF.type, object=OWL.Class)])  # type: ignore
 
     # Identify 'not in ontology' classes/types from DataFrame
-    df['rdf:type'] = df['rdf:type'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
-    df_types = set(df.explode('rdf:type')['rdf:type'].unique().tolist())
+    df["rdf:type"] = df["rdf:type"].apply(
+        lambda x: ast.literal_eval(x) if isinstance(x, str) else x
+    )
+    df_types = set(df.explode("rdf:type")["rdf:type"].unique().tolist())
     only_in_csv = df_types - classes_from_ontology_graph_list
 
     # for all classes/types in only_in_csv add an s p o triple where s is the class/type, p is rdfs:subClassOf, and o is "missing"
     for type_ in only_in_csv:
-        result.append({"s": type_, "p": "rdfs:subClassOf", "o": "missing"})    
+        result.append({"s": type_, "p": "rdfs:subClassOf", "o": "missing"})
 
     return result
 
@@ -666,8 +672,10 @@ def build_ontology_tree(
         children.add(child)
 
     # Identify 'not in ontology' classes/types from DataFrame
-    df['rdf:type'] = df['rdf:type'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
-    df_types = set(df.explode('rdf:type')['rdf:type'].unique().tolist())
+    df["rdf:type"] = df["rdf:type"].apply(
+        lambda x: ast.literal_eval(x) if isinstance(x, str) else x
+    )
+    df_types = set(df.explode("rdf:type")["rdf:type"].unique().tolist())
     types_only_in_csv = df_types - ontology_type_nodes
     all_type_nodes = ontology_type_nodes.union(types_only_in_csv)
     all_type_nodes_and_missing = all_type_nodes.union({"missing"})
@@ -739,8 +747,14 @@ def build_ontology_tree(
     compute_cumulative_counts(root)
 
     # Count the number of nodes in the CSV with a type not in the ontology
-    type_counts_in_csv = df.explode('rdf:type')['rdf:type'].value_counts().to_dict()
-    not_in_ontology_counts = {type_: type_counts_in_csv[type_] for type_ in types_only_in_csv if type_ in type_counts_in_csv}
+    type_counts_in_csv = (
+        df.explode("rdf:type")["rdf:type"].value_counts().to_dict()
+    )
+    not_in_ontology_counts = {
+        type_: type_counts_in_csv[type_]
+        for type_ in types_only_in_csv
+        if type_ in type_counts_in_csv
+    }
 
     # Add a child to root called "missing"
     not_in_ontology_node = Node("missing")
@@ -753,14 +767,17 @@ def build_ontology_tree(
         type_node.count = count
         not_in_ontology_node.children.append(type_node)
 
-    
     # Compute cumulative counts for "missing" node and its children
     # iterate through the children of "missing" and sum up their counts
-    not_in_ontology_node.cumulative_count = sum(child.count for child in not_in_ontology_node.children)
+    not_in_ontology_node.cumulative_count = sum(
+        child.count for child in not_in_ontology_node.children
+    )
     # write this to the not_in_ontology node in the node_count_dict for cumulative_count
     node_count_dict["missing"] = {
         "count": 0,
-        "cumulative_count": sum(child.count for child in not_in_ontology_node.children),
+        "cumulative_count": sum(
+            child.count for child in not_in_ontology_node.children
+        ),
     }
 
     compute_cumulative_counts(not_in_ontology_node)
