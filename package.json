@@ -92,8 +92,8 @@
     "vega": "^5.22.1",
     "vega-embed": "^6.21.3",
     "vega-lite": "^5.6.1",
-    "visyn_core": "git+ssh://git@github.com:datavisyn/visyn_core#develop",
-    "visyn_scripts": "git+ssh://git@github.com/datavisyn/visyn_scripts#develop"
+    "visyn_core": "^7.0.1",
+    "visyn_scripts": "^7.0.1"
   },
   "devDependencies": {
     "cypress": "^12.0.1"
