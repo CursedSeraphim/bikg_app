@@ -607,7 +607,7 @@ async def get_sub_class_of():
             }
         )
 
-    classes_from_ontology_graph_list = set([str(g.namespace_manager.qname(c)) for c in g.subjects(predicate=RDF.type, object=OWL.Class)])  # type: ignore
+    classes_from_ontology_graph_list = {str(g.namespace_manager.qname(c)) for c in g.subjects(predicate=RDF.type, object=OWL.Class)}  # type: ignore
 
     # Identify 'not in ontology' classes/types from DataFrame
     df["rdf:type"] = df["rdf:type"].apply(
