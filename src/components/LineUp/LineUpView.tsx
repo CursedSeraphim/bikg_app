@@ -516,7 +516,6 @@ export default function LineUpView() {
       // Clone and store the initial columns configuration in the ref
       const initialColumns = lineupInstanceRef.current.data.getFirstRanking().children.map((col) => col);
       initialColumnsRef.current = initialColumns; // Store the columns in the ref
-      console.log('initialColumns', initialColumnsRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lineupRef, csvData, dispatch]);
