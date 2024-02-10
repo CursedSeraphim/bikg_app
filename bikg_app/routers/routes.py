@@ -1,8 +1,8 @@
 # routes.py
+import ast
 import json
 import os
 import time
-import ast
 from collections import defaultdict
 
 import numpy as np
@@ -28,12 +28,8 @@ VIOLATIONS_FILE_PATH = os.path.join("bikg_app/json", "violation_list.json")
 STUDY_CSV_FILE_PATH = "bikg_app/csv/study.csv"
 ONTOLOGY_TTL_FILE_PATH = "bikg_app/ttl/omics_model_union_violation_exemplar.ttl"
 EXEMPLAR_EDGE_COUNT_JSON_PATH = "bikg_app/json/exemplar_edge_count_dict.json"
-FOCUS_NODE_EXEMPLAR_DICT_JSON_PATH = (
-    "bikg_app/json/focus_node_exemplar_dict.json"
-)
-EXEMPLAR_FOCUS_NODE_DICT_JSON_PATH = (
-    "bikg_app/json/exemplar_focus_node_dict.json"
-)
+FOCUS_NODE_EXEMPLAR_DICT_JSON_PATH = "bikg_app/json/focus_node_exemplar_dict.json"
+EXEMPLAR_FOCUS_NODE_DICT_JSON_PATH = "bikg_app/json/exemplar_focus_node_dict.json"
 VIOLATION_EXEMPLAR_DICT_PATH = "bikg_app/json/violation_exemplar_dict.json"
 
 # load the violations
@@ -177,9 +173,9 @@ def build_type_violation_dict(df, violations_list):
         for violation in violations_list:
             if violation in df_exploded.columns:
                 # Count the number of occurrences of the current violation for the current RDF type
-                violation_count = df_exploded[
-                    df_exploded["rdf:type"] == rdf_type
-                ][violation].sum()
+                violation_count = df_exploded[df_exploded["rdf:type"] == rdf_type][
+                    violation
+                ].sum()
                 if violation_count > 0:
                     # Add the violation count for this type to the dictionary
                     violation_counts[violation] = violation_count
@@ -272,9 +268,7 @@ def shorten_dict_uris(d, prefixes):
 
     def process_item(item):
         if isinstance(item, dict):
-            return {
-                shorten(key): process_item(value) for key, value in item.items()
-            }
+            return {shorten(key): process_item(value) for key, value in item.items()}
         elif isinstance(item, list):
             return [process_item(value) for value in item]
         elif isinstance(item, str):
@@ -288,9 +282,7 @@ def shorten_dict_uris(d, prefixes):
 @router.get("/file/edge_count_dict")
 async def get_edge_count_dict():
     prefixes = get_prefixes(g)  # Get the prefixes from the graph
-    return serialize_nested_count_dict(
-        shorten_dict_uris(edge_count_dict, prefixes)
-    )
+    return serialize_nested_count_dict(shorten_dict_uris(edge_count_dict, prefixes))
 
 
 @router.get("/file/focus_node_exemplar_dict")
@@ -325,9 +317,11 @@ def dynamically_parse_array_columns(df):
     for column in df_copy.columns:
         # Attempt to parse each cell in the column if it looks like a string representation of a list
         df_copy[column] = df_copy[column].apply(
-            lambda x: ast.literal_eval(x)
-            if isinstance(x, str) and x.startswith("[") and x.endswith("]")
-            else x
+            lambda x: (
+                ast.literal_eval(x)
+                if isinstance(x, str) and x.startswith("[") and x.endswith("]")
+                else x
+            )
         )
     return df_copy
 
@@ -354,9 +348,7 @@ async def get_classes():
     # Assuming 'g' is your graph and has been defined elsewhere
     classes_from_ontology_graph_list = [str(g.namespace_manager.qname(c)) for c in g.subjects(predicate=RDF.type, object=OWL.Class)]  # type: ignore
 
-    final_set = set(
-        unique_types + classes_from_ontology_graph_list + ["missing"]
-    )
+    final_set = set(unique_types + classes_from_ontology_graph_list + ["missing"])
 
     return final_set
 
@@ -518,17 +510,21 @@ def chi_square_score(selection_data, overall_data):
     categories = set(list(selection_data.keys()) + list(overall_data.keys()))
     observed = np.array(
         [
-            selection_data.get(category, 1e-7)
-            if selection_data.get(category, 1e-7) != 0
-            else 1e-7
+            (
+                selection_data.get(category, 1e-7)
+                if selection_data.get(category, 1e-7) != 0
+                else 1e-7
+            )
             for category in categories
         ]
     )
     expected = np.array(
         [
-            overall_data.get(category, 1e-7)
-            if overall_data.get(category, 1e-7) != 0
-            else 1e-7
+            (
+                overall_data.get(category, 1e-7)
+                if overall_data.get(category, 1e-7) != 0
+                else 1e-7
+            )
             for category in categories
         ]
     )
@@ -701,9 +697,7 @@ def build_ontology_tree(
         for child in current_node.children:
             add_violations(child)
         if current_node.id in type_violation_dict:
-            for violation, count in type_violation_dict[
-                current_node.id
-            ].items():
+            for violation, count in type_violation_dict[current_node.id].items():
                 violation_node = Node(violation)
                 violation_node.count = count
                 current_node.children.append(violation_node)
@@ -747,9 +741,7 @@ def build_ontology_tree(
     compute_cumulative_counts(root)
 
     # Count the number of nodes in the CSV with a type not in the ontology
-    type_counts_in_csv = (
-        df.explode("rdf:type")["rdf:type"].value_counts().to_dict()
-    )
+    type_counts_in_csv = df.explode("rdf:type")["rdf:type"].value_counts().to_dict()
     not_in_ontology_counts = {
         type_: type_counts_in_csv[type_]
         for type_ in types_only_in_csv
@@ -775,9 +767,7 @@ def build_ontology_tree(
     # write this to the not_in_ontology node in the node_count_dict for cumulative_count
     node_count_dict["missing"] = {
         "count": 0,
-        "cumulative_count": sum(
-            child.count for child in not_in_ontology_node.children
-        ),
+        "cumulative_count": sum(child.count for child in not_in_ontology_node.children),
     }
 
     compute_cumulative_counts(not_in_ontology_node)
@@ -828,9 +818,7 @@ def get_ttl_file(response: Response):
     """
     sends the contents of the ttl file serialized to the client
     """
-    response.headers[
-        "Content-Disposition"
-    ] = "attachment; filename=omics_model.ttl"
+    response.headers["Content-Disposition"] = "attachment; filename=omics_model.ttl"
     return Response(content=ttl_data, media_type="text/turtle")
 
 
