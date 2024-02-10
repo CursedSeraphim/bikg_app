@@ -46,7 +46,6 @@ function recursivelyNameNodes(root): void {
 }
 
 export function getTreeDataFromTuples(subClassOfTriples: ITriple[], cumulativeNumberViolationsPerType: INumberViolationsPerNodeMap): IOntologyNode {
-  console.log('subClassOfTriples:', subClassOfTriples);
   const ontologyMap: OntologyMap = {};
   for (const { s, o } of subClassOfTriples) {
     ontologyMap[s] = ontologyMap[s] || createIOntologyNode(s, cumulativeNumberViolationsPerType);
