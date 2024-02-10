@@ -352,7 +352,7 @@ async def get_classes():
     # Assuming 'g' is your graph and has been defined elsewhere
     classes_from_ontology_graph_list = [str(g.namespace_manager.qname(c)) for c in g.subjects(predicate=RDF.type, object=OWL.Class)]  # type: ignore
 
-    final_set = set(unique_types + classes_from_ontology_graph_list)
+    final_set = set(unique_types + classes_from_ontology_graph_list + ['missing']) 
 
     return final_set
 
@@ -618,10 +618,6 @@ async def get_sub_class_of():
     for type_ in only_in_csv:
         result.append({"s": type_, "p": "rdfs:subClassOf", "o": "missing"})    
 
-    print('sub-class-of result:', result)
-
-    print('only_in_csv:', only_in_csv)
-
     return result
 
 
@@ -656,7 +652,7 @@ def build_ontology_tree(
 ):
     query = """SELECT ?s ?o WHERE { ?s rdfs:subClassOf ?o . }"""
     parent_child_map = defaultdict(list)
-    all_type_nodes = set()
+    ontology_type_nodes = set()
     parents = set()
     children = set()
 
@@ -664,14 +660,21 @@ def build_ontology_tree(
         parent = str(g.namespace_manager.qname(row.o))
         child = str(g.namespace_manager.qname(row.s))
         parent_child_map[parent].append(child)
-        all_type_nodes.add(parent)
-        all_type_nodes.add(child)
+        ontology_type_nodes.add(parent)
+        ontology_type_nodes.add(child)
         parents.add(parent)
         children.add(child)
 
+    # Identify 'not in ontology' classes/types from DataFrame
+    df['rdf:type'] = df['rdf:type'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+    df_types = set(df.explode('rdf:type')['rdf:type'].unique().tolist())
+    types_only_in_csv = df_types - ontology_type_nodes
+    all_type_nodes = ontology_type_nodes.union(types_only_in_csv)
+    all_type_nodes_and_missing = all_type_nodes.union({"missing"})
+
     roots = parents - children
 
-    for node in all_type_nodes:
+    for node in ontology_type_nodes:
         if node not in type_count_dict:
             type_count_dict[node] = 0
 
@@ -713,9 +716,9 @@ def build_ontology_tree(
             compute_cumulative_counts(child)
 
         current_node.cumulative_count = current_node.count
-        if current_node.id in all_type_nodes:
+        if current_node.id in all_type_nodes_and_missing:
             for child in current_node.children:
-                if child.id in all_type_nodes:
+                if child.id in all_type_nodes_and_missing:
                     current_node.cumulative_count += child.cumulative_count
 
         node_count_dict[current_node.id] = {
@@ -734,17 +737,10 @@ def build_ontology_tree(
             add_exemplars(violation_node)
 
     compute_cumulative_counts(root)
-            
-    # TODO the code below also needs to sum up the counts of the children of not in ontology, do the corresponding calculations, and write them correctly to the node_count_dict for the not in ontology node
-
-    # Identify 'not in ontology' classes/types from DataFrame
-    df['rdf:type'] = df['rdf:type'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
-    df_types = set(df.explode('rdf:type')['rdf:type'].unique().tolist())
-    only_in_csv = df_types - all_type_nodes
 
     # Count the number of nodes in the CSV with a type not in the ontology
     type_counts_in_csv = df.explode('rdf:type')['rdf:type'].value_counts().to_dict()
-    not_in_ontology_counts = {type_: type_counts_in_csv[type_] for type_ in only_in_csv if type_ in type_counts_in_csv}
+    not_in_ontology_counts = {type_: type_counts_in_csv[type_] for type_ in types_only_in_csv if type_ in type_counts_in_csv}
 
     # Add a child to root called "missing"
     not_in_ontology_node = Node("missing")
@@ -757,6 +753,7 @@ def build_ontology_tree(
         type_node.count = count
         not_in_ontology_node.children.append(type_node)
 
+    
     # Compute cumulative counts for "missing" node and its children
     # iterate through the children of "missing" and sum up their counts
     not_in_ontology_node.cumulative_count = sum(child.count for child in not_in_ontology_node.children)
@@ -765,6 +762,8 @@ def build_ontology_tree(
         "count": 0,
         "cumulative_count": sum(child.count for child in not_in_ontology_node.children),
     }
+
+    compute_cumulative_counts(not_in_ontology_node)
 
     return root, node_count_dict
 
