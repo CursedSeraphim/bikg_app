@@ -1,4 +1,5 @@
 # routes.py
+import ast
 import json
 import os
 import time
@@ -102,19 +103,22 @@ router = APIRouter()
 
 def build_type_node_count_dict(df):
     """
-    Description of build_violation_node_count_dict.
-    Calculates how many focus nodes exist for each type
-    :param df: Dataframe with one row per focus node with the column 'rdf:type'
-    :return: A dictionary with types as keys and violation counts as values
+    Adjusted to handle string representations of lists in the 'rdf:type' column.
+    Converts string representations of lists to actual lists, then counts occurrences of each type.
     """
     if "rdf:type" not in df.columns:
         print("Warning: 'rdf:type' column not found in the DataFrame. Returning an empty dictionary.")
         return {}
 
-    # Use the value_counts method to get the count of each unique type in the 'rdf:type' column
-    type_counts = df["rdf:type"].value_counts()
+    # Convert string representations of lists to actual lists in a temporary way
+    # Using .apply() with ast.literal_eval to safely evaluate the string representation
+    temp_series = df["rdf:type"].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
 
-    # Convert the Series object to a dictionary
+    # Now that we have a series with actual lists, we can explode and then count occurrences
+    flattened_types = temp_series.explode()
+    type_counts = flattened_types.value_counts()
+
+    # Convert to dictionary
     type_count_dict = type_counts.to_dict()
 
     return type_count_dict
@@ -125,38 +129,43 @@ type_count_dict = build_type_node_count_dict(df)
 
 def build_type_violation_dict(df, violations_list):
     """
-    Description of build_type_violation_dict.
-    :param :df: Dataframe with columns "rdf:type" and v for each v in violations_list
+    Adjusts to handle string representations of lists in the 'rdf:type' column by converting them to actual lists,
+    then counts occurrences of each violation per type.
+    :param df: DataFrame with columns "rdf:type" and v for each v in violations_list
+    :param violations_list: List of columns that represent different types of violations
     :return: A dictionary with types as keys and (violation, violation_count) as values
     """
-    # Check if 'rdf:type' column exists in the DataFrame
     if "rdf:type" not in df.columns:
         print("Warning: 'rdf:type' column not found in the DataFrame. Returning an empty dictionary.")
         return {}
 
+    # Convert string representations of lists in 'rdf:type' to actual lists temporarily
+    df_temp = df.copy()
+    df_temp["rdf:type"] = df_temp["rdf:type"].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+
+    # Explode the 'rdf:type' column to work with individual types
+    df_exploded = df_temp.explode("rdf:type")
+
     # Initialize an empty dictionary to store the results
     type_violation_dict = {}
 
-    # Loop through each unique RDF type in the DataFrame
-    for rdf_type in df["rdf:type"].unique():
-        # Filter the DataFrame to only include rows with the current RDF type
-        filtered_df = df[df["rdf:type"] == rdf_type]
-
-        # Initialize an empty list to store violation counts for the current RDF type
-        violation_counts = []
+    # Loop through each RDF type in the exploded DataFrame
+    for rdf_type in df_exploded["rdf:type"].unique():
+        # Initialize a dictionary to hold violation counts for this type
+        violation_counts = {}
 
         # Loop through each violation type in violations_list
         for violation in violations_list:
-            # Count the number of occurrences of the current violation type
-            # in the filtered DataFrame
-            violation_count = filtered_df[violation].sum()
+            if violation in df_exploded.columns:
+                # Count the number of occurrences of the current violation for the current RDF type
+                violation_count = df_exploded[df_exploded["rdf:type"] == rdf_type][violation].sum()
+                if violation_count > 0:
+                    # Add the violation count for this type to the dictionary
+                    violation_counts[violation] = violation_count
 
-            # Append the violation type and its count to violation_counts
-            if violation_count > 0:
-                violation_counts.append((violation, violation_count))
-
-        # Add the violation counts for the current RDF type to type_violation_dict
-        type_violation_dict[rdf_type] = violation_counts
+        # Add the dictionary of violation counts for the current RDF type to the main dictionary
+        if violation_counts:
+            type_violation_dict[rdf_type] = violation_counts
 
     return type_violation_dict
 
@@ -272,9 +281,30 @@ async def get_exemplar_focus_node_dict():
     return serialize_dict_keys_and_values(shorten_dict_uris(exemplar_focus_node_dict, prefixes))
 
 
+def dynamically_parse_array_columns(df):
+    """
+    Dynamically parses columns of a DataFrame, converting string representations
+    of lists into actual lists wherever possible.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame to process.
+
+    Returns:
+    pd.DataFrame: A copy of the DataFrame with string representations of lists converted to lists.
+    """
+    df_copy = df.copy()
+    for column in df_copy.columns:
+        # Attempt to parse each cell in the column if it looks like a string representation of a list
+        df_copy[column] = df_copy[column].apply(
+            lambda x: (ast.literal_eval(x) if isinstance(x, str) and x.startswith("[") and x.endswith("]") else x)
+        )
+    return df_copy
+
+
 @router.get("/file/study")
 async def read_csv_file():
-    return {"data": df.to_dict(orient="records")}
+    parsed_df = dynamically_parse_array_columns(df)
+    return parsed_df.to_json(orient="records")
 
 
 @router.get("/owl:Class")
@@ -282,7 +312,18 @@ async def get_classes():
     """
     Retrieves all the classes in the ontology
     """
-    return [str(g.namespace_manager.qname(c)) for c in g.subjects(predicate=RDF.type, object=OWL.Class)]  # type: ignore
+    # Convert string representations of lists to actual lists
+    df["rdf:type"] = df["rdf:type"].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+
+    # Now that 'rdf:type' contains actual lists, explode can be used
+    unique_types = df.explode("rdf:type")["rdf:type"].unique().tolist()
+
+    # Assuming 'g' is your graph and has been defined elsewhere
+    classes_from_ontology_graph_list = [str(g.namespace_manager.qname(c)) for c in g.subjects(predicate=RDF.type, object=OWL.Class)]  # type: ignore
+
+    final_set = set(unique_types + classes_from_ontology_graph_list + ["missing"])
+
+    return final_set
 
 
 @router.post("/FeatureCategorySelection")
@@ -422,9 +463,9 @@ def chi_square_score(selection_data, overall_data):
     # create observed frequency table
     categories = set(list(selection_data.keys()) + list(overall_data.keys()))
     observed = np.array(
-        [selection_data.get(category, 1e-7) if selection_data.get(category, 1e-7) != 0 else 1e-7 for category in categories]
+        [(selection_data.get(category, 1e-7) if selection_data.get(category, 1e-7) != 0 else 1e-7) for category in categories]
     )
-    expected = np.array([overall_data.get(category, 1e-7) if overall_data.get(category, 1e-7) != 0 else 1e-7 for category in categories])
+    expected = np.array([(overall_data.get(category, 1e-7) if overall_data.get(category, 1e-7) != 0 else 1e-7) for category in categories])
 
     # Compute chi-square scores
     chi2, _, _, _ = chi2_contingency([observed, expected])
@@ -465,7 +506,6 @@ async def get_node_label_set(g=g):
     objects = list(g.objects())
     # use qname to shorten the URIs and send set of concatenated subjects and objects
     all_uris = subjects + objects
-    print("all_uris", all_uris)
     return {uri_to_qname(g, uri) for uri in all_uris}  # type: ignore
 
 
@@ -503,6 +543,17 @@ async def get_sub_class_of():
             }
         )
 
+    classes_from_ontology_graph_list = {str(g.namespace_manager.qname(c)) for c in g.subjects(predicate=RDF.type, object=OWL.Class)}  # type: ignore
+
+    # Identify 'not in ontology' classes/types from DataFrame
+    df["rdf:type"] = df["rdf:type"].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+    df_types = set(df.explode("rdf:type")["rdf:type"].unique().tolist())
+    only_in_csv = df_types - classes_from_ontology_graph_list
+
+    # for all classes/types in only_in_csv add an s p o triple where s is the class/type, p is rdfs:subClassOf, and o is "missing"
+    for type_ in only_in_csv:
+        result.append({"s": type_, "p": "rdfs:subClassOf", "o": "missing"})
+
     return result
 
 
@@ -531,7 +582,7 @@ class Node:
 def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar_dict, g):
     query = """SELECT ?s ?o WHERE { ?s rdfs:subClassOf ?o . }"""
     parent_child_map = defaultdict(list)
-    all_type_nodes = set()
+    ontology_type_nodes = set()
     parents = set()
     children = set()
 
@@ -539,14 +590,21 @@ def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar
         parent = str(g.namespace_manager.qname(row.o))
         child = str(g.namespace_manager.qname(row.s))
         parent_child_map[parent].append(child)
-        all_type_nodes.add(parent)
-        all_type_nodes.add(child)
+        ontology_type_nodes.add(parent)
+        ontology_type_nodes.add(child)
         parents.add(parent)
         children.add(child)
 
+    # Identify 'not in ontology' classes/types from DataFrame
+    df["rdf:type"] = df["rdf:type"].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+    df_types = set(df.explode("rdf:type")["rdf:type"].unique().tolist())
+    types_only_in_csv = df_types - ontology_type_nodes
+    all_type_nodes = ontology_type_nodes.union(types_only_in_csv)
+    all_type_nodes_and_missing = all_type_nodes.union({"missing"})
+
     roots = parents - children
 
-    for node in all_type_nodes:
+    for node in ontology_type_nodes:
         if node not in type_count_dict:
             type_count_dict[node] = 0
 
@@ -565,7 +623,7 @@ def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar
         for child in current_node.children:
             add_violations(child)
         if current_node.id in type_violation_dict:
-            for violation, count in type_violation_dict[current_node.id]:
+            for violation, count in type_violation_dict[current_node.id].items():
                 violation_node = Node(violation)
                 violation_node.count = count
                 current_node.children.append(violation_node)
@@ -584,9 +642,9 @@ def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar
             compute_cumulative_counts(child)
 
         current_node.cumulative_count = current_node.count
-        if current_node.id in all_type_nodes:
+        if current_node.id in all_type_nodes_and_missing:
             for child in current_node.children:
-                if child.id in all_type_nodes:
+                if child.id in all_type_nodes_and_missing:
                     current_node.cumulative_count += child.cumulative_count
 
         node_count_dict[current_node.id] = {
@@ -605,6 +663,32 @@ def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar
             add_exemplars(violation_node)
 
     compute_cumulative_counts(root)
+
+    # Count the number of nodes in the CSV with a type not in the ontology
+    type_counts_in_csv = df.explode("rdf:type")["rdf:type"].value_counts().to_dict()
+    not_in_ontology_counts = {type_: type_counts_in_csv[type_] for type_ in types_only_in_csv if type_ in type_counts_in_csv}
+
+    # Add a child to root called "missing"
+    not_in_ontology_node = Node("missing")
+    root.children.append(not_in_ontology_node)
+
+    # For each type not in the ontology, add a child to "missing"
+    for type_, count in not_in_ontology_counts.items():
+        type_node = Node(type_)
+        type_node.cumulative_count = count
+        type_node.count = count
+        not_in_ontology_node.children.append(type_node)
+
+    # Compute cumulative counts for "missing" node and its children
+    # iterate through the children of "missing" and sum up their counts
+    not_in_ontology_node.cumulative_count = sum(child.count for child in not_in_ontology_node.children)
+    # write this to the not_in_ontology node in the node_count_dict for cumulative_count
+    node_count_dict["missing"] = {
+        "count": 0,
+        "cumulative_count": sum(child.count for child in not_in_ontology_node.children),
+    }
+
+    compute_cumulative_counts(not_in_ontology_node)
 
     return root, node_count_dict
 
@@ -625,7 +709,6 @@ async def get_ontology_tree():
 async def get_type_node_count_dict():
     if node_count_dict is None:
         return {"error": "node count dict not built yet"}
-
     return node_count_dict
 
 
@@ -659,7 +742,7 @@ def uri_to_qname(graph, uri):
     try:
         return graph.namespace_manager.qname(uri)
     except ValueError:
-        print("uri_to_qname failed for uri:", uri)
+        # print("uri_to_qname failed for uri:", uri)
         return uri
 
 

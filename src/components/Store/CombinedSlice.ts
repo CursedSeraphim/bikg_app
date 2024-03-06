@@ -96,39 +96,66 @@ export function createMaps(
 
   // Iterate through samples to populate the maps
   samples.forEach((sample) => {
-    const type = String(sample['rdf:type']);
+    // Ensure sampleTypes is treated as an array, even if it's a single value
+    // Check if sample['rdf:type'] is a string that represents an array
+    // TODO this might not have to be checked if we first parse the csv as json
+    let sampleTypes;
+    if (typeof sample['rdf:type'] === 'string' && sample['rdf:type'].startsWith('[') && sample['rdf:type'].endsWith(']')) {
+      try {
+        // Attempt to parse the string as an array
+        sampleTypes = JSON.parse(sample['rdf:type'].replace(/'/g, '"'));
+      } catch (error) {
+        // Fallback if parsing fails - treat it as a single-element array
+        sampleTypes = [sample['rdf:type']];
+      }
+    } else {
+      // Handle as before if it's not a string representation of an array
+      sampleTypes = Array.isArray(sample['rdf:type']) ? sample['rdf:type'].map(String) : [String(sample['rdf:type'])];
+    }
     const focusNode = sample.focus_node;
     const exemplars = focusNodeExemplarDict[focusNode] || [];
-    // there might be types in the instance data that do not appear in the ontology
-    if (!tempTypeMap[type]) {
-      tempTypeMap[type] = { focusNodes: new Set(), violations: new Set(), exemplars: new Set() };
-    }
-    tempTypeMap[type].focusNodes.add(focusNode);
-    exemplars.forEach((exemplar) => tempTypeMap[type].exemplars.add(exemplar));
 
-    tempFocusNodeMap[focusNode].types.add(type);
-    exemplars.forEach((exemplar) => tempFocusNodeMap[focusNode].exemplars.add(exemplar));
+    sampleTypes.forEach((type) => {
+      // Iterate over each type in sampleTypes
+      // There might be types in the instance data that do not appear in the ontology
+      // console.log('type from sampleTypes', type);
+      if (!tempTypeMap[type]) {
+        tempTypeMap[type] = { focusNodes: new Set(), violations: new Set(), exemplars: new Set() };
+      }
+      tempTypeMap[type].focusNodes.add(focusNode);
+      exemplars.forEach((exemplar) => tempTypeMap[type].exemplars.add(exemplar));
 
-    exemplars.forEach((exemplar) => {
-      tempExemplarMap[exemplar].focusNodes.add(focusNode);
-      tempExemplarMap[exemplar].types.add(type);
+      // Since a focus node can belong to multiple types, add all types to it
+      tempFocusNodeMap[focusNode].types.add(type);
+      exemplars.forEach((exemplar) => tempFocusNodeMap[focusNode].exemplars.add(exemplar));
+
+      exemplars.forEach((exemplar) => {
+        tempExemplarMap[exemplar].focusNodes.add(focusNode);
+        tempExemplarMap[exemplar].types.add(type);
+      });
     });
 
+    // Handle violations
     violations.forEach((violation) => {
       if ((sample[violation] as number) > 0) {
-        tempTypeMap[type].violations.add(violation);
+        sampleTypes.forEach((type) => {
+          // Apply violation logic for each type in sampleTypes
+          tempTypeMap[type].violations.add(violation);
+        });
 
         tempFocusNodeMap[focusNode].violations.add(violation);
 
         exemplars.forEach((exemplar) => tempExemplarMap[exemplar].violations.add(violation));
 
-        // Add to the focus node list
+        // Add to the focus node list for each violation
         tempViolationMap[violation].focusNodes.add(sample.focus_node);
 
-        // Add to the type list
-        tempViolationMap[violation].types.add(type);
+        // Add to the type list for each violation and type in sampleTypes
+        sampleTypes.forEach((type) => {
+          tempViolationMap[violation].types.add(type);
+        });
 
-        // Add to the exemplar list using FocusNodeExemplarDict
+        // Add to the exemplar list using FocusNodeExemplarDict for each violation
         exemplars.forEach((exemplar) => tempViolationMap[violation].exemplars.add(exemplar));
       }
     });
@@ -379,6 +406,11 @@ const calculateNewSelectedViolations = (newViolationCount: Record<string, number
   );
 };
 
+// Helper function to ensure the input is treated as an array
+function ensureArray<T>(input: T | T[]): T[] {
+  return Array.isArray(input) ? input : [input];
+}
+
 const calculateSelectedNodesAndViolations = (
   selectedTypes: string[],
   violations: string[],
@@ -390,7 +422,11 @@ const calculateSelectedNodesAndViolations = (
   const newViolationCount = initializeViolationCount(violations);
 
   samples.forEach((sample) => {
-    if (selectedTypes.includes(String(sample['rdf:type']))) {
+    // Ensure sampleTypes is always an array
+    const sampleTypes = ensureArray(sample['rdf:type']);
+
+    // Check if any of the types in sampleTypes is included in selectedTypes
+    if (sampleTypes.some((type) => selectedTypes.includes(String(type)))) {
       newSelectedNodes.push(sample.focus_node);
       updateViolationCount(sample, newViolationCount, actionType);
     }
@@ -443,6 +479,7 @@ const combinedSlice = createSlice({
     },
     setOntologyTree: (state, action: PayloadAction<ServerTree>) => {
       state.ontologyTree = action.payload;
+      console.log('state.ontologyTree', state.ontologyTree);
     },
     setViolationMap: (state, action: PayloadAction<IViolationMap>) => {
       state.violationMap = action.payload;
@@ -568,7 +605,6 @@ const combinedSlice = createSlice({
       );
     },
     setSelectedFocusNodes: (state, action) => {
-      // TODO rework with new maps
       const newSelectedNodes = action.payload;
 
       // Convert state.samples into an object for O(1) lookup
@@ -584,7 +620,7 @@ const combinedSlice = createSlice({
       });
 
       // Use a Set to store selected types
-      const selectedTypesSet: Set<string> = new Set();
+      const selectedTypesSet = new Set();
 
       // Iterate over selected nodes
       newSelectedNodes.forEach((selectedNode) => {
@@ -598,22 +634,35 @@ const combinedSlice = createSlice({
           }
         });
 
-        // If the sample has a type, add it to the selectedTypes set
-        const sampleType = String(correspondingSample['rdf:type']);
-        if (sampleType) {
-          selectedTypesSet.add(sampleType);
+        // Parse sample['rdf:type'] to correctly handle string representation of an array
+        let sampleTypes;
+        if (
+          typeof correspondingSample['rdf:type'] === 'string' &&
+          correspondingSample['rdf:type'].startsWith('[') &&
+          correspondingSample['rdf:type'].endsWith(']')
+        ) {
+          try {
+            // Attempt to parse the string as an array
+            sampleTypes = JSON.parse(correspondingSample['rdf:type'].replace(/'/g, '"'));
+          } catch (error) {
+            // Fallback if parsing fails
+            sampleTypes = [correspondingSample['rdf:type']];
+          }
+        } else {
+          sampleTypes = Array.isArray(correspondingSample['rdf:type']) ? correspondingSample['rdf:type'] : [correspondingSample['rdf:type']];
         }
+
+        // Add all types to the selectedTypes set
+        sampleTypes.forEach((type) => selectedTypesSet.add(String(type)));
       });
 
       // Convert selectedTypes set back to array
-      const newSelectedTypes = Array.from(selectedTypesSet);
+      const newSelectedTypes = Array.from(selectedTypesSet) as string[];
 
       // Set state.selectedViolations to the keys of the map with value > 0
       const newSelectedViolations = Array.from(violationMap.entries())
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .filter(([key_, value]) => value > 0)
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .map(([key, value_]) => key);
+        .filter(([_, value]) => value > 0)
+        .map(([key, _]) => key);
 
       // Now, we assign new values to the state variables.
       state.selectedNodes = newSelectedNodes;
@@ -716,6 +765,60 @@ const combinedSlice = createSlice({
       // Remove duplicates by converting to Set and then back to Array
       state.selectedNodes = [...new Set([...state.selectedNodes, ...newSelectedNodes])];
       state.selectedViolations = [...new Set([...state.selectedViolations, ...calculateNewSelectedViolations(newViolationCount)])];
+
+      updateSelectedViolationExemplars(state);
+
+      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
+        state.selectedNodes,
+        state.focusNodeMap,
+        state.numberViolationsPerNode,
+        state.ontologyTree,
+        new Set(state.types),
+      );
+      state.numberViolationsPerNode = newNumberViolationsPerNode;
+    },
+    removeMultipleSelectedTypes: (state, action) => {
+      const typesToRemove = action.payload; // This is now an array of types
+      typesToRemove.forEach((typeToRemove) => {
+        const index = state.selectedTypes.indexOf(typeToRemove);
+        if (index > -1) {
+          state.selectedTypes.splice(index, 1);
+        }
+      });
+
+      // Extend the logic to calculate selected nodes and violations once, based on the entire array of typesToRemove
+      const { newSelectedNodes, newViolationCount } = calculateSelectedNodesAndViolations(
+        typesToRemove, // Pass the entire array
+        state.violations,
+        state.samples,
+        ActionTypes.REMOVE, // Remove from existing
+        state.selectedNodes,
+      );
+
+      const nodesToRemove = new Set(newSelectedNodes);
+      state.selectedNodes = state.selectedNodes.filter((node) => !nodesToRemove.has(node));
+
+      const currentSelectedViolationsCount = initializeViolationCount(state.violations);
+
+      state.selectedNodes.forEach((node) => {
+        const correspondingSample = state.focusNodeSampleMap[node];
+        if (correspondingSample) {
+          updateViolationCount(correspondingSample, currentSelectedViolationsCount, ActionTypes.APPEND);
+        }
+      });
+
+      const newSelectedViolations = [];
+
+      for (const [key, value] of Object.entries(newViolationCount)) {
+        if (Object.prototype.hasOwnProperty.call(currentSelectedViolationsCount, key)) {
+          currentSelectedViolationsCount[key] += value;
+        }
+        if (currentSelectedViolationsCount[key] > 0) {
+          newSelectedViolations.push(key);
+        }
+      }
+
+      state.selectedViolations = newSelectedViolations;
 
       updateSelectedViolationExemplars(state);
 
@@ -1163,6 +1266,7 @@ export const {
   setSelectedFocusNodes,
   setSelectedTypes,
   addSingleSelectedType,
+  removeMultipleSelectedTypes,
   removeSingleSelectedType,
   setRdfString,
   setViolationTypesMap,

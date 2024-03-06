@@ -60,5 +60,7 @@ export function getTreeDataFromTuples(subClassOfTriples: ITriple[], cumulativeNu
 
   const root: IOntologyNode = roots.length > 1 ? createIOntologyNode('root', cumulativeNumberViolationsPerType, roots) : roots[0];
 
+  console.log('root:', root);
+
   return root;
 }

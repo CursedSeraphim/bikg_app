@@ -31,6 +31,7 @@ export default function LineUpView() {
   const filterType = useSelector(selectFilterType);
   const missingEdgeOption = useSelector(selectMissingEdgeOption);
   const violationList = useSelector(selectViolations);
+  const initialColumnsRef = useRef(null);
 
   // Local state to hold csvData
   const [csvData, setCsvData] = useState(reduxCsvData);
@@ -65,6 +66,12 @@ export default function LineUpView() {
   function inferType(data, column) {
     const columnValues = data.map((row) => row[column]);
     const uniqueValues = [...new Set(columnValues)];
+
+    // Directly check if any value in the column is an array
+    const isSet = columnValues.some((value) => Array.isArray(value));
+    if (isSet) {
+      return 'set';
+    }
 
     // Check if all non-null values are boolean (true, false, 0, or 1)
     const allBooleans = columnValues.every(
@@ -155,7 +162,73 @@ export default function LineUpView() {
     return column;
   }
 
-  type DataType = { [key: string]: number | string | boolean | null }; // TODO check whether this should alawys be string
+  type DataType = { [key: string]: number | string | boolean | null | Array<string> }; // TODO check whether this should alawys be string
+
+  function safelyParseStringifiedArray(value: string): Array<string> | null {
+    try {
+      // Basic check to see if it looks like an array
+      if (value.startsWith('[') && value.endsWith(']')) {
+        // Remove the brackets and split the string into an array
+        const elements = value.substring(1, value.length - 1).split(',');
+        // Further processing might be needed depending on the format of elements
+        // For example, trimming whitespace and removing quotes if necessary
+        return elements.map((element) => element.trim().replace(/^['"]|['"]$/g, ''));
+      }
+    } catch (e) {
+      // Log errors or handle them as needed
+      console.error('Error parsing stringified array:', e);
+    }
+    return null; // Return null if parsing fails
+  }
+
+  // function buildSetColumnDescriptor(column: string, data: DataType[]): any {
+  //   const uniqueValues = new Set<string>();
+  //   data.forEach((row) => {
+  //     const values = row[column];
+  //     if (typeof values === 'string') {
+  //       // Attempt to parse stringified arrays
+  //       const parsedValues = safelyParseStringifiedArray(values);
+  //       if (parsedValues) {
+  //         // If parsing was successful, add each value to the set of unique values
+  //         parsedValues.forEach((value) => uniqueValues.add(value));
+  //       } else {
+  //         // If parsing failed, treat it as a single value
+  //         uniqueValues.add(values);
+  //       }
+  //     } else if (Array.isArray(values)) {
+  //       // If the value is an array, add each element to the set of unique values
+  //       values.forEach((value) => uniqueValues.add(value));
+  //     } else if (values !== null && values !== undefined) {
+  //       // Treat non-string, non-array values as single values
+  //       uniqueValues.add(String(values));
+  //     }
+  //   });
+  //   const numUniqueValues = uniqueValues.size;
+  //   const categoryString = numUniqueValues < 6 ? 'set' : numUniqueValues < 30 ? 'upset' : 'string';
+
+  //   const categories = Array.from(uniqueValues).map((value, index) => ({
+  //     name: value,
+  //     label: value,
+  //     color: `hsl(${360 * (index / uniqueValues.size)}, 100%, 70%)`,
+  //   }));
+
+  //   // Wrap the descriptor within a 'desc' object to match expected structure
+  //   const setColumnConfig = {
+  //     type: 'set',
+  //     label: column,
+  //     column,
+  //     categories,
+  //     renderer: categoryString,
+  //     groupRenderer: 'categorical',
+  //     summaryRenderer: 'categorical',
+  //   };
+
+  //   if (numUniqueValues >= 30) {
+  //     setColumnConfig.summaryRenderer = 'None';
+  //   }
+
+  //   return setColumnConfig;
+  // }
 
   type BuilderFunction = (column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }) => LineUpJS.ColumnBuilder;
 
@@ -192,6 +265,45 @@ export default function LineUpView() {
     return buildCategoricalColumn(column, categoryColorMap).width(width);
   }
 
+  function buildSetColumnWithSettings(column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }): LineUpJS.ColumnBuilder {
+    // const uniqueCategories = data.reduce<Set<string>>((acc, row) => acc.add(String(row[column])), new Set());
+    const uniqueCategories = new Set<string>();
+    data.forEach((row) => {
+      const values = row[column];
+      if (typeof values === 'string') {
+        // Attempt to parse stringified arrays
+        const parsedValues = safelyParseStringifiedArray(values);
+        if (parsedValues) {
+          // If parsing was successful, add each value to the set of unique values
+          parsedValues.forEach((value) => uniqueCategories.add(value));
+        } else {
+          // If parsing failed, treat it as a single value
+          uniqueCategories.add(values);
+        }
+      } else if (Array.isArray(values)) {
+        // If the value is an array, add each element to the set of unique values
+        values.forEach((value) => uniqueCategories.add(value));
+      } else if (values !== null && values !== undefined) {
+        // Treat non-string, non-array values as single values
+        uniqueCategories.add(String(values));
+      }
+    });
+
+    if (uniqueCategories.size > 29) {
+      return buildStringColumn(column).width(width);
+    }
+
+    const customColor = colorMap ? colorMap[column] : undefined;
+    const columnColor = customColor || MANTINE_HEADER_COLOR;
+
+    const categoryColorMap = Array.from(uniqueCategories).map((category) => ({
+      name: category,
+      color: columnColor,
+    }));
+
+    return buildCategoricalColumn(column, categoryColorMap).width(width).asSet();
+  }
+
   function buildStringColumnWithSettings(column: string, data: DataType[], width: number): LineUpJS.ColumnBuilder {
     return buildStringColumn(column).width(width);
   }
@@ -203,6 +315,7 @@ export default function LineUpView() {
     date: buildDateColumnWithSettings,
     categorical: buildCategoricalColumnWithSettings,
     string: buildStringColumnWithSettings,
+    set: buildSetColumnWithSettings,
   };
 
   // Existing buildColumns remains mostly unchanged
@@ -212,7 +325,10 @@ export default function LineUpView() {
 
     columns.forEach((column) => {
       let type = inferType(data, column);
-      if (type === 'boolean') type = 'categorical';
+
+      if (type === 'boolean') {
+        type = 'categorical';
+      }
       const width = calculatePixelWidthFromLabel(column);
       const builderFunction = builderMap[type];
 
@@ -332,10 +448,25 @@ export default function LineUpView() {
 
     // Call a function that takes the allDataFromFocusNodeSet and the allData, and returns allData without the columns based on column filter criteria in csvDataFromFocusNodeSet
     const filteredCsvData = filterColumns(csvDataFromFocusNodeSet, allData);
+    // names of columns that are left afte filtering
+    const remainingCols = Object.keys(filteredCsvData[0]);
+    // console.log('remainingCols', remainingCols);
 
-    // Set up the lineup instance with the filtered allData
-    createLineUpWithListener(lineupInstanceRef, lineupRef, filteredCsvData);
+    const initialColumns = initialColumnsRef.current;
+    const ranking = lineupInstanceRef.current.data.getFirstRanking();
 
+    for (let i = 3; i < initialColumns.length; i++) {
+      ranking.columns[i].hide();
+    }
+
+    for (let i = 3; i < initialColumns.length; i++) {
+      // if col is in the remainingCols, add it to the ranking
+      if (remainingCols.includes(initialColumns[i].desc.column)) {
+        ranking.columns[i].show();
+      }
+    }
+
+    // but we still need all of this below
     // Precompute a map for focus_node to index mapping for fast lookup
     const csvDataIndexMap = new Map(allData.map((row, index) => [row.focus_node, index]));
     const filteredCsvDataIndices = csvDataFromFocusNodeSet.map((row) => csvDataIndexMap.get(row.focus_node));
@@ -381,6 +512,10 @@ export default function LineUpView() {
   useEffect(() => {
     if (lineupRef.current && csvData.length > 0) {
       createLineUpWithListener(lineupInstanceRef, lineupRef, csvData);
+
+      // Clone and store the initial columns configuration in the ref
+      const initialColumns = lineupInstanceRef.current.data.getFirstRanking().children.map((col) => col);
+      initialColumnsRef.current = initialColumns; // Store the columns in the ref
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lineupRef, csvData, dispatch]);

@@ -2,7 +2,7 @@
 export async function fetchCSVFile() {
   const endpoint = `/api/bikg/file/study`;
   const response = await fetch(endpoint);
-  const data = await response.text();
+  const data = await response.json();
   return data;
 }
 

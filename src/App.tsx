@@ -154,7 +154,7 @@ export function App() {
 
   return (
     <div className="container">
-      <div className="Ontology-Title">Extended Ontology View</div>
+      <div className="Ontology-Title">Ontology + Grouped Violation Report</div>
       <div className="Extended-Ontology-View">
         <div style={{ display: cytoscapeLoading ? 'none' : 'block' }} className="cytoscape-container">
           <CytoscapeView rdfOntology={rdfOntology} onLoaded={() => setCytoscapeLoading(false)} />
