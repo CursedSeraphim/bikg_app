@@ -118,7 +118,9 @@ export function showCytoElements(element) {
  * @param {Collection} exemplarNodes - Nodes representing exemplars.
  */
 export function adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes) {
-  const potentialRoots = typeNodes.union(otherNodes);
+  console.log('debug violationNodes', violationNodes);
+
+  const potentialRoots = typeNodes.union(otherNodes).union(violationNodes);
   const everything = potentialRoots.union(violationNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets());
   const roots = findRootNodes(potentialRoots);
   const layoutSpacing = { x: 70, y: 500 };
