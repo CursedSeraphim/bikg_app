@@ -1,31 +1,31 @@
 // CombinedSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
-import { NamedNode, Store, Quad } from 'n3';
+import { NamedNode, Quad, Store } from 'n3';
 import { createSelector } from 'reselect';
 import { v4 as uuidv4 } from 'uuid';
-import { dataToScatterDataArray } from '../EmbeddingView/csvToScatterData';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 import {
-  ICombinedState,
-  IRdfState,
-  ITriple,
-  ICsvData,
-  FilterType,
-  MissingEdgeOptionType,
   EdgeCountDict,
-  FocusNodeExemplarDict,
   ExemplarFocusNodeDict,
-  INamespaces,
-  INumberViolationsPerNodeMap,
-  IViolationMap,
-  ITypeMap,
+  FilterType,
+  FocusNodeExemplarDict,
+  ICombinedState,
+  ICsvData,
   IExemplarMap,
   IFocusNodeMap,
-  ServerTree,
+  INamespaces,
+  INumberViolationsPerNodeMap,
   INumberViolationsPerNodeValue,
+  IRdfState,
   IServerTreeNode,
+  ITriple,
+  ITypeMap,
+  IViolationMap,
+  MissingEdgeOptionType,
+  ServerTree,
 } from '../../types';
-import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
+import { dataToScatterDataArray } from '../EmbeddingView/csvToScatterData';
 
 const initialState: ICombinedState = {
   cumulativeNumberViolationsPerNode: {},

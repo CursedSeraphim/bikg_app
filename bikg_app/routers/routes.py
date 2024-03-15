@@ -158,7 +158,7 @@ def build_type_violation_dict(df, violations_list):
         for violation in violations_list:
             if violation in df_exploded.columns:
                 # Count the number of occurrences of the current violation for the current RDF type
-                violation_count = df_exploded[df_exploded["rdf:type"] == rdf_type][violation].sum()
+                violation_count = int(df_exploded[df_exploded["rdf:type"] == rdf_type][violation].sum()) 
                 if violation_count > 0:
                     # Add the violation count for this type to the dictionary
                     violation_counts[violation] = violation_count
@@ -562,7 +562,7 @@ class Node:
         self.id = id
         self.children = []
         self.count = 0
-        self.cumulative_count = 0  # New field
+        self.cumulative_count = 0
 
     def __str__(self, level=0):
         ret = "\t" * level + repr(self.id) + f" (Count: {self.count}, Cumulative Count: {self.cumulative_count})\n"
@@ -572,9 +572,9 @@ class Node:
 
     def to_dict(self):
         return {
-            "id": self.id,
-            "count": self.count,
-            "cumulative_count": self.cumulative_count,  # New field
+            "id": self.id.item() if isinstance(self.id, np.integer) else self.id,
+            "count": self.count.item() if isinstance(self.count, np.integer) else self.count,
+            "cumulative_count": self.cumulative_count.item() if isinstance(self.cumulative_count, np.integer) else self.cumulative_count,
             "children": [child.to_dict() for child in self.children],
         }
 
