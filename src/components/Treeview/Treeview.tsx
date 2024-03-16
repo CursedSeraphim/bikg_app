@@ -1,12 +1,12 @@
+import _ from 'lodash';
 import React from 'react';
 import { useDispatch } from 'react-redux';
-import { Treebeard, decorators } from 'react-treebeard';
 import { BarLoader } from 'react-spinners';
-import _ from 'lodash';
-import { addSingleSelectedType, removeMultipleSelectedTypes, removeSingleSelectedType } from '../Store/CombinedSlice';
-import { lightTheme } from './lightTheme';
-import { CustomHeader } from './CustomHeader'; // Import CustomHeader
+import { Treebeard, decorators } from 'react-treebeard';
 import { SPINNER_COLOR } from '../../constants';
+import { addSingleSelectedType, removeMultipleSelectedTypes } from '../Store/CombinedSlice';
+import { CustomHeader } from './CustomHeader'; // Import CustomHeader
+import { lightTheme } from './lightTheme';
 import useTreeData from './useTreeData';
 
 decorators.Header = CustomHeader;

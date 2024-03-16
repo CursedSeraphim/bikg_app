@@ -1,12 +1,12 @@
 // useSubscribeCytoscape.ts
-import { useEffect } from 'react';
 import { Core } from 'cytoscape';
+import { useEffect } from 'react';
 import { useStore } from 'react-redux';
-import { IRootState } from '../../types';
 import { getSuccessors } from '../../CytoscapeNodeFactory';
+import { IRootState } from '../../types';
+import { setSelectedTypes } from '../Store/CombinedSlice';
 import { adjustLayout, getNodesFromIds, resetNodes, showCytoElements } from './TreeLayoutHelpers';
 import { showAllEdges } from './useCytoscapeViewHelpers';
-import { setSelectedTypes } from '../Store/CombinedSlice';
 
 const clearSelectedNodes = (cy: Core) => {
   cy.$(':selected').unselect();
@@ -40,7 +40,7 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData, blacklis
 
       if (cy && initialNodeData.current && initialNodeData.current.size > 0) {
         resetCyto();
-
+        
         const violationNodes = cy.nodes().filter((node) => state.selectedViolations.includes(node.id()));
         const typeNodes = cy.nodes().filter((node) => state.selectedTypes.includes(node.id()));
         const connectedNodesIds = state.selectedViolations.flatMap((violation) => violationsTypesMap[violation]);

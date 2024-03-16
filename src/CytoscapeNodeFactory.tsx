@@ -1,6 +1,6 @@
 // CytoscapeNodeFactory.tsx
-import cytoscape, { NodeSingular, Collection } from 'cytoscape';
-import { ICytoNode, ICytoEdge } from './types';
+import cytoscape, { Collection, NodeSingular } from 'cytoscape';
+import { ICytoEdge, ICytoNode } from './types';
 
 /**
  * Node Factory for creating Cytoscape nodes and edges in a tree structure.
