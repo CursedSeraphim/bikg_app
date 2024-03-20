@@ -32,7 +32,6 @@ export function resetAllNodes(node) {
 }
 
 export function updateTreeDataWithSelectedTypes(oldTreeData, selectedTypes) {
-  console.log('oldTreeData:', oldTreeData);
   const newTreeData = JSON.parse(JSON.stringify(oldTreeData));
   resetAllNodes(newTreeData);
 

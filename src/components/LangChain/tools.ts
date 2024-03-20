@@ -1,8 +1,8 @@
 // tools.ts
 import { DynamicTool } from 'langchain/tools';
 import { useDispatch, useStore } from 'react-redux';
-import { setSelectedTypes, setSelectedViolationExemplars, setSelectedViolations } from '../Store/CombinedSlice';
 import { IRootState } from '../../types';
+import { setSelectedTypes, setSelectedViolationExemplars, setSelectedViolations } from '../Store/CombinedSlice';
 
 const parseArrayString = (arrayString) => {
   const array = arrayString.replace(/[[\]\s]/g, '').split(',');
@@ -87,7 +87,6 @@ const useTools = () => {
     Object.keys(numberViolationsPerNode).forEach((key) => {
       ret += `${key}: ${numberViolationsPerNode[key].violations}\n`;
     });
-    console.log('ret', ret);
     return ret;
   };
 

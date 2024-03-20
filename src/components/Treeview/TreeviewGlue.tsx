@@ -1,5 +1,5 @@
 /* eslint-disable no-param-reassign */
-import { OntologyMap, ITriple, INumberViolationsPerNodeMap, IOntologyNode } from '../../types';
+import { INumberViolationsPerNodeMap, IOntologyNode, ITriple, OntologyMap } from '../../types';
 
 // Formats the node name with the cumulative values
 function formatNodeName(node: IOntologyNode): string {
@@ -59,8 +59,6 @@ export function getTreeDataFromTuples(subClassOfTriples: ITriple[], cumulativeNu
   recursivelyNameNodes(roots);
 
   const root: IOntologyNode = roots.length > 1 ? createIOntologyNode('root', cumulativeNumberViolationsPerType, roots) : roots[0];
-
-  console.log('root:', root);
 
   return root;
 }
