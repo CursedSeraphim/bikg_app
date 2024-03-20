@@ -70,8 +70,10 @@ except KeyError:
 
 def shorten_uris_in_nested_dict(nested_dict, g: Graph):
     new_dict = {}
+    print('[DEBUG] nested_dict:', nested_dict)
     for outer_key, inner_dict in nested_dict.items():
         # Shorten the outer key URI
+        print('[DEBUG] outer_key:', outer_key)
         new_outer_key = str(g.namespace_manager.qname(outer_key))
 
         new_inner_dict = {}
