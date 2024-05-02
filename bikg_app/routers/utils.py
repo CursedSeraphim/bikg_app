@@ -246,10 +246,21 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
             edge_object_pairs.append((p, o))
 
         exemplar_name = exemplar_sets.get(frozenset(edge_object_pairs))
+        print(f"Exemplar name: {exemplar_name}")
 
         if exemplar_name is None:
+            print(f"Creating new exemplar for {shape}")
             # Use custom exemplar namespace instead of the shape's namespace
-            exemplar_name = URIRef(f"{ex}{shape.split('omics/')[-1]}_exemplar_{len(exemplar_sets)+1}")
+            splitter = "omics/"
+            if "omics/" in shape:
+                splitter = "omics/"
+            elif "omics#" in shape:
+                splitter = "omics#"
+            else:
+                raise ValueError("ViolationShape URI expected to contain 'omics/' or 'omics#', but was {shape}")
+            
+            exemplar_name = URIRef(f"{ex}{shape.split(splitter)[-1]}_exemplar_{len(exemplar_sets)+1}")
+            print(f"Exemplar name: {exemplar_name}")
             exemplar_sets[frozenset(edge_object_pairs)] = exemplar_name
 
         focus_node_exemplar_dict[current_focus_node].add(exemplar_name)
