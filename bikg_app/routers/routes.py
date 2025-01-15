@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from fastapi import APIRouter, Request, Response
 from rdflib import RDF, Graph, Namespace
+from rdflib.term import URIRef, Literal
 from rdflib.namespace import split_uri
 from scipy.stats import chi2_contingency
 
@@ -739,10 +740,26 @@ def get_ttl_file(response: Response):
 
 
 def uri_to_qname(graph, uri):
-    try:
-        return graph.namespace_manager.qname(uri)
-    except ValueError:
-        # print("uri_to_qname failed for uri:", uri)
+    """
+    Convert a URI to its QName representation if possible.
+    If the input is not a URI or cannot be converted, return it as a string.
+    
+    Args:
+        graph (rdflib.Graph): The RDF graph containing namespace definitions.
+        uri (rdflib.term.URIRef or rdflib.term.Literal or str): The URI or literal to convert.
+    
+    Returns:
+        str: The QName representation or the original URI/literal as a string.
+    """
+    if isinstance(uri, URIRef):
+        try:
+            qname = graph.namespace_manager.qname(uri)
+            return qname
+        except ValueError:
+            return str(uri)
+    elif isinstance(uri, Literal):
+        return str(uri)
+    else:
         return uri
 
 

@@ -6,6 +6,7 @@ from collections import defaultdict
 
 import numpy as np
 from rdflib import RDF, Namespace, URIRef
+from rdflib.namespace import split_uri
 from tqdm.auto import tqdm
 
 if "ipykernel" in sys.modules:
@@ -173,15 +174,14 @@ def copy_namespaces(source_g, target_g):
 
 def get_violation_report_exemplars(ontology_g, violation_report_g):
     """
-    Generates and returns a violation report based on ontology and violation graphs.
+    Generates and returns violation report exemplars based on ontology and violation graphs.
 
     This function generates exemplars for the ontology graph based on the violations
     found in the violation report graph. It also counts edge-object pairs and keeps
-    track of focus nodes and their related exemplars. Note that TODOs indicate pending
-    modifications for tracking ignored edges and exemplar occurrences.
+    track of focus nodes and their related exemplars.
 
     Args:
-        ontology_g (rdflib.Graph): The ontology graph that serves as the reference.
+        ontology_g (rdflib.Graph): The ontology graph.
         violation_report_g (rdflib.Graph): The graph containing violation reports.
 
     Returns:
@@ -193,6 +193,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
         - Instead of counting the edge-object pairs, consider counting the exemplar occurrences.
         - Keep track of ignored edges as well.
     """
+    # TODO define these in a constants file or have them be defined at the top of the preprocessing notebook
     sh = Namespace("http://www.w3.org/ns/shacl#")
     dcterms = Namespace("http://purl.org/dc/terms/")
     ex = Namespace("http://example.com/exemplar#")
@@ -205,6 +206,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
 
     copy_namespaces(violation_report_g, ontology_g)
 
+    # TODO - this could also be defined as a constant or at the top of the preprocessing notebook
     violations_query = """
     SELECT ?violation ?p ?o WHERE {
         ?violation a sh:ValidationResult .
@@ -217,6 +219,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
     exemplar_focus_node_dict = defaultdict(set)
     violation_exemplar_dict = defaultdict(lambda: defaultdict(int))  # New dictionary to keep track of violation-exemplar pairs
 
+    # TODO - can also be defined as constant or on top of preprocessing notebook
     ignored_edges = {
         dcterms.date,
         sh.focusNode,
@@ -250,16 +253,13 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
 
         if exemplar_name is None:
             print(f"Creating new exemplar for {shape}")
-            # Use custom exemplar namespace instead of the shape's namespace
-            splitter = "omics/"
-            if "omics/" in shape:
-                splitter = "omics/"
-            elif "omics#" in shape:
-                splitter = "omics#"
-            else:
-                raise ValueError("ViolationShape URI expected to contain 'omics/' or 'omics#', but was {shape}")
+            # Use rdflib's split_uri to extract localname
+            try:
+                namespace, localname = split_uri(str(shape))
+            except ValueError:
+                raise ValueError(f"Could not split URI {shape}")
 
-            exemplar_name = URIRef(f"{ex}{shape.split(splitter)[-1]}_exemplar_{len(exemplar_sets)+1}")
+            exemplar_name = URIRef(f"{ex}{localname}_exemplar_{len(exemplar_sets)+1}")
             print(f"Exemplar name: {exemplar_name}")
             exemplar_sets[frozenset(edge_object_pairs)] = exemplar_name
 
