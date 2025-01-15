@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
 import { OpenAI } from 'langchain/llms/openai';
+import { useMemo } from 'react';
 
-export const useOpenAIModel = (openAIApiKey, modelName = 'gpt-4-1106-preview') => {
+export const useOpenAIModel = (openAIApiKey, modelName = 'gpt-4-turbo') => {
   const model = useMemo(() => {
     if (!openAIApiKey) {
       return null;

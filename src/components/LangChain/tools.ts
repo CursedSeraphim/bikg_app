@@ -56,16 +56,24 @@ const useTools = () => {
     return JSON.stringify(exemplarKeys);
   };
 
-  // const getOntologyTree = async (input: string): Promise<string> => {
-  //   const state = store.getState();
-  //   const { ontologyTree } = state.combined;
-  //   return JSON.stringify(ontologyTree);
-  // };
+  const getRDFOntology = async (): Promise<string> => {
+    const state = store.getState();
+    const { rdfString } = state.combined;
+    return JSON.stringify(rdfString);
+  };
 
   const getSelectedTypes = async (): Promise<string> => {
     const state = store.getState();
     const { selectedTypes } = state.combined;
     return JSON.stringify(selectedTypes);
+  };
+
+  const getFocusNodeByName = async (input: string): Promise<string> => {
+    const state = store.getState();
+    const { samples } = state.combined;
+    const samplesFiltered = samples.filter((sample) => sample.focus_node === input);
+    console.log(samplesFiltered);
+    return JSON.stringify(samplesFiltered);
   };
 
   const getSelectedViolations = async (): Promise<string> => {
@@ -187,6 +195,16 @@ const useTools = () => {
       name: 'get_number_violations_per_node',
       func: getNumberViolationsPerNode,
       description: 'Returns the number of violations per node in the ontology tree',
+    }),
+    new DynamicTool({
+      name: 'get_rdf_ontology',
+      func: getRDFOntology,
+      description: 'Returns the entire ontology graph RDF as text',
+    }),
+    new DynamicTool({
+      name: 'get_focus_node_by_name',
+      func: getFocusNodeByName,
+      description: 'Takes the name of a focus node and returns the detailed information about that node',
     }),
   ];
 };

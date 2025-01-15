@@ -1,20 +1,20 @@
 // CytoscopeView.tsx
-import React, { useState, useRef } from 'react';
 import cytoscape, { Core } from 'cytoscape';
-import { useSelector } from 'react-redux';
+import contextMenus from 'cytoscape-context-menus';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import cytoscapeLasso from 'cytoscape-lasso';
 import viewUtilities from 'cytoscape-view-utilities';
-import contextMenus from 'cytoscape-context-menus';
+import React, { useRef, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { selectCumulativeNumberViolationsPerNode, selectTypes, selectViolations } from '../Store/CombinedSlice';
 
-import { useShapeHandler } from '../components/namespaceHandler';
-import { useCytoViewHelpers } from './useCytoscapeViewHelpers';
-import { useRegisterCytoscapeEventListeners } from './CytoscapeEventHandlers'; // Import the new hook
-import { useSubscribeCytoscape } from './useSubscribeCytoscape';
-import { useCytoscapeData } from './useCytoscapeData';
-import useCytoscapeContextMenu from './useContextMenu';
 import useCytoCumulativeCounts from '../../useCytoCumulativeCounts';
+import { useShapeHandler } from '../components/namespaceHandler';
+import { useRegisterCytoscapeEventListeners } from './CytoscapeEventHandlers'; // Import the new hook
+import useCytoscapeContextMenu from './useContextMenu';
+import { useCytoscapeData } from './useCytoscapeData';
+import { useCytoViewHelpers } from './useCytoscapeViewHelpers';
+import { useSubscribeCytoscape } from './useSubscribeCytoscape';
 
 cytoscape.use(viewUtilities);
 cytoscape.use(coseBilkent);
