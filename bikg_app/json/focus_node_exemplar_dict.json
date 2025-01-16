@@ -1,1 +1,1 @@
-{"fn1": ["exemplar1", "exemplar2"]}
+{"http://exampleontology.com/ns#JohnDoe": ["http://example.com/exemplar#ManagerTeamSizeShape_exemplar_1", "http://example.com/exemplar#EmployeeIDShape_exemplar_2"], "http://exampleontology.com/ns#BigCat": ["http://example.com/exemplar#EmployeeIDShape_exemplar_2"]}

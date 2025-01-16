@@ -80,6 +80,7 @@
     "react-new-window": "^1.0.1",
     "react-plotly.js": "^2.6.0",
     "react-redux": "^8.0.5",
+    "react-resizable-panels": "^2.1.7",
     "react-resize-detector": "^9.1.0",
     "react-spinners": "^0.13.8",
     "react-tabs": "^6.0.2",

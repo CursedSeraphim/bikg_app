@@ -1,1 +1,1 @@
-"{\"http://data.com/a/b/c\": {\"http://example.com/exemplar#_exemplar_1\": 123}}"
+"{\"http://exampleontology.com/ns#ManagerTeamSizeShape\": {\"http://example.com/exemplar#ManagerTeamSizeShape_exemplar_1\": 1}, \"http://exampleontology.com/ns#EmployeeIDShape\": {\"http://example.com/exemplar#EmployeeIDShape_exemplar_2\": 2}}"
