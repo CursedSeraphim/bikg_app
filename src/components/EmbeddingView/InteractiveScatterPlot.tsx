@@ -111,11 +111,10 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
 
     // Draw each point
     data.forEach((d) => {
-      // could be used for different visual encoding based on selection
-      // const isSelected = selectedNodes.includes(d.text);
+      const isSelected = selectedNodes.includes(d.text);
 
       ctx.beginPath();
-      ctx.fillStyle = '#DA5700';
+      ctx.fillStyle = isSelected ? 'orange' : '#DA5700';
       const cx = xScale(d.x) + margins.left;
       const cy = yScale(d.y) + margins.top;
       ctx.arc(cx, cy, 4, 0, 2 * Math.PI);
