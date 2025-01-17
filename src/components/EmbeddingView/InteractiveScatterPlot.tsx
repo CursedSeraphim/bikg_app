@@ -1,9 +1,6 @@
 import * as d3 from 'd3';
-import _debounce from 'lodash/debounce'; // Import debounce explicitly
-import _isEqual from 'lodash/isEqual'; // Import isEqual explicitly
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useStore } from 'react-redux';
-import { UNSELECTED_EXEMPLAR_NODE_COLOR } from '../../constants';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSelector, useStore } from 'react-redux';
 import { IRootState } from '../../types';
 import { setSelectedFocusNodes } from '../Store/CombinedSlice';
 
@@ -17,120 +14,133 @@ interface IScatterPlotProps {
   data: IScatterNode[];
 }
 
-function ScatterPlot({ data }: IScatterPlotProps) {
-  const svgRef = useRef<SVGSVGElement | null>(null);
-  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
+function CanvasScatterPlot({ data }: IScatterPlotProps) {
+  // Canvas and overlay SVG refs
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const svgOverlayRef = useRef<SVGSVGElement>(null);
+
+  // Keep track of the container’s width/height
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
+  // For performance, memoize margins & scales
+  const margins = useMemo(() => ({ top: 20, right: 20, bottom: 20, left: 20 }), []);
+
+  // x/y scales
+  const xScale = useMemo(() => {
+    const w = Math.max(dimensions.width - margins.left - margins.right, 0);
+    return d3.scaleLinear().domain([-0.2, 1.2]).range([0, w]);
+  }, [dimensions, margins]);
+
+  const yScale = useMemo(() => {
+    const h = Math.max(dimensions.height - margins.top - margins.bottom, 0);
+    return d3.scaleLinear().domain([-0.2, 1.2]).range([h, 0]);
+  }, [dimensions, margins]);
+
+  // Redux to track selected items
+  const selectedNodes = useSelector((state: IRootState) => state.combined.selectedNodes);
   const store = useStore<IRootState>();
   const { dispatch } = store;
-  const prevSelectedNodesRef = useRef<string[]>([]); // Ref to hold previous selected nodes
-  const brushRef = useRef<d3.BrushBehavior<[number, number]>>(null);
 
-  // Debounced resize observer callback
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const handleResize = useCallback(
-    _debounce(() => {
-      if (!svgRef.current) return;
-      const { width, height } = svgRef.current.getBoundingClientRect();
-      setDimensions({ width, height });
-    }, 200), // 200ms debounce
-    [svgRef],
-  );
+  // Resize logic
+  const handleResize = useCallback(() => {
+    if (!canvasRef.current?.parentElement) return;
+    const { width, height } = canvasRef.current.parentElement.getBoundingClientRect();
+    setDimensions({ width, height });
+  }, []);
 
   useEffect(() => {
-    const resizeObserver = new ResizeObserver(() => handleResize());
-
-    if (svgRef.current) {
-      resizeObserver.observe(svgRef.current);
-    }
+    const observer = new ResizeObserver(() => handleResize());
+    if (canvasRef.current?.parentElement) observer.observe(canvasRef.current.parentElement);
 
     return () => {
-      resizeObserver.disconnect();
-      handleResize.cancel(); // Cancel any pending debounced calls
+      observer.disconnect();
     };
   }, [handleResize]);
 
+  // Brush logic — do this once. We'll attach it to the overlay SVG.
   useEffect(() => {
-    const svgElement = svgRef.current; // Capture the current value of the ref
+    if (!svgOverlayRef.current) return;
 
-    const unsubscribe = store.subscribe(() => {
-      const state = store.getState();
-      const { selectedNodes } = state.combined;
+    const svgOverlay = d3.select(svgOverlayRef.current);
+    const brushG = svgOverlay.append('g').attr('class', 'brush');
 
-      if (_isEqual(selectedNodes, prevSelectedNodesRef.current)) return;
-
-      prevSelectedNodesRef.current = selectedNodes;
-
-      d3.select(svgElement) // Use the captured ref
-        .selectAll('circle')
-        .classed('selected', (d: IScatterNode) => selectedNodes.includes(d.text));
-    });
-
-    const { width, height } = dimensions || {};
-    const svg = d3.select(svgElement); // Use the captured ref here as well
-
-    const xMin = d3.min(data, (d) => d.x) ?? 0;
-    const xMax = d3.max(data, (d) => d.x) ?? 0;
-    const yMin = d3.min(data, (d) => d.y) ?? 0;
-    const yMax = d3.max(data, (d) => d.y) ?? 0;
-
-    const xScale = d3
-      .scaleLinear()
-      .domain([xMin, xMax])
-      .range([0, width || 0]);
-    const yScale = d3
-      .scaleLinear()
-      .domain([yMin, yMax])
-      .range([height || 0, 0]);
-
-    const circles = svg.selectAll('circle').data(data);
-
-    circles
-      .enter()
-      .append('circle')
-      .attr('r', 2)
-      .merge(circles)
-      .attr('cx', (d) => xScale(d.x))
-      .attr('cy', (d) => yScale(d.y))
-      .attr('fill', UNSELECTED_EXEMPLAR_NODE_COLOR);
-
-    circles.exit().remove();
-
-    brushRef.current = d3
+    // Define the brush
+    const brush = d3
       .brush()
       .extent([
-        [0, 0],
-        [width || 0, height || 0],
+        [margins.left, margins.top],
+        [dimensions.width - margins.right, dimensions.height - margins.bottom],
       ])
       .on('end', (event) => {
-        const { selection } = event;
-        if (!selection) return;
+        if (!event.selection) return;
 
-        const [[x1, y1], [x2, y2]] = selection as [[number, number], [number, number]];
-        const selectedNodes: IScatterNode[] = [];
+        const [[x1, y1], [x2, y2]] = event.selection as [[number, number], [number, number]];
 
-        svg.selectAll('circle').classed('selected', (d) => {
-          const isSelected = xScale(d.x) >= x1 && xScale(d.x) <= x2 && yScale(d.y) >= y1 && yScale(d.y) <= y2;
-          if (isSelected) {
-            selectedNodes.push(d.text);
-          }
-          return isSelected;
-        });
+        // Determine which points are in the brush
+        const newlySelected = data
+          .filter((d) => {
+            const cx = xScale(d.x) + margins.left;
+            const cy = yScale(d.y) + margins.top;
+            return cx >= x1 && cx <= x2 && cy >= y1 && cy <= y2;
+          })
+          .map((d) => d.text);
 
-        dispatch(setSelectedFocusNodes(selectedNodes));
+        dispatch(setSelectedFocusNodes(newlySelected));
       });
 
-    svg.select('.brush').remove();
-    svg.append('g').attr('class', 'brush').call(brushRef.current);
+    brushG.call(brush);
 
+    // Only re-init the brush if the component unmounts or changes drastically
     return () => {
-      unsubscribe();
-      if (svgElement) {
-        d3.select(svgElement).selectAll('*').remove(); // Use the captured ref here
-      }
+      brushG.remove();
     };
-  }, [data, dimensions, dispatch, store]);
+  }, [data, dimensions, dispatch, xScale, yScale, margins]);
 
-  return <svg ref={svgRef} style={{ width: '100%', height: '100%' }} />;
+  // Redraw the canvas whenever data, selection, or dimensions change
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
+
+    // Scale the canvas to match container
+    canvasRef.current.width = dimensions.width;
+    canvasRef.current.height = dimensions.height;
+
+    // Clear
+    ctx.clearRect(0, 0, dimensions.width, dimensions.height);
+
+    // Draw each point
+    data.forEach((d) => {
+      // could be used for different visual encoding based on selection
+      // const isSelected = selectedNodes.includes(d.text);
+
+      ctx.beginPath();
+      ctx.fillStyle = '#DA5700';
+      const cx = xScale(d.x) + margins.left;
+      const cy = yScale(d.y) + margins.top;
+      ctx.arc(cx, cy, 4, 0, 2 * Math.PI);
+      ctx.fill();
+    });
+  }, [data, selectedNodes, dimensions, xScale, yScale, margins]);
+
+  return (
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
+      {/* The overlay SVG is used solely for brushing (and maybe minimal overlays),
+          not for drawing thousands of circles. */}
+      <svg
+        ref={svgOverlayRef}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          pointerEvents: 'none', // pointer events on brush group only
+          width: '100%',
+          height: '100%',
+        }}
+      />
+    </div>
+  );
 }
 
-export default React.memo(ScatterPlot);
+export default CanvasScatterPlot;
