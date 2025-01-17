@@ -1,0 +1,27 @@
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Ensures each panel or container doesn't produce unintended overflow. */
+.resizable-panel {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Some placeholder styling for .Tabs or text. */
+.mantine-Tabs-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mantine-Tabs-panel {
+  flex: 1;
+  overflow: auto;
+}

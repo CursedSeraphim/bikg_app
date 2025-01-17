@@ -1,4 +1,6 @@
 import * as d3 from 'd3';
+import _debounce from 'lodash/debounce'; // Import debounce explicitly
+import _isEqual from 'lodash/isEqual'; // Import isEqual explicitly
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useStore } from 'react-redux';
 import { UNSELECTED_EXEMPLAR_NODE_COLOR } from '../../constants';
@@ -24,8 +26,9 @@ function ScatterPlot({ data }: IScatterPlotProps) {
   const brushRef = useRef<d3.BrushBehavior<[number, number]>>(null);
 
   // Debounced resize observer callback
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleResize = useCallback(
-    _.debounce(() => {
+    _debounce(() => {
       if (!svgRef.current) return;
       const { width, height } = svgRef.current.getBoundingClientRect();
       setDimensions({ width, height });
@@ -47,31 +50,37 @@ function ScatterPlot({ data }: IScatterPlotProps) {
   }, [handleResize]);
 
   useEffect(() => {
-    if (!dimensions || !svgRef.current) return;
+    const svgElement = svgRef.current; // Capture the current value of the ref
 
     const unsubscribe = store.subscribe(() => {
       const state = store.getState();
       const { selectedNodes } = state.combined;
 
-      if (_.isEqual(selectedNodes, prevSelectedNodesRef.current)) return;
+      if (_isEqual(selectedNodes, prevSelectedNodesRef.current)) return;
 
       prevSelectedNodesRef.current = selectedNodes;
 
-      d3.select(svgRef.current)
+      d3.select(svgElement) // Use the captured ref
         .selectAll('circle')
         .classed('selected', (d: IScatterNode) => selectedNodes.includes(d.text));
     });
 
-    const { width, height } = dimensions;
-    const svg = d3.select(svgRef.current);
+    const { width, height } = dimensions || {};
+    const svg = d3.select(svgElement); // Use the captured ref here as well
 
     const xMin = d3.min(data, (d) => d.x) ?? 0;
     const xMax = d3.max(data, (d) => d.x) ?? 0;
     const yMin = d3.min(data, (d) => d.y) ?? 0;
     const yMax = d3.max(data, (d) => d.y) ?? 0;
 
-    const xScale = d3.scaleLinear().domain([xMin, xMax]).range([0, width]);
-    const yScale = d3.scaleLinear().domain([yMin, yMax]).range([height, 0]);
+    const xScale = d3
+      .scaleLinear()
+      .domain([xMin, xMax])
+      .range([0, width || 0]);
+    const yScale = d3
+      .scaleLinear()
+      .domain([yMin, yMax])
+      .range([height || 0, 0]);
 
     const circles = svg.selectAll('circle').data(data);
 
@@ -90,7 +99,7 @@ function ScatterPlot({ data }: IScatterPlotProps) {
       .brush()
       .extent([
         [0, 0],
-        [width, height],
+        [width || 0, height || 0],
       ])
       .on('end', (event) => {
         const { selection } = event;
@@ -115,7 +124,9 @@ function ScatterPlot({ data }: IScatterPlotProps) {
 
     return () => {
       unsubscribe();
-      d3.select(svgRef.current).selectAll('*').remove(); // Clear SVG on unmount
+      if (svgElement) {
+        d3.select(svgElement).selectAll('*').remove(); // Use the captured ref here
+      }
     };
   }, [data, dimensions, dispatch, store]);
 
