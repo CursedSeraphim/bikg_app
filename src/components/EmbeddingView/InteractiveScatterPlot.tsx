@@ -28,12 +28,12 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
   // x/y scales
   const xScale = useMemo(() => {
     const w = Math.max(dimensions.width - margins.left - margins.right, 0);
-    return d3.scaleLinear().domain([-0.2, 1.2]).range([0, w]);
+    return d3.scaleLinear().domain([-0.05, 1.05]).range([0, w]);
   }, [dimensions, margins]);
 
   const yScale = useMemo(() => {
     const h = Math.max(dimensions.height - margins.top - margins.bottom, 0);
-    return d3.scaleLinear().domain([-0.2, 1.2]).range([h, 0]);
+    return d3.scaleLinear().domain([-0.05, 1.05]).range([h, 0]);
   }, [dimensions, margins]);
 
   // Redux to track selected items

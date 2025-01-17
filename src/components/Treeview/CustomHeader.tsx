@@ -1,45 +1,64 @@
-// CustomHeader.tsx
+// src/components/Treeview/CustomHeader.tsx
 import React, { useState } from 'react';
 import {
-  SELECTED_TYPE_NODE_COLOR,
-  UNSELECTED_TYPE_NODE_COLOR,
-  SELECTED_EXEMPLAR_NODE_COLOR,
-  UNSELECTED_EXEMPLAR_NODE_COLOR,
   SELECTED_CUMULATIVE_NODE_COLOR,
+  SELECTED_EXEMPLAR_NODE_COLOR,
+  SELECTED_TYPE_NODE_COLOR,
   UNSELECTED_CUMULATIVE_NODE_COLOR,
+  UNSELECTED_EXEMPLAR_NODE_COLOR,
+  UNSELECTED_TYPE_NODE_COLOR,
 } from '../../constants';
 
-export function CustomHeader({ onSelect, style, node }) {
+interface CustomHeaderProps {
+  onSelect: () => void;
+  style: any;
+  node: any;
+}
+
+export function CustomHeader({ onSelect, style, node }: CustomHeaderProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isActive, setIsActive] = useState(false);
 
-  const iconClass = `fas fa-caret-right`;
-  const iconStyle = { marginRight: '5px' };
+  const iconClass = 'fas fa-caret-right';
+  const iconStyle: React.CSSProperties = { marginRight: '5px' };
 
-  let newStyle = { ...style.base, transition: 'all 0.15s ease-in-out' };
+  let baseStyle = { ...style.base, transition: 'all 0.15s ease-in-out' };
 
   if (node.selected) {
-    newStyle = { ...newStyle, color: SELECTED_TYPE_NODE_COLOR, fontWeight: 'bold' };
+    baseStyle = {
+      ...baseStyle,
+      color: SELECTED_TYPE_NODE_COLOR,
+      fontWeight: 'bold',
+    };
   } else {
-    newStyle = { ...newStyle, color: UNSELECTED_TYPE_NODE_COLOR, fontWeight: 'normal' };
+    baseStyle = {
+      ...baseStyle,
+      color: UNSELECTED_TYPE_NODE_COLOR,
+      fontWeight: 'normal',
+    };
   }
 
   if (isHovered || isActive) {
-    newStyle = { ...newStyle, backgroundColor: SELECTED_TYPE_NODE_COLOR, color: 'white' };
+    baseStyle = {
+      ...baseStyle,
+      backgroundColor: SELECTED_TYPE_NODE_COLOR,
+      color: 'white',
+    };
   }
 
-  // Determine the colors based on whether the count is actual or cumulative
+  // Distinguish exemplars vs. cumulative
   const selectedNodeCountColor = node.nViolatingNodes !== 0 ? SELECTED_EXEMPLAR_NODE_COLOR : SELECTED_CUMULATIVE_NODE_COLOR;
   const unselectedNodeCountColor = node.nViolatingNodes !== 0 ? UNSELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_CUMULATIVE_NODE_COLOR;
+
   const selectedTextDecoration = node.nViolatingNodes !== 0 ? 'underline' : 'none';
   const unselectedTextDecoration = node.nViolatingNodes !== 0 ? 'underline' : 'none';
 
-  // Split the node name into two parts
+  // Split the node name
   const [nodeName, countTotal] = node.name.split(' ');
 
   return (
     <div
-      style={newStyle}
+      style={baseStyle}
       onClick={onSelect}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -49,16 +68,20 @@ export function CustomHeader({ onSelect, style, node }) {
     >
       <div style={node.selected ? { ...style.title, fontWeight: 'bold' } : style.title}>
         <i className={iconClass} style={iconStyle} />
-        {/* Completed TODO: make color of text white when isHovered and when isActive */}
-        <span style={{ color: isHovered || isActive ? 'white' : node.selected ? SELECTED_TYPE_NODE_COLOR : UNSELECTED_TYPE_NODE_COLOR }}>{nodeName}</span>{' '}
+        <span
+          style={{
+            color: isHovered || isActive ? 'white' : node.selected ? SELECTED_TYPE_NODE_COLOR : UNSELECTED_TYPE_NODE_COLOR,
+          }}
+        >
+          {nodeName}
+        </span>{' '}
         <span
           style={{
             color: isHovered ? selectedNodeCountColor : node.selected ? selectedNodeCountColor : unselectedNodeCountColor,
             textDecoration: node.selected ? selectedTextDecoration : unselectedTextDecoration,
           }}
         >
-          {' '}
-          {countTotal}
+          {countTotal ? ` ${countTotal}` : ''}
         </span>
       </div>
     </div>

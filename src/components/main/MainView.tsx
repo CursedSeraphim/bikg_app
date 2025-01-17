@@ -17,7 +17,7 @@ export default function MainView() {
         style={{
           background: 'lightgray',
           cursor: 'row-resize',
-          height: '4px',
+          height: '1px',
         }}
       />
 

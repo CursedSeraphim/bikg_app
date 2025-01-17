@@ -4,13 +4,13 @@ import React from 'react';
 
 export default function MainBottomTabs() {
   return (
-    <Tabs defaultValue="lineup" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <Tabs defaultValue="tabularView" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
       <Tabs.List>
-        <Tabs.Tab value="lineup">Lineup</Tabs.Tab>
+        <Tabs.Tab value="tabularView">Tabular View</Tabs.Tab>
         <Tabs.Tab value="aiChat">AI Chat</Tabs.Tab>
       </Tabs.List>
 
-      <Tabs.Panel value="lineup" pt="xs" style={{ flex: 1, overflow: 'auto' }}>
+      <Tabs.Panel value="tabularView" pt="xs" style={{ flex: 1, overflow: 'auto' }}>
         <Text>Lineup Content</Text>
       </Tabs.Panel>
 

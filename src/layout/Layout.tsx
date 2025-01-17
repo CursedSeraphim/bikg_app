@@ -17,7 +17,7 @@ export default function Layout() {
         style={{
           background: 'lightgray',
           cursor: 'col-resize',
-          width: '4px',
+          width: '1px',
         }}
       />
 

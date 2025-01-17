@@ -1,4 +1,5 @@
 // src/components/sidebar/Sidebar.tsx
+import { Tabs } from '@mantine/core';
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
@@ -22,13 +23,21 @@ export default function Sidebar() {
         style={{
           background: 'lightgray',
           cursor: 'row-resize',
-          height: '4px',
+          height: '1px',
         }}
       />
 
       {/* Sidebar bottom */}
       <Panel defaultSize={50} minSize={20} maxSize={80} style={{ display: 'flex', flexDirection: 'column' }}>
-        <InteractiveScatterPlot data={scatterData} />
+        <Tabs defaultValue="embedding" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Tabs.List>
+            <Tabs.Tab value="embedding">Embedding</Tabs.Tab>
+          </Tabs.List>
+
+          <Tabs.Panel value="embedding" pt="xs" style={{ flex: 1, overflow: 'auto' }}>
+            <InteractiveScatterPlot data={scatterData} />
+          </Tabs.Panel>
+        </Tabs>
       </Panel>
     </PanelGroup>
   );

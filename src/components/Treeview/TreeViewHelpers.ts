@@ -1,42 +1,26 @@
-// TreeViewHelpers.ts
+// src/components/Treeview/TreeViewHelpers.ts
 
-// Toggle the path to a node in the tree data
-export function togglePathToNode(node, targetName) {
-  if (node.name.split(' ')[0] === targetName) {
-    node.toggled = true;
-    node.selected = true;
-    return true;
-  }
-  if (node.children) {
-    for (const child of node.children) {
-      if (togglePathToNode(child, targetName)) {
-        node.toggled = true;
-        return true;
-      }
-    }
-  }
-  return false;
-}
+import { KnowledgeGraphNode } from './useTreeData';
 
-// Reset all nodes in the tree data
-export function resetAllNodes(node) {
-  if (node) {
-    node.toggled = false;
-    node.selected = false;
-    if (node.children) {
-      for (const child of node.children) {
-        resetAllNodes(child);
-      }
-    }
-  }
-}
+export function updateTreeDataWithSelectedTypes(nodes: KnowledgeGraphNode[] | null, selectedTypes: string[] = []): KnowledgeGraphNode[] {
+  if (!Array.isArray(nodes)) return [];
 
-export function updateTreeDataWithSelectedTypes(oldTreeData, selectedTypes) {
-  const newTreeData = JSON.parse(JSON.stringify(oldTreeData));
-  resetAllNodes(newTreeData);
+  return nodes.map((node) => {
+    if (!node || !node.name) return node;
 
-  for (const selectedType of selectedTypes) {
-    togglePathToNode(newTreeData, selectedType);
-  }
-  return newTreeData;
+    // The ID we used above is typically the portion before the space
+    // so if node.id = "Car", we can see if "Car" is in selectedTypes.
+    const isSelected = selectedTypes.includes(node.id);
+
+    // Optionally, store a boolean "selected" for your own styling
+    // (MUI highlights selected nodes automatically if you pass 'selected' to <TreeView>)
+    const updatedChildren = updateTreeDataWithSelectedTypes(node.children, selectedTypes);
+
+    return {
+      ...node,
+      children: updatedChildren,
+      // optional custom property
+      // selected: isSelected,
+    };
+  });
 }
