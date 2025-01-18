@@ -1,4 +1,4 @@
-// TreeLayoutHelpers.ts
+// src/components/Cytoscape/TreeLayoutHelpers.ts
 import cytoscape from 'cytoscape';
 import { findRootNodes, moveCollectionToCoordinates, rotateNodes, treeLayout } from '../../CytoscapeNodeFactory';
 import { UNFOLDED_SUBTREE_BOUNDING_BOX_MARGIN } from '../../constants';
@@ -118,7 +118,6 @@ export function showCytoElements(element) {
  * @param {Collection} exemplarNodes - Nodes representing exemplars.
  */
 export function adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes) {
-
   const potentialRoots = typeNodes.union(otherNodes).union(violationNodes);
   const everything = potentialRoots.union(violationNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets());
   const roots = findRootNodes(potentialRoots);

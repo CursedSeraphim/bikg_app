@@ -46,3 +46,21 @@ body,
   max-height: 100%; /* Prevents vertical overflow */
   overflow: auto; /* Adds scrollbars only when needed */
 }
+
+/* Hover state */
+.cy-context-menus-cxt-menuitem:hover {
+  background-color: var(--mantine-header-hover-color);
+  color: #ffffff;  /* White text for contrast */
+}
+
+/* Active/Focused state could also be added */
+.cy-context-menus-cxt-menuitem:active, 
+.cy-context-menus-cxt-menuitem:focus {
+  background-color: var(--mantine-header-color);
+  color: #ffffff;  /* Keep text white for consistency */
+}
+
+.cytoscape_container {
+  height: 100%;
+  width: 500px;
+}

@@ -1,4 +1,4 @@
-// CytoscopeView.tsx
+// src/components/Cytoscape/CytoscapeView.tsx
 import cytoscape, { Core } from 'cytoscape';
 import contextMenus from 'cytoscape-context-menus';
 import coseBilkent from 'cytoscape-cose-bilkent';
@@ -22,6 +22,7 @@ cytoscape.use(cytoscapeLasso);
 cytoscape.use(contextMenus);
 
 function CytoscapeView({ rdfOntology, onLoaded }) {
+  console.log('rdfOntology', rdfOntology);
   const [cy, setCy] = useState<Core | null>(null);
   const violations = useSelector(selectViolations);
   const types = useSelector(selectTypes);

@@ -1,6 +1,6 @@
-// useCytoViewHelpers.ts
-import { Core, NodeSingular, NodeCollection } from 'cytoscape';
-import { NODE_LAYOUT_OFFSET_X, DISTANCE_BETWEEN_NODES_Y } from '../../constants';
+// src/components/Cytoscape/useCytoscapeViewHelpers.ts
+import { Core, NodeCollection, NodeSingular } from 'cytoscape';
+import { DISTANCE_BETWEEN_NODES_Y, NODE_LAYOUT_OFFSET_X } from '../../constants';
 import { Position } from '../../types';
 
 export const showAllEdges = (cy: Core) => {

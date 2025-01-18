@@ -1,4 +1,4 @@
-// useSubscribeCytoscape.ts
+// src/components/Cytoscape/useSubscribeCytoscape.ts
 import { Core } from 'cytoscape';
 import { useEffect } from 'react';
 import { useStore } from 'react-redux';

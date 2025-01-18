@@ -1,9 +1,9 @@
-// Cytoscapeinstancehelpers.ts
+// src/components/Cytoscape/CytoscapeInstanceHelpers.ts
 import cytoscape, { Core } from 'cytoscape';
 import React from 'react';
 import { GetShapeForNamespaceFn, ICytoData, SetCyFn, SetLoadingFn } from '../../types';
-import { getStyle } from './CytoscapeStyles';
 import { getLayout } from './CytoscapeLayout';
+import { getStyle } from './CytoscapeStyles';
 
 export function createNewCytoscapeInstance(
   data: ICytoData,

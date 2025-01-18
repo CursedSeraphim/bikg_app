@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+// src/useCytoCumulativeCounts.ts
 import { Core } from 'cytoscape';
 import _ from 'lodash';
+import { useEffect, useRef } from 'react';
 import store from './components/Store/Store';
 import { INumberViolationsPerNodeMap } from './types';
 
