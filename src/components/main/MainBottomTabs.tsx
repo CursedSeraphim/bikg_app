@@ -1,6 +1,7 @@
 // src/components/main/MainBottomTabs.tsx
-import { Tabs, Text, Tooltip } from '@mantine/core';
+import { Tabs, Tooltip } from '@mantine/core';
 import React from 'react';
+import LangchainComponent from '../LangChain/LangChainView';
 import LineUpView from '../LineUp/LineUpView';
 
 export default function MainBottomTabs() {
@@ -34,7 +35,7 @@ export default function MainBottomTabs() {
       </Tabs.Panel>
 
       <Tabs.Panel value="aiChat" pt="xs" style={{ flex: 1, overflow: 'auto' }}>
-        <Text>AI Chat Content</Text>
+        <LangchainComponent />
       </Tabs.Panel>
     </Tabs>
   );
