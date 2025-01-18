@@ -1,5 +1,5 @@
 // src/components/sidebar/Sidebar.tsx
-import { Tabs } from '@mantine/core';
+import { Tabs, Tooltip } from '@mantine/core';
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
@@ -31,7 +31,16 @@ export default function Sidebar() {
       <Panel defaultSize={50} minSize={20} maxSize={80} style={{ display: 'flex', flexDirection: 'column' }}>
         <Tabs defaultValue="embedding" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Tabs.List>
-            <Tabs.Tab value="embedding">Embedding</Tabs.Tab>
+            <Tooltip
+              multiline
+              w={220}
+              opacity={0.7}
+              withArrow
+              transitionProps={{ duration: 300 }}
+              label="Displays an embedding of focus nodes. Each point is one focus node. The original feature vector is as list of all SHACL constraints down-projected to 2D using UMAP."
+            >
+              <Tabs.Tab value="embedding">Embedding</Tabs.Tab>
+            </Tooltip>
           </Tabs.List>
 
           <Tabs.Panel value="embedding" pt="xs" style={{ flex: 1, overflow: 'auto' }}>

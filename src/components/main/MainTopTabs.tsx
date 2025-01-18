@@ -1,5 +1,5 @@
 // src/components/main/MainTopTabs.tsx
-import { Tabs } from '@mantine/core';
+import { Tabs, Tooltip } from '@mantine/core';
 import React from 'react';
 import { useSelector } from 'react-redux';
 import CytoscapeView from '../Cytoscape/CytoscapeView';
@@ -12,7 +12,16 @@ export default function MainTopTabs() {
   return (
     <Tabs defaultValue="Ontology Node-Link View" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
       <Tabs.List>
-        <Tabs.Tab value="Ontology Node-Link View">Ontology Node-Link View</Tabs.Tab>
+        <Tooltip
+          multiline
+          w={220}
+          opacity={0.7}
+          withArrow
+          transitionProps={{ duration: 300 }}
+          label="Displays the ontology, shacl constraints, and  violation report data as a node-link diagram."
+        >
+          <Tabs.Tab value="Ontology Node-Link View">Ontology Node-Link View</Tabs.Tab>
+        </Tooltip>
       </Tabs.List>
 
       <Tabs.Panel value="Ontology Node-Link View" pt="xs" style={{ flex: 1, overflow: 'auto' }}>

@@ -1,13 +1,31 @@
 // src/components/main/MainBottomTabs.tsx
-import { Tabs, Text } from '@mantine/core';
+import { Tabs, Text, Tooltip } from '@mantine/core';
 import React from 'react';
 
 export default function MainBottomTabs() {
   return (
     <Tabs defaultValue="tabularView" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
       <Tabs.List>
-        <Tabs.Tab value="tabularView">Tabular View</Tabs.Tab>
-        <Tabs.Tab value="aiChat">AI Chat</Tabs.Tab>
+        <Tooltip
+          multiline
+          w={220}
+          opacity={0.7}
+          withArrow
+          transitionProps={{ duration: 300 }}
+          label="A tabular view using LineUp which displays a union of instance and violation report data."
+        >
+          <Tabs.Tab value="tabularView">Tabular View</Tabs.Tab>
+        </Tooltip>
+        <Tooltip
+          multiline
+          w={220}
+          opacity={0.7}
+          withArrow
+          transitionProps={{ duration: 300 }}
+          label="An AI chat interface that uses GPT and function calling to provide a conversational interface. It allows users to ask questions about the dashboard as well as control it using natural language."
+        >
+          <Tabs.Tab value="aiChat">AI Chat</Tabs.Tab>
+        </Tooltip>
       </Tabs.List>
 
       <Tabs.Panel value="tabularView" pt="xs" style={{ flex: 1, overflow: 'auto' }}>
