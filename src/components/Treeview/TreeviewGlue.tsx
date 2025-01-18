@@ -1,3 +1,4 @@
+// src/components/Treeview/TreeviewGlue.tsx
 /* eslint-disable no-param-reassign */
 import { INumberViolationsPerNodeMap, IOntologyNode, ITriple, OntologyMap } from '../../types';
 
