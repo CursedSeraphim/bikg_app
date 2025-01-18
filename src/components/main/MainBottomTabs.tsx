@@ -1,6 +1,7 @@
 // src/components/main/MainBottomTabs.tsx
 import { Tabs, Text, Tooltip } from '@mantine/core';
 import React from 'react';
+import LineUpView from '../LineUp/LineUpView';
 
 export default function MainBottomTabs() {
   return (
@@ -29,7 +30,7 @@ export default function MainBottomTabs() {
       </Tabs.List>
 
       <Tabs.Panel value="tabularView" pt="xs" style={{ flex: 1, overflow: 'auto' }}>
-        <Text>Lineup Content</Text>
+        <LineUpView />
       </Tabs.Panel>
 
       <Tabs.Panel value="aiChat" pt="xs" style={{ flex: 1, overflow: 'auto' }}>
