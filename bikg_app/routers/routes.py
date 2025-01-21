@@ -319,7 +319,6 @@ async def get_classes():
     # Now that 'rdf:type' contains actual lists, explode can be used
     unique_types = df.explode("rdf:type")["rdf:type"].unique().tolist()
 
-    # Assuming 'g' is your graph and has been defined elsewhere
     classes_from_ontology_graph_list = [str(g.namespace_manager.qname(c)) for c in g.subjects(predicate=RDF.type, object=OWL.Class)]  # type: ignore
 
     final_set = set(unique_types + classes_from_ontology_graph_list + ["missing"])
