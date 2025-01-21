@@ -1,11 +1,12 @@
 // FilterButtons.tsx
-import { useDispatch, useSelector } from 'react-redux';
 import React from 'react';
-import { selectFilterType, setFilterType } from '../../Store/CombinedSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectD3BoundingBox, selectFilterType, setD3BoundingBox, setFilterType } from '../../Store/CombinedSlice';
 
 export function FilterButtons() {
   const dispatch = useDispatch();
   const filterType = useSelector(selectFilterType);
+  const d3BoundingBox = useSelector(selectD3BoundingBox);
 
   return (
     <div className="filterButtonsContainer">
@@ -25,6 +26,16 @@ export function FilterButtons() {
         <input type="radio" value="none" checked={filterType === 'none'} onChange={() => dispatch(setFilterType('none'))} />
         {/* {filterType === 'none' ? 'No Filtering Active' : 'Deactivate Filtering'} */}
         No Filter
+      </label>
+
+      <label className={`d3BoundingBox ${d3BoundingBox === 'off' ? 'd3BoundingBox' : ''}`}>
+        <input type="radio" value="off" checked={d3BoundingBox === 'off'} onChange={() => dispatch(setD3BoundingBox('off'))} />
+        D3 Bounding Box Off
+      </label>
+
+      <label className={`d3BoundingBox ${d3BoundingBox === 'on' ? 'd3BoundingBox' : ''}`}>
+        <input type="radio" value="on" checked={d3BoundingBox === 'on'} onChange={() => dispatch(setD3BoundingBox('on'))} />
+        D3 Bounding Box On
       </label>
     </div>
   );

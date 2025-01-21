@@ -22,7 +22,6 @@ cytoscape.use(cytoscapeLasso);
 cytoscape.use(contextMenus);
 
 function CytoscapeView({ rdfOntology, onLoaded }) {
-  console.log('rdfOntology', rdfOntology);
   const [cy, setCy] = useState<Core | null>(null);
   const violations = useSelector(selectViolations);
   const types = useSelector(selectTypes);

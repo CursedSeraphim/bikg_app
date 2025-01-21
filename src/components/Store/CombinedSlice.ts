@@ -1,4 +1,4 @@
-// CombinedSlice.ts
+// src/store/slices/combined.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Quad, Store } from 'n3';
@@ -6,6 +6,7 @@ import { createSelector } from 'reselect';
 import { v4 as uuidv4 } from 'uuid';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 import {
+  D3BoundingBoxSetting,
   EdgeCountDict,
   ExemplarFocusNodeDict,
   FilterType,
@@ -39,6 +40,7 @@ const initialState: ICombinedState = {
   violationTypesMap: {},
   typesViolationMap: {},
   filterType: 'none',
+  d3BoundingBox: 'off',
   missingEdgeOption: 'keep',
   edgeCountDict: {},
   focusNodeExemplarDict: {},
@@ -557,6 +559,9 @@ const combinedSlice = createSlice({
     setFilterType: (state, action: PayloadAction<FilterType>) => {
       state.filterType = action.payload;
     },
+    setD3BoundingBox: (state, action: PayloadAction<D3BoundingBoxSetting>) => {
+      state.d3BoundingBox = action.payload;
+    },
     setViolationTypesMap: (state, action) => {
       state.violationTypesMap = action.payload;
     },
@@ -886,6 +891,7 @@ const combinedSlice = createSlice({
 
 export const selectMissingEdgeOption = (state: { combined: ICombinedState }) => state.combined.missingEdgeOption;
 export const selectFilterType = (state: { combined: ICombinedState }) => state.combined.filterType;
+export const selectD3BoundingBox = (state: { combined: ICombinedState }) => state.combined.d3BoundingBox;
 export const selectViolationsTypeMap = (state: { combined: ICombinedState }) => state.combined.violationTypesMap;
 export const selectSelectedNodes = (state: { combined: ICombinedState }) => state.combined.selectedNodes;
 export const selectSamples = (state: { combined: ICombinedState }) => state.combined.samples;
@@ -1268,6 +1274,7 @@ export const {
   setViolationTypesMap,
   setTypesViolationMap,
   setFilterType,
+  setD3BoundingBox,
   setMissingEdgeOption,
   setEdgeCountDict,
   setFocusNodeExemplarDict,

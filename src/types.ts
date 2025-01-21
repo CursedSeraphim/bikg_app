@@ -1,4 +1,4 @@
-import { Core, NodeSingular, EventObject } from 'cytoscape';
+import { Core, EventObject, NodeSingular } from 'cytoscape';
 
 export type Position = { x: number; y: number };
 
@@ -101,6 +101,8 @@ export type ExemplarFocusNodeDict = {
 
 export type FilterType = 'none' | 'unimodal' | 'nan';
 
+export type D3BoundingBoxSetting = 'off' | 'on';
+
 export type MissingEdgeOptionType = 'remove' | 'keep';
 
 export interface INamespaceInfo {
@@ -185,6 +187,7 @@ export interface ICombinedState {
   violationTypesMap: { [key: string]: string[] }; // map of violation sh:PropertyShapes to their corresponding owl:Class and the sh:NodeShapes in between
   typesViolationMap: { [key: string]: string[] }; // map of owl:Classes to their corresponding sh:PropertyShapes and the sh:NodeShapes in between
   filterType: FilterType;
+  d3BoundingBox: D3BoundingBoxSetting;
   missingEdgeOption: MissingEdgeOptionType;
   edgeCountDict: EdgeCountDict;
   focusNodeExemplarDict: FocusNodeExemplarDict;
