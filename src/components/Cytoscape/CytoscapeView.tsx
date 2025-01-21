@@ -50,7 +50,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   useCytoscapeContextMenu(cy, viewHelpers, subScribeCytoscape);
   useCytoCumulativeCounts(cy);
 
-  return <div id="cy" />;
+  return <div id="cy" style={{ width: '95%', height: '95%' }} />;
 }
 
 export default CytoscapeView;
