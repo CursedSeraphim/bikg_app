@@ -1103,7 +1103,8 @@ export const selectAllTriples = async (rdfString: string): Promise<{ visibleTrip
   });
 
   const subClassOfPredicate = new NamedNode(`${prefixes.rdfs}subClassOf`);
-  const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null);
+  // TODO should not be hardcoded ofc
+  const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null).filter((quad) => quad.object.id !== `${prefixes.omics}ReferenceData`);
   const allHiddenTuples = store.getQuads(null, null, null).filter((quad) => !allVisibleTuples.includes(quad));
 
   // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
