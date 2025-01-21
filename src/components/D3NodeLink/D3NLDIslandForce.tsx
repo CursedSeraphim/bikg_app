@@ -224,8 +224,8 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
    * Convert Redux data + local toggles -> D3 data arrays.
    */
   const convertData = useCallback(() => {
-    // Filter out hidden nodes from Redux, then also from hiddenNodesRef
-    const visibleNodeData = cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id));
+    // Filter out nodes based on updated n.data.visible
+    const visibleNodeData = cyDataNodes.filter((n) => n.data.visible);
 
     // Visible IDs
     const visibleIds = new Set(visibleNodeData.map((n) => n.data.id));
@@ -532,47 +532,73 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
     [d3Nodes],
   );
 
-  // BFS toggling for children (not including the node itself)
-  const toggleChildren = useCallback(
-    (nodeId: string) => {
-      const queue = [...(adjacencyRef.current[nodeId] || [])];
-      while (queue.length) {
-        const current = queue.shift();
-        if (!current) continue;
-        const isHidden = hiddenNodesRef.current.has(current);
-        if (isHidden) {
-          hiddenNodesRef.current.delete(current);
-        } else {
-          hiddenNodesRef.current.add(current);
-        }
-        const kids = adjacencyRef.current[current] || [];
-        queue.push(...kids);
+  function showChildren(nodeId: string) {
+    cyDataNodes.forEach((node) => {
+      if (adjacencyRef.current[nodeId]?.includes(node.data.id)) {
+        node.data.visible = true; // Set visibility to true
       }
-      convertData();
-    },
-    [convertData],
-  );
+    });
 
-  // BFS toggling for parents (not including the node itself)
-  const toggleParents = useCallback(
-    (nodeId: string) => {
-      const queue = [...(revAdjRef.current[nodeId] || [])];
-      while (queue.length) {
-        const current = queue.shift();
-        if (!current) continue;
-        const isHidden = hiddenNodesRef.current.has(current);
-        if (isHidden) {
-          hiddenNodesRef.current.delete(current);
-        } else {
-          hiddenNodesRef.current.add(current);
-        }
-        const parents = revAdjRef.current[current] || [];
-        queue.push(...parents);
+    // Ensure edges connected to children are visible
+    cyDataEdges.forEach((edge) => {
+      if (edge.data.source === nodeId || adjacencyRef.current[nodeId]?.includes(edge.data.target)) {
+        edge.data.visible = true;
       }
-      convertData();
-    },
-    [convertData],
-  );
+    });
+
+    convertData(); // Recompute nodes and edges
+  }
+
+  function hideChildren(nodeId: string) {
+    cyDataNodes.forEach((node) => {
+      if (adjacencyRef.current[nodeId]?.includes(node.data.id)) {
+        node.data.visible = false; // Set visibility to false
+      }
+    });
+
+    // Ensure edges connected to children are hidden
+    cyDataEdges.forEach((edge) => {
+      if (edge.data.source === nodeId || adjacencyRef.current[nodeId]?.includes(edge.data.target)) {
+        edge.data.visible = false;
+      }
+    });
+
+    convertData(); // Recompute nodes and edges
+  }
+
+  function showParents(nodeId: string) {
+    cyDataNodes.forEach((node) => {
+      if (revAdjRef.current[nodeId]?.includes(node.data.id)) {
+        node.data.visible = true; // Set visibility to true
+      }
+    });
+
+    // Ensure edges connected to parents are visible
+    cyDataEdges.forEach((edge) => {
+      if (edge.data.target === nodeId || revAdjRef.current[nodeId]?.includes(edge.data.source)) {
+        edge.data.visible = true;
+      }
+    });
+
+    convertData(); // Recompute nodes and edges
+  }
+
+  function hideParents(nodeId: string) {
+    cyDataNodes.forEach((node) => {
+      if (revAdjRef.current[nodeId]?.includes(node.data.id)) {
+        node.data.visible = false; // Set visibility to false
+      }
+    });
+
+    // Ensure edges connected to parents are hidden
+    cyDataEdges.forEach((edge) => {
+      if (edge.data.target === nodeId || revAdjRef.current[nodeId]?.includes(edge.data.source)) {
+        edge.data.visible = false;
+      }
+    });
+
+    convertData(); // Recompute nodes and edges
+  }
 
   // Hide a single node (just that node, not children or parents)
   const hideNode = useCallback(
@@ -646,8 +672,12 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
         node={menuNode}
         show={menuVisible}
         onClose={() => setMenuVisible(false)}
-        onToggleChildren={toggleChildren}
-        onToggleParents={toggleParents}
+        onToggleChildren={() => {
+          if (menuNode) showChildren(menuNode.id);
+        }}
+        onToggleParents={() => {
+          if (menuNode) showParents(menuNode.id);
+        }}
         onHideNode={hideNode}
         onCenterView={centerView}
       />
