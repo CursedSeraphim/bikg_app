@@ -28,6 +28,17 @@ import {
 } from '../../types';
 import { dataToScatterDataArray } from '../EmbeddingView/csvToScatterData';
 
+// Safely load any previously stored labels
+function loadFromLocalStorage(): string[] {
+  try {
+    const stored = localStorage.getItem('blacklistedLabels');
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    // If parsing fails, fall back to an empty array
+    return [];
+  }
+}
+
 const initialState: ICombinedState = {
   cumulativeNumberViolationsPerNode: {},
   samples: [],
@@ -56,7 +67,7 @@ const initialState: ICombinedState = {
   typeMap: {},
   exemplarMap: {},
   ontologyTree: null,
-  hiddenLabels: [],
+  hiddenLabels: loadFromLocalStorage(),
   nodeLabels: [],
   edgeLabels: [],
 };
@@ -444,6 +455,19 @@ const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
+    addHiddenLabels: (state, action: PayloadAction<string[]>) => {
+      const deduplicated = Array.from(new Set([...state.hiddenLabels, ...action.payload]));
+      state.hiddenLabels = deduplicated.sort();
+      localStorage.setItem('blacklistedLabels', JSON.stringify(state.hiddenLabels));
+    },
+    removeHiddenLabels: (state, action: PayloadAction<string[]>) => {
+      state.hiddenLabels = state.hiddenLabels.filter((label) => !action.payload.includes(label));
+      localStorage.setItem('blacklistedLabels', JSON.stringify(state.hiddenLabels));
+    },
+    clearHiddenLabels: (state) => {
+      state.hiddenLabels = [];
+      localStorage.setItem('blacklistedLabels', JSON.stringify([]));
+    },
     setCumulativeNumberViolationsPerNode: (state, action: PayloadAction<INumberViolationsPerNodeMap>) => {
       state.cumulativeNumberViolationsPerNode = action.payload;
 
@@ -461,19 +485,6 @@ const combinedSlice = createSlice({
     },
     setEdgeLabels: (state, action: PayloadAction<string[]>) => {
       state.edgeLabels = action.payload;
-    },
-    setHiddenLabels: (state, action: PayloadAction<string[]>) => {
-      state.hiddenLabels = action.payload;
-    },
-    addHiddenLabels: (state, action: PayloadAction<string[]>) => {
-      action.payload.forEach((label) => {
-        if (!state.hiddenLabels.includes(label)) {
-          state.hiddenLabels.push(label);
-        }
-      });
-    },
-    removeHiddenLabels: (state, action: PayloadAction<string[]>) => {
-      state.hiddenLabels = state.hiddenLabels.filter((label) => !action.payload.includes(label));
     },
     setOntologyTree: (state, action: PayloadAction<ServerTree>) => {
       state.ontologyTree = action.payload;
@@ -1262,6 +1273,7 @@ export const selectCytoData = async (rdfString, getColorForNamespace, types, num
 };
 
 export const {
+  clearHiddenLabels,
   setSelectedViolations,
   setViolations,
   setCsvData,
@@ -1290,7 +1302,6 @@ export const {
   setExemplarMap,
   setOntologyTree,
   setCumulativeNumberViolationsPerNode,
-  setHiddenLabels,
   addHiddenLabels,
   removeHiddenLabels,
   setNodeLabels,

@@ -1,18 +1,53 @@
-// SettingsTab.tsx
+// src/components/SettingsTab/SettingsTab.tsx
+import { Card, Divider, Title } from '@mantine/core';
 import React from 'react';
-import FilterSettings from './FilterSettings';
-import Legend from '../Legend/Legend';
 import BlacklistManager from '../LabelBlacklist/BlacklistManager';
-// import MissingEdgeSettings from './MissingEdgeSettings';
+import Legend from '../Legend/Legend';
+import D3BoundingBoxToggle from './D3BoundingBoxToggle';
+import FilterSettings from './FilterSettings';
+
 const MemoizedLegend = React.memo(Legend);
 
 function SettingsTab() {
   return (
-    <div className="settingsTab">
-      <FilterSettings />
-      <BlacklistManager />
-      <MemoizedLegend />
-      {/* <MissingEdgeSettings /> */}
+    <div className="settings-tab-container" style={{ padding: '16px' }}>
+      {/* Filters Section */}
+      <Card shadow="sm" padding="lg" withBorder>
+        <Title order={4} mb="xs">
+          Table Filter Settings
+        </Title>
+        <FilterSettings />
+      </Card>
+
+      <Divider my="md" />
+
+      {/* D3 Bounding Box Toggle */}
+      <Card shadow="sm" padding="lg" withBorder>
+        <Title order={4} mb="xs">
+          D3 Bounding Box
+        </Title>
+        <D3BoundingBoxToggle />
+      </Card>
+
+      <Divider my="md" />
+
+      {/* Legend Section */}
+      <Card shadow="sm" padding="lg" withBorder>
+        <Title order={4} mb="xs">
+          Legend
+        </Title>
+        <MemoizedLegend />
+      </Card>
+
+      <Divider my="md" />
+
+      {/* Blacklist Manager Section */}
+      <Card shadow="sm" padding="lg" withBorder>
+        <Title order={4} mb="xs">
+          Blacklist Manager
+        </Title>
+        <BlacklistManager />
+      </Card>
     </div>
   );
 }

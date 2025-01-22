@@ -1,17 +1,17 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { INamespaces, INamespaceInfo, UseShapeHandlerReturnType } from '../../types';
+import { INamespaceInfo, INamespaces, UseShapeHandlerReturnType } from '../../types';
 import { selectNamespaces } from '../Store/CombinedSlice';
 
-const SHAPE_LIST = ['triangle', 'rectangle', 'diamond', 'pentagon', 'hexagon'];
+const SHAPE_LIST = ['ellipse', 'rectangle', 'diamond', 'pentagon', 'hexagon'];
 const map = {
-  omics: 'triangle',
+  omics: 'ellipse',
   sh: 'rectangle',
   owl: 'diamond',
   cns: 'pentagon',
   xsd: 'hexagon',
 };
-const DEFAULT_SHAPE = 'ellipse';
+const DEFAULT_SHAPE = 'triangle';
 const MAX_DISPLAY_NAMESPACES = 5;
 
 /**
@@ -116,3 +116,4 @@ const useShapeHandler = (): UseShapeHandlerReturnType => {
 };
 
 export { useShapeHandler };
+

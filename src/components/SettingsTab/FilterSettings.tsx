@@ -1,13 +1,28 @@
-// FilterSettings.tsx
+// src/components/SettingsTab/FilterSettings.tsx
+import { Radio, Stack } from '@mantine/core';
 import React from 'react';
-import { FilterButtons } from './FilterButtons/FilterButtons';
+import { useDispatch, useSelector } from 'react-redux';
+import { FilterType } from '../../types';
+import { selectFilterType, setFilterType } from '../Store/CombinedSlice';
 
 function FilterSettings() {
+  const dispatch = useDispatch();
+  const filterType: FilterType = useSelector(selectFilterType);
+
+  const handleFilterChange = (value: FilterType) => {
+    dispatch(setFilterType(value));
+  };
+
   return (
-    <div className="settingsSectionContainer">
-      <div className="settingsTitle">LineUp Filter Settings</div>
-      <FilterButtons />
-    </div>
+    <Stack spacing="xs">
+      <Radio.Group value={filterType} onChange={(value) => handleFilterChange(value as FilterType)}>
+        <Stack spacing="sm">
+          <Radio value="unimodal" label="Filter Single-Value Columns" />
+          <Radio value="nan" label="Filter Empty Columns" />
+          <Radio value="none" label="No Filter" />
+        </Stack>
+      </Radio.Group>
+    </Stack>
   );
 }
 

@@ -12,11 +12,26 @@ const clearSelectedNodes = (cy: Core) => {
   cy.$(':selected').unselect();
 };
 
+// Helper function to hide/unhide Cytoscape nodes based on blacklisted labels
+function applyBlacklisting(cy: Core, hiddenLabels: string[]) {
+  cy.nodes().forEach((n) => {
+    const label = n.data('label');
+    if (hiddenLabels.includes(label)) {
+      n.data('blacklistedLabel', true);
+      n.addClass('hidden');
+    } else {
+      n.removeData('blacklistedLabel');
+      n.removeClass('hidden');
+    }
+  });
+}
+
 export const useSubscribeCytoscape = (cy: Core | null, initialNodeData, blacklistedLabelsRef) => {
   const store = useStore<IRootState>();
   const { dispatch } = store;
 
   const resetCyto = () => {
+    if (!cy) return;
     clearSelectedNodes(cy);
     showAllEdges(cy);
     resetNodes(cy, initialNodeData.current);
@@ -28,54 +43,60 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData, blacklis
   };
 
   const centerView = () => {
+    if (!cy) return;
     cy.fit();
     cy.center();
   };
 
+  // 1) On mount (or when `cy` first becomes available), immediately hide
+  // blacklisted nodes so they don't flicker.
   useEffect(() => {
-    // Subscribe to changes
+    if (!cy) return;
+
+    const state = store.getState().combined;
+    blacklistedLabelsRef.current = state.hiddenLabels;
+
+    applyBlacklisting(cy, blacklistedLabelsRef.current);
+  }, [cy, store, blacklistedLabelsRef]);
+
+  // 2) Subscribe to the store for *all subsequent changes* (e.g. node selections,
+  // violation updates, or blacklistedLabels changes). Re-apply blacklisting
+  // *after* we do any resets or layout calls.
+  useEffect(() => {
+    if (!cy) return;
+
     const unsubscribe = store.subscribe(() => {
       const state = store.getState().combined;
       const violationsTypesMap = state.violationTypesMap;
 
-      if (cy && initialNodeData.current && initialNodeData.current.size > 0) {
+      // 2a) Reset the graph and show relevant nodes
+      if (initialNodeData.current && initialNodeData.current.size > 0) {
         resetCyto();
-        
+
         const violationNodes = cy.nodes().filter((node) => state.selectedViolations.includes(node.id()));
         const typeNodes = cy.nodes().filter((node) => state.selectedTypes.includes(node.id()));
-        const connectedNodesIds = state.selectedViolations.flatMap((violation) => violationsTypesMap[violation]);
-        const otherNodeIds = connectedNodesIds.filter((node) => !state.selectedTypes.includes(node));
+        const connectedNodesIds = state.selectedViolations.flatMap((v) => violationsTypesMap[v]);
+        const otherNodeIds = connectedNodesIds.filter((nodeId) => !state.selectedTypes.includes(nodeId));
         const otherNodes = getNodesFromIds(otherNodeIds, cy);
         const exemplarNodes = cy.nodes().filter((node) => state.selectedViolationExemplars.includes(node.id()));
-        showCytoElements(violationNodes.union(otherNodes).union(typeNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets()));
+
+        showCytoElements(violationNodes.union(typeNodes).union(otherNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets()));
         adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes);
 
         violationNodes.union(typeNodes).union(otherNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes)).select();
       }
 
-      const newBlacklistedLabels = state.hiddenLabels;
-      if (cy && JSON.stringify(newBlacklistedLabels) !== JSON.stringify(blacklistedLabelsRef.current)) {
-        cy.nodes().each((n) => {
-          const label = n.data('label');
-          if (newBlacklistedLabels.includes(label) && !n.data('blacklistedLabel')) {
-            n.data('blacklistedLabel', true);
-            n.addClass('hidden');
-          } else if (!newBlacklistedLabels.includes(label) && n.data('blacklistedLabel')) {
-            n.removeData('blacklistedLabel');
-            n.removeClass('hidden');
-          }
-        });
-        // eslint-disable-next-line no-param-reassign
-        blacklistedLabelsRef.current = newBlacklistedLabels;
-      }
+      // 2b) Apply blacklisting *after* the reset and layout so hidden nodes don't flicker
+      const newHiddenLabels = state.hiddenLabels;
+      blacklistedLabelsRef.current = newHiddenLabels;
+      applyBlacklisting(cy, newHiddenLabels);
     });
 
-    // Cleanup
     return () => {
       unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cy, initialNodeData]);
+  }, [cy, initialNodeData, store]);
 
   return {
     resetCytoAndDispatch,

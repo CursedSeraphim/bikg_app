@@ -382,7 +382,7 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
             .distance(150)
             .strength(1),
         )
-        .force('charge', d3.forceManyBody().strength(-300).distanceMax(200))
+        .force('charge', d3.forceManyBody().strength(-300).distanceMax(300))
         .force('collision', d3.forceCollide(nodeRadius + labelPadding))
         .force('x', d3.forceX(width / 2).strength(0.01))
         .force('y', d3.forceY(height / 2).strength(0.01))

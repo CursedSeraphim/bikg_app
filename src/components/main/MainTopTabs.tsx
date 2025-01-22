@@ -11,7 +11,7 @@ export default function MainTopTabs() {
   const [cytoscapeLoading, setCytoscapeLoading] = React.useState(true);
 
   return (
-    <Tabs defaultValue="d3.js NLD View" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <Tabs defaultValue="D3.js NLD View" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
       <Tabs.List>
         <Tooltip
           multiline
@@ -21,12 +21,21 @@ export default function MainTopTabs() {
           transitionProps={{ duration: 300 }}
           label="Displays the ontology, SHACL constraints, and violation data as a D3 node-link diagram."
         >
-          <Tabs.Tab value="d3.js NLD View">d3.js NLD View</Tabs.Tab>
+          <Tabs.Tab value="D3.js NLD View">D3.js NLD View</Tabs.Tab>
         </Tooltip>
-        <Tabs.Tab value="Cytoscape NLD View">Cytoscape NLD View</Tabs.Tab>
+        <Tooltip
+          multiline
+          w={220}
+          opacity={0.7}
+          withArrow
+          transitionProps={{ duration: 300 }}
+          label="Displays the ontology, SHACL constraints, and violation data as a Cytoscape node-link diagram."
+        >
+          <Tabs.Tab value="Cytoscape NLD View">Cytoscape NLD View</Tabs.Tab>
+        </Tooltip>
       </Tabs.List>
 
-      <Tabs.Panel value="d3.js NLD View" pt="xs" style={{ flex: 1, overflow: 'auto' }}>
+      <Tabs.Panel value="D3.js NLD View" pt="xs" style={{ flex: 1, overflow: 'auto' }}>
         <D3NLDView rdfOntology={rdfOntology} />
       </Tabs.Panel>
 
