@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 // Redux-based data selectors
 import { selectCumulativeNumberViolationsPerNode, selectD3BoundingBox, selectTypes, selectViolations } from '../Store/CombinedSlice';
 
-// Our custom hook that fetches node/edge data from the Redux pipeline:
+// Custom hook that fetches node/edge data
 import { useD3Data } from './useD3Data';
 
 interface CanvasNode {
@@ -96,7 +96,6 @@ function ContextMenu({
           }
         `}
       </style>
-
       <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Node: {node.label}</div>
       <ul className="d3-context-menu">
         <li
@@ -168,6 +167,10 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
 
   const transformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown> | null>(null);
+
+  // Track right-button dragging state
+  const rightDraggingRef = useRef(false);
+  const rightMouseDownRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const adj: Record<string, string[]> = {};
@@ -364,7 +367,7 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
       event.subject.fy = event.subject.y;
     })
     .on('drag', (event) => {
-      const [px, py] = [event.x, event.y];
+      const [px, py] = d3.pointer(event, canvasRef.current);
       const [tx, ty] = transformRef.current.invert([px, py]);
       event.subject.fx = tx;
       event.subject.fy = ty;
@@ -395,6 +398,11 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
 
   const handleContextMenu = useCallback(
     (event: MouseEvent) => {
+      if (rightDraggingRef.current) {
+        event.preventDefault();
+        return;
+      }
+
       event.preventDefault();
       if (!simulationRef.current) return;
 
@@ -536,6 +544,9 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
 
     const zoomBehavior = d3
       .zoom<HTMLCanvasElement, unknown>()
+      .filter((event: any) => {
+        return event.type === 'wheel' || (event.type === 'mousedown' && event.button === 2);
+      })
       .scaleExtent([0.1, 10])
       .on('zoom', (event) => {
         transformRef.current = event.transform;
@@ -549,12 +560,33 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
 
     selection.call(handleDrag as any);
 
+    const onMouseDown = (event: MouseEvent) => {
+      if (event.button === 2) {
+        rightDraggingRef.current = false;
+        rightMouseDownRef.current = { x: event.clientX, y: event.clientY };
+      }
+    };
+
+    const onMouseMove = (event: MouseEvent) => {
+      if ((event.buttons & 2) === 2 && rightMouseDownRef.current) {
+        const dx = event.clientX - rightMouseDownRef.current.x;
+        const dy = event.clientY - rightMouseDownRef.current.y;
+        if (dx * dx + dy * dy > 16) {
+          rightDraggingRef.current = true;
+        }
+      }
+    };
+
+    canvas.addEventListener('mousedown', onMouseDown);
+    canvas.addEventListener('mousemove', onMouseMove);
     canvas.addEventListener('dblclick', handleDoubleClick);
     canvas.addEventListener('contextmenu', handleContextMenu);
 
     return () => {
       selection.on('.zoom', null);
       selection.on('.drag', null);
+      canvas.removeEventListener('mousedown', onMouseDown);
+      canvas.removeEventListener('mousemove', onMouseMove);
       canvas.removeEventListener('dblclick', handleDoubleClick);
       canvas.removeEventListener('contextmenu', handleContextMenu);
     };
