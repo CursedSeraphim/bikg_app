@@ -7,9 +7,9 @@ import { useD3Data } from './useD3Data';
 import { ContextMenu } from './D3NldContextMenu';
 import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
 import { computeColorForId } from './D3NldUtils';
-import { useD3Force } from './hooks/useD3Force';
 import { useAdjacency } from './hooks/useAdjacency';
 import { useCanvasDimensions } from './hooks/useCanvasDimensions';
+import { useD3Force } from './hooks/useD3Force';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 
 /** Force-directed graph view for the D3 based node-link diagram. */
@@ -101,13 +101,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     }
   }, [loading, convertData]);
 
-  const { transformRef, simulationRef, zoomBehaviorRef } = useD3Force(
-    canvasRef,
-    d3Nodes,
-    d3Edges,
-    d3BoundingBox,
-    dimensions,
-  );
+  const { transformRef, simulationRef, zoomBehaviorRef } = useD3Force(canvasRef, d3Nodes, d3Edges, d3BoundingBox, dimensions);
 
   const { showChildren, hideChildren, showParents, hideParents, hideNode } = useNodeVisibility(
     cyDataNodes,
@@ -117,18 +111,40 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     hiddenNodesRef,
     convertData,
   );
+
+  // Freeze all currently visible nodes for 1 second, and the triggering node for 2 seconds
   const freezeNode = useCallback(
-    (id: string, duration = 1000) => {
-      const node = nodeMapRef.current[id];
-      if (!node || !simulationRef.current) return;
-      node.fx = node.x;
-      node.fy = node.y;
-      simulationRef.current.alphaTarget(0.1).restart();
+    (id: string) => {
+      const sim = simulationRef.current;
+      if (!sim) return;
+
+      const allNodes = Object.values(nodeMapRef.current);
+      allNodes.forEach((node) => {
+        node.fx = node.x;
+        node.fy = node.y;
+      });
+
+      sim.alphaTarget(0.1).restart();
+
+      // Release other nodes after 1 second
       setTimeout(() => {
-        node.fx = null;
-        node.fy = null;
-        simulationRef.current?.alphaTarget(0);
-      }, duration);
+        allNodes.forEach((node) => {
+          if (node.id !== id) {
+            node.fx = null;
+            node.fy = null;
+          }
+        });
+      }, 500);
+
+      // Release the triggering node after 2 seconds
+      setTimeout(() => {
+        const triggerNode = nodeMapRef.current[id];
+        if (triggerNode) {
+          triggerNode.fx = null;
+          triggerNode.fy = null;
+        }
+        sim.alphaTarget(0);
+      }, 1000);
     },
     [simulationRef],
   );
@@ -172,8 +188,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   );
 
   const centerView = useCallback(() => {
-    if (!simulationRef.current) return;
-    simulationRef.current.alpha(1).restart();
+    const sim = simulationRef.current;
+    if (!sim) return;
+    sim.alpha(1).restart();
   }, []);
 
   const rightDraggingRef = useRef(false);
@@ -186,7 +203,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         return;
       }
       event.preventDefault();
-      if (!simulationRef.current) return;
+      const sim = simulationRef.current;
+      if (!sim) return;
 
       const [pxRaw, pyRaw] = d3.pointer(event, canvasRef.current);
       const [px, py] = transformRef.current.invert([pxRaw, pyRaw]);
@@ -226,7 +244,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const handleDrag = d3
     .drag<HTMLCanvasElement, CanvasNode>()
     .subject((event) => {
-      if (!simulationRef.current) return null;
+      const sim = simulationRef.current;
+      if (!sim) return null;
       const [px, py] = d3.pointer(event, canvasRef.current);
       const [tx, ty] = transformRef.current.invert([px, py]);
       return d3.least(d3Nodes, (node) => {
@@ -236,8 +255,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       });
     })
     .on('start', (event) => {
-      if (!simulationRef.current) return;
-      if (!event.active) simulationRef.current.alphaTarget(0.3).restart();
+      const sim = simulationRef.current;
+      if (!sim) return;
+      if (!event.active) sim.alphaTarget(0.3).restart();
       event.subject.fx = event.subject.x;
       event.subject.fy = event.subject.y;
     })
@@ -248,20 +268,22 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       event.subject.fy = ty;
     })
     .on('end', (event) => {
-      if (!simulationRef.current) return;
-      if (!event.active) simulationRef.current.alphaTarget(0);
+      const sim = simulationRef.current;
+      if (!sim) return;
+      if (!event.active) sim.alphaTarget(0);
       event.subject.fx = null;
       event.subject.fy = null;
     });
 
   const handleDoubleClick = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !zoomBehaviorRef.current) return;
+    const zoom = zoomBehaviorRef.current;
+    if (!canvas || !zoom) return;
     const selection = d3.select(canvas);
     transformRef.current = d3.zoomIdentity;
     selection.transition().call(
       // @ts-ignore
-      zoomBehaviorRef.current.transform,
+      zoom.transform,
       d3.zoomIdentity,
     );
   }, [zoomBehaviorRef, transformRef]);
