@@ -44,6 +44,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const { adjacencyRef, revAdjRef } = useAdjacency(cyDataEdges);
 
   const hiddenNodesRef = useRef<Set<string>>(new Set());
+  const nodeMapRef = useRef<Record<string, CanvasNode>>({});
+  const savedPositionsRef = useRef<Record<string, { x?: number; y?: number }>>({});
 
   const convertData = useCallback(() => {
     const visibleNodeData = cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id));
@@ -51,11 +53,36 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
     const visibleEdgeData = cyDataEdges.filter((e) => e.data.visible && visibleIds.has(e.data.source) && visibleIds.has(e.data.target));
 
-    const newNodes: CanvasNode[] = visibleNodeData.map((n) => ({
-      id: n.data.id,
-      label: n.data.label,
-      color: computeColorForId(n.data.id),
-    }));
+    const nextNodes: CanvasNode[] = [];
+
+    visibleNodeData.forEach((n) => {
+      const { id } = n.data;
+      let node = nodeMapRef.current[id];
+      if (!node) {
+        const saved = savedPositionsRef.current[id];
+        node = {
+          id,
+          label: n.data.label,
+          color: computeColorForId(id),
+          x: saved?.x,
+          y: saved?.y,
+        };
+      } else {
+        node.label = n.data.label;
+        node.color = computeColorForId(id);
+      }
+      nodeMapRef.current[id] = node;
+      nextNodes.push(node);
+    });
+
+    // Save positions for nodes that became hidden
+    Object.keys(nodeMapRef.current).forEach((id) => {
+      if (!visibleIds.has(id)) {
+        const node = nodeMapRef.current[id];
+        savedPositionsRef.current[id] = { x: node.x, y: node.y };
+        delete nodeMapRef.current[id];
+      }
+    });
 
     const newEdges: CanvasEdge[] = visibleEdgeData.map((e) => ({
       source: e.data.source,
@@ -64,7 +91,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       visible: true,
     }));
 
-    setD3Nodes(newNodes);
+    setD3Nodes(nextNodes);
     setD3Edges(newEdges);
   }, [cyDataNodes, cyDataEdges]);
 
@@ -75,6 +102,37 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   }, [loading, convertData]);
 
   const { showChildren, showParents, hideNode } = useNodeVisibility(cyDataNodes, cyDataEdges, adjacencyRef, revAdjRef, hiddenNodesRef, convertData);
+  const freezeNode = useCallback(
+    (id: string, duration = 1000) => {
+      const node = nodeMapRef.current[id];
+      if (!node || !simulationRef.current) return;
+      node.fx = node.x;
+      node.fy = node.y;
+      simulationRef.current.alphaTarget(0.1).restart();
+      setTimeout(() => {
+        node.fx = null;
+        node.fy = null;
+        simulationRef.current?.alphaTarget(0);
+      }, duration);
+    },
+    [simulationRef],
+  );
+
+  const toggleChildren = useCallback(
+    (id: string) => {
+      freezeNode(id);
+      showChildren(id);
+    },
+    [freezeNode, showChildren],
+  );
+
+  const toggleParents = useCallback(
+    (id: string) => {
+      freezeNode(id);
+      showParents(id);
+    },
+    [freezeNode, showParents],
+  );
 
   const { transformRef, simulationRef, zoomBehaviorRef } = useD3Force(canvasRef, d3Nodes, d3Edges, d3BoundingBox, dimensions);
 
@@ -236,8 +294,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         node={menuNode}
         show={menuVisible}
         onClose={() => setMenuVisible(false)}
-        onToggleChildren={() => menuNode && showChildren(menuNode.id)}
-        onToggleParents={() => menuNode && showParents(menuNode.id)}
+        onToggleChildren={() => menuNode && toggleChildren(menuNode.id)}
+        onToggleParents={() => menuNode && toggleParents(menuNode.id)}
         onHideNode={hideNode}
         onCenterView={centerView}
       />
