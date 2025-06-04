@@ -37,7 +37,7 @@ export default function Sidebar() {
               opacity={0.7}
               withArrow
               transitionProps={{ duration: 300 }}
-              label="Displays an embedding of focus nodes. Each point is one focus node. The original feature vector is as list of all SHACL constraints down-projected to 2D using UMAP."
+              label="Displays an embedding of focus nodes. Each point is one focus node. Their 2-D proximity is driven by how similar the focus nodes are."
             >
               <Tabs.Tab value="embedding">Embedding</Tabs.Tab>
             </Tooltip>
