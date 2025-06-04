@@ -180,8 +180,6 @@ export function useD3Force(
 
     sim.force('charge', d3.forceManyBody().strength(-9999).distanceMax(9999));
     sim.force('collision', d3.forceCollide(nodeRadius + labelPadding));
-    sim.force('x', d3.forceX(width / 2).strength(0.01));
-    sim.force('y', d3.forceY(height / 2).strength(0.01));
 
     sim.on('tick', () => {
       if (boundingBox === 'on') {
@@ -212,6 +210,8 @@ export function useD3Force(
 
   /**
    * Sets up D3 zoom behavior on the canvas. Zoom updates transformRef and triggers redraw.
+   *
+   * Pan still uses left‐click (button 0). We leave right‐click alone for context menu.
    */
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -223,7 +223,8 @@ export function useD3Force(
     const zoomBehavior = d3
       .zoom<HTMLCanvasElement, unknown>()
       .filter((event: any) => {
-        return event.type === 'wheel' || (event.type === 'mousedown' && event.button === 2);
+        // allow wheel for zoom, or left‐click (button 0) for pan, but skip if Ctrl is held
+        return event.type === 'wheel' || (event.type === 'mousedown' && event.button === 0 && !event.ctrlKey);
       })
       .scaleExtent([0.1, 10])
       .on('zoom', (event) => {
@@ -233,7 +234,7 @@ export function useD3Force(
 
     zoomBehaviorRef.current = zoomBehavior;
     selection.call(zoomBehavior as any);
-    selection.on('dblclick.zoom', null); // disable default double-click zoom
+    selection.on('dblclick.zoom', null); // disable default double‐click zoom
 
     return () => {
       selection.on('.zoom', null);

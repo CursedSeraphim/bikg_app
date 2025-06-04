@@ -1,3 +1,5 @@
+// File: src/components/D3NodeLink/D3ForceGraph.tsx
+
 import * as d3 from 'd3';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
@@ -12,10 +14,7 @@ import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3Force } from './hooks/useD3Force';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 
-// squared pixel distance used when finding the nearest node for clicks
-const NEAR_NODE_DIST_SQ = 40000;
-
-/** Force-directed graph view for the D3 based node-link diagram. */
+/** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) {
   // Redux selectors
   const violations = useSelector(selectViolations);
@@ -23,7 +22,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const cumulativeNumberViolationsPerType = useSelector(selectCumulativeNumberViolationsPerNode);
   const d3BoundingBox = useSelector(selectD3BoundingBox);
 
-  // Fetch Cytoscape-like data used by the D3 view
+  // Fetch Cytoscape‐like data used by the D3 view
   const { loading, cyDataNodes, cyDataEdges } = useD3Data({
     rdfOntology,
     violations,
@@ -260,6 +259,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       const [pxRaw, pyRaw] = d3.pointer(event, canvasRef.current);
       const [px, py] = transformRef.current.invert([pxRaw, pyRaw]);
 
+      // Compute "near‐node" threshold from node radius (and zoom level):
+      const NODE_RADIUS_PX = 200;
+      const CLICK_RADIUS_PX = NODE_RADIUS_PX * 2;
+      // adjust for zoom:
+      const effectiveRadius = CLICK_RADIUS_PX / (transformRef.current?.k ?? 1);
+      const NEAR_NODE_DIST_SQ = effectiveRadius * effectiveRadius;
+
       let closest: CanvasNode | null = null;
       let minDist = Infinity;
 
@@ -292,8 +298,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     [d3Nodes, transformRef, simulationRef],
   );
 
+  // Drag handler now uses Ctrl + left‐click (button 0 + event.ctrlKey)
   const handleDrag = d3
     .drag<HTMLCanvasElement, CanvasNode>()
+    .filter((event) => event.button === 0 && event.ctrlKey)
     .subject((event) => {
       const sim = simulationRef.current;
       if (!sim) return null;
@@ -332,10 +340,19 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (!sim) return;
 
       const [pxRaw, pyRaw] = d3.pointer(event, canvasRef.current);
-      const [px, py] = transformRef.current.invert([pxRaw, pyRaw]);
+      const transform = transformRef.current;
+      const [px, py] = transform.invert([pxRaw, pyRaw]);
+
+      // Compute "near‐node" threshold from node radius (and zoom level):
+      const NODE_RADIUS_PX = 200;
+      const CLICK_RADIUS_PX = NODE_RADIUS_PX * 2;
+      // adjust for zoom:
+      const effectiveRadius = CLICK_RADIUS_PX / (transform?.k ?? 1);
+      const NEAR_NODE_DIST_SQ = effectiveRadius * effectiveRadius;
 
       let closest: CanvasNode | null = null;
       let minDist = Infinity;
+
       d3Nodes.forEach((node) => {
         const dx = (node.x ?? 0) - px;
         const dy = (node.y ?? 0) - py;
@@ -379,6 +396,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     }
     selection.on('dblclick.zoom', null);
 
+    // Apply the new drag behavior (Ctrl+left) here
     selection.call(handleDrag as any);
 
     const onMouseDown = (event: MouseEvent) => {
@@ -388,7 +406,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       }
     };
     const onMouseMove = (event: MouseEvent) => {
-      // eslint-disable-next-line no-bitwise
+      // eslint‐disable‐next‐line no‐bitwise
       if ((event.buttons & 2) === 2 && rightMouseDownRef.current) {
         const dx = event.clientX - rightMouseDownRef.current.x;
         const dy = event.clientY - rightMouseDownRef.current.y;
