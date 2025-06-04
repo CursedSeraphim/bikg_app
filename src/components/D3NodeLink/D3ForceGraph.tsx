@@ -126,31 +126,38 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     });
   }, [cyDataNodes, cyDataEdges]);
 
-  // Freeze all currently visible nodes for 1 second, and the triggering node for 2 seconds
+  // Freeze nodes for a short period. By default, all currently visible nodes are
+  // frozen for `otherDuration` milliseconds (500ms) while the triggering node
+  // is frozen for `triggerDuration` milliseconds (1000ms). Passing `otherDuration`
+  // as `0` skips freezing the other nodes.
   const freezeNode = useCallback(
-    (id: string) => {
+    (id: string, otherDuration = 500, triggerDuration = 1000) => {
       const sim = simulationRef.current;
       if (!sim) return;
 
       const allNodes = Object.values(nodeMapRef.current);
       allNodes.forEach((node) => {
-        node.fx = node.x;
-        node.fy = node.y;
+        if (otherDuration > 0 || node.id === id) {
+          node.fx = node.x;
+          node.fy = node.y;
+        }
       });
 
       sim.alphaTarget(0.1).restart();
 
-      // Release other nodes after 1 second
-      setTimeout(() => {
-        allNodes.forEach((node) => {
-          if (node.id !== id) {
-            node.fx = null;
-            node.fy = null;
-          }
-        });
-      }, 500);
+      if (otherDuration > 0) {
+        // Release other nodes after `otherDuration`
+        setTimeout(() => {
+          allNodes.forEach((node) => {
+            if (node.id !== id) {
+              node.fx = null;
+              node.fy = null;
+            }
+          });
+        }, otherDuration);
+      }
 
-      // Release the triggering node after 2 seconds
+      // Release the triggering node after `triggerDuration`
       setTimeout(() => {
         const triggerNode = nodeMapRef.current[id];
         if (triggerNode) {
@@ -158,15 +165,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
           triggerNode.fy = null;
         }
         sim.alphaTarget(0);
-      }, 1000);
+      }, triggerDuration);
     },
     [simulationRef],
   );
 
   const toggleChildren = useCallback(
     (id: string) => {
-      freezeNode(id);
-
       const childIds = adjacencyRef.current[id] || [];
       const allVisible = childIds.every((childId) => {
         const node = cyDataNodes.find((n) => n.data.id === childId);
@@ -174,8 +179,12 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       });
 
       if (allVisible && childIds.length > 0) {
+        // Hiding children - only freeze the triggering node
+        freezeNode(id, 0);
         hideChildren(id);
       } else {
+        // Showing children - freeze all nodes briefly
+        freezeNode(id);
         showChildren(id);
       }
     },
@@ -184,8 +193,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   const toggleParents = useCallback(
     (id: string) => {
-      freezeNode(id);
-
       const parentIds = revAdjRef.current[id] || [];
       const allVisible = parentIds.every((parentId) => {
         const node = cyDataNodes.find((n) => n.data.id === parentId);
@@ -193,8 +200,12 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       });
 
       if (allVisible && parentIds.length > 0) {
+        // Hiding parents - only freeze the triggering node
+        freezeNode(id, 0);
         hideParents(id);
       } else {
+        // Showing parents - freeze all nodes briefly
+        freezeNode(id);
         showParents(id);
       }
     },
@@ -212,6 +223,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   const collapseSubtree = useCallback(
     (id: string) => {
+      // Collapsing a subtree hides surrounding nodes, so only freeze the
+      // triggering node for a short time
+      freezeNode(id, 0);
       const queue = [id];
       const toHide: string[] = [];
       while (queue.length) {
@@ -234,7 +248,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         convertData();
       }
     },
-    [cyDataNodes, recomputeEdgeVisibility, convertData],
+    [cyDataNodes, recomputeEdgeVisibility, convertData, freezeNode],
   );
 
   const centerView = useCallback(() => {
