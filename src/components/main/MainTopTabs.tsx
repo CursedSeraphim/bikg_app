@@ -3,7 +3,7 @@ import { Tabs, Tooltip } from '@mantine/core';
 import React from 'react';
 import { useSelector } from 'react-redux';
 import CytoscapeView from '../Cytoscape/CytoscapeView';
-import D3NLDView from '../D3NodeLink/D3NLDIslandForce';
+import D3ForceGraph from '../D3NodeLink/D3ForceGraph';
 import { selectRdfData } from '../Store/CombinedSlice';
 
 export default function MainTopTabs() {
@@ -36,7 +36,7 @@ export default function MainTopTabs() {
       </Tabs.List>
 
       <Tabs.Panel value="D3.js NLD View" pt="xs" style={{ flex: 1, overflow: 'auto' }}>
-        <D3NLDView rdfOntology={rdfOntology} />
+        <D3ForceGraph rdfOntology={rdfOntology} />
       </Tabs.Panel>
 
       <Tabs.Panel value="Cytoscape NLD View" pt="xs" style={{ flex: 1, overflow: 'auto' }}>
