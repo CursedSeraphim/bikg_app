@@ -121,17 +121,39 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const toggleChildren = useCallback(
     (id: string) => {
       freezeNode(id);
-      showChildren(id);
+
+      const childIds = adjacencyRef.current[id] || [];
+      const anyVisible = childIds.some((childId) => {
+        const node = cyDataNodes.find((n) => n.data.id === childId);
+        return node && node.data.visible && !hiddenNodesRef.current.has(childId);
+      });
+
+      if (anyVisible) {
+        hideChildren(id);
+      } else {
+        showChildren(id);
+      }
     },
-    [freezeNode, showChildren],
+    [freezeNode, showChildren, hideChildren, cyDataNodes, adjacencyRef],
   );
 
   const toggleParents = useCallback(
     (id: string) => {
       freezeNode(id);
-      showParents(id);
+
+      const parentIds = revAdjRef.current[id] || [];
+      const anyVisible = parentIds.some((parentId) => {
+        const node = cyDataNodes.find((n) => n.data.id === parentId);
+        return node && node.data.visible && !hiddenNodesRef.current.has(parentId);
+      });
+
+      if (anyVisible) {
+        hideParents(id);
+      } else {
+        showParents(id);
+      }
     },
-    [freezeNode, showParents],
+    [freezeNode, showParents, hideParents, cyDataNodes, revAdjRef],
   );
 
   const { transformRef, simulationRef, zoomBehaviorRef } = useD3Force(canvasRef, d3Nodes, d3Edges, d3BoundingBox, dimensions);
