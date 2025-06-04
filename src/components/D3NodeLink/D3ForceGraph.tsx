@@ -101,7 +101,22 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     }
   }, [loading, convertData]);
 
-  const { showChildren, showParents, hideNode } = useNodeVisibility(cyDataNodes, cyDataEdges, adjacencyRef, revAdjRef, hiddenNodesRef, convertData);
+  const { transformRef, simulationRef, zoomBehaviorRef } = useD3Force(
+    canvasRef,
+    d3Nodes,
+    d3Edges,
+    d3BoundingBox,
+    dimensions,
+  );
+
+  const { showChildren, hideChildren, showParents, hideParents, hideNode } = useNodeVisibility(
+    cyDataNodes,
+    cyDataEdges,
+    adjacencyRef,
+    revAdjRef,
+    hiddenNodesRef,
+    convertData,
+  );
   const freezeNode = useCallback(
     (id: string, duration = 1000) => {
       const node = nodeMapRef.current[id];
@@ -155,8 +170,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     },
     [freezeNode, showParents, hideParents, cyDataNodes, revAdjRef],
   );
-
-  const { transformRef, simulationRef, zoomBehaviorRef } = useD3Force(canvasRef, d3Nodes, d3Edges, d3BoundingBox, dimensions);
 
   const centerView = useCallback(() => {
     if (!simulationRef.current) return;
