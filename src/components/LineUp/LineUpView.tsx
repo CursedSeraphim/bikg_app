@@ -1,19 +1,19 @@
 // LineUpView.tsx
-import React, { useRef, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import * as LineUpJS from 'lineupjs';
+import React, { useEffect, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 // import './LineUpOverrides.sass';
 import { buildBooleanColumn, buildCategoricalColumn, buildDateColumn, buildNumberColumn, buildStringColumn } from 'lineupjs';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING } from '../../constants';
+import { ICanvasOwner, ICsvData } from '../../types';
 import {
   selectCsvData,
-  setSelectedFocusNodes,
-  selectSelectedFocusNodes,
   selectFilterType,
   selectMissingEdgeOption,
+  selectSelectedFocusNodes,
   selectViolations,
+  setSelectedFocusNodes,
 } from '../Store/CombinedSlice';
-import { ICsvData, ICanvasOwner } from '../../types';
-import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, MANTINE_HEADER_COLOR, SELECTED_TYPE_NODE_COLOR, SELECTED_VIOLATION_NODE_COLOR } from '../../constants';
 import { filterAllNanColumns, filterAllUniModalColumns } from './LineUpHelpers';
 
 const columnTypes = {};
@@ -232,13 +232,6 @@ export default function LineUpView() {
 
   type BuilderFunction = (column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }) => LineUpJS.ColumnBuilder;
 
-  const biColorMap: { [key: string]: string } = {
-    'rdf:type': SELECTED_TYPE_NODE_COLOR,
-  };
-  violationList.forEach((violation) => {
-    biColorMap[violation] = SELECTED_VIOLATION_NODE_COLOR;
-  });
-
   function buildBooleanColumnWithSettings(column: string, data: DataType[], width: number): LineUpJS.ColumnBuilder {
     return buildBooleanColumn(column).trueMarker('1').falseMarker('0').width(width);
   }
@@ -254,12 +247,8 @@ export default function LineUpView() {
   function buildCategoricalColumnWithSettings(column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }): LineUpJS.ColumnBuilder {
     const uniqueCategories = data.reduce<Set<string>>((acc, row) => acc.add(String(row[column])), new Set());
 
-    const customColor = colorMap ? colorMap[column] : undefined;
-    const columnColor = customColor || MANTINE_HEADER_COLOR;
-
     const categoryColorMap = Array.from(uniqueCategories).map((category) => ({
       name: category,
-      color: columnColor,
     }));
 
     return buildCategoricalColumn(column, categoryColorMap).width(width);
@@ -293,12 +282,8 @@ export default function LineUpView() {
       return buildStringColumn(column).width(width);
     }
 
-    const customColor = colorMap ? colorMap[column] : undefined;
-    const columnColor = customColor || MANTINE_HEADER_COLOR;
-
     const categoryColorMap = Array.from(uniqueCategories).map((category) => ({
       name: category,
-      color: columnColor,
     }));
 
     return buildCategoricalColumn(column, categoryColorMap).width(width).asSet();
@@ -333,7 +318,7 @@ export default function LineUpView() {
       const builderFunction = builderMap[type];
 
       if (builderFunction) {
-        const builtColumn = builderFunction(column, data, width, biColorMap);
+        const builtColumn = builderFunction(column, data, width);
         builder.column(builtColumn);
       } else if (type === 'link') {
         const label = removePrefix(column);
