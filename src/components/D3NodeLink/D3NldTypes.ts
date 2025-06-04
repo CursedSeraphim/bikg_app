@@ -19,6 +19,8 @@ export interface CanvasEdge {
   visible: boolean;
   /** Preview edges used for ghost nodes */
   ghost?: boolean;
+  /** Highlight existing edge that would be removed on confirm */
+  previewRemoval?: boolean;
 }
 
 export type D3NLDViewProps = {

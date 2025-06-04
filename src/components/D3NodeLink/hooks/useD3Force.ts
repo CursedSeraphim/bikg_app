@@ -84,7 +84,9 @@ export function useD3Force(
       const ty = targetNode.y ?? 0;
 
       // Draw line
-      if (edge.ghost) {
+      if (edge.previewRemoval) {
+        context.strokeStyle = 'rgba(255,0,0,0.6)';
+      } else if (edge.ghost) {
         context.strokeStyle = 'rgba(170,170,170,0.5)';
       } else {
         context.strokeStyle = '#AAA';
@@ -109,7 +111,13 @@ export function useD3Force(
         context.lineTo(backx + (arrowWidth * -dy) / length, backy + (arrowWidth * dx) / length);
         context.lineTo(backx - (arrowWidth * -dy) / length, backy - (arrowWidth * dx) / length);
         context.closePath();
-        context.fillStyle = edge.ghost ? 'rgba(170,170,170,0.5)' : '#AAA';
+        if (edge.previewRemoval) {
+          context.fillStyle = 'rgba(255,0,0,0.6)';
+        } else if (edge.ghost) {
+          context.fillStyle = 'rgba(170,170,170,0.5)';
+        } else {
+          context.fillStyle = '#AAA';
+        }
         context.fill();
       }
 
@@ -232,8 +240,11 @@ export function useD3Force(
     const zoomBehavior = d3
       .zoom<HTMLCanvasElement, unknown>()
       .filter((event: any) => {
-        // allow wheel for zoom, or left‐click (button 0) for pan, but skip if Ctrl is held
-        return event.type === 'wheel' || (event.type === 'mousedown' && event.button === 0 && !event.ctrlKey);
+        // allow wheel for zoom, or left-click (button 0) for pan, but skip if Ctrl or Alt is held
+        return (
+          event.type === 'wheel' ||
+          (event.type === 'mousedown' && event.button === 0 && !event.ctrlKey && !event.altKey)
+        );
       })
       .scaleExtent([0.1, 10])
       .on('zoom', (event) => {
