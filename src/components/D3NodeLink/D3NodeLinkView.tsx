@@ -196,6 +196,9 @@ export default function D3NodeLinkView({ rdfOntology }: D3NodeLinkViewProps) {
   // D3 drag
   const handleDrag = d3
     .drag<HTMLCanvasElement, CanvasNode>()
+    // Require a small mouse movement before a drag actually starts so that
+    // merely pressing the mouse button doesn't kick off the simulation.
+    .clickDistance(5)
     .subject((event) => {
       if (!simulationRef.current) return null;
       const [px, py] = d3.pointer(event, canvasRef.current);

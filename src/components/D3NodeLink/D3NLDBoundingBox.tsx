@@ -259,6 +259,10 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
    */
   const handleDrag = d3
     .drag<HTMLCanvasElement, CanvasNode>()
+    // Require a few pixels of movement before a drag begins to avoid
+    // unintentionally kicking off the simulation when the mouse button is
+    // merely pressed.
+    .clickDistance(5)
     .subject((event) => {
       if (!simulationRef.current) return null;
       const [px, py] = d3.pointer(event, canvasRef.current);

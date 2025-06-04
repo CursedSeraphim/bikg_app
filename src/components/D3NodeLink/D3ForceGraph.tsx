@@ -121,9 +121,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   );
 
   const recomputeEdgeVisibility = useCallback(() => {
-    const visible = new Set(
-      cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id),
-    );
+    const visible = new Set(cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
     cyDataEdges.forEach((edge) => {
       edge.data.visible = visible.has(edge.data.source) && visible.has(edge.data.target);
     });
@@ -296,6 +294,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   const handleDrag = d3
     .drag<HTMLCanvasElement, CanvasNode>()
+    // Only initiate a drag after the mouse has moved a bit so that simply
+    // pressing the button doesn't restart the simulation.
+    .clickDistance(5)
     .subject((event) => {
       const sim = simulationRef.current;
       if (!sim) return null;
