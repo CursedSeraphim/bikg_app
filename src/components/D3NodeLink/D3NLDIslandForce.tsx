@@ -1,150 +1,27 @@
+// File: src/components/D3NLDIslandForce.tsx
 import * as d3 from 'd3';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
-
-// Redux-based data selectors
 import { selectCumulativeNumberViolationsPerNode, selectD3BoundingBox, selectTypes, selectViolations } from '../Store/CombinedSlice';
-
-// Custom hook that fetches node/edge data
 import { useD3Data } from './useD3Data';
 
-interface CanvasNode {
-  id: string;
-  label: string;
-  color: string;
-  x?: number;
-  y?: number;
-  fx?: number | null;
-  fy?: number | null;
-}
+import { ContextMenu } from './D3NldContextMenu';
+import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
+import { computeColorForId } from './D3NldUtils';
+import { useD3Force } from './hooks/useD3Force';
 
-interface CanvasEdge {
-  source: string | CanvasNode;
-  target: string | CanvasNode;
-  label?: string;
-  visible: boolean;
-}
-
-type Props = {
-  rdfOntology: string;
-  onLoaded?: () => void;
-};
-
-function extractNamespace(uri: string) {
-  const match = uri.match(/^([^:]+):/);
-  return match ? match[1] : '';
-}
-
-function computeColorForId(id: string): string {
-  const ns = extractNamespace(id).toLowerCase();
-  if (ns === 'sh') return '#669900';
-  if (ns === 'ex') return '#DA5700';
-  return '#007C45';
-}
-
-function ContextMenu({
-  menuX,
-  menuY,
-  node,
-  show,
-  onClose,
-  onToggleChildren,
-  onToggleParents,
-  onHideNode,
-  onCenterView,
-}: {
-  menuX: number;
-  menuY: number;
-  node: CanvasNode | null;
-  show: boolean;
-  onClose: () => void;
-  onToggleChildren: (nodeId: string) => void;
-  onToggleParents: (nodeId: string) => void;
-  onHideNode: (nodeId: string) => void;
-  onCenterView: () => void;
-}) {
-  if (!show || !node) return null;
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: menuY,
-        left: menuX,
-        padding: '6px',
-        backgroundColor: '#fff',
-        border: '1px solid #ccc',
-        boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-        zIndex: 9999,
-      }}
-    >
-      <style>
-        {`
-          .d3-context-menu {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            width: 160px;
-          }
-          .d3-context-menu-item {
-            margin: 4px 0;
-            cursor: pointer;
-            padding: 4px 8px;
-          }
-          .d3-context-menu-item:hover {
-            background-color: #eee;
-          }
-        `}
-      </style>
-      <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Node: {node.label}</div>
-      <ul className="d3-context-menu">
-        <li
-          className="d3-context-menu-item"
-          onClick={() => {
-            onToggleChildren(node.id);
-            onClose();
-          }}
-        >
-          Toggle Hide/Show Children
-        </li>
-        <li
-          className="d3-context-menu-item"
-          onClick={() => {
-            onToggleParents(node.id);
-            onClose();
-          }}
-        >
-          Toggle Hide/Show Parents
-        </li>
-        <li
-          className="d3-context-menu-item"
-          onClick={() => {
-            onHideNode(node.id);
-            onClose();
-          }}
-        >
-          Hide Node
-        </li>
-        <li
-          className="d3-context-menu-item"
-          onClick={() => {
-            onCenterView();
-            onClose();
-          }}
-        >
-          Center View
-        </li>
-      </ul>
-    </div>
-  );
-}
-
-export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
+export default function D3NLDView({ rdfOntology, onLoaded }: D3NLDViewProps) {
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Redux selectors for violations, types, bounding‐box setting
+  // ─────────────────────────────────────────────────────────────────────────────
   const violations = useSelector(selectViolations);
   const types = useSelector(selectTypes);
   const cumulativeNumberViolationsPerType = useSelector(selectCumulativeNumberViolationsPerNode);
   const d3BoundingBox = useSelector(selectD3BoundingBox);
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Custom hook to fetch Cytoscape‐like data (nodes & edges)
+  // ─────────────────────────────────────────────────────────────────────────────
   const { loading, cyDataNodes, cyDataEdges } = useD3Data({
     rdfOntology,
     violations,
@@ -153,25 +30,46 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
     onLoaded,
   });
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Transformed nodes/edges to feed into D3 force layout
+  // ─────────────────────────────────────────────────────────────────────────────
   const [d3Nodes, setD3Nodes] = useState<CanvasNode[]>([]);
   const [d3Edges, setD3Edges] = useState<CanvasEdge[]>([]);
 
-  const hiddenNodesRef = useRef<Set<string>>(new Set());
-  const adjacencyRef = useRef<Record<string, string[]>>({});
-  const revAdjRef = useRef<Record<string, string[]>>({});
-
-  const simulationRef = useRef<d3.Simulation<CanvasNode, CanvasEdge> | null>(null);
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Canvas ref + dimensions
+  // ─────────────────────────────────────────────────────────────────────────────
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const dpi = window.devicePixelRatio ?? 1;
 
-  const transformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
-  const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown> | null>(null);
+  // ─────────────────────────────────────────────────────────────────────────────
+  // State for context menu (right‐click)
+  // ─────────────────────────────────────────────────────────────────────────────
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuX, setMenuX] = useState(0);
+  const [menuY, setMenuY] = useState(0);
+  const [menuNode, setMenuNode] = useState<CanvasNode | null>(null);
 
-  // Track right-button dragging state
-  const rightDraggingRef = useRef(false);
-  const rightMouseDownRef = useRef<{ x: number; y: number } | null>(null);
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Track hidden nodes so they persist across rerenders
+  // ─────────────────────────────────────────────────────────────────────────────
+  const hiddenNodesRef = useRef<Set<string>>(new Set());
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Adjacency lists (forward and reverse) for toggling visibility
+  // ─────────────────────────────────────────────────────────────────────────────
+  const adjacencyRef = useRef<Record<string, string[]>>({});
+  const revAdjRef = useRef<Record<string, string[]>>({});
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Grab D3 references (simulation, transform, zoom) from our custom hook
+  // ─────────────────────────────────────────────────────────────────────────────
+  const { transformRef, simulationRef, zoomBehaviorRef } = useD3Force(canvasRef, d3Nodes, d3Edges, d3BoundingBox, dimensions);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Rebuild adjacency + reverse‐adjacency whenever edges change
+  // ─────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     const adj: Record<string, string[]> = {};
     const revAdj: Record<string, string[]> = {};
@@ -179,7 +77,6 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
     cyDataEdges.forEach((edge) => {
       const s = edge.data.source;
       const t = edge.data.target;
-
       if (!adj[s]) adj[s] = [];
       adj[s].push(t);
 
@@ -191,6 +88,9 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
     revAdjRef.current = revAdj;
   }, [cyDataEdges]);
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Converts Cytoscape‐style data → CanvasNode[] / CanvasEdge[], respecting visibility
+  // ─────────────────────────────────────────────────────────────────────────────
   const convertData = useCallback(() => {
     const visibleNodeData = cyDataNodes.filter((n) => n.data.visible);
     const visibleIds = new Set(visibleNodeData.map((n) => n.data.id));
@@ -214,146 +114,175 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
     setD3Edges(newEdges);
   }, [cyDataNodes, cyDataEdges]);
 
+  // Whenever loading completes, rebuild d3Nodes / d3Edges
   useEffect(() => {
     if (!loading) {
       convertData();
     }
   }, [loading, convertData]);
 
-  const drawCanvas = useCallback(
-    (allNodes: CanvasNode[], allEdges: CanvasEdge[]) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const context = canvas.getContext('2d');
-      if (!context) return;
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ResizeObserver to update canvas dimensions on parent resizes
+  // ─────────────────────────────────────────────────────────────────────────────
+  const handleResize = useCallback(() => {
+    if (!canvasRef.current?.parentElement) return;
+    const { width, height } = canvasRef.current.parentElement.getBoundingClientRect();
+    setDimensions({ width, height });
+  }, []);
 
-      context.save();
-      context.setTransform(dpi, 0, 0, dpi, 0, 0);
+  useEffect(() => {
+    const observer = new ResizeObserver(handleResize);
+    if (canvasRef.current?.parentElement) {
+      observer.observe(canvasRef.current.parentElement);
+    }
+    return () => {
+      observer.disconnect();
+    };
+  }, [handleResize]);
 
-      const t = transformRef.current;
-      context.translate(t.x, t.y);
-      context.scale(t.k, t.k);
+  // ─────────────────────────────────────────────────────────────────────────────
+  // show/hide immediate children or parents of a node
+  // ─────────────────────────────────────────────────────────────────────────────
+  function showChildren(nodeId: string) {
+    cyDataNodes.forEach((node) => {
+      if (adjacencyRef.current[nodeId]?.includes(node.data.id)) {
+        node.data.visible = true;
+      }
+    });
+    cyDataEdges.forEach((edge) => {
+      if (edge.data.source === nodeId || adjacencyRef.current[nodeId]?.includes(edge.data.target)) {
+        edge.data.visible = true;
+      }
+    });
+    convertData();
+  }
 
-      context.clearRect(-t.x / t.k, -t.y / t.k, dimensions.width / t.k, dimensions.height / t.k);
+  function hideChildren(nodeId: string) {
+    cyDataNodes.forEach((node) => {
+      if (adjacencyRef.current[nodeId]?.includes(node.data.id)) {
+        node.data.visible = false;
+      }
+    });
+    cyDataEdges.forEach((edge) => {
+      if (edge.data.source === nodeId || adjacencyRef.current[nodeId]?.includes(edge.data.target)) {
+        edge.data.visible = false;
+      }
+    });
+    convertData();
+  }
 
-      context.strokeStyle = '#AAA';
-      context.fillStyle = '#000';
-      context.font = '12px sans-serif';
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
+  function showParents(nodeId: string) {
+    cyDataNodes.forEach((node) => {
+      if (revAdjRef.current[nodeId]?.includes(node.data.id)) {
+        node.data.visible = true;
+      }
+    });
+    cyDataEdges.forEach((edge) => {
+      if (edge.data.target === nodeId || revAdjRef.current[nodeId]?.includes(edge.data.source)) {
+        edge.data.visible = true;
+      }
+    });
+    convertData();
+  }
 
-      allEdges.forEach((edge) => {
-        const sourceNode = typeof edge.source === 'object' ? edge.source : allNodes.find((n) => n.id === edge.source);
-        const targetNode = typeof edge.target === 'object' ? edge.target : allNodes.find((n) => n.id === edge.target);
+  function hideParents(nodeId: string) {
+    cyDataNodes.forEach((node) => {
+      if (revAdjRef.current[nodeId]?.includes(node.data.id)) {
+        node.data.visible = false;
+      }
+    });
+    cyDataEdges.forEach((edge) => {
+      if (edge.data.target === nodeId || revAdjRef.current[nodeId]?.includes(edge.data.source)) {
+        edge.data.visible = false;
+      }
+    });
+    convertData();
+  }
 
-        if (!sourceNode || !targetNode) return;
-
-        const sx = sourceNode.x ?? 0;
-        const sy = sourceNode.y ?? 0;
-        const tx = targetNode.x ?? 0;
-        const ty = targetNode.y ?? 0;
-
-        context.beginPath();
-        context.moveTo(sx, sy);
-        context.lineTo(tx, ty);
-        context.stroke();
-
-        const dx = tx - sx;
-        const dy = ty - sy;
-        const length = Math.sqrt(dx * dx + dy * dy);
-        if (length > 0) {
-          const arrowSize = 8;
-          const arrowWidth = 4;
-          const backx = tx - (arrowSize * dx) / length;
-          const backy = ty - (arrowSize * dy) / length;
-
-          context.beginPath();
-          context.moveTo(tx, ty);
-          context.lineTo(backx + (arrowWidth * -dy) / length, backy + (arrowWidth * dx) / length);
-          context.lineTo(backx - (arrowWidth * -dy) / length, backy - (arrowWidth * dx) / length);
-          context.closePath();
-          context.fillStyle = '#AAA';
-          context.fill();
-        }
-
-        if (edge.label) {
-          const midX = (sx + tx) / 2;
-          const midY = (sy + ty) / 2 - 5;
-          context.save();
-          context.fillStyle = '#333';
-          context.fillText(edge.label, midX, midY);
-          context.restore();
-        }
-      });
-
-      allNodes.forEach((node) => {
-        context.beginPath();
-        context.fillStyle = node.color;
-        const radius = 6;
-        context.arc(node.x ?? 0, node.y ?? 0, radius, 0, 2 * Math.PI);
-        context.fill();
-
-        context.strokeStyle = '#FFF';
-        context.stroke();
-
-        context.save();
-        context.fillStyle = '#000';
-        context.fillText(node.label, node.x ?? 0, (node.y ?? 0) - 12);
-        context.restore();
-      });
-
-      context.restore();
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Hides a single node (adds to hiddenNodesRef, then rebuilds layout)
+  // ─────────────────────────────────────────────────────────────────────────────
+  const hideNode = useCallback(
+    (nodeId: string) => {
+      hiddenNodesRef.current.add(nodeId);
+      convertData();
     },
-    [dimensions, dpi],
+    [convertData],
   );
 
-  const initializeSimulation = useCallback(
-    (allNodes: CanvasNode[], allEdges: CanvasEdge[]) => {
-      if (!allNodes.length) {
-        simulationRef.current?.stop();
-        simulationRef.current = null;
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Restarts the simulation with full alpha so that nodes “snap” back to center
+  // ─────────────────────────────────────────────────────────────────────────────
+  const centerView = useCallback(() => {
+    if (!simulationRef.current) return;
+    simulationRef.current.alpha(1).restart();
+  }, []);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Right‐button dragging detection (to suppress context menu while panning)
+  // ─────────────────────────────────────────────────────────────────────────────
+  const rightDraggingRef = useRef(false);
+  const rightMouseDownRef = useRef<{ x: number; y: number } | null>(null);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Determine closest node on right‐click, then show context menu if within threshold
+  // ─────────────────────────────────────────────────────────────────────────────
+  const handleContextMenu = useCallback(
+    (event: MouseEvent) => {
+      if (rightDraggingRef.current) {
+        event.preventDefault();
         return;
       }
+      event.preventDefault();
+      if (!simulationRef.current) return;
 
-      const { width, height } = dimensions;
-      const nodeRadius = 12;
-      const labelPadding = 20;
+      // Convert screen coords → graph coords
+      const [pxRaw, pyRaw] = d3.pointer(event, canvasRef.current);
+      const [px, py] = transformRef.current.invert([pxRaw, pyRaw]);
 
-      const sim = d3
-        .forceSimulation<CanvasNode>(allNodes)
-        .force(
-          'link',
-          d3
-            .forceLink<CanvasNode, CanvasEdge>(allEdges)
-            .id((d) => d.id)
-            .distance(150)
-            .strength(1),
-        )
-        .force('charge', d3.forceManyBody().strength(-9999).distanceMax(9999))
-        .force('collision', d3.forceCollide(nodeRadius + labelPadding))
-        .force('x', d3.forceX(width / 2).strength(0.01))
-        .force('y', d3.forceY(height / 2).strength(0.01))
-        .on('tick', () => {
-          if (d3BoundingBox === 'on') {
-            allNodes.forEach((node) => {
-              node.x = Math.max(nodeRadius, Math.min(width - nodeRadius, node.x ?? 0));
-              node.y = Math.max(nodeRadius, Math.min(height - nodeRadius, node.y ?? 0));
-            });
-          }
-          drawCanvas(allNodes, allEdges);
-        });
+      let closest: CanvasNode | null = null;
+      let minDist = Infinity;
 
-      simulationRef.current = sim;
+      d3Nodes.forEach((node) => {
+        const dx = (node.x ?? 0) - px;
+        const dy = (node.y ?? 0) - py;
+        const dist2 = dx * dx + dy * dy;
+        if (dist2 < minDist) {
+          minDist = dist2;
+          closest = node;
+        }
+      });
+
+      // If closest is within squared distance < 100 → show menu
+      if (closest && minDist < 100) {
+        const boundingRect = canvasRef.current?.getBoundingClientRect();
+        if (boundingRect) {
+          setMenuX(event.clientX - boundingRect.left);
+          setMenuY(event.clientY - boundingRect.top);
+        } else {
+          setMenuX(event.clientX);
+          setMenuY(event.clientY);
+        }
+        setMenuVisible(true);
+        setMenuNode(closest);
+      } else {
+        setMenuVisible(false);
+        setMenuNode(null);
+      }
     },
-    [dimensions, drawCanvas, d3BoundingBox],
+    [d3Nodes],
   );
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // *** FIX: define handleDrag here (not in a useRef) so it always “sees” latest d3Nodes
+  // ─────────────────────────────────────────────────────────────────────────────
   const handleDrag = d3
     .drag<HTMLCanvasElement, CanvasNode>()
     .subject((event) => {
       if (!simulationRef.current) return null;
       const [px, py] = d3.pointer(event, canvasRef.current);
       const [tx, ty] = transformRef.current.invert([px, py]);
+      // Find the closest node in d3Nodes
       return d3.least(d3Nodes, (node) => {
         const dx = (node.x ?? 0) - tx;
         const dy = (node.y ?? 0) - ty;
@@ -379,6 +308,9 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
       event.subject.fy = null;
     });
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Resets zoom/pan to identity when user double‐clicks on the canvas
+  // ─────────────────────────────────────────────────────────────────────────────
   const handleDoubleClick = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !zoomBehaviorRef.current) return;
@@ -389,184 +321,33 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
       zoomBehaviorRef.current.transform,
       d3.zoomIdentity,
     );
-  }, []);
+  }, [zoomBehaviorRef]);
 
-  const [menuVisible, setMenuVisible] = useState(false);
-  const [menuX, setMenuX] = useState(0);
-  const [menuY, setMenuY] = useState(0);
-  const [menuNode, setMenuNode] = useState<CanvasNode | null>(null);
-
-  const handleContextMenu = useCallback(
-    (event: MouseEvent) => {
-      if (rightDraggingRef.current) {
-        event.preventDefault();
-        return;
-      }
-
-      event.preventDefault();
-      if (!simulationRef.current) return;
-
-      const [pxRaw, pyRaw] = d3.pointer(event, canvasRef.current);
-      const [px, py] = transformRef.current.invert([pxRaw, pyRaw]);
-
-      let closest: CanvasNode | null = null;
-      let minDist = Infinity;
-
-      d3Nodes.forEach((node) => {
-        const dx = (node.x ?? 0) - px;
-        const dy = (node.y ?? 0) - py;
-        const dist2 = dx * dx + dy * dy;
-        if (dist2 < minDist) {
-          minDist = dist2;
-          closest = node;
-        }
-      });
-
-      if (closest && minDist < 100) {
-        const boundingRect = canvasRef.current?.getBoundingClientRect();
-        if (boundingRect) {
-          setMenuX(event.clientX - boundingRect.left);
-          setMenuY(event.clientY - boundingRect.top);
-        } else {
-          setMenuX(event.clientX);
-          setMenuY(event.clientY);
-        }
-
-        setMenuVisible(true);
-        setMenuNode(closest);
-      } else {
-        setMenuVisible(false);
-        setMenuNode(null);
-      }
-    },
-    [d3Nodes],
-  );
-
-  function showChildren(nodeId: string) {
-    cyDataNodes.forEach((node) => {
-      if (adjacencyRef.current[nodeId]?.includes(node.data.id)) {
-        node.data.visible = true;
-      }
-    });
-
-    cyDataEdges.forEach((edge) => {
-      if (edge.data.source === nodeId || adjacencyRef.current[nodeId]?.includes(edge.data.target)) {
-        edge.data.visible = true;
-      }
-    });
-
-    convertData();
-  }
-
-  function hideChildren(nodeId: string) {
-    cyDataNodes.forEach((node) => {
-      if (adjacencyRef.current[nodeId]?.includes(node.data.id)) {
-        node.data.visible = false;
-      }
-    });
-
-    cyDataEdges.forEach((edge) => {
-      if (edge.data.source === nodeId || adjacencyRef.current[nodeId]?.includes(edge.data.target)) {
-        edge.data.visible = false;
-      }
-    });
-
-    convertData();
-  }
-
-  function showParents(nodeId: string) {
-    cyDataNodes.forEach((node) => {
-      if (revAdjRef.current[nodeId]?.includes(node.data.id)) {
-        node.data.visible = true;
-      }
-    });
-
-    cyDataEdges.forEach((edge) => {
-      if (edge.data.target === nodeId || revAdjRef.current[nodeId]?.includes(edge.data.source)) {
-        edge.data.visible = true;
-      }
-    });
-
-    convertData();
-  }
-
-  function hideParents(nodeId: string) {
-    cyDataNodes.forEach((node) => {
-      if (revAdjRef.current[nodeId]?.includes(node.data.id)) {
-        node.data.visible = false;
-      }
-    });
-
-    cyDataEdges.forEach((edge) => {
-      if (edge.data.target === nodeId || revAdjRef.current[nodeId]?.includes(edge.data.source)) {
-        edge.data.visible = false;
-      }
-    });
-
-    convertData();
-  }
-
-  const hideNode = useCallback(
-    (nodeId: string) => {
-      hiddenNodesRef.current.add(nodeId);
-      convertData();
-    },
-    [convertData],
-  );
-
-  const centerView = useCallback(() => {
-    if (!simulationRef.current) return;
-    simulationRef.current.alpha(1).restart();
-  }, []);
-
-  useEffect(() => {
-    initializeSimulation(d3Nodes, d3Edges);
-  }, [initializeSimulation, d3Nodes, d3Edges]);
-
-  const handleResize = useCallback(() => {
-    if (!canvasRef.current?.parentElement) return;
-    const { width, height } = canvasRef.current.parentElement.getBoundingClientRect();
-    setDimensions({ width, height });
-  }, []);
-
-  useEffect(() => {
-    const observer = new ResizeObserver(() => handleResize());
-    if (canvasRef.current?.parentElement) {
-      observer.observe(canvasRef.current.parentElement);
-    }
-    return () => observer.disconnect();
-  }, [handleResize]);
-
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Attach D3 event listeners to <canvas> (zoom, node‐drag, mouse, contextmenu)
+  // ─────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const selection = d3.select(canvas);
 
-    const zoomBehavior = d3
-      .zoom<HTMLCanvasElement, unknown>()
-      .filter((event: any) => {
-        return event.type === 'wheel' || (event.type === 'mousedown' && event.button === 2);
-      })
-      .scaleExtent([0.1, 10])
-      .on('zoom', (event) => {
-        transformRef.current = event.transform;
-        drawCanvas(d3Nodes, d3Edges);
-      });
-
-    zoomBehaviorRef.current = zoomBehavior;
-
-    selection.call(zoomBehavior as any);
+    // Attach zoom behavior (initialized in useD3Force)
+    if (zoomBehaviorRef.current) {
+      selection.call(zoomBehaviorRef.current as any);
+    }
+    // Disable default double‐click‐zoom (we handle double‐click manually)
     selection.on('dblclick.zoom', null);
 
+    // Attach node drag to the canvas
     selection.call(handleDrag as any);
 
+    // Right‐button dragging detection
     const onMouseDown = (event: MouseEvent) => {
       if (event.button === 2) {
         rightDraggingRef.current = false;
         rightMouseDownRef.current = { x: event.clientX, y: event.clientY };
       }
     };
-
     const onMouseMove = (event: MouseEvent) => {
       if ((event.buttons & 2) === 2 && rightMouseDownRef.current) {
         const dx = event.clientX - rightMouseDownRef.current.x;
@@ -590,7 +371,12 @@ export default function D3NLDView({ rdfOntology, onLoaded }: Props) {
       canvas.removeEventListener('dblclick', handleDoubleClick);
       canvas.removeEventListener('contextmenu', handleContextMenu);
     };
-  }, [drawCanvas, d3Nodes, d3Edges, handleDrag, handleDoubleClick, handleContextMenu]);
+  }, [
+    handleDrag, // now sees the latest d3Nodes on each render
+    handleContextMenu,
+    handleDoubleClick,
+    zoomBehaviorRef,
+  ]);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
