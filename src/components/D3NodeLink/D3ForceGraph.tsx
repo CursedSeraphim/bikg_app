@@ -13,7 +13,7 @@ import { useD3Force } from './hooks/useD3Force';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 
 // squared pixel distance used when finding the nearest node for clicks
-const NEAR_NODE_DIST_SQ = 400; // ~20px radius
+const NEAR_NODE_DIST_SQ = 40000;
 
 /** Force-directed graph view for the D3 based node-link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) {
@@ -121,9 +121,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   );
 
   const recomputeEdgeVisibility = useCallback(() => {
-    const visible = new Set(
-      cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id),
-    );
+    const visible = new Set(cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
     cyDataEdges.forEach((edge) => {
       edge.data.visible = visible.has(edge.data.source) && visible.has(edge.data.target);
     });
