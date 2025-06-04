@@ -8,6 +8,18 @@ export function useNodeVisibility(
   hiddenNodesRef: React.MutableRefObject<Set<string>>,
   refresh: () => void,
 ) {
+  /**
+   * Helper that recalculates edge visibility based on the current set of
+   * visible nodes. An edge becomes visible whenever both its source and target
+   * nodes are visible.
+   */
+  const recomputeEdgeVisibility = useCallback(() => {
+    const visible = new Set(cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
+
+    cyDataEdges.forEach((edge) => {
+      edge.data.visible = visible.has(edge.data.source) && visible.has(edge.data.target);
+    });
+  }, [cyDataNodes, cyDataEdges, hiddenNodesRef]);
   const showChildren = useCallback(
     (nodeId: string) => {
       cyDataNodes.forEach((node) => {
@@ -15,14 +27,11 @@ export function useNodeVisibility(
           node.data.visible = true;
         }
       });
-      cyDataEdges.forEach((edge) => {
-        if (edge.data.source === nodeId || adjacencyRef.current[nodeId]?.includes(edge.data.target)) {
-          edge.data.visible = true;
-        }
-      });
+
+      recomputeEdgeVisibility();
       refresh();
     },
-    [cyDataNodes, cyDataEdges, refresh, adjacencyRef],
+    [cyDataNodes, adjacencyRef, recomputeEdgeVisibility, refresh],
   );
 
   const hideChildren = useCallback(
@@ -32,14 +41,11 @@ export function useNodeVisibility(
           node.data.visible = false;
         }
       });
-      cyDataEdges.forEach((edge) => {
-        if (edge.data.source === nodeId || adjacencyRef.current[nodeId]?.includes(edge.data.target)) {
-          edge.data.visible = false;
-        }
-      });
+
+      recomputeEdgeVisibility();
       refresh();
     },
-    [cyDataNodes, cyDataEdges, refresh, adjacencyRef],
+    [cyDataNodes, adjacencyRef, recomputeEdgeVisibility, refresh],
   );
 
   const showParents = useCallback(
@@ -49,14 +55,11 @@ export function useNodeVisibility(
           node.data.visible = true;
         }
       });
-      cyDataEdges.forEach((edge) => {
-        if (edge.data.target === nodeId || revAdjRef.current[nodeId]?.includes(edge.data.source)) {
-          edge.data.visible = true;
-        }
-      });
+
+      recomputeEdgeVisibility();
       refresh();
     },
-    [cyDataNodes, cyDataEdges, refresh, revAdjRef],
+    [cyDataNodes, revAdjRef, recomputeEdgeVisibility, refresh],
   );
 
   const hideParents = useCallback(
@@ -66,22 +69,20 @@ export function useNodeVisibility(
           node.data.visible = false;
         }
       });
-      cyDataEdges.forEach((edge) => {
-        if (edge.data.target === nodeId || revAdjRef.current[nodeId]?.includes(edge.data.source)) {
-          edge.data.visible = false;
-        }
-      });
+
+      recomputeEdgeVisibility();
       refresh();
     },
-    [cyDataNodes, cyDataEdges, refresh, revAdjRef],
+    [cyDataNodes, revAdjRef, recomputeEdgeVisibility, refresh],
   );
 
   const hideNode = useCallback(
     (nodeId: string) => {
       hiddenNodesRef.current.add(nodeId);
+      recomputeEdgeVisibility();
       refresh();
     },
-    [refresh, hiddenNodesRef],
+    [refresh, hiddenNodesRef, recomputeEdgeVisibility],
   );
 
   return { showChildren, hideChildren, showParents, hideParents, hideNode };
