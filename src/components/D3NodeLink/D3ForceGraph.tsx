@@ -197,6 +197,14 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   const toggleChildren = useCallback(
     (id: string) => {
+      if (
+        activePreviewRef.current.mode === 'children' &&
+        activePreviewRef.current.nodeId === id
+      ) {
+        ghostNodes.forEach((gn) => {
+          savedPositionsRef.current[gn.id] = { x: gn.x, y: gn.y };
+        });
+      }
       const childIds = adjacencyRef.current[id] || [];
       const allVisible = childIds.length > 0 && childIds.every((childId) => {
         const node = cyDataNodes.find((n) => n.data.id === childId);
@@ -210,11 +218,26 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         showChildren(id);
       }
     },
-    [freezeNode, showChildren, collapseDescendants, cyDataNodes, adjacencyRef],
+    [
+      freezeNode,
+      showChildren,
+      collapseDescendants,
+      cyDataNodes,
+      adjacencyRef,
+      ghostNodes,
+    ],
   );
 
   const toggleParents = useCallback(
     (id: string) => {
+      if (
+        activePreviewRef.current.mode === 'parents' &&
+        activePreviewRef.current.nodeId === id
+      ) {
+        ghostNodes.forEach((gn) => {
+          savedPositionsRef.current[gn.id] = { x: gn.x, y: gn.y };
+        });
+      }
       const parentIds = revAdjRef.current[id] || [];
       const allVisible = parentIds.length > 0 && parentIds.every((parentId) => {
         const node = cyDataNodes.find((n) => n.data.id === parentId);
@@ -228,7 +251,14 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         showParents(id);
       }
     },
-    [freezeNode, showParents, collapseAncestors, cyDataNodes, revAdjRef],
+    [
+      freezeNode,
+      showParents,
+      collapseAncestors,
+      cyDataNodes,
+      revAdjRef,
+      ghostNodes,
+    ],
   );
 
 
