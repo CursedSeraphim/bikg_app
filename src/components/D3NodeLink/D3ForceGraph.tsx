@@ -198,12 +198,12 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const toggleChildren = useCallback(
     (id: string) => {
       const childIds = adjacencyRef.current[id] || [];
-      const visibleChildren = childIds.filter((childId) => {
+      const allVisible = childIds.length > 0 && childIds.every((childId) => {
         const node = cyDataNodes.find((n) => n.data.id === childId);
         return node && node.data.visible && !hiddenNodesRef.current.has(childId);
       });
 
-      if (visibleChildren.length > 0) {
+      if (allVisible) {
         collapseDescendants(id);
       } else {
         freezeNode(id);
@@ -216,12 +216,12 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const toggleParents = useCallback(
     (id: string) => {
       const parentIds = revAdjRef.current[id] || [];
-      const visibleParents = parentIds.filter((parentId) => {
+      const allVisible = parentIds.length > 0 && parentIds.every((parentId) => {
         const node = cyDataNodes.find((n) => n.data.id === parentId);
         return node && node.data.visible && !hiddenNodesRef.current.has(parentId);
       });
 
-      if (visibleParents.length > 0) {
+      if (allVisible) {
         collapseAncestors(id);
       } else {
         freezeNode(id);
@@ -456,18 +456,47 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
       const ids = mode === 'children' ? adjacencyRef.current[closest.id] || [] : revAdjRef.current[closest.id] || [];
 
-      const newGhostNodes: CanvasNode[] = [];
-      const newGhostEdges: CanvasEdge[] = [];
+      const hiddenIds: string[] = [];
+      const visibleIds: string[] = [];
 
       ids.forEach((nid) => {
         const nodeData = cyDataNodes.find((n) => n.data.id === nid);
         if (!nodeData) return;
+        const visible = nodeData.data.visible && !hiddenNodesRef.current.has(nid);
+        if (visible) {
+          visibleIds.push(nid);
+        } else {
+          hiddenIds.push(nid);
+        }
+      });
 
-        const edgeData = cyDataEdges.find(
-          (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
-        );
+      const allVisible = hiddenIds.length === 0;
 
-        if (!nodeData.data.visible || hiddenNodesRef.current.has(nid)) {
+      const newGhostNodes: CanvasNode[] = [];
+      const newGhostEdges: CanvasEdge[] = [];
+
+      if (allVisible) {
+        visibleIds.forEach((nid) => {
+          const edgeData = cyDataEdges.find(
+            (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
+          );
+          if (edgeData) {
+            newGhostEdges.push({
+              source: edgeData.data.source,
+              target: edgeData.data.target,
+              label: edgeData.data.label,
+              visible: true,
+              previewRemoval: true,
+            });
+          }
+        });
+      } else {
+        hiddenIds.forEach((nid) => {
+          const nodeData = cyDataNodes.find((n) => n.data.id === nid);
+          if (!nodeData) return;
+          const edgeData = cyDataEdges.find(
+            (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
+          );
           newGhostNodes.push({
             id: nid,
             label: nodeData.data.label,
@@ -483,16 +512,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
             visible: true,
             ghost: true,
           });
-        } else if (edgeData) {
-          newGhostEdges.push({
-            source: edgeData.data.source,
-            target: edgeData.data.target,
-            label: edgeData.data.label,
-            visible: true,
-            previewRemoval: true,
-          });
-        }
-      });
+        });
+      }
 
       if (newGhostNodes.length > 0) {
         Object.values(nodeMapRef.current).forEach((n) => {
