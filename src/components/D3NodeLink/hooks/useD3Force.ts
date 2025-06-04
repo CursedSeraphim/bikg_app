@@ -84,6 +84,11 @@ export function useD3Force(
       const ty = targetNode.y ?? 0;
 
       // Draw line
+      if (edge.ghost) {
+        context.strokeStyle = 'rgba(170,170,170,0.5)';
+      } else {
+        context.strokeStyle = '#AAA';
+      }
       context.beginPath();
       context.moveTo(sx, sy);
       context.lineTo(tx, ty);
@@ -104,7 +109,7 @@ export function useD3Force(
         context.lineTo(backx + (arrowWidth * -dy) / length, backy + (arrowWidth * dx) / length);
         context.lineTo(backx - (arrowWidth * -dy) / length, backy - (arrowWidth * dx) / length);
         context.closePath();
-        context.fillStyle = '#AAA';
+        context.fillStyle = edge.ghost ? 'rgba(170,170,170,0.5)' : '#AAA';
         context.fill();
       }
 
@@ -122,8 +127,12 @@ export function useD3Force(
     // Draw nodes
     allNodes.forEach((node) => {
       context.beginPath();
-      context.fillStyle = node.color;
       const radius = 6;
+      if (node.ghost) {
+        context.fillStyle = 'rgba(0,0,0,0.2)';
+      } else {
+        context.fillStyle = node.color;
+      }
       context.arc(node.x ?? 0, node.y ?? 0, radius, 0, 2 * Math.PI);
       context.fill();
 

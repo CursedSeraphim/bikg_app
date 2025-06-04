@@ -8,6 +8,8 @@ export interface CanvasNode {
   y?: number;
   fx?: number | null;
   fy?: number | null;
+  /** When true the node is only shown as a semi transparent preview */
+  ghost?: boolean;
 }
 
 export interface CanvasEdge {
@@ -15,6 +17,8 @@ export interface CanvasEdge {
   target: string | CanvasNode;
   label?: string;
   visible: boolean;
+  /** Preview edges used for ghost nodes */
+  ghost?: boolean;
 }
 
 export type D3NLDViewProps = {
