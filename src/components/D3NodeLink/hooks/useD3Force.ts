@@ -85,9 +85,18 @@ export function useD3Force(
 
       // Draw line
       context.beginPath();
+      context.save();
+      if (edge.ghost) {
+        context.strokeStyle = 'rgba(170,170,170,0.4)';
+        context.setLineDash([4, 2]);
+      } else if (edge.highlight === 'remove') {
+        context.strokeStyle = '#f00';
+        context.setLineDash([4, 2]);
+      }
       context.moveTo(sx, sy);
       context.lineTo(tx, ty);
       context.stroke();
+      context.restore();
 
       // Draw arrowhead
       const dx = tx - sx;
@@ -104,7 +113,7 @@ export function useD3Force(
         context.lineTo(backx + (arrowWidth * -dy) / length, backy + (arrowWidth * dx) / length);
         context.lineTo(backx - (arrowWidth * -dy) / length, backy - (arrowWidth * dx) / length);
         context.closePath();
-        context.fillStyle = '#AAA';
+        context.fillStyle = edge.ghost ? 'rgba(170,170,170,0.4)' : '#AAA';
         context.fill();
       }
 
@@ -121,14 +130,23 @@ export function useD3Force(
 
     // Draw nodes
     allNodes.forEach((node) => {
+      context.save();
       context.beginPath();
-      context.fillStyle = node.color;
       const radius = 6;
+      if (node.ghost) {
+        context.globalAlpha = 0.5;
+      }
+      context.fillStyle = node.color;
+      if (node.highlight === 'remove') {
+        context.strokeStyle = '#f00';
+        context.setLineDash([4, 2]);
+      } else {
+        context.strokeStyle = '#FFF';
+      }
       context.arc(node.x ?? 0, node.y ?? 0, radius, 0, 2 * Math.PI);
       context.fill();
-
-      context.strokeStyle = '#FFF';
       context.stroke();
+      context.restore();
 
       context.save();
       context.fillStyle = '#000';

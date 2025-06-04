@@ -8,6 +8,14 @@ export interface CanvasNode {
   y?: number;
   fx?: number | null;
   fy?: number | null;
+  /** If true the node is only rendered as a semi transparent preview */
+  ghost?: boolean;
+  /**
+   * When set to 'remove' the node will be highlighted to indicate that it would
+   * be removed on toggle. Can be extended with additional highlight modes if
+   * needed.
+   */
+  highlight?: 'remove';
 }
 
 export interface CanvasEdge {
@@ -15,6 +23,8 @@ export interface CanvasEdge {
   target: string | CanvasNode;
   label?: string;
   visible: boolean;
+  ghost?: boolean;
+  highlight?: 'remove';
 }
 
 export type D3NLDViewProps = {
