@@ -172,7 +172,7 @@ def copy_namespaces(source_g, target_g):
         target_g.namespace_manager.bind(prefix, ns)
 
 
-def get_violation_report_exemplars(ontology_g, violation_report_g):
+def get_violation_report_exemplars(ontology_g, violation_report_g, study_g):
     """
     Generates and returns violation report exemplars based on ontology and violation graphs.
 
@@ -183,6 +183,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
     Args:
         ontology_g (rdflib.Graph): The ontology graph.
         violation_report_g (rdflib.Graph): The graph containing violation reports.
+        study_g (rdflib.Graph): The instance data graph, used to add the one hop locatoin of all sh_value objects.
 
     Returns:
         tuple: A 4-tuple containing the updated ontology graph, a dictionary of
@@ -269,7 +270,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
             exemplar_name
         ] += 1  # Updating the new dictionary to associate the violation with the exemplar and count
 
-        process_edge_object_pairs(ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name)
+        process_edge_object_pairs(ontology_g, study_g, sh, edge_count_dict, edge_object_pairs, exemplar_name)
 
     return (
         ontology_g,
@@ -280,7 +281,9 @@ def get_violation_report_exemplars(ontology_g, violation_report_g):
     )
 
 
-def process_edge_object_pairs(ontology_g, sh, edge_count_dict, edge_object_pairs, exemplar_name):
+def process_edge_object_pairs(ontology_g, study_g, sh, edge_count_dict, edge_object_pairs, exemplar_name):
+    # prepare list of shacl values of violation reports, i.e., the objects for all triples  (focusnode, http://www.w3.org/ns/shacl#value, object)
+    shacl_values = []
     for p, o in edge_object_pairs:
         po_str = f"{p}__{o}"
         if edge_count_dict[exemplar_name][po_str] == 0:
@@ -288,6 +291,15 @@ def process_edge_object_pairs(ontology_g, sh, edge_count_dict, edge_object_pairs
                 ontology_g.add((o, URIRef("http://customnamespace.com/hasExemplar"), exemplar_name))  # type: ignore
             else:
                 ontology_g.add((exemplar_name, p, o))  # type: ignore
+                print(f"Adding edge {exemplar_name} {p} {o}")
+                if p == sh.value:
+                    shacl_values.append(o)
                 # TODO create custom URI instead of object property
             ontology_g.add((exemplar_name, RDF.type, sh.PropertyShape))
         edge_count_dict[exemplar_name][po_str] += 1
+
+    # add triples from study_g where the subject is a shacl value we have written to shacl_values, add its one hop neighbors to ontology_g
+    for sh_value in shacl_values:
+        for s, p, o in study_g.triples((sh_value, None, None)):
+            ontology_g.add((s, p, o))  # type: ignore
+
