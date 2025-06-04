@@ -102,6 +102,37 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   }, [loading, convertData]);
 
   const { showChildren, showParents, hideNode } = useNodeVisibility(cyDataNodes, cyDataEdges, adjacencyRef, revAdjRef, hiddenNodesRef, convertData);
+  const freezeNode = useCallback(
+    (id: string, duration = 1000) => {
+      const node = nodeMapRef.current[id];
+      if (!node || !simulationRef.current) return;
+      node.fx = node.x;
+      node.fy = node.y;
+      simulationRef.current.alphaTarget(0.1).restart();
+      setTimeout(() => {
+        node.fx = null;
+        node.fy = null;
+        simulationRef.current?.alphaTarget(0);
+      }, duration);
+    },
+    [simulationRef],
+  );
+
+  const toggleChildren = useCallback(
+    (id: string) => {
+      freezeNode(id);
+      showChildren(id);
+    },
+    [freezeNode, showChildren],
+  );
+
+  const toggleParents = useCallback(
+    (id: string) => {
+      freezeNode(id);
+      showParents(id);
+    },
+    [freezeNode, showParents],
+  );
 
   const { transformRef, simulationRef, zoomBehaviorRef } = useD3Force(canvasRef, d3Nodes, d3Edges, d3BoundingBox, dimensions);
 
@@ -263,8 +294,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         node={menuNode}
         show={menuVisible}
         onClose={() => setMenuVisible(false)}
-        onToggleChildren={() => menuNode && showChildren(menuNode.id)}
-        onToggleParents={() => menuNode && showParents(menuNode.id)}
+        onToggleChildren={() => menuNode && toggleChildren(menuNode.id)}
+        onToggleParents={() => menuNode && toggleParents(menuNode.id)}
         onHideNode={hideNode}
         onCenterView={centerView}
       />

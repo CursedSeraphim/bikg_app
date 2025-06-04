@@ -10,7 +10,9 @@ const useResizeObserver = (ref: React.RefObject<HTMLElement>): Dimensions | null
   const [dimensions, setDimensions] = useState<Dimensions | null>(null);
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current) {
+      return undefined;
+    }
 
     const observeTarget = ref.current;
 
