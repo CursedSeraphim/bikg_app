@@ -1,79 +1,157 @@
 @prefix ex: <http://example.com/exemplar#> .
+@prefix lotr: <http://example.org/lotr#> .
 @prefix ns1: <http://customnamespace.com/> .
-@prefix ont: <http://exampleontology.com/ns#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
-@prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix rlog: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/rlog#> .
 @prefix rut: <http://rdfunit.aksw.org/ns/core#> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-ont:DirectorShape a sh:NodeShape ;
-    sh:node ont:ManagerShape ;
-    sh:targetClass ont:Director .
+lotr:Ancestry a owl:Class ;
+    rdfs:subClassOf lotr:Thing .
 
-ex:EmployeeIDShape_exemplar_2 a rut:TestCaseResult,
+lotr:Continent a owl:Class ;
+    rdfs:subClassOf lotr:Thing .
+
+ex:CharacterShape-hasAncestry_exemplar_3 a rut:TestCaseResult,
         sh:PropertyShape,
         sh:ValidationResult ;
-    prov:wasGeneratedBy <urn:uuid:b8916a6e-83ab-44d4-97d4-86f6238c13a0> ;
-    sh:message "value not of datatype <http://www.w3.org/2001/XMLSchema#string>" ;
-    sh:resultMessage "value not of datatype {$datatype}" ;
-    sh:resultPath ont:employeeID ;
-    sh:resultSeverity sh:Violation ;
-    sh:severity rlog:ERROR ;
-    sh:sourceConstraintComponent sh:DatatypeConstraintComponent ;
-    sh:value 123 .
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Ancestry" ;
+    sh:resultPath lotr:hasAncestry ;
+    sh:severity sh:Violation ;
+    sh:value lotr:Hobbits .
 
-ex:ManagerTeamSizeShape_exemplar_1 a rut:TestCaseResult,
+ex:CharacterShape-hasHome_exemplar_1 a rut:TestCaseResult,
         sh:PropertyShape,
         sh:ValidationResult ;
-    prov:wasGeneratedBy <urn:uuid:b8916a6e-83ab-44d4-97d4-86f6238c13a0> ;
-    sh:message "sh:minInclusive of <http://example.com/ns#teamSize> should be \"6\"^^<http://www.w3.org/2001/XMLSchema#integer>" ;
-    sh:resultMessage "sh:minInclusive of {$PATH} should be {$minInclusive}" ;
-    sh:resultPath ont:teamSize ;
-    sh:resultSeverity sh:Violation ;
-    sh:severity rlog:ERROR ;
-    sh:sourceConstraintComponent sh:MinInclusiveConstraintComponent ;
-    sh:value 5 .
+    sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:value lotr:MinasTirith .
 
-ont:Director a owl:Class ;
-    rdfs:subClassOf ont:Employee .
+ex:CharacterShape-hasHome_exemplar_2 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasHome for entity of type lotr:Character" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation .
 
-ont:EmployeeIDShape a sh:PropertyShape ;
-    ns1:hasExemplar ex:EmployeeIDShape_exemplar_2 ;
-    sh:datatype xsd:string ;
+ex:CharacterShape-hasHome_exemplar_4 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:value lotr:TheShire .
+
+ex:CharacterShape-hasHome_exemplar_9 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:value lotr:Edoras .
+
+ex:LocationShape-isInRegion_exemplar_5 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected value for lotr:isInRegion to conform to RegionShape" ;
+    sh:resultPath lotr:isInRegion ;
+    sh:severity sh:Violation ;
+    sh:value lotr:Rohan .
+
+ex:LocationShape-isInRegion_exemplar_7 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected value for lotr:isInRegion to conform to RegionShape" ;
+    sh:resultPath lotr:isInRegion ;
+    sh:severity sh:Violation ;
+    sh:value lotr:Gondor .
+
+ex:LocationShape-isInRegion_exemplar_8 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected value for lotr:isInRegion to conform to RegionShape" ;
+    sh:resultPath lotr:isInRegion ;
+    sh:severity sh:Violation ;
+    sh:value lotr:Eriador .
+
+ex:RegionShape-isInContinent_exemplar_6 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected value for lotr:isInContinent to conform to ContinentShape" ;
+    sh:resultPath lotr:isInContinent ;
+    sh:severity sh:Violation ;
+    sh:value lotr:MiddleEarth .
+
+lotr:Character a owl:Class ;
+    rdfs:subClassOf lotr:Thing .
+
+lotr:CharacterShape a sh:NodeShape ;
+    sh:property lotr:CharacterShape-hasAncestry,
+        lotr:CharacterShape-hasHome ;
+    sh:targetClass lotr:Character .
+
+lotr:CharacterShape-hasAncestry a sh:PropertyShape ;
+    ns1:hasExemplar ex:CharacterShape-hasAncestry_exemplar_3 ;
     sh:minCount 1 ;
-    sh:path ont:employeeID .
+    sh:node lotr:CharacterShape ;
+    sh:path lotr:hasAncestry .
 
-ont:EmployeeNameShape a sh:PropertyShape ;
-    sh:datatype xsd:string ;
+lotr:CharacterShape-hasHome a sh:PropertyShape ;
+    ns1:hasExemplar ex:CharacterShape-hasHome_exemplar_1,
+        ex:CharacterShape-hasHome_exemplar_2,
+        ex:CharacterShape-hasHome_exemplar_4,
+        ex:CharacterShape-hasHome_exemplar_9 ;
     sh:minCount 1 ;
-    sh:path ont:name .
+    sh:node lotr:LocationShape ;
+    sh:path lotr:hasHome .
 
-ont:Manager a owl:Class ;
-    rdfs:subClassOf ont:Employee .
+lotr:Edoras a lotr:Location ;
+    lotr:isInRegion lotr:Rohan .
 
-ont:ManagerShape a sh:NodeShape ;
-    sh:node ont:EmployeeShape ;
-    sh:property ont:ManagerShapehasSubordinate,
-        ont:ManagerTeamSizeShape ;
-    sh:targetClass ont:Manager .
+lotr:LocationShape a sh:NodeShape ;
+    sh:property lotr:LocationShape-isInRegion ;
+    sh:targetClass lotr:Location .
 
-ont:ManagerShapehasSubordinate a sh:PropertyShape ;
-    sh:node ont:EmployeeShape ;
-    sh:path ont:hasSubordinate .
+lotr:LocationShape-isInRegion a sh:PropertyShape ;
+    ns1:hasExemplar ex:LocationShape-isInRegion_exemplar_5,
+        ex:LocationShape-isInRegion_exemplar_7,
+        ex:LocationShape-isInRegion_exemplar_8 ;
+    sh:minCount 1 ;
+    sh:node lotr:RegionShape ;
+    sh:path lotr:isInRegion .
 
-ont:ManagerTeamSizeShape a sh:PropertyShape ;
-    ns1:hasExemplar ex:ManagerTeamSizeShape_exemplar_1 ;
-    sh:datatype xsd:integer ;
-    sh:minInclusive 6 ;
-    sh:path ont:teamSize .
+lotr:MinasTirith a lotr:Location ;
+    lotr:isInRegion lotr:Gondor .
 
-ont:EmployeeShape a sh:NodeShape ;
-    sh:property ont:EmployeeIDShape,
-        ont:EmployeeNameShape ;
-    sh:targetClass ont:Employee .
+lotr:RegionShape a sh:NodeShape ;
+    sh:property lotr:RegionShape-isInContinent ;
+    sh:targetClass lotr:Region .
 
-ont:Employee a owl:Class .
+lotr:RegionShape-isInContinent a sh:PropertyShape ;
+    ns1:hasExemplar ex:RegionShape-isInContinent_exemplar_6 ;
+    sh:minCount 1 ;
+    sh:node lotr:ContinentShape ;
+    sh:path lotr:isInContinent .
+
+lotr:TheShire a lotr:Location ;
+    lotr:isInRegion lotr:Eriador .
+
+lotr:Eriador a lotr:Region ;
+    lotr:isInContinent lotr:MiddleEarth .
+
+lotr:Gondor a lotr:Region ;
+    lotr:isInContinent lotr:MiddleEarth .
+
+lotr:Rohan a lotr:Region ;
+    lotr:isInContinent lotr:MiddleEarth .
+
+lotr:Location a owl:Class ;
+    rdfs:subClassOf lotr:Thing .
+
+lotr:Region a owl:Class ;
+    rdfs:subClassOf lotr:Thing .
+
+lotr:Thing a owl:Class .
 

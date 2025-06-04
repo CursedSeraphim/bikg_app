@@ -1,3 +1,19 @@
-,focus_node,ont:EmployeeIDShape,ont:ManagerTeamSizeShape,ont:name,ont:employeeID,rdf:type,ont:teamSize,ont:hasSubordinate,x,y
-ont:JohnDoe,ont:JohnDoe,1.0,1.0,John Doe,"['E123', '123']",['ont:Manager'],5,ont:ForestGump,0.0,0.0
-ont:BigCat,ont:BigCat,1.0,0.0,Big Cat,['E111'],['ont:Director'],6,ont:JohnDoe,0.0,1.0
+,focus_node,lotr:CharacterShape-hasAncestry,lotr:CharacterShape-hasHome,lotr:RegionShape-isInContinent,lotr:LocationShape-isInRegion,lotr:hasAncestry,lotr:hasHome,lotr:childOf,lotr:isInContinent,lotr:isInRegion,rdf:type,x,y
+lotr:SamwiseGamgee,lotr:SamwiseGamgee,1.0,1.0,0.0,0.0,lotr:Hobbits,['lotr:TheShire'],['EdgeNotPresent'],EdgeNotPresent,EdgeNotPresent,['lotr:Character'],0.9900632,0.009185151
+lotr:Gondor,lotr:Gondor,0.0,0.0,1.0,0.0,EdgeNotPresent,['EdgeNotPresent'],['EdgeNotPresent'],lotr:MiddleEarth,EdgeNotPresent,['lotr:Region'],0.39872032,0.9922318
+lotr:Aragorn,lotr:Aragorn,0.0,1.0,0.0,0.0,lotr:Dunedain,"['lotr:Rivendell', 'lotr:MinasTirith']","['lotr:Gilraen', 'lotr:Arathorn']",EdgeNotPresent,EdgeNotPresent,['lotr:Character'],0.0,0.37867314
+lotr:Arathorn,lotr:Arathorn,0.0,1.0,0.0,0.0,lotr:Dunedain,['EdgeNotPresent'],['EdgeNotPresent'],EdgeNotPresent,EdgeNotPresent,['lotr:Character'],0.013791185,0.37313697
+lotr:FrodoBaggins,lotr:FrodoBaggins,1.0,1.0,0.0,0.0,lotr:Hobbits,['lotr:TheShire'],['EdgeNotPresent'],EdgeNotPresent,EdgeNotPresent,['lotr:Character'],0.9953044,0.01403567
+lotr:Rohan,lotr:Rohan,0.0,0.0,1.0,0.0,EdgeNotPresent,['EdgeNotPresent'],['EdgeNotPresent'],lotr:MiddleEarth,EdgeNotPresent,['lotr:Region'],0.4071312,1.0
+lotr:MeriadocBrandybuck,lotr:MeriadocBrandybuck,1.0,1.0,0.0,0.0,lotr:Hobbits,['lotr:TheShire'],['EdgeNotPresent'],EdgeNotPresent,EdgeNotPresent,['lotr:Character'],0.9801124,0.0
+lotr:Edoras,lotr:Edoras,0.0,0.0,0.0,1.0,EdgeNotPresent,['EdgeNotPresent'],['EdgeNotPresent'],EdgeNotPresent,lotr:Rohan,['lotr:Location'],0.42669564,0.30241644
+lotr:Theoden,lotr:Theoden,0.0,1.0,0.0,0.0,lotr:Rohirrim,['lotr:Edoras'],"['lotr:Morwen', 'lotr:Thengel']",EdgeNotPresent,EdgeNotPresent,['lotr:Character'],0.02630611,0.40427244
+lotr:BilboBaggins,lotr:BilboBaggins,1.0,1.0,0.0,0.0,lotr:Hobbits,['lotr:TheShire'],['EdgeNotPresent'],EdgeNotPresent,EdgeNotPresent,['lotr:Character'],1.0,0.018370712
+lotr:Eriador,lotr:Eriador,0.0,0.0,1.0,0.0,EdgeNotPresent,['EdgeNotPresent'],['EdgeNotPresent'],lotr:MiddleEarth,EdgeNotPresent,['lotr:Region'],0.4048532,0.99789584
+lotr:PeregrinTook,lotr:PeregrinTook,1.0,1.0,0.0,0.0,lotr:Hobbits,['lotr:TheShire'],['EdgeNotPresent'],EdgeNotPresent,EdgeNotPresent,['lotr:Character'],0.98435736,0.0039203116
+lotr:Thengel,lotr:Thengel,0.0,1.0,0.0,0.0,lotr:Rohirrim,['EdgeNotPresent'],['EdgeNotPresent'],EdgeNotPresent,EdgeNotPresent,['lotr:Character'],0.016743654,0.39962995
+lotr:TheShire,lotr:TheShire,0.0,0.0,0.0,1.0,EdgeNotPresent,['EdgeNotPresent'],['EdgeNotPresent'],EdgeNotPresent,lotr:Eriador,['lotr:Location'],0.41724777,0.31114516
+lotr:Morwen,lotr:Morwen,0.0,1.0,0.0,0.0,lotr:Rohirrim,['EdgeNotPresent'],['EdgeNotPresent'],EdgeNotPresent,EdgeNotPresent,['lotr:Character'],0.030667925,0.39125144
+lotr:MinasTirith,lotr:MinasTirith,0.0,0.0,0.0,1.0,EdgeNotPresent,['EdgeNotPresent'],['EdgeNotPresent'],EdgeNotPresent,lotr:Gondor,['lotr:Location'],0.42305076,0.3057833
+lotr:Boromir,lotr:Boromir,0.0,1.0,0.0,0.0,lotr:MenOfGondor,['lotr:MinasTirith'],['EdgeNotPresent'],EdgeNotPresent,EdgeNotPresent,['lotr:Character'],0.0254019,0.37830094
+lotr:Gilraen,lotr:Gilraen,0.0,1.0,0.0,0.0,lotr:Dunedain,['EdgeNotPresent'],['EdgeNotPresent'],EdgeNotPresent,EdgeNotPresent,['lotr:Character'],0.011737747,0.38526493

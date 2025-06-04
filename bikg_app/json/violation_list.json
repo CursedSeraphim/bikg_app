@@ -1,1 +1,1 @@
-["ont:EmployeeIDShape", "ont:ManagerTeamSizeShape"]
+["lotr:CharacterShape-hasAncestry", "lotr:LocationShape-isInRegion", "lotr:RegionShape-isInContinent", "lotr:CharacterShape-hasHome"]
