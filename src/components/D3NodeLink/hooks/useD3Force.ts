@@ -140,17 +140,15 @@ export function useD3Force(
   }
 
   /**
-   * Initializes (or re-initializes) the force simulation whenever nodes, edges,
-   * dimensions, or boundingBox setting change.
+   * Initializes the force simulation and updates it whenever nodes or edges
+   * change. Existing node positions are reused to avoid large jumps.
    */
   useEffect(() => {
-    // If there are no nodes, stop any existing simulation and clear reference
     if (nodes.length === 0) {
       if (simulationRef.current) {
         simulationRef.current.stop();
+        simulationRef.current = null;
       }
-      simulationRef.current = null;
-      // Clear canvas if needed
       drawCanvas([], []);
       return;
     }
@@ -159,40 +157,58 @@ export function useD3Force(
     const nodeRadius = 12;
     const labelPadding = 20;
 
-    // Create a new simulation
-    const sim = d3
-      .forceSimulation<CanvasNode>(nodes)
-      .force(
-        'link',
-        d3
-          .forceLink<CanvasNode, CanvasEdge>(edges)
-          .id((d) => d.id)
-          .distance(150)
-          .strength(1),
-      )
-      .force('charge', d3.forceManyBody().strength(-9999).distanceMax(9999))
-      .force('collision', d3.forceCollide(nodeRadius + labelPadding))
-      .force('x', d3.forceX(width / 2).strength(0.01))
-      .force('y', d3.forceY(height / 2).strength(0.01))
-      .on('tick', () => {
-        if (boundingBox === 'on') {
-          nodes.forEach((node) => {
-            node.x = Math.max(nodeRadius, Math.min(width - nodeRadius, node.x ?? 0));
-            node.y = Math.max(nodeRadius, Math.min(height - nodeRadius, node.y ?? 0));
-          });
-        }
-        drawCanvas(nodes, edges);
-      });
+    let sim = simulationRef.current;
 
-    simulationRef.current = sim;
+    if (!sim) {
+      sim = d3.forceSimulation<CanvasNode>(nodes);
+      simulationRef.current = sim;
+    }
 
-    // Clean up on unmount or dependencies change
+    sim.nodes(nodes);
+
+    let linkForce = sim.force('link') as d3.ForceLink<CanvasNode, CanvasEdge> | undefined;
+    if (!linkForce) {
+      linkForce = d3
+        .forceLink<CanvasNode, CanvasEdge>(edges)
+        .id((d) => d.id)
+        .distance(150)
+        .strength(1);
+      sim.force('link', linkForce);
+    } else {
+      linkForce.links(edges);
+    }
+
+    sim.force('charge', d3.forceManyBody().strength(-9999).distanceMax(9999));
+    sim.force('collision', d3.forceCollide(nodeRadius + labelPadding));
+    sim.force('x', d3.forceX(width / 2).strength(0.01));
+    sim.force('y', d3.forceY(height / 2).strength(0.01));
+
+    sim.on('tick', () => {
+      if (boundingBox === 'on') {
+        nodes.forEach((node) => {
+          node.x = Math.max(nodeRadius, Math.min(width - nodeRadius, node.x ?? 0));
+          node.y = Math.max(nodeRadius, Math.min(height - nodeRadius, node.y ?? 0));
+        });
+      }
+      drawCanvas(nodes, edges);
+    });
+
+    sim.alpha(0.5).restart();
+
     return () => {
-      sim.stop();
-      simulationRef.current = null;
+      // Do not stop the simulation between updates to keep smooth transitions.
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges, dimensions.width, dimensions.height, boundingBox]);
+
+  // Stop the simulation when the component unmounts
+  useEffect(() => {
+    return () => {
+      if (simulationRef.current) {
+        simulationRef.current.stop();
+      }
+    };
+  }, []);
 
   /**
    * Sets up D3 zoom behavior on the canvas. Zoom updates transformRef and triggers redraw.
