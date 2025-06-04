@@ -6,6 +6,7 @@ export function useNodeVisibility(
   adjacencyRef: React.MutableRefObject<Record<string, string[]>>,
   revAdjRef: React.MutableRefObject<Record<string, string[]>>,
   hiddenNodesRef: React.MutableRefObject<Set<string>>,
+  originRef: React.MutableRefObject<Record<string, string | null>>,
   refresh: () => void,
 ) {
   /**
@@ -24,6 +25,9 @@ export function useNodeVisibility(
     (nodeId: string) => {
       cyDataNodes.forEach((node) => {
         if (adjacencyRef.current[nodeId]?.includes(node.data.id)) {
+          if (!node.data.visible && originRef.current[node.data.id] === undefined) {
+            originRef.current[node.data.id] = nodeId;
+          }
           node.data.visible = true;
         }
       });
@@ -52,6 +56,9 @@ export function useNodeVisibility(
     (nodeId: string) => {
       cyDataNodes.forEach((node) => {
         if (revAdjRef.current[nodeId]?.includes(node.data.id)) {
+          if (!node.data.visible && originRef.current[node.data.id] === undefined) {
+            originRef.current[node.data.id] = nodeId;
+          }
           node.data.visible = true;
         }
       });
