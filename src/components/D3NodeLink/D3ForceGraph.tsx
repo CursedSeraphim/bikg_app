@@ -12,6 +12,9 @@ import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3Force } from './hooks/useD3Force';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 
+// squared pixel distance used when finding the nearest node for clicks
+const NEAR_NODE_DIST_SQ = 400; // ~20px radius
+
 /** Force-directed graph view for the D3 based node-link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) {
   // Redux selectors
@@ -272,7 +275,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         }
       });
 
-      if (closest && minDist < 100) {
+      if (closest && minDist < NEAR_NODE_DIST_SQ) {
         const boundingRect = canvasRef.current?.getBoundingClientRect();
         if (boundingRect) {
           setMenuX(event.clientX - boundingRect.left);
@@ -345,7 +348,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         }
       });
 
-      if (closest && minDist < 100) {
+      if (closest && minDist < NEAR_NODE_DIST_SQ) {
         const cid = closest.id;
         const childIds = adjacencyRef.current[cid] || [];
         const parentIds = revAdjRef.current[cid] || [];
