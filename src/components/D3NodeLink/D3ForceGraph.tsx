@@ -117,6 +117,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     [...d3Edges, ...ghostEdges],
     d3BoundingBox,
     dimensions,
+    false,
   );
 
   const { showChildren, hideChildren, showParents, hideParents, hideNode } = useNodeVisibility(
@@ -204,11 +205,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       sim.alpha(0);
       sim.alphaTarget(0);
     }
-    // dirty fix: freeze all nodes for a short time to prevent flickering, because after letting go of ctrl/shift, everything starts to move even nothing in the graph changed.
-    // TODO find a better solution
-    Object.values(nodeMapRef.current).forEach((n) => {
-      freezeNode(n.id, 0, 1000);
-    });
     activePreviewRef.current = { mode: null, nodeId: null };
   }, [ghostNodes, ghostEdges, simulationRef]);
 
@@ -554,12 +550,12 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         });
         setGhostNodes(newGhostNodes);
         setGhostEdges(newGhostEdges);
-        const sim = simulationRef.current;
-        if (sim) sim.alphaTarget(0.3).restart();
       } else {
         setGhostNodes([]);
         setGhostEdges(newGhostEdges);
       }
+      const sim = simulationRef.current;
+      if (sim) sim.alphaTarget(0.3).restart();
     },
     [d3Nodes, transformRef, adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, simulationRef, clearPreview],
   );
