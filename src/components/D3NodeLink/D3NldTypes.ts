@@ -8,6 +8,9 @@ export interface CanvasNode {
   y?: number;
   fx?: number | null;
   fy?: number | null;
+  /** Velocity components used by d3-force */
+  vx?: number;
+  vy?: number;
   /** When true the node is only shown as a semi transparent preview */
   ghost?: boolean;
 }

@@ -207,6 +207,50 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     activePreviewRef.current = { mode: null, nodeId: null };
   }, [ghostNodes, ghostEdges, simulationRef]);
 
+  const collapseDescendants = useCallback(
+    (id: string) => {
+      freezeNode(id, 0);
+      const queue = [...(adjacencyRef.current[id] || [])];
+      const toHide: string[] = [];
+      while (queue.length) {
+        const cur = queue.shift()!;
+        toHide.push(cur);
+        queue.push(...(adjacencyRef.current[cur] || []));
+      }
+      if (toHide.length) {
+        toHide.forEach((nid) => {
+          const node = cyDataNodes.find((n) => n.data.id === nid);
+          if (node) node.data.visible = false;
+        });
+        recomputeEdgeVisibility();
+        convertData();
+      }
+    },
+    [cyDataNodes, adjacencyRef, recomputeEdgeVisibility, convertData, freezeNode],
+  );
+
+  const collapseAncestors = useCallback(
+    (id: string) => {
+      freezeNode(id, 0);
+      const queue = [...(revAdjRef.current[id] || [])];
+      const toHide: string[] = [];
+      while (queue.length) {
+        const cur = queue.shift()!;
+        toHide.push(cur);
+        queue.push(...(revAdjRef.current[cur] || []));
+      }
+      if (toHide.length) {
+        toHide.forEach((nid) => {
+          const node = cyDataNodes.find((n) => n.data.id === nid);
+          if (node) node.data.visible = false;
+        });
+        recomputeEdgeVisibility();
+        convertData();
+      }
+    },
+    [cyDataNodes, revAdjRef, recomputeEdgeVisibility, convertData, freezeNode],
+  );
+
   const toggleChildren = useCallback(
     (id: string) => {
       if (
@@ -274,49 +318,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   );
 
 
-  const collapseDescendants = useCallback(
-    (id: string) => {
-      freezeNode(id, 0);
-      const queue = [...(adjacencyRef.current[id] || [])];
-      const toHide: string[] = [];
-      while (queue.length) {
-        const cur = queue.shift()!;
-        toHide.push(cur);
-        queue.push(...(adjacencyRef.current[cur] || []));
-      }
-      if (toHide.length) {
-        toHide.forEach((nid) => {
-          const node = cyDataNodes.find((n) => n.data.id === nid);
-          if (node) node.data.visible = false;
-        });
-        recomputeEdgeVisibility();
-        convertData();
-      }
-    },
-    [cyDataNodes, adjacencyRef, recomputeEdgeVisibility, convertData, freezeNode],
-  );
-
-  const collapseAncestors = useCallback(
-    (id: string) => {
-      freezeNode(id, 0);
-      const queue = [...(revAdjRef.current[id] || [])];
-      const toHide: string[] = [];
-      while (queue.length) {
-        const cur = queue.shift()!;
-        toHide.push(cur);
-        queue.push(...(revAdjRef.current[cur] || []));
-      }
-      if (toHide.length) {
-        toHide.forEach((nid) => {
-          const node = cyDataNodes.find((n) => n.data.id === nid);
-          if (node) node.data.visible = false;
-        });
-        recomputeEdgeVisibility();
-        convertData();
-      }
-    },
-    [cyDataNodes, revAdjRef, recomputeEdgeVisibility, convertData, freezeNode],
-  );
 
   const centerView = useCallback(() => {
     const sim = simulationRef.current;
@@ -623,6 +624,16 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       canvas.removeEventListener('contextmenu', handleContextMenu);
     };
   }, [handleDrag, handleContextMenu, handleDoubleClick, zoomBehaviorRef]);
+
+  useEffect(() => {
+    if (ghostNodes.length === 0 && ghostEdges.length === 0) {
+      const sim = simulationRef.current;
+      if (sim) {
+        sim.alphaTarget(0);
+        sim.alpha(0);
+      }
+    }
+  }, [ghostNodes.length, ghostEdges.length, simulationRef]);
 
   useEffect(() => {
     window.addEventListener('keyup', clearPreview);
