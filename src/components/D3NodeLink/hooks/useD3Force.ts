@@ -27,7 +27,7 @@ export function useD3Force(
   edges: CanvasEdge[],
   boundingBox: string,
   dimensions: { width: number; height: number },
-  autoRestart = true,
+  autoRestart: boolean = true,
 ): {
   simulationRef: React.MutableRefObject<d3.Simulation<CanvasNode, CanvasEdge> | null>;
   transformRef: React.MutableRefObject<d3.ZoomTransform>;
