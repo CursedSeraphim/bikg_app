@@ -541,7 +541,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         });
       }
 
-      if (newGhostNodes.length > 0) {
+      const hasRemovalEdges = newGhostEdges.some((e) => e.previewRemoval);
+
+      if (newGhostNodes.length > 0 || hasRemovalEdges) {
         Object.values(nodeMapRef.current).forEach((n) => {
           n.fx = n.x;
           n.fy = n.y;
