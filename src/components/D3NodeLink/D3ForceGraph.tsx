@@ -140,9 +140,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   // Freeze nodes for a short period. By default, all currently visible nodes are
   // frozen for `otherDuration` milliseconds (500ms) while the triggering node
   // is frozen for `triggerDuration` milliseconds (1000ms). Passing `otherDuration`
-  // as `0` skips freezing the other nodes.
+  // as `0` skips freezing the other nodes. The `alphaTarget` parameter controls
+  // the force simulation strength during the freeze.
   const freezeNode = useCallback(
-    (id: string, otherDuration = 500, triggerDuration = 1000) => {
+    (
+      id: string,
+      otherDuration = 500,
+      triggerDuration = 1000,
+      alphaTarget = 0.1,
+    ) => {
       const sim = simulationRef.current;
       if (!sim) return;
 
@@ -154,7 +160,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         }
       });
 
-      sim.alphaTarget(0.1).restart();
+      sim.alphaTarget(alphaTarget).restart();
 
       if (otherDuration > 0) {
         // Release other nodes after `otherDuration`
@@ -270,8 +276,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (allVisible) {
         collapseDescendants(id);
       } else {
-        freezeNode(id);
         showChildren(id);
+        freezeNode(id, 500, 1000, 0.3);
       }
     },
     [freezeNode, showChildren, collapseDescendants, cyDataNodes, adjacencyRef, ghostNodes],
@@ -295,8 +301,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (allVisible) {
         collapseAncestors(id);
       } else {
-        freezeNode(id);
         showParents(id);
+        freezeNode(id, 500, 1000, 0.3);
       }
     },
     [freezeNode, showParents, collapseAncestors, cyDataNodes, revAdjRef, ghostNodes],
