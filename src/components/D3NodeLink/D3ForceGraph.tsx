@@ -200,7 +200,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       n.vy = 0;
     });
     const sim = simulationRef.current;
-    if (sim) sim.alpha(0);
+    if (sim) {
+      sim.alpha(0);
+      sim.alphaTarget(0);
+    }
     activePreviewRef.current = { mode: null, nodeId: null };
   }, [ghostNodes, ghostEdges, simulationRef]);
 
