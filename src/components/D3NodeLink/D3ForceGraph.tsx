@@ -191,7 +191,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         ...e,
         source: typeof e.source === 'object' ? e.source.id : e.source,
         target: typeof e.target === 'object' ? e.target.id : e.target,
-      }))
+      })),
     );
     Object.values(nodeMapRef.current).forEach((n) => {
       n.fx = null;
@@ -204,6 +204,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       sim.alpha(0);
       sim.alphaTarget(0);
     }
+    // dirty fix: freeze all nodes for a short time to prevent flickering, because after letting go of ctrl/shift, everything starts to move even nothing in the graph changed.
+    // TODO find a better solution
+    Object.values(nodeMapRef.current).forEach((n) => {
+      freezeNode(n.id, 0, 1000);
+    });
     activePreviewRef.current = { mode: null, nodeId: null };
   }, [ghostNodes, ghostEdges, simulationRef]);
 
@@ -253,19 +258,18 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   const toggleChildren = useCallback(
     (id: string) => {
-      if (
-        activePreviewRef.current.mode === 'children' &&
-        activePreviewRef.current.nodeId === id
-      ) {
+      if (activePreviewRef.current.mode === 'children' && activePreviewRef.current.nodeId === id) {
         ghostNodes.forEach((gn) => {
           savedPositionsRef.current[gn.id] = { x: gn.x, y: gn.y };
         });
       }
       const childIds = adjacencyRef.current[id] || [];
-      const allVisible = childIds.length > 0 && childIds.every((childId) => {
-        const node = cyDataNodes.find((n) => n.data.id === childId);
-        return node && node.data.visible && !hiddenNodesRef.current.has(childId);
-      });
+      const allVisible =
+        childIds.length > 0 &&
+        childIds.every((childId) => {
+          const node = cyDataNodes.find((n) => n.data.id === childId);
+          return node && node.data.visible && !hiddenNodesRef.current.has(childId);
+        });
 
       if (allVisible) {
         collapseDescendants(id);
@@ -274,31 +278,23 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         showChildren(id);
       }
     },
-    [
-      freezeNode,
-      showChildren,
-      collapseDescendants,
-      cyDataNodes,
-      adjacencyRef,
-      ghostNodes,
-    ],
+    [freezeNode, showChildren, collapseDescendants, cyDataNodes, adjacencyRef, ghostNodes],
   );
 
   const toggleParents = useCallback(
     (id: string) => {
-      if (
-        activePreviewRef.current.mode === 'parents' &&
-        activePreviewRef.current.nodeId === id
-      ) {
+      if (activePreviewRef.current.mode === 'parents' && activePreviewRef.current.nodeId === id) {
         ghostNodes.forEach((gn) => {
           savedPositionsRef.current[gn.id] = { x: gn.x, y: gn.y };
         });
       }
       const parentIds = revAdjRef.current[id] || [];
-      const allVisible = parentIds.length > 0 && parentIds.every((parentId) => {
-        const node = cyDataNodes.find((n) => n.data.id === parentId);
-        return node && node.data.visible && !hiddenNodesRef.current.has(parentId);
-      });
+      const allVisible =
+        parentIds.length > 0 &&
+        parentIds.every((parentId) => {
+          const node = cyDataNodes.find((n) => n.data.id === parentId);
+          return node && node.data.visible && !hiddenNodesRef.current.has(parentId);
+        });
 
       if (allVisible) {
         collapseAncestors(id);
@@ -307,17 +303,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         showParents(id);
       }
     },
-    [
-      freezeNode,
-      showParents,
-      collapseAncestors,
-      cyDataNodes,
-      revAdjRef,
-      ghostNodes,
-    ],
+    [freezeNode, showParents, collapseAncestors, cyDataNodes, revAdjRef, ghostNodes],
   );
-
-
 
   const centerView = useCallback(() => {
     const sim = simulationRef.current;
