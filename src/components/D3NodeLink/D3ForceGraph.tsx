@@ -550,12 +550,12 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         });
         setGhostNodes(newGhostNodes);
         setGhostEdges(newGhostEdges);
+        const sim = simulationRef.current;
+        if (sim) sim.alphaTarget(0.3).restart();
       } else {
         setGhostNodes([]);
         setGhostEdges(newGhostEdges);
       }
-      const sim = simulationRef.current;
-      if (sim) sim.alphaTarget(0.3).restart();
     },
     [d3Nodes, transformRef, adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, simulationRef, clearPreview],
   );
