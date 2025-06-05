@@ -27,6 +27,7 @@ export function useD3Force(
   edges: CanvasEdge[],
   boundingBox: string,
   dimensions: { width: number; height: number },
+  autoRestart: boolean = true,
 ): {
   simulationRef: React.MutableRefObject<d3.Simulation<CanvasNode, CanvasEdge> | null>;
   transformRef: React.MutableRefObject<d3.ZoomTransform>;
@@ -213,7 +214,9 @@ export function useD3Force(
       drawCanvas(nodes, edges);
     });
 
-    sim.alpha(0.5).restart();
+    if (autoRestart) {
+      sim.alpha(0.5).restart();
+    }
 
     return () => {
       // Do not stop the simulation between updates to keep smooth transitions.

@@ -117,6 +117,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     [...d3Edges, ...ghostEdges],
     d3BoundingBox,
     dimensions,
+    false,
   );
 
   const { showChildren, hideChildren, showParents, hideParents, hideNode } = useNodeVisibility(
@@ -139,9 +140,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   // Freeze nodes for a short period. By default, all currently visible nodes are
   // frozen for `otherDuration` milliseconds (500ms) while the triggering node
   // is frozen for `triggerDuration` milliseconds (1000ms). Passing `otherDuration`
-  // as `0` skips freezing the other nodes.
+  // as `0` skips freezing the other nodes. The `alphaTarget` parameter controls
+  // the force simulation strength during the freeze.
   const freezeNode = useCallback(
-    (id: string, otherDuration = 500, triggerDuration = 1000) => {
+    (
+      id: string,
+      otherDuration = 500,
+      triggerDuration = 1000,
+      alphaTarget = 0.1,
+    ) => {
       const sim = simulationRef.current;
       if (!sim) return;
 
@@ -153,7 +160,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         }
       });
 
-      sim.alphaTarget(0.1).restart();
+      sim.alphaTarget(alphaTarget).restart();
 
       if (otherDuration > 0) {
         // Release other nodes after `otherDuration`
@@ -204,11 +211,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       sim.alpha(0);
       sim.alphaTarget(0);
     }
-    // dirty fix: freeze all nodes for a short time to prevent flickering, because after letting go of ctrl/shift, everything starts to move even nothing in the graph changed.
-    // TODO find a better solution
-    Object.values(nodeMapRef.current).forEach((n) => {
-      freezeNode(n.id, 0, 1000);
-    });
     activePreviewRef.current = { mode: null, nodeId: null };
   }, [ghostNodes, ghostEdges, simulationRef]);
 
@@ -274,8 +276,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (allVisible) {
         collapseDescendants(id);
       } else {
-        freezeNode(id);
         showChildren(id);
+        freezeNode(id, 500, 1000, 0.3);
       }
     },
     [freezeNode, showChildren, collapseDescendants, cyDataNodes, adjacencyRef, ghostNodes],
@@ -299,8 +301,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (allVisible) {
         collapseAncestors(id);
       } else {
-        freezeNode(id);
         showParents(id);
+        freezeNode(id, 500, 1000, 0.3);
       }
     },
     [freezeNode, showParents, collapseAncestors, cyDataNodes, revAdjRef, ghostNodes],
@@ -545,7 +547,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         });
       }
 
-      if (newGhostNodes.length > 0) {
+      const hasRemovalEdges = newGhostEdges.some((e) => e.previewRemoval);
+
+      if (newGhostNodes.length > 0 || hasRemovalEdges) {
         Object.values(nodeMapRef.current).forEach((n) => {
           n.fx = n.x;
           n.fy = n.y;
@@ -554,8 +558,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         });
         setGhostNodes(newGhostNodes);
         setGhostEdges(newGhostEdges);
-        const sim = simulationRef.current;
-        if (sim) sim.alphaTarget(0.3).restart();
+        simulationRef.current?.alphaTarget(0.3).restart();
       } else {
         setGhostNodes([]);
         setGhostEdges(newGhostEdges);
