@@ -86,14 +86,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     convertData,
   );
 
-  const recomputeEdgeVisibility = useCallback(() => {
-    const visible = new Set(
-      cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id),
-    );
-    cyDataEdges.forEach((edge) => {
-      edge.data.visible = visible.has(edge.data.source) && visible.has(edge.data.target);
-    });
-  }, [cyDataNodes, cyDataEdges]);
 
   const freezeNode = useFreezeNode(simulationRef, nodeMapRef);
 
