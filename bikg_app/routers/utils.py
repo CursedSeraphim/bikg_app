@@ -270,7 +270,14 @@ def get_violation_report_exemplars(ontology_g, violation_report_g, study_g):
             exemplar_name
         ] += 1  # Updating the new dictionary to associate the violation with the exemplar and count
 
-        process_edge_object_pairs(ontology_g, study_g, sh, edge_count_dict, edge_object_pairs, exemplar_name)
+        process_edge_object_pairs(
+            ontology_g,
+            sh,
+            edge_count_dict,
+            edge_object_pairs,
+            exemplar_name,
+            study_g,
+        )
 
     return (
         ontology_g,
@@ -281,7 +288,14 @@ def get_violation_report_exemplars(ontology_g, violation_report_g, study_g):
     )
 
 
-def process_edge_object_pairs(ontology_g, study_g, sh, edge_count_dict, edge_object_pairs, exemplar_name):
+def process_edge_object_pairs(
+    ontology_g,
+    sh,
+    edge_count_dict,
+    edge_object_pairs,
+    exemplar_name,
+    study_g=None,
+):
     # prepare list of shacl values of violation reports, i.e., the objects for all triples  (focusnode, http://www.w3.org/ns/shacl#value, object)
     shacl_values = []
     for p, o in edge_object_pairs:
@@ -298,8 +312,9 @@ def process_edge_object_pairs(ontology_g, study_g, sh, edge_count_dict, edge_obj
             ontology_g.add((exemplar_name, RDF.type, sh.PropertyShape))
         edge_count_dict[exemplar_name][po_str] += 1
 
-    # add triples from study_g where the subject is a shacl value we have written to shacl_values, add its one hop neighbors to ontology_g
-    for sh_value in shacl_values:
-        for s, p, o in study_g.triples((sh_value, None, None)):
-            ontology_g.add((s, p, o))  # type: ignore
+    # add triples from study_g where the subject is a shacl value we have written to shacl_values
+    if study_g is not None:
+        for sh_value in shacl_values:
+            for s, p, o in study_g.triples((sh_value, None, None)):
+                ontology_g.add((s, p, o))  # type: ignore
 

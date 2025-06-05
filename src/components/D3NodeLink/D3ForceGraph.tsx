@@ -13,6 +13,8 @@ import { useAdjacency } from './hooks/useAdjacency';
 import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3Force } from './hooks/useD3Force';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
+import { useForceGraphState } from './hooks/useForceGraphState';
+import { useFreezeNode } from './hooks/useFreezeNode';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) {
@@ -31,8 +33,18 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     onLoaded,
   });
 
-  const [d3Nodes, setD3Nodes] = useState<CanvasNode[]>([]);
-  const [d3Edges, setD3Edges] = useState<CanvasEdge[]>([]);
+  const {
+    d3Nodes,
+    d3Edges,
+    convertData,
+    recomputeEdgeVisibility,
+    hiddenNodesRef,
+    originRef,
+    nodeMapRef,
+    savedPositionsRef,
+    setD3Nodes,
+    setD3Edges,
+  } = useForceGraphState(cyDataNodes, cyDataEdges);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { dimensions } = useCanvasDimensions(canvasRef);
@@ -48,62 +60,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const activePreviewRef = useRef<{ mode: 'children' | 'parents' | null; nodeId: string | null }>({ mode: null, nodeId: null });
 
   const { adjacencyRef, revAdjRef } = useAdjacency(cyDataEdges);
-
-  const hiddenNodesRef = useRef<Set<string>>(new Set());
-  const originRef = useRef<Record<string, string | null>>({});
-  const nodeMapRef = useRef<Record<string, CanvasNode>>({});
-  const savedPositionsRef = useRef<Record<string, { x?: number; y?: number }>>({});
-
-  const convertData = useCallback(() => {
-    const visibleNodeData = cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id));
-    const visibleIds = new Set(visibleNodeData.map((n) => n.data.id));
-
-    const visibleEdgeData = cyDataEdges.filter((e) => e.data.visible && visibleIds.has(e.data.source) && visibleIds.has(e.data.target));
-
-    const nextNodes: CanvasNode[] = [];
-
-    visibleNodeData.forEach((n) => {
-      const { id } = n.data;
-      let node = nodeMapRef.current[id];
-      if (!node) {
-        const saved = savedPositionsRef.current[id];
-        node = {
-          id,
-          label: n.data.label,
-          color: computeColorForId(id),
-          x: saved?.x,
-          y: saved?.y,
-        };
-      } else {
-        node.label = n.data.label;
-        node.color = computeColorForId(id);
-      }
-      if (originRef.current[id] === undefined) {
-        originRef.current[id] = null;
-      }
-      nodeMapRef.current[id] = node;
-      nextNodes.push(node);
-    });
-
-    // Save positions for nodes that became hidden
-    Object.keys(nodeMapRef.current).forEach((id) => {
-      if (!visibleIds.has(id)) {
-        const node = nodeMapRef.current[id];
-        savedPositionsRef.current[id] = { x: node.x, y: node.y };
-        delete nodeMapRef.current[id];
-      }
-    });
-
-    const newEdges: CanvasEdge[] = visibleEdgeData.map((e) => ({
-      source: e.data.source,
-      target: e.data.target,
-      label: e.data.label,
-      visible: true,
-    }));
-
-    setD3Nodes(nextNodes);
-    setD3Edges(newEdges);
-  }, [cyDataNodes, cyDataEdges]);
 
   useEffect(() => {
     if (!loading) {
@@ -131,61 +87,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   );
 
   const recomputeEdgeVisibility = useCallback(() => {
-    const visible = new Set(cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
+    const visible = new Set(
+      cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id),
+    );
     cyDataEdges.forEach((edge) => {
       edge.data.visible = visible.has(edge.data.source) && visible.has(edge.data.target);
     });
   }, [cyDataNodes, cyDataEdges]);
 
-  // Freeze nodes for a short period. By default, all currently visible nodes are
-  // frozen for `otherDuration` milliseconds (500ms) while the triggering node
-  // is frozen for `triggerDuration` milliseconds (1000ms). Passing `otherDuration`
-  // as `0` skips freezing the other nodes. The `alphaTarget` parameter controls
-  // the force simulation strength during the freeze.
-  const freezeNode = useCallback(
-    (
-      id: string,
-      otherDuration = 500,
-      triggerDuration = 1000,
-      alphaTarget = 0.1,
-    ) => {
-      const sim = simulationRef.current;
-      if (!sim) return;
-
-      const allNodes = Object.values(nodeMapRef.current);
-      allNodes.forEach((node) => {
-        if (otherDuration > 0 || node.id === id) {
-          node.fx = node.x;
-          node.fy = node.y;
-        }
-      });
-
-      sim.alphaTarget(alphaTarget).restart();
-
-      if (otherDuration > 0) {
-        // Release other nodes after `otherDuration`
-        setTimeout(() => {
-          allNodes.forEach((node) => {
-            if (node.id !== id) {
-              node.fx = null;
-              node.fy = null;
-            }
-          });
-        }, otherDuration);
-      }
-
-      // Release the triggering node after `triggerDuration`
-      setTimeout(() => {
-        const triggerNode = nodeMapRef.current[id];
-        if (triggerNode) {
-          triggerNode.fx = null;
-          triggerNode.fy = null;
-        }
-        sim.alphaTarget(0);
-      }, triggerDuration);
-    },
-    [simulationRef],
-  );
+  const freezeNode = useFreezeNode(simulationRef, nodeMapRef);
 
   const clearPreview = useCallback(() => {
     if (ghostNodes.length === 0 && ghostEdges.length === 0) return;
