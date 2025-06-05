@@ -43,6 +43,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const [menuY, setMenuY] = useState(0);
   const [menuNode, setMenuNode] = useState<CanvasNode | null>(null);
 
+  const [ghostNodes, setGhostNodes] = useState<CanvasNode[]>([]);
+  const [ghostEdges, setGhostEdges] = useState<CanvasEdge[]>([]);
+  const activePreviewRef = useRef<{ mode: 'children' | 'parents' | null; nodeId: string | null }>({ mode: null, nodeId: null });
+
   const { adjacencyRef, revAdjRef } = useAdjacency(cyDataEdges);
 
   const hiddenNodesRef = useRef<Set<string>>(new Set());
@@ -107,7 +111,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     }
   }, [loading, convertData]);
 
-  const { transformRef, simulationRef, zoomBehaviorRef } = useD3Force(canvasRef, d3Nodes, d3Edges, d3BoundingBox, dimensions);
+  const { transformRef, simulationRef, zoomBehaviorRef } = useD3Force(
+    canvasRef,
+    [...d3Nodes, ...ghostNodes],
+    [...d3Edges, ...ghostEdges],
+    d3BoundingBox,
+    dimensions,
+  );
 
   const { showChildren, hideChildren, showParents, hideParents, hideNode } = useNodeVisibility(
     cyDataNodes,
@@ -170,74 +180,47 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     [simulationRef],
   );
 
-  const toggleChildren = useCallback(
+  const clearPreview = useCallback(() => {
+    if (ghostNodes.length === 0 && ghostEdges.length === 0) return;
+    setGhostNodes([]);
+    setGhostEdges([]);
+    // Reset any mutated edge references back to their id form so d3-force
+    // rebinds them to the correct nodes next tick
+    setD3Edges((edges) =>
+      edges.map((e) => ({
+        ...e,
+        source: typeof e.source === 'object' ? e.source.id : e.source,
+        target: typeof e.target === 'object' ? e.target.id : e.target,
+      })),
+    );
+    Object.values(nodeMapRef.current).forEach((n) => {
+      n.fx = null;
+      n.fy = null;
+      n.vx = 0;
+      n.vy = 0;
+    });
+    const sim = simulationRef.current;
+    if (sim) {
+      sim.alpha(0);
+      sim.alphaTarget(0);
+    }
+    // dirty fix: freeze all nodes for a short time to prevent flickering, because after letting go of ctrl/shift, everything starts to move even nothing in the graph changed.
+    // TODO find a better solution
+    Object.values(nodeMapRef.current).forEach((n) => {
+      freezeNode(n.id, 0, 1000);
+    });
+    activePreviewRef.current = { mode: null, nodeId: null };
+  }, [ghostNodes, ghostEdges, simulationRef]);
+
+  const collapseDescendants = useCallback(
     (id: string) => {
-      const childIds = adjacencyRef.current[id] || [];
-      const allVisible = childIds.every((childId) => {
-        const node = cyDataNodes.find((n) => n.data.id === childId);
-        return node && node.data.visible && !hiddenNodesRef.current.has(childId);
-      });
-
-      if (allVisible && childIds.length > 0) {
-        // Hiding children - only freeze the triggering node
-        freezeNode(id, 0);
-        hideChildren(id);
-      } else {
-        // Showing children - freeze all nodes briefly
-        freezeNode(id);
-        showChildren(id);
-      }
-    },
-    [freezeNode, showChildren, hideChildren, cyDataNodes, adjacencyRef],
-  );
-
-  const toggleParents = useCallback(
-    (id: string) => {
-      const parentIds = revAdjRef.current[id] || [];
-      const allVisible = parentIds.every((parentId) => {
-        const node = cyDataNodes.find((n) => n.data.id === parentId);
-        return node && node.data.visible && !hiddenNodesRef.current.has(parentId);
-      });
-
-      if (allVisible && parentIds.length > 0) {
-        // Hiding parents - only freeze the triggering node
-        freezeNode(id, 0);
-        hideParents(id);
-      } else {
-        // Showing parents - freeze all nodes briefly
-        freezeNode(id);
-        showParents(id);
-      }
-    },
-    [freezeNode, showParents, hideParents, cyDataNodes, revAdjRef],
-  );
-
-  const showAllConnections = useCallback(
-    (id: string) => {
-      freezeNode(id);
-      showChildren(id);
-      showParents(id);
-    },
-    [freezeNode, showChildren, showParents],
-  );
-
-  const collapseSubtree = useCallback(
-    (id: string) => {
-      // Collapsing a subtree hides surrounding nodes, so only freeze the
-      // triggering node for a short time
       freezeNode(id, 0);
-      const queue = [id];
+      const queue = [...(adjacencyRef.current[id] || [])];
       const toHide: string[] = [];
       while (queue.length) {
-        const current = queue.shift()!;
-        cyDataNodes.forEach((n) => {
-          if (originRef.current[n.data.id] === current) {
-            if (n.data.visible) {
-              toHide.push(n.data.id);
-            }
-            queue.push(n.data.id);
-          }
-        });
+        const cur = queue.shift()!;
+        toHide.push(cur);
+        queue.push(...(adjacencyRef.current[cur] || []));
       }
       if (toHide.length) {
         toHide.forEach((nid) => {
@@ -248,7 +231,79 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         convertData();
       }
     },
-    [cyDataNodes, recomputeEdgeVisibility, convertData, freezeNode],
+    [cyDataNodes, adjacencyRef, recomputeEdgeVisibility, convertData, freezeNode],
+  );
+
+  const collapseAncestors = useCallback(
+    (id: string) => {
+      freezeNode(id, 0);
+      const queue = [...(revAdjRef.current[id] || [])];
+      const toHide: string[] = [];
+      while (queue.length) {
+        const cur = queue.shift()!;
+        toHide.push(cur);
+        queue.push(...(revAdjRef.current[cur] || []));
+      }
+      if (toHide.length) {
+        toHide.forEach((nid) => {
+          const node = cyDataNodes.find((n) => n.data.id === nid);
+          if (node) node.data.visible = false;
+        });
+        recomputeEdgeVisibility();
+        convertData();
+      }
+    },
+    [cyDataNodes, revAdjRef, recomputeEdgeVisibility, convertData, freezeNode],
+  );
+
+  const toggleChildren = useCallback(
+    (id: string) => {
+      if (activePreviewRef.current.mode === 'children' && activePreviewRef.current.nodeId === id) {
+        ghostNodes.forEach((gn) => {
+          savedPositionsRef.current[gn.id] = { x: gn.x, y: gn.y };
+        });
+      }
+      const childIds = adjacencyRef.current[id] || [];
+      const allVisible =
+        childIds.length > 0 &&
+        childIds.every((childId) => {
+          const node = cyDataNodes.find((n) => n.data.id === childId);
+          return node && node.data.visible && !hiddenNodesRef.current.has(childId);
+        });
+
+      if (allVisible) {
+        collapseDescendants(id);
+      } else {
+        freezeNode(id);
+        showChildren(id);
+      }
+    },
+    [freezeNode, showChildren, collapseDescendants, cyDataNodes, adjacencyRef, ghostNodes],
+  );
+
+  const toggleParents = useCallback(
+    (id: string) => {
+      if (activePreviewRef.current.mode === 'parents' && activePreviewRef.current.nodeId === id) {
+        ghostNodes.forEach((gn) => {
+          savedPositionsRef.current[gn.id] = { x: gn.x, y: gn.y };
+        });
+      }
+      const parentIds = revAdjRef.current[id] || [];
+      const allVisible =
+        parentIds.length > 0 &&
+        parentIds.every((parentId) => {
+          const node = cyDataNodes.find((n) => n.data.id === parentId);
+          return node && node.data.visible && !hiddenNodesRef.current.has(parentId);
+        });
+
+      if (allVisible) {
+        collapseAncestors(id);
+      } else {
+        freezeNode(id);
+        showParents(id);
+      }
+    },
+    [freezeNode, showParents, collapseAncestors, cyDataNodes, revAdjRef, ghostNodes],
   );
 
   const centerView = useCallback(() => {
@@ -312,10 +367,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     [d3Nodes, transformRef, simulationRef],
   );
 
-  // Drag handler now uses Ctrl + left‐click (button 0 + event.ctrlKey)
+  // Drag handler now uses Alt + left‐click (button 0 + event.altKey)
   const handleDrag = d3
     .drag<HTMLCanvasElement, CanvasNode>()
-    .filter((event) => event.button === 0 && event.ctrlKey)
+    .filter((event) => event.button === 0 && event.altKey)
     .subject((event) => {
       const sim = simulationRef.current;
       if (!sim) return null;
@@ -379,25 +434,134 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
       if (closest && minDist < NEAR_NODE_DIST_SQ) {
         const cid = closest.id;
-        const childIds = adjacencyRef.current[cid] || [];
-        const parentIds = revAdjRef.current[cid] || [];
-        const allChildrenVisible = childIds.every((childId) => {
-          const node = cyDataNodes.find((n) => n.data.id === childId);
-          return node && node.data.visible && !hiddenNodesRef.current.has(childId);
-        });
-        const allParentsVisible = parentIds.every((parentId) => {
-          const node = cyDataNodes.find((n) => n.data.id === parentId);
-          return node && node.data.visible && !hiddenNodesRef.current.has(parentId);
-        });
-
-        if (allChildrenVisible && allParentsVisible && (childIds.length > 0 || parentIds.length > 0)) {
-          collapseSubtree(cid);
-        } else {
-          showAllConnections(cid);
+        if (event.ctrlKey) {
+          toggleChildren(cid);
+        } else if (event.shiftKey) {
+          toggleParents(cid);
         }
+        clearPreview();
       }
     },
-    [d3Nodes, transformRef, simulationRef, adjacencyRef, revAdjRef, cyDataNodes, hiddenNodesRef, showAllConnections, collapseSubtree],
+    [d3Nodes, transformRef, simulationRef, adjacencyRef, revAdjRef, toggleChildren, toggleParents, clearPreview],
+  );
+
+  const updateHoverPreview = useCallback(
+    (event: MouseEvent) => {
+      if (!event.ctrlKey && !event.shiftKey) {
+        clearPreview();
+        return;
+      }
+      const [pxRaw, pyRaw] = d3.pointer(event, canvasRef.current);
+      const transform = transformRef.current;
+      const [px, py] = transform.invert([pxRaw, pyRaw]);
+
+      const NODE_RADIUS_PX = 200;
+      const CLICK_RADIUS_PX = NODE_RADIUS_PX * 2;
+      const effectiveRadius = CLICK_RADIUS_PX / (transform?.k ?? 1);
+      const NEAR_NODE_DIST_SQ = effectiveRadius * effectiveRadius;
+
+      let closest: CanvasNode | null = null;
+      let minDist = Infinity;
+
+      d3Nodes.forEach((node) => {
+        const dx = (node.x ?? 0) - px;
+        const dy = (node.y ?? 0) - py;
+        const dist2 = dx * dx + dy * dy;
+        if (dist2 < minDist) {
+          minDist = dist2;
+          closest = node;
+        }
+      });
+
+      if (!closest || minDist >= NEAR_NODE_DIST_SQ) {
+        clearPreview();
+        return;
+      }
+
+      const mode = event.ctrlKey ? 'children' : 'parents';
+      if (activePreviewRef.current.mode === mode && activePreviewRef.current.nodeId === closest.id) {
+        return;
+      }
+      activePreviewRef.current = { mode, nodeId: closest.id };
+
+      const ids = mode === 'children' ? adjacencyRef.current[closest.id] || [] : revAdjRef.current[closest.id] || [];
+
+      const hiddenIds: string[] = [];
+      const visibleIds: string[] = [];
+
+      ids.forEach((nid) => {
+        const nodeData = cyDataNodes.find((n) => n.data.id === nid);
+        if (!nodeData) return;
+        const visible = nodeData.data.visible && !hiddenNodesRef.current.has(nid);
+        if (visible) {
+          visibleIds.push(nid);
+        } else {
+          hiddenIds.push(nid);
+        }
+      });
+
+      const allVisible = hiddenIds.length === 0;
+
+      const newGhostNodes: CanvasNode[] = [];
+      const newGhostEdges: CanvasEdge[] = [];
+
+      if (allVisible) {
+        visibleIds.forEach((nid) => {
+          const edgeData = cyDataEdges.find(
+            (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
+          );
+          if (edgeData) {
+            newGhostEdges.push({
+              source: edgeData.data.source,
+              target: edgeData.data.target,
+              label: edgeData.data.label,
+              visible: true,
+              previewRemoval: true,
+            });
+          }
+        });
+      } else {
+        hiddenIds.forEach((nid) => {
+          const nodeData = cyDataNodes.find((n) => n.data.id === nid);
+          if (!nodeData) return;
+          const edgeData = cyDataEdges.find(
+            (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
+          );
+          newGhostNodes.push({
+            id: nid,
+            label: nodeData.data.label,
+            color: computeColorForId(nid),
+            x: closest?.x,
+            y: closest?.y,
+            ghost: true,
+          });
+          newGhostEdges.push({
+            source: mode === 'children' ? closest.id : nid,
+            target: mode === 'children' ? nid : closest.id,
+            label: edgeData?.data.label,
+            visible: true,
+            ghost: true,
+          });
+        });
+      }
+
+      if (newGhostNodes.length > 0) {
+        Object.values(nodeMapRef.current).forEach((n) => {
+          n.fx = n.x;
+          n.fy = n.y;
+          n.vx = 0;
+          n.vy = 0;
+        });
+        setGhostNodes(newGhostNodes);
+        setGhostEdges(newGhostEdges);
+        const sim = simulationRef.current;
+        if (sim) sim.alphaTarget(0.3).restart();
+      } else {
+        setGhostNodes([]);
+        setGhostEdges(newGhostEdges);
+      }
+    },
+    [d3Nodes, transformRef, adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, simulationRef, clearPreview],
   );
 
   useEffect(() => {
@@ -410,7 +574,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     }
     selection.on('dblclick.zoom', null);
 
-    // Apply the new drag behavior (Ctrl+left) here
+    // Apply the new drag behavior (Alt+left) here
     selection.call(handleDrag as any);
 
     const onMouseDown = (event: MouseEvent) => {
@@ -420,7 +584,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       }
     };
     const onMouseMove = (event: MouseEvent) => {
-      // eslint‐disable‐next‐line no‐bitwise
+      // eslint-disable-next-line no-bitwise
       if ((event.buttons & 2) === 2 && rightMouseDownRef.current) {
         const dx = event.clientX - rightMouseDownRef.current.x;
         const dy = event.clientY - rightMouseDownRef.current.y;
@@ -428,10 +592,12 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
           rightDraggingRef.current = true;
         }
       }
+      updateHoverPreview(event);
     };
 
     canvas.addEventListener('mousedown', onMouseDown);
     canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('mouseleave', clearPreview);
     canvas.addEventListener('dblclick', handleDoubleClick);
     canvas.addEventListener('contextmenu', handleContextMenu);
 
@@ -440,10 +606,28 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       selection.on('.drag', null);
       canvas.removeEventListener('mousedown', onMouseDown);
       canvas.removeEventListener('mousemove', onMouseMove);
+      canvas.removeEventListener('mouseleave', clearPreview);
       canvas.removeEventListener('dblclick', handleDoubleClick);
       canvas.removeEventListener('contextmenu', handleContextMenu);
     };
   }, [handleDrag, handleContextMenu, handleDoubleClick, zoomBehaviorRef]);
+
+  useEffect(() => {
+    if (ghostNodes.length === 0 && ghostEdges.length === 0) {
+      const sim = simulationRef.current;
+      if (sim) {
+        sim.alphaTarget(0);
+        sim.alpha(0);
+      }
+    }
+  }, [ghostNodes.length, ghostEdges.length, simulationRef]);
+
+  useEffect(() => {
+    window.addEventListener('keyup', clearPreview);
+    return () => {
+      window.removeEventListener('keyup', clearPreview);
+    };
+  }, [clearPreview]);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>

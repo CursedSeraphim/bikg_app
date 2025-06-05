@@ -71,8 +71,13 @@ export function useD3Force(
 
     // Draw edges
     allEdges.forEach((edge) => {
-      const sourceNode = typeof edge.source === 'object' ? edge.source : allNodes.find((n) => n.id === edge.source);
-      const targetNode = typeof edge.target === 'object' ? edge.target : allNodes.find((n) => n.id === edge.target);
+      // Prefer lookup by id to avoid stale object references (e.g. from ghost nodes)
+      const sourceNode =
+        allNodes.find((n) => n.id === (typeof edge.source === 'object' ? edge.source.id : edge.source)) ||
+        (typeof edge.source === 'object' ? edge.source : undefined);
+      const targetNode =
+        allNodes.find((n) => n.id === (typeof edge.target === 'object' ? edge.target.id : edge.target)) ||
+        (typeof edge.target === 'object' ? edge.target : undefined);
 
       if (!sourceNode || !targetNode) {
         return;
@@ -84,6 +89,13 @@ export function useD3Force(
       const ty = targetNode.y ?? 0;
 
       // Draw line
+      if (edge.previewRemoval) {
+        context.strokeStyle = 'rgba(255,0,0,0.6)';
+      } else if (edge.ghost) {
+        context.strokeStyle = 'rgba(170,170,170,0.5)';
+      } else {
+        context.strokeStyle = '#AAA';
+      }
       context.beginPath();
       context.moveTo(sx, sy);
       context.lineTo(tx, ty);
@@ -104,7 +116,13 @@ export function useD3Force(
         context.lineTo(backx + (arrowWidth * -dy) / length, backy + (arrowWidth * dx) / length);
         context.lineTo(backx - (arrowWidth * -dy) / length, backy - (arrowWidth * dx) / length);
         context.closePath();
-        context.fillStyle = '#AAA';
+        if (edge.previewRemoval) {
+          context.fillStyle = 'rgba(255,0,0,0.6)';
+        } else if (edge.ghost) {
+          context.fillStyle = 'rgba(170,170,170,0.5)';
+        } else {
+          context.fillStyle = '#AAA';
+        }
         context.fill();
       }
 
@@ -122,8 +140,12 @@ export function useD3Force(
     // Draw nodes
     allNodes.forEach((node) => {
       context.beginPath();
-      context.fillStyle = node.color;
       const radius = 6;
+      if (node.ghost) {
+        context.fillStyle = 'rgba(0,0,0,0.2)';
+      } else {
+        context.fillStyle = node.color;
+      }
       context.arc(node.x ?? 0, node.y ?? 0, radius, 0, 2 * Math.PI);
       context.fill();
 
@@ -223,8 +245,11 @@ export function useD3Force(
     const zoomBehavior = d3
       .zoom<HTMLCanvasElement, unknown>()
       .filter((event: any) => {
-        // allow wheel for zoom, or left‐click (button 0) for pan, but skip if Ctrl is held
-        return event.type === 'wheel' || (event.type === 'mousedown' && event.button === 0 && !event.ctrlKey);
+        // allow wheel for zoom, or left-click (button 0) for pan, but skip if Ctrl or Alt is held
+        return (
+          event.type === 'wheel' ||
+          (event.type === 'mousedown' && event.button === 0 && !event.ctrlKey && !event.altKey)
+        );
       })
       .scaleExtent([0.1, 10])
       .on('zoom', (event) => {
