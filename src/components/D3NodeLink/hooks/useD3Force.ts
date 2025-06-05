@@ -71,8 +71,13 @@ export function useD3Force(
 
     // Draw edges
     allEdges.forEach((edge) => {
-      const sourceNode = typeof edge.source === 'object' ? edge.source : allNodes.find((n) => n.id === edge.source);
-      const targetNode = typeof edge.target === 'object' ? edge.target : allNodes.find((n) => n.id === edge.target);
+      // Prefer lookup by id to avoid stale object references (e.g. from ghost nodes)
+      const sourceNode =
+        allNodes.find((n) => n.id === (typeof edge.source === 'object' ? edge.source.id : edge.source)) ||
+        (typeof edge.source === 'object' ? edge.source : undefined);
+      const targetNode =
+        allNodes.find((n) => n.id === (typeof edge.target === 'object' ? edge.target.id : edge.target)) ||
+        (typeof edge.target === 'object' ? edge.target : undefined);
 
       if (!sourceNode || !targetNode) {
         return;

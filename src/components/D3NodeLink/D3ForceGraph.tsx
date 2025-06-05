@@ -184,6 +184,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     if (ghostNodes.length === 0 && ghostEdges.length === 0) return;
     setGhostNodes([]);
     setGhostEdges([]);
+    // Reset any mutated edge references back to their id form so d3-force
+    // rebinds them to the correct nodes next tick
+    setD3Edges((edges) =>
+      edges.map((e) => ({
+        ...e,
+        source: typeof e.source === 'object' ? e.source.id : e.source,
+        target: typeof e.target === 'object' ? e.target.id : e.target,
+      }))
+    );
     Object.values(nodeMapRef.current).forEach((n) => {
       n.fx = null;
       n.fy = null;
