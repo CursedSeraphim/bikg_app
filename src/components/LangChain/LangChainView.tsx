@@ -12,7 +12,7 @@ import useAutoScroll from './useAutoScroll';
 
 function LangchainComponent() {
   const [input, setInput] = useState('');
-  const { messages, addMessage } = useChat();
+  const { messages, addMessage, chatHistory } = useChat();
   const [isBotTyping, setIsBotTyping] = useState(false);
   const executorRef = useRef<AgentExecutor | null>(null);
   const chatHistoryRef = useRef<HTMLDivElement | null>(null);
@@ -40,7 +40,14 @@ function LangchainComponent() {
     setInput(event.target.value);
   };
 
-  const handleSubmit = useMessageSubmitHandler(input, executorRef, setIsBotTyping, addMessage, setInput);
+  const handleSubmit = useMessageSubmitHandler(
+    input,
+    executorRef,
+    setIsBotTyping,
+    addMessage,
+    setInput,
+    chatHistory,
+  );
 
   if (!model && !apiKeyError) {
     setApiKeyError(true);

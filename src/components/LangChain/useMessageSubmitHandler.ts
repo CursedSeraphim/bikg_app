@@ -1,17 +1,18 @@
 // useMessageSubmitHandler.ts
 import { useCallback } from 'react';
 
-export function useMessageSubmitHandler(input, executorRef, setIsBotTyping, addMessage, setInput) {
+export function useMessageSubmitHandler(input, executorRef, setIsBotTyping, addMessage, setInput, chatHistory) {
   return useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault();
 
+      const historyForCall = chatHistory;
       addMessage(input, true);
       setInput('');
       setIsBotTyping(true);
 
       try {
-        const result = await executorRef.current.call({ input });
+        const result = await executorRef.current.call({ input, chat_history: historyForCall });
         addMessage(result.output, false);
       } catch (error) {
         console.log('error', error);
@@ -20,6 +21,6 @@ export function useMessageSubmitHandler(input, executorRef, setIsBotTyping, addM
         setIsBotTyping(false);
       }
     },
-    [input, executorRef, setIsBotTyping, addMessage, setInput],
+    [input, executorRef, setIsBotTyping, addMessage, setInput, chatHistory],
   );
 }
