@@ -18,6 +18,7 @@ __pycache__/
 *.pyc
 *.swp
 *.lock
+!yarn.lock
 # due to using tox and pytest
 .tox
 .cache
