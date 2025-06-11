@@ -25,6 +25,12 @@ OWL = Namespace("http://www.w3.org/2002/07/owl#")
 RDFS = Namespace("http://www.w3.org/2000/01/rdf-schema#")
 
 # File paths
+# input files, original RDF for ontology and shacl, instance data, and violation report
+ORIGINAL_ONTOLOGY_FILE_PATH = "bikg_app/ttl/omics_model.ttl"
+ORIGINAL_INSTANCE_DATA_FILE_PATH = "bikg_app/ttl/study.ttl"
+ORIGINAL_VIOLATION_REPORT_FILE_PATH = "bikg_app/ttl/violation_report.ttl"
+
+
 VIOLATIONS_FILE_PATH = os.path.join("bikg_app/json", "violation_list.json")
 STUDY_CSV_FILE_PATH = "bikg_app/csv/study.csv"
 ONTOLOGY_TTL_FILE_PATH = "bikg_app/ttl/omics_model_union_violation_exemplar.ttl"
