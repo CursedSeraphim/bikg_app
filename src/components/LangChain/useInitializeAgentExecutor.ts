@@ -6,11 +6,11 @@ import { PREFIX, SUFFIX } from './promptConstants';
 export function useInitializeAgentExecutor(tools, model, executorRef) {
   useEffect(() => {
     initializeAgentExecutorWithOptions(tools, model, {
-      agentType: 'chat-conversational-react-description',
+      agentType: 'zero-shot-react-description',
       verbose: true,
       agentArgs: {
-        systemMessage: PREFIX,
-        humanMessage: SUFFIX,
+        prefix: PREFIX,
+        suffix: SUFFIX,
       },
     }).then((res) => {
       // eslint-disable-next-line no-param-reassign
