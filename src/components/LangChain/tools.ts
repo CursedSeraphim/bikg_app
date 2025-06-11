@@ -62,6 +62,18 @@ const useTools = () => {
     return JSON.stringify(rdfString);
   };
 
+  const getOriginalInstanceData = async (): Promise<string> => {
+    const state = store.getState();
+    const { originalInstanceData } = state.combined;
+    return JSON.stringify(originalInstanceData);
+  };
+
+  const getOriginalViolationReport = async (): Promise<string> => {
+    const state = store.getState();
+    const { originalViolationReport } = state.combined;
+    return JSON.stringify(originalViolationReport);
+  };
+
   const getSelectedTypes = async (): Promise<string> => {
     const state = store.getState();
     const { selectedTypes } = state.combined;
@@ -200,6 +212,16 @@ const useTools = () => {
       name: 'get_rdf_ontology',
       func: getRDFOntology,
       description: 'Returns the entire ontology graph RDF as text',
+    }),
+    new DynamicTool({
+      name: 'get_original_instance_data',
+      func: getOriginalInstanceData,
+      description: 'Returns the entire original instance data RDF as text',
+    }),
+    new DynamicTool({
+      name: 'get_original_violation_report',
+      func: getOriginalViolationReport,
+      description: 'Returns the entire original violation report RDF as text',
     }),
     new DynamicTool({
       name: 'get_focus_node_by_name',

@@ -744,6 +744,24 @@ def get_ttl_file(response: Response):
     return Response(content=ttl_data, media_type="text/turtle")
 
 
+@router.get("/file/original_instance_data")
+def get_original_instance_data(response: Response):
+    """Return the original instance data ttl."""
+    with open(ORIGINAL_INSTANCE_DATA_FILE_PATH, "r", encoding="utf-8") as f:
+        data = f.read()
+    response.headers["Content-Disposition"] = "attachment; filename=study.ttl"
+    return Response(content=data, media_type="text/turtle")
+
+
+@router.get("/file/original_violation_report")
+def get_original_violation_report(response: Response):
+    """Return the original violation report ttl."""
+    with open(ORIGINAL_VIOLATION_REPORT_FILE_PATH, "r", encoding="utf-8") as f:
+        data = f.read()
+    response.headers["Content-Disposition"] = "attachment; filename=violation_report.ttl"
+    return Response(content=data, media_type="text/turtle")
+
+
 def uri_to_qname(graph, uri):
     """
     Convert a URI to its QName representation if possible.
