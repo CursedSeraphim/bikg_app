@@ -8,6 +8,8 @@ import {
   fetchNodeFocusNodeCountDict,
   fetchNodeLabelSet,
   fetchOntology,
+  fetchOriginalInstanceData,
+  fetchOriginalViolationReport,
   fetchOntologyTree,
   fetchSubClassOfTriples,
   fetchViolationPathNodesDict,
@@ -20,6 +22,8 @@ import {
   setNodeLabels,
   setOntologyTree,
   setRdfString,
+  setOriginalInstanceData,
+  setOriginalViolationReport,
   setSubClassOfTriples,
   setTypesViolationMap,
   setViolationTypesMap,
@@ -106,6 +110,22 @@ export function useInitializeData() {
       })
       .catch((error) => {
         console.error('Failed to fetch ontology', error);
+      });
+
+    fetchOriginalInstanceData()
+      .then((data) => {
+        dispatch(setOriginalInstanceData(data));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch original instance data', error);
+      });
+
+    fetchOriginalViolationReport()
+      .then((data) => {
+        dispatch(setOriginalViolationReport(data));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch original violation report', error);
       });
 
     fetchViolationPathNodesDict()

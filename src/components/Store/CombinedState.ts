@@ -42,6 +42,8 @@ export interface CombinedState {
   selectedTypes: string[];
   selectedViolations: string[];
   rdfString: string;
+  originalInstanceData: string;
+  originalViolationReport: string;
   violations: string[]; // list of possible violation source shapes
   violationTypesMap: { [key: string]: string[] }; // map of violation sh:PropertyShapes to their corresponding owl:Class and the sh:NodeShapes in between
   typesViolationMap: { [key: string]: string[] }; // map of owl:Classes to their corresponding sh:PropertyShapes and the sh:NodeShapes in between

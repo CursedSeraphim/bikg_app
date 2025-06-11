@@ -179,6 +179,8 @@ export interface IExemplarMap {
 export interface ICombinedState {
   samples: ICsvData[];
   originalSamples: ICsvData[];
+  originalInstanceData: string;
+  originalViolationReport: string;
   selectedNodes: string[];
   selectedTypes: string[];
   selectedViolations: string[];

@@ -43,6 +43,8 @@ const initialState: ICombinedState = {
   cumulativeNumberViolationsPerNode: {},
   samples: [],
   originalSamples: [],
+  originalInstanceData: '',
+  originalViolationReport: '',
   selectedNodes: [],
   selectedTypes: [],
   selectedViolations: [],
@@ -897,6 +899,12 @@ const combinedSlice = createSlice({
     setRdfString: (state, action) => {
       state.rdfString = action.payload;
     },
+    setOriginalInstanceData: (state, action) => {
+      state.originalInstanceData = action.payload;
+    },
+    setOriginalViolationReport: (state, action) => {
+      state.originalViolationReport = action.payload;
+    },
   },
 });
 
@@ -916,6 +924,10 @@ export const selectCsvData = (state: { combined: ICombinedState }) => state.comb
 export const selectSelectedFocusNodes = (state: { combined: ICombinedState }) => state.combined.selectedNodes;
 export const selectSelectedTypes = (state: { combined: ICombinedState }) => state.combined.selectedTypes;
 export const selectRdfData = (state: { combined: ICombinedState }) => state.combined.rdfString;
+export const selectOriginalInstanceData = (state: { combined: ICombinedState }) =>
+  state.combined.originalInstanceData;
+export const selectOriginalViolationReport = (state: { combined: ICombinedState }) =>
+  state.combined.originalViolationReport;
 export const selectSelectedViolationExemplars = (state: { combined: ICombinedState }) => state.combined.selectedViolationExemplars;
 export const selectNamespaces = (state: { combined: ICombinedState }) => state.combined.namespaces;
 export const selectTypes = (state: { combined: ICombinedState }) => state.combined.types;
@@ -1284,6 +1296,8 @@ export const {
   removeMultipleSelectedTypes,
   removeSingleSelectedType,
   setRdfString,
+  setOriginalInstanceData,
+  setOriginalViolationReport,
   setViolationTypesMap,
   setTypesViolationMap,
   setFilterType,
