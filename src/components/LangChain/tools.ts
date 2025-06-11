@@ -159,27 +159,27 @@ const useTools = () => {
       description: 'Selects an array of type or owl:Class nodes in the knowledge graph ontology, e.g., ["Omics:Donor", "Omics:Sample"]',
     }),
     new DynamicTool({
-      name: 'select_violations',
+      name: 'select_constraints',
       func: handleLLMSetViolations,
-      description: 'Selects a list of selected violations.',
+      description: 'Selects a list of selected SHACL constraints.',
     }),
     new DynamicTool({
-      name: 'select_violation_exemplars',
+      name: 'select_reported_violations',
       func: handleLLMSetViolationExemplars,
-      description: 'Selects a list of selected violation exemplars.',
+      description: 'Selects a list of reported violations that appear in the data.',
     }),
     new DynamicTool({
-      name: 'get_existing_types',
+      name: 'get_existing_types/classes',
       func: getExistingTypes,
-      description: 'Returns a list of type nodes in the ontology',
+      description: 'Returns a list of types/classes in the ontology',
     }),
     new DynamicTool({
-      name: 'get_existing_violations',
+      name: 'get_existing_constraints',
       func: getExistingViolations,
-      description: 'Returns a list of violations in the ontology',
+      description: 'Returns a list of SHACL constraints in the ontology',
     }),
     new DynamicTool({
-      name: 'get_existing_exemplars',
+      name: 'get_reported_violations',
       func: getExistingExemplars,
       description: 'Returns a list of violation exemplars in the ontology',
     }),
@@ -189,19 +189,19 @@ const useTools = () => {
     //   description: 'Returns the node and its parents and children in the ontology tree given a substring of the node id',
     // }),
     new DynamicTool({
-      name: 'get_selected_types',
+      name: 'get_selected_classes',
       func: getSelectedTypes,
-      description: 'Returns the types that are currently selected in this vis tool',
+      description: 'Returns the types/classes that are currently selected in this vis tool',
     }),
     new DynamicTool({
-      name: 'get_selected_violations',
+      name: 'get_selected_constraints',
       func: getSelectedViolations,
-      description: 'Returns the violations that are currently selected in this vis tool',
+      description: 'Returns the SHACL constraints that are currently selected in this vis tool',
     }),
     new DynamicTool({
-      name: 'get_selected_violation_exemplars',
+      name: 'get_selected_reported_violations',
       func: getSelectedViolationExemplars,
-      description: 'Returns the violation exemplars that are currently selected in this vis tool',
+      description: 'Returns the reported violations that are currently selected in this vis tool',
     }),
     new DynamicTool({
       name: 'get_number_violations_per_node',
@@ -211,7 +211,7 @@ const useTools = () => {
     new DynamicTool({
       name: 'get_rdf_ontology',
       func: getRDFOntology,
-      description: 'Returns the entire ontology graph RDF as text',
+      description: 'Returns the entire ontology graph including SHACL constraints as RDF text',
     }),
     new DynamicTool({
       name: 'get_original_instance_data',
