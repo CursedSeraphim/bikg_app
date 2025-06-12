@@ -247,11 +247,29 @@ export default function LineUpView() {
   function buildCategoricalColumnWithSettings(column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }): LineUpJS.ColumnBuilder {
     const uniqueCategories = data.reduce<Set<string>>((acc, row) => acc.add(String(row[column])), new Set());
 
-    const categoryColorMap = Array.from(uniqueCategories).map((category) => ({
-      name: category,
-    }));
+    const categories = [] as { name: string; color?: string }[];
 
-    return buildCategoricalColumn(column, categoryColorMap).width(width);
+    if (colorMap) {
+      // ensure deterministic order for provided colors
+      Object.keys(colorMap).forEach((key) => {
+        if (uniqueCategories.has(key)) {
+          categories.push({ name: key, color: colorMap[key] });
+        }
+      });
+      uniqueCategories.forEach((cat) => {
+        if (!colorMap[cat]) {
+          categories.push({ name: cat });
+        }
+      });
+    } else {
+      categories.push(
+        ...Array.from(uniqueCategories).map((category) => ({
+          name: category,
+        })),
+      );
+    }
+
+    return buildCategoricalColumn(column, categories).width(width);
   }
 
   function buildSetColumnWithSettings(column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }): LineUpJS.ColumnBuilder {
@@ -309,12 +327,16 @@ export default function LineUpView() {
     const columns = Object.keys(data[0]);
 
     columns.forEach((column) => {
-      let type = inferType(data, column);
+      const type = inferType(data, column);
+      const width = calculatePixelWidthFromLabel(column);
 
       if (type === 'boolean') {
-        type = 'categorical';
+        const booleanColors = { True: '#1f77b4', False: '#ff7f0e' };
+        const builtColumn = buildCategoricalColumnWithSettings(column, data, width, booleanColors);
+        builder.column(builtColumn);
+        return;
       }
-      const width = calculatePixelWidthFromLabel(column);
+
       const builderFunction = builderMap[type];
 
       if (builderFunction) {
@@ -474,8 +496,11 @@ export default function LineUpView() {
     return data.map((row) => {
       const transformedRow: ICsvData = { ...row };
       for (const [key, value] of Object.entries(row)) {
-        if (value === 0 || value === 1) {
-          transformedRow[key] = value === 1 ? 'True' : 'False';
+        if (value === 0 || value === 1 || value === '0' || value === '1') {
+          const numeric = Number(value);
+          transformedRow[key] = numeric === 1 ? 'True' : 'False';
+        } else if (typeof value === 'string' && (value.toLowerCase() === 'true' || value.toLowerCase() === 'false')) {
+          transformedRow[key] = value.toLowerCase() === 'true' ? 'True' : 'False';
         }
       }
       return transformedRow;
