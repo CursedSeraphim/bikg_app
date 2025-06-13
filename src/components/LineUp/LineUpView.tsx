@@ -4,7 +4,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 // import './LineUpOverrides.sass';
 import { buildBooleanColumn, buildCategoricalColumn, buildDateColumn, buildNumberColumn, buildStringColumn } from 'lineupjs';
-import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING } from '../../constants';
+import {
+  CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING,
+  CSV_EDGE_NOT_IN_ONTOLOGY_STRING,
+  MISSING_EDGE_COLOR,
+} from '../../constants';
 import { ICanvasOwner, ICsvData } from '../../types';
 import {
   selectCsvData,
@@ -249,25 +253,18 @@ export default function LineUpView() {
 
     const categories = [] as { name: string; color?: string }[];
 
-    if (colorMap) {
-      // ensure deterministic order for provided colors
-      Object.keys(colorMap).forEach((key) => {
-        if (uniqueCategories.has(key)) {
-          categories.push({ name: key, color: colorMap[key] });
-        }
-      });
-      uniqueCategories.forEach((cat) => {
-        if (!colorMap[cat]) {
-          categories.push({ name: cat });
-        }
-      });
-    } else {
-      categories.push(
-        ...Array.from(uniqueCategories).map((category) => ({
-          name: category,
-        })),
-      );
-    }
+    uniqueCategories.forEach((cat) => {
+      const entry: { name: string; color?: string } = { name: cat };
+      if (
+        cat === CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING ||
+        cat === CSV_EDGE_NOT_IN_ONTOLOGY_STRING
+      ) {
+        entry.color = MISSING_EDGE_COLOR;
+      } else if (colorMap && colorMap[cat]) {
+        entry.color = colorMap[cat];
+      }
+      categories.push(entry);
+    });
 
     return buildCategoricalColumn(column, categories).width(width);
   }
@@ -300,11 +297,20 @@ export default function LineUpView() {
       return buildStringColumn(column).width(width);
     }
 
-    const categoryColorMap = Array.from(uniqueCategories).map((category) => ({
-      name: category,
-    }));
+    const categories = Array.from(uniqueCategories).map((category) => {
+      const entry: { name: string; color?: string } = { name: category };
+      if (
+        category === CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING ||
+        category === CSV_EDGE_NOT_IN_ONTOLOGY_STRING
+      ) {
+        entry.color = MISSING_EDGE_COLOR;
+      } else if (colorMap && colorMap[category]) {
+        entry.color = colorMap[category];
+      }
+      return entry;
+    });
 
-    return buildCategoricalColumn(column, categoryColorMap).width(width).asSet();
+    return buildCategoricalColumn(column, categories).width(width).asSet();
   }
 
   function buildStringColumnWithSettings(column: string, data: DataType[], width: number): LineUpJS.ColumnBuilder {

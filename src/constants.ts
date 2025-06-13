@@ -5,6 +5,7 @@ export const CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING = '-';
 export const CSV_EDGE_NOT_IN_ONTOLOGY_STRING = 'EdgeNotPresent';
 export const MANTINE_HEADER_COLOR = '#495057';
 export const SPINNER_COLOR = MANTINE_HEADER_COLOR;
+export const MISSING_EDGE_COLOR = '#d3d3d3';
 
 // Default Node Colors
 export const UNSELECTED_DEFAULT_COLOR = '#aaa';
