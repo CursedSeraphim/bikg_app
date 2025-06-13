@@ -4,18 +4,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 // import './LineUpOverrides.sass';
 import { buildBooleanColumn, buildCategoricalColumn, buildDateColumn, buildNumberColumn, buildStringColumn } from 'lineupjs';
-import {
-  CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING,
-  CSV_EDGE_NOT_IN_ONTOLOGY_STRING,
-  MISSING_EDGE_COLOR,
-} from '../../constants';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING, MISSING_EDGE_COLOR } from '../../constants';
 import { ICanvasOwner, ICsvData } from '../../types';
 import {
   selectCsvData,
   selectFilterType,
   selectMissingEdgeOption,
+  selectMissingEdgeLabel,
   selectSelectedFocusNodes,
-  selectViolations,
   setSelectedFocusNodes,
 } from '../Store/CombinedSlice';
 import { filterAllNanColumns, filterAllUniModalColumns } from './LineUpHelpers';
@@ -34,7 +30,7 @@ export default function LineUpView() {
   const reduxCsvData = useSelector(selectCsvData);
   const filterType = useSelector(selectFilterType);
   const missingEdgeOption = useSelector(selectMissingEdgeOption);
-  const violationList = useSelector(selectViolations);
+  const missingEdgeLabel = useSelector(selectMissingEdgeLabel);
   const initialColumnsRef = useRef(null);
 
   // Local state to hold csvData
@@ -80,7 +76,7 @@ export default function LineUpView() {
     // Check if all non-null values are boolean (true, false, 0, or 1)
     const allBooleans = columnValues.every(
       (value) =>
-        value === CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING ||
+        value === missingEdgeLabel ||
         (typeof value === 'string' && (value.toLowerCase() === 'true' || value.toLowerCase() === 'false')) ||
         (Number.isInteger(value) && (value === 0 || value === 1)),
     );
@@ -97,13 +93,13 @@ export default function LineUpView() {
     }
 
     // Check if all non-null values can be parsed as numbers
-    const allNumbers = columnValues.every((value) => value === CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING || !Number.isNaN(Number(value)));
+    const allNumbers = columnValues.every((value) => value === missingEdgeLabel || !Number.isNaN(Number(value)));
     if (allNumbers && uniqueValues.length > 2) {
       return 'number';
     }
 
     // Check if all non-null values can be parsed as dates
-    const allDates = columnValues.every((value) => value === CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING || !Number.isNaN(new Date(value).getTime()));
+    const allDates = columnValues.every((value) => value === missingEdgeLabel || !Number.isNaN(new Date(value).getTime()));
     if (allDates) {
       return 'date';
     }
@@ -255,10 +251,7 @@ export default function LineUpView() {
 
     uniqueCategories.forEach((cat) => {
       const entry: { name: string; color?: string } = { name: cat };
-      if (
-        cat === CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING ||
-        cat === CSV_EDGE_NOT_IN_ONTOLOGY_STRING
-      ) {
+      if (cat === missingEdgeLabel || cat === CSV_EDGE_NOT_IN_ONTOLOGY_STRING) {
         entry.color = MISSING_EDGE_COLOR;
       } else if (colorMap && colorMap[cat]) {
         entry.color = colorMap[cat];
@@ -299,10 +292,7 @@ export default function LineUpView() {
 
     const categories = Array.from(uniqueCategories).map((category) => {
       const entry: { name: string; color?: string } = { name: category };
-      if (
-        category === CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING ||
-        category === CSV_EDGE_NOT_IN_ONTOLOGY_STRING
-      ) {
+      if (category === missingEdgeLabel || category === CSV_EDGE_NOT_IN_ONTOLOGY_STRING) {
         entry.color = MISSING_EDGE_COLOR;
       } else if (colorMap && colorMap[category]) {
         entry.color = colorMap[category];
@@ -424,7 +414,7 @@ export default function LineUpView() {
       }
       case 'nan': {
         // get nan columns
-        const nanData = filterAllNanColumns(csvFromFocusNodes);
+        const nanData = filterAllNanColumns(csvFromFocusNodes, missingEdgeLabel);
         const nanColumns = new Set(Object.keys(nanData[0]));
 
         filteredCsvData = filteredCsvData.map((row) => {

@@ -191,6 +191,8 @@ export interface ICombinedState {
   filterType: FilterType;
   d3BoundingBox: D3BoundingBoxSetting;
   missingEdgeOption: MissingEdgeOptionType;
+  /** Label shown for edges that are not present in the data */
+  missingEdgeLabel: string;
   edgeCountDict: EdgeCountDict;
   focusNodeExemplarDict: FocusNodeExemplarDict;
   exemplarFocusNodeDict: ExemplarFocusNodeDict;

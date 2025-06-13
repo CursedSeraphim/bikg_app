@@ -1,6 +1,6 @@
 // LineUpHelpers.tsx
 
-import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 import { CsvCell, ICsvData } from '../../types';
 
 /**
@@ -64,7 +64,7 @@ export function filterAllUniModalColumns(data: ICsvData[]) {
  * @param {ICsvData[]} data - The CSV data to be processed.
  * @returns {ICsvData[]} The CSV data with columns exclusively containing NaN values removed.
  */
-export function filterAllNanColumns(data: ICsvData[]) {
+export function filterAllNanColumns(data: ICsvData[], missingEdgeLabel: string) {
   const notMissingEdgeColumns = new Map<string, boolean>();
 
   // Preprocess data and track columns with non-empty / non-missing-edge values
@@ -74,12 +74,12 @@ export function filterAllNanColumns(data: ICsvData[]) {
     for (const key in sample) {
       if (sample.Id !== null) {
         if (key !== 'Id') {
-          const value = sample[key] === CSV_EDGE_NOT_IN_ONTOLOGY_STRING ? CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING : sample[key];
+          const value = sample[key] === CSV_EDGE_NOT_IN_ONTOLOGY_STRING ? missingEdgeLabel : sample[key];
 
           processedSample[key] = value;
 
           // If the value is not "-", mark the column as having non-dash values
-          if (value !== CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING && !notMissingEdgeColumns.get(key)) {
+          if (value !== missingEdgeLabel && !notMissingEdgeColumns.get(key)) {
             notMissingEdgeColumns.set(key, true);
           }
         }
