@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { buildBooleanColumn, buildCategoricalColumn, buildDateColumn, buildNumberColumn, buildStringColumn } from 'lineupjs';
 import {
   CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING,
+  CSV_EDGE_NOT_IN_ONTOLOGY_STRING,
   MISSING_EDGE_COLOR,
 } from '../../constants';
 import { ICanvasOwner, ICsvData } from '../../types';
@@ -254,7 +255,10 @@ export default function LineUpView() {
 
     uniqueCategories.forEach((cat) => {
       const entry: { name: string; color?: string } = { name: cat };
-      if (cat === CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING) {
+      if (
+        cat === CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING ||
+        cat === CSV_EDGE_NOT_IN_ONTOLOGY_STRING
+      ) {
         entry.color = MISSING_EDGE_COLOR;
       } else if (colorMap && colorMap[cat]) {
         entry.color = colorMap[cat];
@@ -295,7 +299,10 @@ export default function LineUpView() {
 
     const categories = Array.from(uniqueCategories).map((category) => {
       const entry: { name: string; color?: string } = { name: category };
-      if (category === CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING) {
+      if (
+        category === CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING ||
+        category === CSV_EDGE_NOT_IN_ONTOLOGY_STRING
+      ) {
         entry.color = MISSING_EDGE_COLOR;
       } else if (colorMap && colorMap[category]) {
         entry.color = colorMap[category];
