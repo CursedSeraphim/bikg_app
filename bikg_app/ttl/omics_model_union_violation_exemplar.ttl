@@ -16,10 +16,9 @@ lotr:Continent a owl:Class ;
 ex:CharacterShape-hasAncestry_exemplar_3 a rut:TestCaseResult,
         sh:PropertyShape,
         sh:ValidationResult ;
-    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Ancestry" ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Character" ;
     sh:resultPath lotr:hasAncestry ;
-    sh:severity sh:Violation ;
-    sh:value lotr:Hobbits .
+    sh:severity sh:Violation .
 
 ex:CharacterShape-hasHome_exemplar_1 a rut:TestCaseResult,
         sh:PropertyShape,

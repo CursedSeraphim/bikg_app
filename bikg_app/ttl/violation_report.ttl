@@ -27,11 +27,10 @@
         sh:ValidationResult ;
     dcterms:date "2025-06-02T10:00:00+02:00"^^xsd:dateTime ;
     sh:focusNode lotr:BilboBaggins ;
-    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Ancestry" ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Character" ;
     sh:resultPath lotr:hasAncestry ;
     sh:severity sh:Violation ;
-    sh:sourceShape lotr:CharacterShape-hasAncestry ;
-    sh:value lotr:Hobbits .
+    sh:sourceShape lotr:CharacterShape-hasAncestry .
 
 <urn:uuid:violation-BilboBaggins-hasHome> a rut:TestCaseResult,
         sh:ValidationResult ;
@@ -77,11 +76,10 @@
         sh:ValidationResult ;
     dcterms:date "2025-06-02T09:50:00+02:00"^^xsd:dateTime ;
     sh:focusNode lotr:FrodoBaggins ;
-    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Ancestry" ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Character" ;
     sh:resultPath lotr:hasAncestry ;
     sh:severity sh:Violation ;
-    sh:sourceShape lotr:CharacterShape-hasAncestry ;
-    sh:value lotr:Hobbits .
+    sh:sourceShape lotr:CharacterShape-hasAncestry .
 
 <urn:uuid:violation-FrodoBaggins-hasHome> a rut:TestCaseResult,
         sh:ValidationResult ;
@@ -116,11 +114,10 @@
         sh:ValidationResult ;
     dcterms:date "2025-06-02T10:05:00+02:00"^^xsd:dateTime ;
     sh:focusNode lotr:MeriadocBrandybuck ;
-    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Ancestry" ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Character" ;
     sh:resultPath lotr:hasAncestry ;
     sh:severity sh:Violation ;
-    sh:sourceShape lotr:CharacterShape-hasAncestry ;
-    sh:value lotr:Hobbits .
+    sh:sourceShape lotr:CharacterShape-hasAncestry .
 
 <urn:uuid:violation-MeriadocBrandybuck-hasHome> a rut:TestCaseResult,
         sh:ValidationResult ;
@@ -155,11 +152,10 @@
         sh:ValidationResult ;
     dcterms:date "2025-06-02T10:10:00+02:00"^^xsd:dateTime ;
     sh:focusNode lotr:PeregrinTook ;
-    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Ancestry" ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Character" ;
     sh:resultPath lotr:hasAncestry ;
     sh:severity sh:Violation ;
-    sh:sourceShape lotr:CharacterShape-hasAncestry ;
-    sh:value lotr:Hobbits .
+    sh:sourceShape lotr:CharacterShape-hasAncestry .
 
 <urn:uuid:violation-PeregrinTook-hasHome> a rut:TestCaseResult,
         sh:ValidationResult ;
@@ -185,11 +181,10 @@
         sh:ValidationResult ;
     dcterms:date "2025-06-02T09:55:00+02:00"^^xsd:dateTime ;
     sh:focusNode lotr:SamwiseGamgee ;
-    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Ancestry" ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Character" ;
     sh:resultPath lotr:hasAncestry ;
     sh:severity sh:Violation ;
-    sh:sourceShape lotr:CharacterShape-hasAncestry ;
-    sh:value lotr:Hobbits .
+    sh:sourceShape lotr:CharacterShape-hasAncestry .
 
 <urn:uuid:violation-SamwiseGamgee-hasHome> a rut:TestCaseResult,
         sh:ValidationResult ;

@@ -8,7 +8,6 @@ lotr:Aragorn a lotr:Character ;
         lotr:Rivendell .
 
 lotr:BilboBaggins a lotr:Character ;
-    lotr:hasAncestry lotr:Hobbits ;
     lotr:hasHome lotr:TheShire .
 
 lotr:Boromir a lotr:Character ;
@@ -16,19 +15,15 @@ lotr:Boromir a lotr:Character ;
     lotr:hasHome lotr:MinasTirith .
 
 lotr:FrodoBaggins a lotr:Character ;
-    lotr:hasAncestry lotr:Hobbits ;
     lotr:hasHome lotr:TheShire .
 
 lotr:MeriadocBrandybuck a lotr:Character ;
-    lotr:hasAncestry lotr:Hobbits ;
     lotr:hasHome lotr:TheShire .
 
 lotr:PeregrinTook a lotr:Character ;
-    lotr:hasAncestry lotr:Hobbits ;
     lotr:hasHome lotr:TheShire .
 
 lotr:SamwiseGamgee a lotr:Character ;
-    lotr:hasAncestry lotr:Hobbits ;
     lotr:hasHome lotr:TheShire .
 
 lotr:Theoden a lotr:Character ;
