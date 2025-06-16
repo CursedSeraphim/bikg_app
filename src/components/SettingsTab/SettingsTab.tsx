@@ -7,6 +7,7 @@ import D3BoundingBoxToggle from './D3BoundingBoxToggle';
 import FilterSettings from './FilterSettings';
 import MissingEdgeSettings from './MissingEdgeSettings';
 import LineUpColumnFilter from './LineUpColumnFilter';
+import NamespacePrefixToggle from './NamespacePrefixToggle';
 
 const MemoizedLegend = React.memo(Legend);
 
@@ -49,6 +50,16 @@ function SettingsTab() {
           D3 Bounding Box
         </Title>
         <D3BoundingBoxToggle />
+      </Card>
+
+      <Divider my="md" />
+
+      {/* Namespace Prefix Display */}
+      <Card shadow="sm" padding="lg" withBorder>
+        <Title order={4} mb="xs">
+          Namespace Display
+        </Title>
+        <NamespacePrefixToggle />
       </Card>
 
       <Divider my="md" />
