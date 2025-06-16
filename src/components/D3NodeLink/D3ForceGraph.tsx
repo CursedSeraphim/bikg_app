@@ -6,7 +6,6 @@ import { useSelector } from 'react-redux';
 import { selectCumulativeNumberViolationsPerNode, selectD3BoundingBox, selectTypes, selectViolations } from '../Store/CombinedSlice';
 import { useD3Data } from './useD3Data';
 
-import { ContextMenu } from './D3NldContextMenu';
 import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
 import { computeColorForId } from './D3NldUtils';
 import { useAdjacency } from './hooks/useAdjacency';
@@ -37,11 +36,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { dimensions } = useCanvasDimensions(canvasRef);
   const dpi = window.devicePixelRatio ?? 1;
-
-  const [menuVisible, setMenuVisible] = useState(false);
-  const [menuX, setMenuX] = useState(0);
-  const [menuY, setMenuY] = useState(0);
-  const [menuNode, setMenuNode] = useState<CanvasNode | null>(null);
 
   const [ghostNodes, setGhostNodes] = useState<CanvasNode[]>([]);
   const [ghostEdges, setGhostEdges] = useState<CanvasEdge[]>([]);
@@ -120,18 +114,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     false,
   );
 
-  const { showChildren, hideChildren, showParents, hideParents, hideNode } = useNodeVisibility(
-    cyDataNodes,
-    cyDataEdges,
-    adjacencyRef,
-    revAdjRef,
-    hiddenNodesRef,
-    originRef,
-    convertData,
-  );
+  const { showChildren, showParents } = useNodeVisibility(cyDataNodes, cyDataEdges, adjacencyRef, revAdjRef, hiddenNodesRef, originRef, convertData);
 
   const recomputeEdgeVisibility = useCallback(() => {
     const visible = new Set(cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
+    // eslint-disable-next-line no-param-reassign
     cyDataEdges.forEach((edge) => {
       edge.data.visible = visible.has(edge.data.source) && visible.has(edge.data.target);
     });
@@ -143,19 +130,16 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   // as `0` skips freezing the other nodes. The `alphaTarget` parameter controls
   // the force simulation strength during the freeze.
   const freezeNode = useCallback(
-    (
-      id: string,
-      otherDuration = 500,
-      triggerDuration = 1000,
-      alphaTarget = 0.1,
-    ) => {
+    (id: string, otherDuration = 500, triggerDuration = 1000, alphaTarget = 0.1) => {
       const sim = simulationRef.current;
       if (!sim) return;
 
       const allNodes = Object.values(nodeMapRef.current);
       allNodes.forEach((node) => {
         if (otherDuration > 0 || node.id === id) {
+          // eslint-disable-next-line no-param-reassign
           node.fx = node.x;
+          // eslint-disable-next-line no-param-reassign
           node.fy = node.y;
         }
       });
@@ -167,7 +151,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         setTimeout(() => {
           allNodes.forEach((node) => {
             if (node.id !== id) {
+              // eslint-disable-next-line no-param-reassign
               node.fx = null;
+              // eslint-disable-next-line no-param-reassign
               node.fy = null;
             }
           });
@@ -201,9 +187,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       })),
     );
     Object.values(nodeMapRef.current).forEach((n) => {
+      // eslint-disable-next-line no-param-reassign
       n.fx = null;
+      // eslint-disable-next-line no-param-reassign
       n.fy = null;
+      // eslint-disable-next-line no-param-reassign
       n.vx = 0;
+      // eslint-disable-next-line no-param-reassign
       n.vy = 0;
     });
     const sim = simulationRef.current;
@@ -227,6 +217,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (toHide.length) {
         toHide.forEach((nid) => {
           const node = cyDataNodes.find((n) => n.data.id === nid);
+          // eslint-disable-next-line no-param-reassign
           if (node) node.data.visible = false;
         });
         recomputeEdgeVisibility();
@@ -249,6 +240,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (toHide.length) {
         toHide.forEach((nid) => {
           const node = cyDataNodes.find((n) => n.data.id === nid);
+          // eslint-disable-next-line no-param-reassign
           if (node) node.data.visible = false;
         });
         recomputeEdgeVisibility();
@@ -308,66 +300,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     [freezeNode, showParents, collapseAncestors, cyDataNodes, revAdjRef, ghostNodes],
   );
 
-  const centerView = useCallback(() => {
-    const sim = simulationRef.current;
-    if (!sim) return;
-    sim.alpha(1).restart();
-  }, []);
-
   const rightDraggingRef = useRef(false);
   const rightMouseDownRef = useRef<{ x: number; y: number } | null>(null);
-
-  const handleContextMenu = useCallback(
-    (event: MouseEvent) => {
-      if (rightDraggingRef.current) {
-        event.preventDefault();
-        return;
-      }
-      event.preventDefault();
-      const sim = simulationRef.current;
-      if (!sim) return;
-
-      const [pxRaw, pyRaw] = d3.pointer(event, canvasRef.current);
-      const [px, py] = transformRef.current.invert([pxRaw, pyRaw]);
-
-      // Compute "near‐node" threshold from node radius (and zoom level):
-      const NODE_RADIUS_PX = 200;
-      const CLICK_RADIUS_PX = NODE_RADIUS_PX * 2;
-      // adjust for zoom:
-      const effectiveRadius = CLICK_RADIUS_PX / (transformRef.current?.k ?? 1);
-      const NEAR_NODE_DIST_SQ = effectiveRadius * effectiveRadius;
-
-      let closest: CanvasNode | null = null;
-      let minDist = Infinity;
-
-      d3Nodes.forEach((node) => {
-        const dx = (node.x ?? 0) - px;
-        const dy = (node.y ?? 0) - py;
-        const dist2 = dx * dx + dy * dy;
-        if (dist2 < minDist) {
-          minDist = dist2;
-          closest = node;
-        }
-      });
-
-      if (closest && minDist < NEAR_NODE_DIST_SQ) {
-        const boundingRect = canvasRef.current?.getBoundingClientRect();
-        if (boundingRect) {
-          setMenuX(event.clientX - boundingRect.left);
-          setMenuY(event.clientY - boundingRect.top);
-        } else {
-          setMenuX(event.clientX);
-          setMenuY(event.clientY);
-        }
-        setMenuVisible(true);
-        setMenuNode(closest);
-      } else {
-        setMenuVisible(false);
-        setMenuNode(null);
-      }
-    },
-    [d3Nodes, transformRef, simulationRef],
-  );
 
   // Drag handler now uses Alt + left‐click (button 0 + event.altKey)
   const handleDrag = d3
@@ -378,7 +312,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (!sim) return null;
       const [px, py] = d3.pointer(event, canvasRef.current);
       const [tx, ty] = transformRef.current.invert([px, py]);
-      return d3.least(d3Nodes, (node) => {
+      return d3.least([...d3Nodes, ...ghostNodes], (node: CanvasNode) => {
         const dx = (node.x ?? 0) - tx;
         const dy = (node.y ?? 0) - ty;
         return dx * dx + dy * dy;
@@ -388,20 +322,26 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       const sim = simulationRef.current;
       if (!sim) return;
       if (!event.active) sim.alphaTarget(0.3).restart();
+      // eslint-disable-next-line no-param-reassign
       event.subject.fx = event.subject.x;
+      // eslint-disable-next-line no-param-reassign
       event.subject.fy = event.subject.y;
     })
     .on('drag', (event) => {
       const [px, py] = d3.pointer(event, canvasRef.current);
       const [tx, ty] = transformRef.current.invert([px, py]);
+      // eslint-disable-next-line no-param-reassign
       event.subject.fx = tx;
+      // eslint-disable-next-line no-param-reassign
       event.subject.fy = ty;
     })
     .on('end', (event) => {
       const sim = simulationRef.current;
       if (!sim) return;
       if (!event.active) sim.alphaTarget(0);
+      // eslint-disable-next-line no-param-reassign
       event.subject.fx = null;
+      // eslint-disable-next-line no-param-reassign
       event.subject.fy = null;
     });
 
@@ -424,7 +364,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       let closest: CanvasNode | null = null;
       let minDist = Infinity;
 
-      d3Nodes.forEach((node) => {
+      [...d3Nodes, ...ghostNodes].forEach((node) => {
         const dx = (node.x ?? 0) - px;
         const dy = (node.y ?? 0) - py;
         const dist2 = dx * dx + dy * dy;
@@ -444,7 +384,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         clearPreview();
       }
     },
-    [d3Nodes, transformRef, simulationRef, adjacencyRef, revAdjRef, toggleChildren, toggleParents, clearPreview],
+    [d3Nodes, ghostNodes, transformRef, simulationRef, toggleChildren, toggleParents, clearPreview],
   );
 
   const updateHoverPreview = useCallback(
@@ -551,9 +491,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
       if (newGhostNodes.length > 0 || hasRemovalEdges) {
         Object.values(nodeMapRef.current).forEach((n) => {
+          // eslint-disable-next-line no-param-reassign
           n.fx = n.x;
+          // eslint-disable-next-line no-param-reassign
           n.fy = n.y;
+          // eslint-disable-next-line no-param-reassign
           n.vx = 0;
+          // eslint-disable-next-line no-param-reassign
           n.vy = 0;
         });
         setGhostNodes(newGhostNodes);
@@ -602,7 +546,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     canvas.addEventListener('mousemove', onMouseMove);
     canvas.addEventListener('mouseleave', clearPreview);
     canvas.addEventListener('dblclick', handleDoubleClick);
-    canvas.addEventListener('contextmenu', handleContextMenu);
 
     return () => {
       selection.on('.zoom', null);
@@ -611,9 +554,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       canvas.removeEventListener('mousemove', onMouseMove);
       canvas.removeEventListener('mouseleave', clearPreview);
       canvas.removeEventListener('dblclick', handleDoubleClick);
-      canvas.removeEventListener('contextmenu', handleContextMenu);
     };
-  }, [handleDrag, handleContextMenu, handleDoubleClick, zoomBehaviorRef]);
+  }, [handleDrag, handleDoubleClick, zoomBehaviorRef, updateHoverPreview, clearPreview]);
 
   useEffect(() => {
     if (ghostNodes.length === 0 && ghostEdges.length === 0) {
@@ -644,17 +586,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
           border: '1px solid #ccc',
           display: 'block',
         }}
-      />
-      <ContextMenu
-        menuX={menuX}
-        menuY={menuY}
-        node={menuNode}
-        show={menuVisible}
-        onClose={() => setMenuVisible(false)}
-        onToggleChildren={() => menuNode && toggleChildren(menuNode.id)}
-        onToggleParents={() => menuNode && toggleParents(menuNode.id)}
-        onHideNode={hideNode}
-        onCenterView={centerView}
       />
     </div>
   );
