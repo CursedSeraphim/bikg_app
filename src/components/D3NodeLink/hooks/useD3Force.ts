@@ -132,6 +132,9 @@ export function useD3Force(
         const midX = (sx + tx) / 2;
         const midY = (sy + ty) / 2 - 5;
         context.save();
+        context.lineWidth = 3;
+        context.strokeStyle = '#fff';
+        context.strokeText(edge.label, midX, midY);
         context.fillStyle = '#333';
         context.fillText(edge.label, midX, midY);
         context.restore();
@@ -154,6 +157,9 @@ export function useD3Force(
       context.stroke();
 
       context.save();
+      context.lineWidth = 3;
+      context.strokeStyle = '#fff';
+      context.strokeText(node.label, node.x ?? 0, (node.y ?? 0) - 12);
       context.fillStyle = '#000';
       context.fillText(node.label, node.x ?? 0, (node.y ?? 0) - 12);
       context.restore();
