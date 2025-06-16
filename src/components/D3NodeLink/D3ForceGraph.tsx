@@ -370,21 +370,22 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         }
       });
 
+      const boundingRect = canvasRef.current?.getBoundingClientRect();
+      if (boundingRect) {
+        setMenuX(event.clientX - boundingRect.left);
+        setMenuY(event.clientY - boundingRect.top);
+      } else {
+        setMenuX(event.clientX);
+        setMenuY(event.clientY);
+      }
+
       if (closest && minDist < NEAR_NODE_DIST_SQ) {
-        const boundingRect = canvasRef.current?.getBoundingClientRect();
-        if (boundingRect) {
-          setMenuX(event.clientX - boundingRect.left);
-          setMenuY(event.clientY - boundingRect.top);
-        } else {
-          setMenuX(event.clientX);
-          setMenuY(event.clientY);
-        }
-        setMenuVisible(true);
         setMenuNode(closest);
       } else {
-        setMenuVisible(false);
         setMenuNode(null);
       }
+
+      setMenuVisible(true);
     },
     [d3Nodes, transformRef, simulationRef],
   );

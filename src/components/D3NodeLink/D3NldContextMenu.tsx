@@ -16,7 +16,7 @@ interface ContextMenuProps {
 }
 
 export function ContextMenu({ menuX, menuY, node, show, onClose, onToggleChildren, onToggleParents, onHideNode, onCenterView }: ContextMenuProps) {
-  if (!show || !node) {
+  if (!show) {
     return null;
   }
 
@@ -51,35 +51,41 @@ export function ContextMenu({ menuX, menuY, node, show, onClose, onToggleChildre
           }
         `}
       </style>
-      <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Node: {node.label}</div>
+      {node && (
+        <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Node: {node.label}</div>
+      )
       <ul className="d3-context-menu">
-        <li
-          className="d3-context-menu-item"
-          onClick={() => {
-            onToggleChildren(node.id);
-            onClose();
-          }}
-        >
-          Toggle Hide/Show Children
-        </li>
-        <li
-          className="d3-context-menu-item"
-          onClick={() => {
-            onToggleParents(node.id);
-            onClose();
-          }}
-        >
-          Toggle Hide/Show Parents
-        </li>
-        <li
-          className="d3-context-menu-item"
-          onClick={() => {
-            onHideNode(node.id);
-            onClose();
-          }}
-        >
-          Hide Node
-        </li>
+        {node && (
+          <>
+            <li
+              className="d3-context-menu-item"
+              onClick={() => {
+                onToggleChildren(node.id);
+                onClose();
+              }}
+            >
+              Toggle Hide/Show Children
+            </li>
+            <li
+              className="d3-context-menu-item"
+              onClick={() => {
+                onToggleParents(node.id);
+                onClose();
+              }}
+            >
+              Toggle Hide/Show Parents
+            </li>
+            <li
+              className="d3-context-menu-item"
+              onClick={() => {
+                onHideNode(node.id);
+                onClose();
+              }}
+            >
+              Hide Node
+            </li>
+          </>
+        )
         <li
           className="d3-context-menu-item"
           onClick={() => {
