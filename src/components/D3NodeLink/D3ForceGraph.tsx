@@ -12,6 +12,7 @@ import { useAdjacency } from './hooks/useAdjacency';
 import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3Force } from './hooks/useD3Force';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
+import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) {
@@ -113,6 +114,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     dimensions,
     false,
   );
+
+  const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef);
 
   const { showChildren, showParents } = useNodeVisibility(cyDataNodes, cyDataEdges, adjacencyRef, revAdjRef, hiddenNodesRef, originRef, convertData);
 
@@ -587,6 +590,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
           display: 'block',
         }}
       />
+      {contextMenu}
     </div>
   );
 }
