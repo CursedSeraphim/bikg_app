@@ -15,6 +15,9 @@ import { CanvasEdge, CanvasNode } from '../D3NldTypes';
  * @param edges       Array of CanvasEdge to layout and render.
  * @param boundingBox "on" or "off"; when "on", constrain nodes within canvas.
  * @param dimensions  The { width, height } of the canvas (CSS pixels).
+ * @param initialCentering When true or a number, applies a temporary centering
+ *                         force on initialization. A numeric value sets the
+ *                         timeout in milliseconds before removing the force.
  *
  * Returns refs that can be shared with the parent component:
  * - simulationRef: reference to the D3 forceSimulation instance.
@@ -28,6 +31,7 @@ export function useD3Force(
   boundingBox: string,
   dimensions: { width: number; height: number },
   autoRestart: boolean = true,
+  initialCentering: boolean | number = 1000,
 ): {
   simulationRef: React.MutableRefObject<d3.Simulation<CanvasNode, CanvasEdge> | null>;
   transformRef: React.MutableRefObject<d3.ZoomTransform>;
@@ -187,9 +191,17 @@ export function useD3Force(
     const labelPadding = 20;
 
     let sim = simulationRef.current;
+    let centerTimer: ReturnType<typeof setTimeout> | null = null;
 
     if (!sim) {
       sim = d3.forceSimulation<CanvasNode>(nodes);
+      if (initialCentering !== false) {
+        const delay = typeof initialCentering === 'number' ? initialCentering : 1000;
+        sim.force('center', d3.forceCenter(width / 2, height / 2));
+        centerTimer = setTimeout(() => {
+          sim.force('center', null);
+        }, delay);
+      }
       simulationRef.current = sim;
     }
 
@@ -225,10 +237,11 @@ export function useD3Force(
     }
 
     return () => {
+      if (centerTimer) clearTimeout(centerTimer);
       // Do not stop the simulation between updates to keep smooth transitions.
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges, dimensions.width, dimensions.height, boundingBox]);
+  }, [nodes, edges, dimensions.width, dimensions.height, boundingBox, initialCentering]);
 
   // Stop the simulation when the component unmounts
   useEffect(() => {
