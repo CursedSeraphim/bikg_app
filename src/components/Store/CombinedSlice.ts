@@ -57,6 +57,24 @@ function loadHiddenLineupColumns(): string[] {
   }
 }
 
+function loadHideNamespacePrefixColumns(): boolean {
+  try {
+    const stored = localStorage.getItem('hideNamespacePrefixColumns');
+    return stored ? JSON.parse(stored) : false;
+  } catch {
+    return false;
+  }
+}
+
+function loadHideNamespacePrefixCells(): boolean {
+  try {
+    const stored = localStorage.getItem('hideNamespacePrefixCells');
+    return stored ? JSON.parse(stored) : false;
+  } catch {
+    return false;
+  }
+}
+
 const initialState: ICombinedState = {
   cumulativeNumberViolationsPerNode: {},
   samples: [],
@@ -92,6 +110,8 @@ const initialState: ICombinedState = {
   hiddenLineupColumns: loadHiddenLineupColumns(),
   nodeLabels: [],
   edgeLabels: [],
+  hideNamespacePrefixColumns: loadHideNamespacePrefixColumns(),
+  hideNamespacePrefixCells: loadHideNamespacePrefixCells(),
 };
 
 export function createMaps(
@@ -510,6 +530,14 @@ const combinedSlice = createSlice({
     clearHiddenLineupColumns: (state) => {
       state.hiddenLineupColumns = [];
       localStorage.setItem('hiddenLineupColumns', JSON.stringify([]));
+    },
+    setHideNamespacePrefixColumns: (state, action: PayloadAction<boolean>) => {
+      state.hideNamespacePrefixColumns = action.payload;
+      localStorage.setItem('hideNamespacePrefixColumns', JSON.stringify(action.payload));
+    },
+    setHideNamespacePrefixCells: (state, action: PayloadAction<boolean>) => {
+      state.hideNamespacePrefixCells = action.payload;
+      localStorage.setItem('hideNamespacePrefixCells', JSON.stringify(action.payload));
     },
     setCumulativeNumberViolationsPerNode: (state, action: PayloadAction<INumberViolationsPerNodeMap>) => {
       state.cumulativeNumberViolationsPerNode = action.payload;
@@ -985,6 +1013,8 @@ export const selectHiddenLabels = (state: { combined: ICombinedState }) => state
 export const selectHiddenLineupColumns = (state: { combined: ICombinedState }) => state.combined.hiddenLineupColumns;
 export const selectNodeLabels = (state: { combined: ICombinedState }) => state.combined.nodeLabels;
 export const selectEdgeLabels = (state: { combined: ICombinedState }) => state.combined.edgeLabels;
+export const selectHideNamespacePrefixColumns = (state: { combined: ICombinedState }) => state.combined.hideNamespacePrefixColumns;
+export const selectHideNamespacePrefixCells = (state: { combined: ICombinedState }) => state.combined.hideNamespacePrefixCells;
 
 // TODO investigate why we are returning everything here
 // create memoized selector
@@ -1373,6 +1403,8 @@ export const {
   addHiddenLineupColumns,
   removeHiddenLineupColumns,
   clearHiddenLineupColumns,
+  setHideNamespacePrefixColumns,
+  setHideNamespacePrefixCells,
 } = combinedSlice.actions;
 
 export default combinedSlice.reducer;

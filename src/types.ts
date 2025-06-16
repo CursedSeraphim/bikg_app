@@ -212,6 +212,10 @@ export interface ICombinedState {
   hiddenLineupColumns: string[];
   nodeLabels: string[];
   edgeLabels: string[];
+  /** Hide namespace prefixes from column labels */
+  hideNamespacePrefixColumns: boolean;
+  /** Hide namespace prefixes from cell values */
+  hideNamespacePrefixCells: boolean;
 }
 
 export interface ITriple {

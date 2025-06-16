@@ -14,6 +14,8 @@ import {
   selectSelectedFocusNodes,
   setSelectedFocusNodes,
   selectHiddenLineupColumns,
+  selectHideNamespacePrefixColumns,
+  selectHideNamespacePrefixCells,
 } from '../Store/CombinedSlice';
 import { filterAllNanColumns, filterAllUniModalColumns } from './LineUpHelpers';
 
@@ -33,6 +35,8 @@ export default function LineUpView() {
   const missingEdgeOption = useSelector(selectMissingEdgeOption);
   const missingEdgeLabel = useSelector(selectMissingEdgeLabel);
   const hiddenLineupColumns = useSelector(selectHiddenLineupColumns) as string[];
+  const hideColumnPrefixes = useSelector(selectHideNamespacePrefixColumns);
+  const hideCellPrefixes = useSelector(selectHideNamespacePrefixCells);
   const initialColumnsRef = useRef(null);
 
   // Local state to hold csvData
@@ -153,15 +157,12 @@ export default function LineUpView() {
    * @param {string} column - The column from the data set.
    * @returns {string} - The column name without the prefix.
    */
-  function removePrefix(column) {
-    // Remove any prefix before a colon
-    const parts = column.split(':');
+  function removePrefix(text: string) {
+    const parts = text.split(':');
     if (parts.length > 1) {
-      // If there's a colon, return the part after the colon
       return parts[1].trim();
     }
-    // If there's no colon, return the column as is
-    return column;
+    return text;
   }
 
   type DataType = { [key: string]: number | string | boolean | null | Array<string> }; // TODO check whether this should alawys be string
@@ -338,11 +339,12 @@ export default function LineUpView() {
 
     columns.forEach((column) => {
       const type = inferType(data, column);
-      const width = calculatePixelWidthFromLabel(column);
+      const label = hideColumnPrefixes ? removePrefix(column) : column;
+      const width = calculatePixelWidthFromLabel(label);
 
       if (type === 'boolean') {
         const booleanColors = { True: '#1f77b4', False: '#ff7f0e' };
-        const builtColumn = buildCategoricalColumnWithSettings(column, data, width, booleanColors);
+        const builtColumn = buildCategoricalColumnWithSettings(column, data, width, booleanColors).label(label);
         builder.column(builtColumn);
         return;
       }
@@ -350,10 +352,9 @@ export default function LineUpView() {
       const builderFunction = builderMap[type];
 
       if (builderFunction) {
-        const builtColumn = builderFunction(column, data, width);
+        const builtColumn = builderFunction(column, data, width).label(label);
         builder.column(builtColumn);
       } else if (type === 'link') {
-        const label = removePrefix(column);
         builder.column(LineUpJS.buildColumn(type, column).label(label).width(width));
       }
     });
@@ -517,14 +518,29 @@ export default function LineUpView() {
     });
   }
 
+  function applyPrefixToCells(data: ICsvData[], hide: boolean): ICsvData[] {
+    if (!hide) return data.map((row) => ({ ...row }));
+    return data.map((row) => {
+      const transformedRow: ICsvData = { ...row };
+      Object.keys(row).forEach((k) => {
+        const val = row[k];
+        if (typeof val === 'string') {
+          transformedRow[k] = removePrefix(val);
+        }
+      });
+      return transformedRow;
+    });
+  }
+
   useEffect(() => {
     if (reduxCsvData && reduxCsvData.length > 0) {
-      const transformedData = turnBooleanIntoFalseTrue(reduxCsvData);
+      const booleanData = turnBooleanIntoFalseTrue(reduxCsvData);
+      const transformedData = applyPrefixToCells(booleanData, hideCellPrefixes);
       setCsvData(transformedData);
       preprocessColumnTypes(reduxCsvData);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reduxCsvData]);
+  }, [reduxCsvData, hideCellPrefixes]);
 
   const lineupRef = useRef<HTMLDivElement>(null);
   const lineupInstanceRef = useRef<LineUpJS.Taggle | null>(null);
