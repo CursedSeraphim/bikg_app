@@ -13,6 +13,7 @@ import {
   selectMissingEdgeLabel,
   selectSelectedFocusNodes,
   setSelectedFocusNodes,
+  selectHiddenLineupColumns,
 } from '../Store/CombinedSlice';
 import { filterAllNanColumns, filterAllUniModalColumns } from './LineUpHelpers';
 
@@ -31,6 +32,7 @@ export default function LineUpView() {
   const filterType = useSelector(selectFilterType);
   const missingEdgeOption = useSelector(selectMissingEdgeOption);
   const missingEdgeLabel = useSelector(selectMissingEdgeLabel);
+  const hiddenLineupColumns = useSelector(selectHiddenLineupColumns) as string[];
   const initialColumnsRef = useRef(null);
 
   // Local state to hold csvData
@@ -332,7 +334,7 @@ export default function LineUpView() {
   // Existing buildColumns remains mostly unchanged
   function buildColumns(data: DataType[]): LineUpJS.DataBuilder {
     const builder = LineUpJS.builder(data);
-    const columns = Object.keys(data[0]);
+    const columns = Object.keys(data[0]).filter((c) => !hiddenLineupColumns.includes(c));
 
     columns.forEach((column) => {
       const type = inferType(data, column);

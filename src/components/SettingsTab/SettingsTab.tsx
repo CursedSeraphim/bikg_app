@@ -6,6 +6,7 @@ import Legend from '../Legend/Legend';
 import D3BoundingBoxToggle from './D3BoundingBoxToggle';
 import FilterSettings from './FilterSettings';
 import MissingEdgeSettings from './MissingEdgeSettings';
+import LineUpColumnFilter from './LineUpColumnFilter';
 
 const MemoizedLegend = React.memo(Legend);
 
@@ -18,6 +19,16 @@ function SettingsTab() {
           Table Filter Settings
         </Title>
         <FilterSettings />
+      </Card>
+
+      <Divider my="md" />
+
+      {/* LineUp Column Filter Section */}
+      <Card shadow="sm" padding="lg" withBorder>
+        <Title order={4} mb="xs">
+          Hidden LineUp Columns
+        </Title>
+        <LineUpColumnFilter />
       </Card>
 
       <Divider my="md" />
