@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 // import './LineUpOverrides.sass';
 import { buildBooleanColumn, buildCategoricalColumn, buildDateColumn, buildNumberColumn, buildStringColumn } from 'lineupjs';
+import ColoredUpSetCellRenderer from './ColoredUpSetCellRenderer';
 import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING, MISSING_EDGE_COLOR } from '../../constants';
 import { ICanvasOwner, ICsvData } from '../../types';
 import {
@@ -315,7 +316,7 @@ export default function LineUpView() {
       return 0;
     });
 
-    return buildCategoricalColumn(column, categories).width(width).asSet();
+    return buildCategoricalColumn(column, categories).width(width).renderer('coloredupset').asSet();
   }
 
   function buildStringColumnWithSettings(column: string, data: DataType[], width: number): LineUpJS.ColumnBuilder {
@@ -335,6 +336,7 @@ export default function LineUpView() {
   // Existing buildColumns remains mostly unchanged
   function buildColumns(data: DataType[]): LineUpJS.DataBuilder {
     const builder = LineUpJS.builder(data);
+    builder.registerRenderer('coloredupset', new ColoredUpSetCellRenderer());
     const columns = Object.keys(data[0]).filter((c) => !hiddenLineupColumns.includes(c));
 
     columns.forEach((column) => {
