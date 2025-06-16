@@ -48,6 +48,15 @@ function loadFromLocalStorage(): string[] {
   }
 }
 
+function loadHiddenLineupColumns(): string[] {
+  try {
+    const stored = localStorage.getItem('hiddenLineupColumns');
+    return stored ? JSON.parse(stored) : ['x', 'y'];
+  } catch {
+    return ['x', 'y'];
+  }
+}
+
 const initialState: ICombinedState = {
   cumulativeNumberViolationsPerNode: {},
   samples: [],
@@ -80,6 +89,7 @@ const initialState: ICombinedState = {
   exemplarMap: {},
   ontologyTree: null,
   hiddenLabels: loadFromLocalStorage(),
+  hiddenLineupColumns: loadHiddenLineupColumns(),
   nodeLabels: [],
   edgeLabels: [],
 };
@@ -487,6 +497,19 @@ const combinedSlice = createSlice({
     clearHiddenLabels: (state) => {
       state.hiddenLabels = [];
       localStorage.setItem('blacklistedLabels', JSON.stringify([]));
+    },
+    addHiddenLineupColumns: (state, action: PayloadAction<string[]>) => {
+      const deduplicated = Array.from(new Set([...state.hiddenLineupColumns, ...action.payload]));
+      state.hiddenLineupColumns = deduplicated;
+      localStorage.setItem('hiddenLineupColumns', JSON.stringify(state.hiddenLineupColumns));
+    },
+    removeHiddenLineupColumns: (state, action: PayloadAction<string[]>) => {
+      state.hiddenLineupColumns = state.hiddenLineupColumns.filter((label) => !action.payload.includes(label));
+      localStorage.setItem('hiddenLineupColumns', JSON.stringify(state.hiddenLineupColumns));
+    },
+    clearHiddenLineupColumns: (state) => {
+      state.hiddenLineupColumns = [];
+      localStorage.setItem('hiddenLineupColumns', JSON.stringify([]));
     },
     setCumulativeNumberViolationsPerNode: (state, action: PayloadAction<INumberViolationsPerNodeMap>) => {
       state.cumulativeNumberViolationsPerNode = action.payload;
@@ -959,6 +982,7 @@ export const selectTypes = (state: { combined: ICombinedState }) => state.combin
 export const selectSubClassOfTriples = (state: { combined: ICombinedState }) => state.combined.subClassOfTriples;
 export const selectCumulativeNumberViolationsPerNode = (state: { combined: ICombinedState }) => state.combined.cumulativeNumberViolationsPerNode;
 export const selectHiddenLabels = (state: { combined: ICombinedState }) => state.combined.hiddenLabels;
+export const selectHiddenLineupColumns = (state: { combined: ICombinedState }) => state.combined.hiddenLineupColumns;
 export const selectNodeLabels = (state: { combined: ICombinedState }) => state.combined.nodeLabels;
 export const selectEdgeLabels = (state: { combined: ICombinedState }) => state.combined.edgeLabels;
 
@@ -1346,6 +1370,9 @@ export const {
   removeHiddenLabels,
   setNodeLabels,
   setEdgeLabels,
+  addHiddenLineupColumns,
+  removeHiddenLineupColumns,
+  clearHiddenLineupColumns,
 } = combinedSlice.actions;
 
 export default combinedSlice.reducer;
