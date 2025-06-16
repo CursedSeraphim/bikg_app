@@ -4,7 +4,7 @@ import * as N3 from 'n3';
 import { NamedNode, Quad, Store } from 'n3';
 import { createSelector } from 'reselect';
 import { v4 as uuidv4 } from 'uuid';
-import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING } from '../../constants';
 import {
   D3BoundingBoxSetting,
   EdgeCountDict,
