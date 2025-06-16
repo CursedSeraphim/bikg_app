@@ -8,23 +8,14 @@ import FilterSettings from './FilterSettings';
 import MissingEdgeSettings from './MissingEdgeSettings';
 import LineUpColumnFilter from './LineUpColumnFilter';
 import NamespacePrefixToggle from './NamespacePrefixToggle';
+import './SettingsTab.css';
 
 const MemoizedLegend = React.memo(Legend);
 
 function SettingsTab() {
-  const defaultOpen = [
-    'filter-settings',
-    'lineup-column-filter',
-    'missing-edge-label',
-    'd3-bounding-box',
-    'namespace-display',
-    'legend',
-    'blacklist-manager',
-  ];
-
   return (
-    <div className="settings-tab-container" style={{ padding: '16px' }}>
-      <Accordion multiple defaultValue={defaultOpen} variant="contained">
+    <div className="settings-tab-container">
+      <Accordion multiple className="settings-accordion" variant="separated" radius="md">
         <Accordion.Item value="filter-settings">
           <Accordion.Control>Table Filter Settings</Accordion.Control>
           <Accordion.Panel>

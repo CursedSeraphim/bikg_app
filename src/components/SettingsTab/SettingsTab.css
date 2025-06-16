@@ -1,0 +1,28 @@
+.settings-tab-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.settings-accordion .mantine-Accordion-item {
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.settings-accordion .mantine-Accordion-control {
+  background-color: #f8f9fa;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.settings-accordion .mantine-Accordion-control:hover {
+  background-color: #edf0f2;
+}
+
+.settings-accordion .mantine-Accordion-panel {
+  padding: 1rem;
+  background-color: white;
+}
