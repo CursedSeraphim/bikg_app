@@ -259,6 +259,12 @@ export default function LineUpView() {
       categories.push(entry);
     });
 
+    categories.sort((a, b) => {
+      if (a.name === missingEdgeLabel || a.name === CSV_EDGE_NOT_IN_ONTOLOGY_STRING) return -1;
+      if (b.name === missingEdgeLabel || b.name === CSV_EDGE_NOT_IN_ONTOLOGY_STRING) return 1;
+      return 0;
+    });
+
     return buildCategoricalColumn(column, categories).width(width);
   }
 
@@ -298,6 +304,12 @@ export default function LineUpView() {
         entry.color = colorMap[category];
       }
       return entry;
+    });
+
+    categories.sort((a, b) => {
+      if (a.name === missingEdgeLabel || a.name === CSV_EDGE_NOT_IN_ONTOLOGY_STRING) return -1;
+      if (b.name === missingEdgeLabel || b.name === CSV_EDGE_NOT_IN_ONTOLOGY_STRING) return 1;
+      return 0;
     });
 
     return buildCategoricalColumn(column, categories).width(width).asSet();
