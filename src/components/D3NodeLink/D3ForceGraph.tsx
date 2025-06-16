@@ -309,13 +309,33 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   );
 
   const centerView = useCallback(() => {
-    const sim = simulationRef.current;
-    if (!sim) return;
-    sim.alpha(1).restart();
-  }, []);
+    if (!zoomBehaviorRef.current || !canvasRef.current || d3Nodes.length === 0) {
+      return;
+    }
+
+    const minX = Math.min(...d3Nodes.map((n) => n.x ?? 0));
+    const maxX = Math.max(...d3Nodes.map((n) => n.x ?? 0));
+    const minY = Math.min(...d3Nodes.map((n) => n.y ?? 0));
+    const maxY = Math.max(...d3Nodes.map((n) => n.y ?? 0));
+
+    const graphWidth = Math.max(1, maxX - minX);
+    const graphHeight = Math.max(1, maxY - minY);
+
+    const scale = Math.min(dimensions.width / graphWidth, dimensions.height / graphHeight) * 0.9;
+
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+
+    const transform = d3.zoomIdentity
+      .translate(dimensions.width / 2 - scale * cx, dimensions.height / 2 - scale * cy)
+      .scale(scale);
+
+    d3.select(canvasRef.current).call(zoomBehaviorRef.current.transform, transform);
+  }, [d3Nodes, dimensions.height, dimensions.width, zoomBehaviorRef]);
 
   const rightDraggingRef = useRef(false);
   const rightMouseDownRef = useRef<{ x: number; y: number } | null>(null);
+  const hasCenteredRef = useRef(false);
 
   const handleContextMenu = useCallback(
     (event: MouseEvent) => {
@@ -624,6 +644,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       }
     }
   }, [ghostNodes.length, ghostEdges.length, simulationRef]);
+
+  useEffect(() => {
+    if (!hasCenteredRef.current && zoomBehaviorRef.current && d3Nodes.length > 0) {
+      centerView();
+      hasCenteredRef.current = true;
+    }
+  }, [centerView, d3Nodes.length, zoomBehaviorRef]);
 
   useEffect(() => {
     window.addEventListener('keyup', clearPreview);

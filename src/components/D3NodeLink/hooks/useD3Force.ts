@@ -209,6 +209,7 @@ export function useD3Force(
 
     sim.force('charge', d3.forceManyBody().strength(-9999).distanceMax(9999));
     sim.force('collision', d3.forceCollide(nodeRadius + labelPadding));
+    sim.force('center', d3.forceCenter(width / 2, height / 2));
 
     sim.on('tick', () => {
       if (boundingBox === 'on') {
