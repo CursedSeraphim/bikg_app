@@ -526,7 +526,7 @@ export default function LineUpView() {
       const transformedRow: ICsvData = { ...row };
       Object.keys(row).forEach((k) => {
         const val = row[k];
-        if (typeof val === 'string') {
+        if (typeof val === 'string' && k !== 'focus_node') {
           transformedRow[k] = removePrefix(val);
         }
       });
