@@ -15,6 +15,9 @@ import { CanvasEdge, CanvasNode } from '../D3NldTypes';
  * @param edges       Array of CanvasEdge to layout and render.
  * @param boundingBox "on" or "off"; when "on", constrain nodes within canvas.
  * @param dimensions  The { width, height } of the canvas (CSS pixels).
+ * @param initialCentering When true or a number, applies a temporary centering
+ *                         force on initialization. The force is removed once
+ *                         after the given timeout (defaults to ~1000 ms).
  *
  * Returns refs that can be shared with the parent component:
  * - simulationRef: reference to the D3 forceSimulation instance.
@@ -28,6 +31,7 @@ export function useD3Force(
   boundingBox: string,
   dimensions: { width: number; height: number },
   autoRestart: boolean = true,
+  initialCentering: boolean | number = 1000,
 ): {
   simulationRef: React.MutableRefObject<d3.Simulation<CanvasNode, CanvasEdge> | null>;
   transformRef: React.MutableRefObject<d3.ZoomTransform>;
@@ -36,6 +40,7 @@ export function useD3Force(
   const simulationRef = useRef<d3.Simulation<CanvasNode, CanvasEdge> | null>(null);
   const transformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown> | null>(null);
+  const centerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dpi = window.devicePixelRatio ?? 1;
 
@@ -190,6 +195,14 @@ export function useD3Force(
 
     if (!sim) {
       sim = d3.forceSimulation<CanvasNode>(nodes);
+      if (initialCentering !== false) {
+        const delay = typeof initialCentering === 'number' ? initialCentering : 1000;
+        sim.force('center', d3.forceCenter(width / 2, height / 2));
+        centerTimerRef.current = setTimeout(() => {
+          sim.force('center', null);
+          centerTimerRef.current = null;
+        }, delay);
+      }
       simulationRef.current = sim;
     }
 
@@ -233,6 +246,10 @@ export function useD3Force(
   // Stop the simulation when the component unmounts
   useEffect(() => {
     return () => {
+      if (centerTimerRef.current) {
+        clearTimeout(centerTimerRef.current);
+        centerTimerRef.current = null;
+      }
       if (simulationRef.current) {
         simulationRef.current.stop();
       }

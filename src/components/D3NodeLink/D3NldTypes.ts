@@ -29,4 +29,10 @@ export interface CanvasEdge {
 export type D3NLDViewProps = {
   rdfOntology: string;
   onLoaded?: () => void;
+  /**
+   * When true or a number, centers the force simulation on initialization.
+   * A numeric value specifies the delay in milliseconds before the centering
+   * force is removed. Defaults to ~1000ms when set to true.
+   */
+  initialCentering?: boolean | number;
 };

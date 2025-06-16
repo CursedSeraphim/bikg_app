@@ -15,7 +15,7 @@ import { useNodeVisibility } from './hooks/useNodeVisibility';
 import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
-export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) {
+export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering = true }: D3NLDViewProps) {
   // Redux selectors
   const violations = useSelector(selectViolations);
   const types = useSelector(selectTypes);
@@ -113,6 +113,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     d3BoundingBox,
     dimensions,
     false,
+    initialCentering,
   );
 
   const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef);
