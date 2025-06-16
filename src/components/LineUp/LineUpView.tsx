@@ -316,7 +316,7 @@ export default function LineUpView() {
       return 0;
     });
 
-    return buildCategoricalColumn(column, categories).width(width).renderer('coloredupset').asSet();
+    return buildCategoricalColumn(column, categories).width(width).asSet();
   }
 
   function buildStringColumnWithSettings(column: string, data: DataType[], width: number): LineUpJS.ColumnBuilder {

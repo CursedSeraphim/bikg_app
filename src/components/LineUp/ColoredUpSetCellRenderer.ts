@@ -28,13 +28,19 @@ export default class ColoredUpSetCellRenderer implements ICellRendererFactory {
     return {
       template: `<div><div class="${cssClass('upset-line')}"></div>${templateRows}</div>`,
       render: (n: HTMLElement, value: boolean[]) => {
+        const isOverview = Boolean(n.closest(`.${cssClass('low')}`));
         Array.from(n.children)
           .slice(1)
           .forEach((d, i) => {
             const v = value[i];
             d.classList.toggle(cssClass('enabled'), v);
-            (d as HTMLElement).style.backgroundColor = categories[i]?.color ?? UPSET.color;
-            (d as HTMLElement).style.opacity = v ? '1' : String(UPSET.inactive);
+            if (isOverview) {
+              (d as HTMLElement).style.backgroundColor = categories[i]?.color ?? UPSET.color;
+              (d as HTMLElement).style.opacity = v ? '1' : String(UPSET.inactive);
+            } else {
+              (d as HTMLElement).style.backgroundColor = '';
+              (d as HTMLElement).style.opacity = '';
+            }
           });
 
         const line = n.firstElementChild as HTMLElement;
@@ -54,7 +60,7 @@ export default class ColoredUpSetCellRenderer implements ICellRendererFactory {
         line.style.display = '';
         line.style.left = `${Math.round((100 * (left + 0.5)) / value.length)}%`;
         line.style.width = `${Math.round((100 * (right - left)) / value.length)}%`;
-        line.style.backgroundColor = UPSET.color;
+        line.style.backgroundColor = isOverview ? UPSET.color : '';
       },
     };
   }
@@ -79,6 +85,7 @@ export default class ColoredUpSetCellRenderer implements ICellRendererFactory {
         }
         const data = col.getValues(d);
         const hasTrueValues = data.some((v) => v);
+        const isOverview = Boolean(ctx.canvas.closest(`.${cssClass('low')}`));
 
         ctx.save();
         ctx.strokeStyle = UPSET.color;
@@ -92,7 +99,7 @@ export default class ColoredUpSetCellRenderer implements ICellRendererFactory {
 
         data.forEach((val, j) => {
           const posX = j * cellDimension;
-          ctx.fillStyle = categories[j]?.color ?? UPSET.color;
+          ctx.fillStyle = isOverview ? categories[j]?.color ?? UPSET.color : UPSET.color;
           ctx.globalAlpha = val ? 1 : UPSET.inactive;
           ctx.fillRect(posX, 0, cellDimension, CANVAS_HEIGHT);
         });
