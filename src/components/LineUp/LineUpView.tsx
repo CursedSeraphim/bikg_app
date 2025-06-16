@@ -554,7 +554,7 @@ export default function LineUpView() {
       initialColumnsRef.current = initialColumns; // Store the columns in the ref
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lineupRef, csvData, hiddenLineupColumns, dispatch]);
+  }, [lineupRef, csvData, hiddenLineupColumns, hideColumnPrefixes, dispatch]);
 
   useEffect(() => {
     if (lineupInstanceRef.current) {
@@ -567,7 +567,7 @@ export default function LineUpView() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFocusNodes, csvData, filterType, missingEdgeOption, hiddenLineupColumns]); // add filterType to the dependencies
+  }, [selectedFocusNodes, csvData, filterType, missingEdgeOption, hiddenLineupColumns, hideColumnPrefixes]); // add filterType to the dependencies
 
   return (
     <div className="lineup-window">
