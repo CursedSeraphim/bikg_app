@@ -4,7 +4,7 @@ import * as N3 from 'n3';
 import { NamedNode, Quad, Store } from 'n3';
 import { createSelector } from 'reselect';
 import { v4 as uuidv4 } from 'uuid';
-import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING } from '../../constants';
 import {
   D3BoundingBoxSetting,
   EdgeCountDict,
@@ -27,6 +27,15 @@ import {
   ServerTree,
 } from '../../types';
 import { dataToScatterDataArray } from '../EmbeddingView/csvToScatterData';
+
+function loadMissingEdgeLabel(): string {
+  try {
+    const stored = localStorage.getItem('missingEdgeLabel');
+    return stored !== null ? stored : CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING;
+  } catch {
+    return CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING;
+  }
+}
 
 // Safely load any previously stored labels
 function loadFromLocalStorage(): string[] {
@@ -55,6 +64,7 @@ const initialState: ICombinedState = {
   filterType: 'none',
   d3BoundingBox: 'off',
   missingEdgeOption: 'keep',
+  missingEdgeLabel: loadMissingEdgeLabel(),
   edgeCountDict: {},
   focusNodeExemplarDict: {},
   exemplarFocusNodeDict: {},
@@ -239,6 +249,14 @@ const removeNanEdges = (data: ICsvData[]): ICsvData[] => {
     const filteredEntries = Object.entries(rest).filter(([key, value]) => value !== CSV_EDGE_NOT_IN_ONTOLOGY_STRING);
 
     return { Id, ...Object.fromEntries(filteredEntries) };
+  });
+};
+
+const renameMissingEdges = (data: ICsvData[], label: string): ICsvData[] => {
+  return data.map((sample: ICsvData): ICsvData => {
+    const { Id, ...rest } = sample;
+    const modifiedEntries = Object.entries(rest).map(([key, value]) => [key, value === CSV_EDGE_NOT_IN_ONTOLOGY_STRING ? label : value]);
+    return { Id, ...Object.fromEntries(modifiedEntries) };
   });
 };
 
@@ -565,9 +583,17 @@ const combinedSlice = createSlice({
       if (state.missingEdgeOption === 'remove') {
         state.samples = removeNanEdges(state.originalSamples);
       } else if (state.missingEdgeOption === 'keep') {
-        state.samples = [...state.originalSamples];
+        state.samples = renameMissingEdges(state.originalSamples, state.missingEdgeLabel);
       }
       updateFocusNodeSampleMap(state);
+    },
+    setMissingEdgeLabel: (state, action: PayloadAction<string>) => {
+      state.missingEdgeLabel = action.payload;
+      localStorage.setItem('missingEdgeLabel', state.missingEdgeLabel);
+      if (state.missingEdgeOption === 'keep') {
+        state.samples = renameMissingEdges(state.originalSamples, state.missingEdgeLabel);
+        updateFocusNodeSampleMap(state);
+      }
     },
     setFilterType: (state, action: PayloadAction<FilterType>) => {
       state.filterType = action.payload;
@@ -589,7 +615,7 @@ const combinedSlice = createSlice({
       if (state.missingEdgeOption === 'remove') {
         state.samples = removeNanEdges(action.payload);
       } else if (state.missingEdgeOption === 'keep') {
-        state.samples = action.payload;
+        state.samples = renameMissingEdges(action.payload, state.missingEdgeLabel);
       }
       // const newTypes = [...state.types];
       // state.samples.forEach((sample) => {
@@ -909,6 +935,7 @@ const combinedSlice = createSlice({
 });
 
 export const selectMissingEdgeOption = (state: { combined: ICombinedState }) => state.combined.missingEdgeOption;
+export const selectMissingEdgeLabel = (state: { combined: ICombinedState }) => state.combined.missingEdgeLabel;
 export const selectFilterType = (state: { combined: ICombinedState }) => state.combined.filterType;
 export const selectD3BoundingBox = (state: { combined: ICombinedState }) => state.combined.d3BoundingBox;
 export const selectViolationsTypeMap = (state: { combined: ICombinedState }) => state.combined.violationTypesMap;
@@ -1301,6 +1328,7 @@ export const {
   setFilterType,
   setD3BoundingBox,
   setMissingEdgeOption,
+  setMissingEdgeLabel,
   setEdgeCountDict,
   setFocusNodeExemplarDict,
   setExemplarFocusNodeDict,

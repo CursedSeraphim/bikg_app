@@ -5,6 +5,7 @@ import BlacklistManager from '../LabelBlacklist/BlacklistManager';
 import Legend from '../Legend/Legend';
 import D3BoundingBoxToggle from './D3BoundingBoxToggle';
 import FilterSettings from './FilterSettings';
+import MissingEdgeSettings from './MissingEdgeSettings';
 
 const MemoizedLegend = React.memo(Legend);
 
@@ -17,6 +18,16 @@ function SettingsTab() {
           Table Filter Settings
         </Title>
         <FilterSettings />
+      </Card>
+
+      <Divider my="md" />
+
+      {/* Missing Edge Label Section */}
+      <Card shadow="sm" padding="lg" withBorder>
+        <Title order={4} mb="xs">
+          Missing Edge Label
+        </Title>
+        <MissingEdgeSettings />
       </Card>
 
       <Divider my="md" />
