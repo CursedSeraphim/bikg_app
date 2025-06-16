@@ -1,5 +1,5 @@
 // src/components/SettingsTab/SettingsTab.tsx
-import { Card, Divider, Title } from '@mantine/core';
+import { Accordion } from '@mantine/core';
 import React from 'react';
 import BlacklistManager from '../LabelBlacklist/BlacklistManager';
 import Legend from '../Legend/Legend';
@@ -12,75 +12,68 @@ import NamespacePrefixToggle from './NamespacePrefixToggle';
 const MemoizedLegend = React.memo(Legend);
 
 function SettingsTab() {
+  const defaultOpen = [
+    'filter-settings',
+    'lineup-column-filter',
+    'missing-edge-label',
+    'd3-bounding-box',
+    'namespace-display',
+    'legend',
+    'blacklist-manager',
+  ];
+
   return (
     <div className="settings-tab-container" style={{ padding: '16px' }}>
-      {/* Filters Section */}
-      <Card shadow="sm" padding="lg" withBorder>
-        <Title order={4} mb="xs">
-          Table Filter Settings
-        </Title>
-        <FilterSettings />
-      </Card>
+      <Accordion multiple defaultValue={defaultOpen} variant="contained">
+        <Accordion.Item value="filter-settings">
+          <Accordion.Control>Table Filter Settings</Accordion.Control>
+          <Accordion.Panel>
+            <FilterSettings />
+          </Accordion.Panel>
+        </Accordion.Item>
 
-      <Divider my="md" />
+        <Accordion.Item value="lineup-column-filter">
+          <Accordion.Control>Hidden LineUp Columns</Accordion.Control>
+          <Accordion.Panel>
+            <LineUpColumnFilter />
+          </Accordion.Panel>
+        </Accordion.Item>
 
-      {/* LineUp Column Filter Section */}
-      <Card shadow="sm" padding="lg" withBorder>
-        <Title order={4} mb="xs">
-          Hidden LineUp Columns
-        </Title>
-        <LineUpColumnFilter />
-      </Card>
+        <Accordion.Item value="missing-edge-label">
+          <Accordion.Control>Missing Edge Label</Accordion.Control>
+          <Accordion.Panel>
+            <MissingEdgeSettings />
+          </Accordion.Panel>
+        </Accordion.Item>
 
-      <Divider my="md" />
+        <Accordion.Item value="d3-bounding-box">
+          <Accordion.Control>D3 Bounding Box</Accordion.Control>
+          <Accordion.Panel>
+            <D3BoundingBoxToggle />
+          </Accordion.Panel>
+        </Accordion.Item>
 
-      {/* Missing Edge Label Section */}
-      <Card shadow="sm" padding="lg" withBorder>
-        <Title order={4} mb="xs">
-          Missing Edge Label
-        </Title>
-        <MissingEdgeSettings />
-      </Card>
+        <Accordion.Item value="namespace-display">
+          <Accordion.Control>Namespace Display</Accordion.Control>
+          <Accordion.Panel>
+            <NamespacePrefixToggle />
+          </Accordion.Panel>
+        </Accordion.Item>
 
-      <Divider my="md" />
+        <Accordion.Item value="legend">
+          <Accordion.Control>Legend</Accordion.Control>
+          <Accordion.Panel>
+            <MemoizedLegend />
+          </Accordion.Panel>
+        </Accordion.Item>
 
-      {/* D3 Bounding Box Toggle */}
-      <Card shadow="sm" padding="lg" withBorder>
-        <Title order={4} mb="xs">
-          D3 Bounding Box
-        </Title>
-        <D3BoundingBoxToggle />
-      </Card>
-
-      <Divider my="md" />
-
-      {/* Namespace Prefix Display */}
-      <Card shadow="sm" padding="lg" withBorder>
-        <Title order={4} mb="xs">
-          Namespace Display
-        </Title>
-        <NamespacePrefixToggle />
-      </Card>
-
-      <Divider my="md" />
-
-      {/* Legend Section */}
-      <Card shadow="sm" padding="lg" withBorder>
-        <Title order={4} mb="xs">
-          Legend
-        </Title>
-        <MemoizedLegend />
-      </Card>
-
-      <Divider my="md" />
-
-      {/* Blacklist Manager Section */}
-      <Card shadow="sm" padding="lg" withBorder>
-        <Title order={4} mb="xs">
-          Blacklist Manager
-        </Title>
-        <BlacklistManager />
-      </Card>
+        <Accordion.Item value="blacklist-manager">
+          <Accordion.Control>Blacklist Manager</Accordion.Control>
+          <Accordion.Panel>
+            <BlacklistManager />
+          </Accordion.Panel>
+        </Accordion.Item>
+      </Accordion>
     </div>
   );
 }
