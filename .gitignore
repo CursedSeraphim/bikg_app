@@ -17,9 +17,9 @@ __pycache__/
 *.pot
 *.pyc
 *.swp
+*.lock
 # don’t ignore our yarn.lock
 !yarn.lock
-*.lock
 # due to using tox and pytest
 .tox
 .cache
