@@ -45,6 +45,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const { adjacencyRef, revAdjRef } = useAdjacency(cyDataEdges);
 
   const hiddenNodesRef = useRef<Set<string>>(new Set());
+  const hiddenEdgesRef = useRef<Set<string>>(new Set());
   const originRef = useRef<Record<string, string | null>>({});
   const nodeMapRef = useRef<Record<string, CanvasNode>>({});
   const savedPositionsRef = useRef<Record<string, { x?: number; y?: number }>>({});
@@ -154,15 +155,17 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
   const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef, centerView);
 
-  const { showChildren, showParents } = useNodeVisibility(cyDataNodes, cyDataEdges, adjacencyRef, revAdjRef, hiddenNodesRef, originRef, convertData);
+  const { computeExpansion, showChildren, hideChildren, showParents, hideParents } = useNodeVisibility(
+    cyDataNodes,
+    cyDataEdges,
+    adjacencyRef,
+    revAdjRef,
+    hiddenNodesRef,
+    hiddenEdgesRef,
+    originRef,
+    convertData,
+  );
 
-  const recomputeEdgeVisibility = useCallback(() => {
-    const visible = new Set(cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
-    // eslint-disable-next-line no-param-reassign
-    cyDataEdges.forEach((edge) => {
-      edge.data.visible = visible.has(edge.data.source) && visible.has(edge.data.target);
-    });
-  }, [cyDataNodes, cyDataEdges]);
 
   // Freeze nodes for a short period. By default, all currently visible nodes are
   // frozen for `otherDuration` milliseconds (500ms) while the triggering node
@@ -244,51 +247,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     activePreviewRef.current = { mode: null, nodeId: null };
   }, [ghostNodes, ghostEdges, simulationRef]);
 
-  const collapseDescendants = useCallback(
-    (id: string) => {
-      freezeNode(id, 0);
-      const queue = [...(adjacencyRef.current[id] || [])];
-      const toHide: string[] = [];
-      while (queue.length) {
-        const cur = queue.shift()!;
-        toHide.push(cur);
-        queue.push(...(adjacencyRef.current[cur] || []));
-      }
-      if (toHide.length) {
-        toHide.forEach((nid) => {
-          const node = cyDataNodes.find((n) => n.data.id === nid);
-          // eslint-disable-next-line no-param-reassign
-          if (node) node.data.visible = false;
-        });
-        recomputeEdgeVisibility();
-        convertData();
-      }
-    },
-    [cyDataNodes, adjacencyRef, recomputeEdgeVisibility, convertData, freezeNode],
-  );
-
-  const collapseAncestors = useCallback(
-    (id: string) => {
-      freezeNode(id, 0);
-      const queue = [...(revAdjRef.current[id] || [])];
-      const toHide: string[] = [];
-      while (queue.length) {
-        const cur = queue.shift()!;
-        toHide.push(cur);
-        queue.push(...(revAdjRef.current[cur] || []));
-      }
-      if (toHide.length) {
-        toHide.forEach((nid) => {
-          const node = cyDataNodes.find((n) => n.data.id === nid);
-          // eslint-disable-next-line no-param-reassign
-          if (node) node.data.visible = false;
-        });
-        recomputeEdgeVisibility();
-        convertData();
-      }
-    },
-    [cyDataNodes, revAdjRef, recomputeEdgeVisibility, convertData, freezeNode],
-  );
 
   const toggleChildren = useCallback(
     (id: string) => {
@@ -306,13 +264,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         });
 
       if (allVisible) {
-        collapseDescendants(id);
+        hideChildren(id);
       } else {
         showChildren(id);
         freezeNode(id, 500, 1000, 0.3);
       }
     },
-    [freezeNode, showChildren, collapseDescendants, cyDataNodes, adjacencyRef, ghostNodes],
+    [freezeNode, showChildren, hideChildren, cyDataNodes, adjacencyRef, ghostNodes],
   );
 
   const toggleParents = useCallback(
@@ -331,13 +289,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         });
 
       if (allVisible) {
-        collapseAncestors(id);
+        hideParents(id);
       } else {
         showParents(id);
         freezeNode(id, 500, 1000, 0.3);
       }
     },
-    [freezeNode, showParents, collapseAncestors, cyDataNodes, revAdjRef, ghostNodes],
+    [freezeNode, showParents, hideParents, cyDataNodes, revAdjRef, ghostNodes],
   );
 
   const rightDraggingRef = useRef(false);
@@ -466,49 +424,37 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       }
       activePreviewRef.current = { mode, nodeId: closest.id };
 
-      const ids = mode === 'children' ? adjacencyRef.current[closest.id] || [] : revAdjRef.current[closest.id] || [];
-
-      const hiddenIds: string[] = [];
-      const visibleIds: string[] = [];
-
-      ids.forEach((nid) => {
-        const nodeData = cyDataNodes.find((n) => n.data.id === nid);
-        if (!nodeData) return;
-        const visible = nodeData.data.visible && !hiddenNodesRef.current.has(nid);
-        if (visible) {
-          visibleIds.push(nid);
-        } else {
-          hiddenIds.push(nid);
-        }
-      });
-
-      const allVisible = hiddenIds.length === 0;
+      const { nodeIds, edges: expansionEdges } = computeExpansion(closest.id, mode);
+      const allVisible = nodeIds.length === 0;
 
       const newGhostNodes: CanvasNode[] = [];
       const newGhostEdges: CanvasEdge[] = [];
+      const addedEdgeKeys = new Set<string>();
 
       if (allVisible) {
+        const visibleIds = mode === 'children' ? adjacencyRef.current[closest.id] || [] : revAdjRef.current[closest.id] || [];
         visibleIds.forEach((nid) => {
           const edgeData = cyDataEdges.find(
             (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
           );
           if (edgeData) {
-            newGhostEdges.push({
-              source: edgeData.data.source,
-              target: edgeData.data.target,
-              label: edgeData.data.label,
-              visible: true,
-              previewRemoval: true,
-            });
+            const key = `${edgeData.data.source}->${edgeData.data.target}`;
+            if (!addedEdgeKeys.has(key)) {
+              addedEdgeKeys.add(key);
+              newGhostEdges.push({
+                source: edgeData.data.source,
+                target: edgeData.data.target,
+                label: edgeData.data.label,
+                visible: true,
+                previewRemoval: true,
+              });
+            }
           }
         });
       } else {
-        hiddenIds.forEach((nid) => {
+        nodeIds.forEach((nid) => {
           const nodeData = cyDataNodes.find((n) => n.data.id === nid);
           if (!nodeData) return;
-          const edgeData = cyDataEdges.find(
-            (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
-          );
           newGhostNodes.push({
             id: nid,
             label: nodeData.data.label,
@@ -517,13 +463,19 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
             y: closest?.y,
             ghost: true,
           });
-          newGhostEdges.push({
-            source: mode === 'children' ? closest.id : nid,
-            target: mode === 'children' ? nid : closest.id,
-            label: edgeData?.data.label,
-            visible: true,
-            ghost: true,
-          });
+        });
+        expansionEdges.forEach((edge) => {
+          const key = `${edge.source}->${edge.target}`;
+          if (!addedEdgeKeys.has(key)) {
+            addedEdgeKeys.add(key);
+            newGhostEdges.push({
+              source: edge.source,
+              target: edge.target,
+              label: edge.label,
+              visible: true,
+              ghost: true,
+            });
+          }
         });
       }
 
@@ -548,7 +500,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         setGhostEdges(newGhostEdges);
       }
     },
-    [d3Nodes, transformRef, adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, simulationRef, clearPreview],
+    [d3Nodes, transformRef, adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, simulationRef, clearPreview, computeExpansion],
   );
 
   useEffect(() => {
