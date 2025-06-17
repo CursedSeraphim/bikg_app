@@ -154,7 +154,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
   const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef, centerView);
 
-  const { showChildren, showParents } = useNodeVisibility(cyDataNodes, cyDataEdges, adjacencyRef, revAdjRef, hiddenNodesRef, originRef, convertData);
+  const { showChildren, hideChildren, showParents, hideParents } = useNodeVisibility(cyDataNodes, cyDataEdges, adjacencyRef, revAdjRef, hiddenNodesRef, originRef, convertData);
 
   const recomputeEdgeVisibility = useCallback(() => {
     const visible = new Set(cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
@@ -244,51 +244,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     activePreviewRef.current = { mode: null, nodeId: null };
   }, [ghostNodes, ghostEdges, simulationRef]);
 
-  const collapseDescendants = useCallback(
-    (id: string) => {
-      freezeNode(id, 0);
-      const queue = [...(adjacencyRef.current[id] || [])];
-      const toHide: string[] = [];
-      while (queue.length) {
-        const cur = queue.shift()!;
-        toHide.push(cur);
-        queue.push(...(adjacencyRef.current[cur] || []));
-      }
-      if (toHide.length) {
-        toHide.forEach((nid) => {
-          const node = cyDataNodes.find((n) => n.data.id === nid);
-          // eslint-disable-next-line no-param-reassign
-          if (node) node.data.visible = false;
-        });
-        recomputeEdgeVisibility();
-        convertData();
-      }
-    },
-    [cyDataNodes, adjacencyRef, recomputeEdgeVisibility, convertData, freezeNode],
-  );
-
-  const collapseAncestors = useCallback(
-    (id: string) => {
-      freezeNode(id, 0);
-      const queue = [...(revAdjRef.current[id] || [])];
-      const toHide: string[] = [];
-      while (queue.length) {
-        const cur = queue.shift()!;
-        toHide.push(cur);
-        queue.push(...(revAdjRef.current[cur] || []));
-      }
-      if (toHide.length) {
-        toHide.forEach((nid) => {
-          const node = cyDataNodes.find((n) => n.data.id === nid);
-          // eslint-disable-next-line no-param-reassign
-          if (node) node.data.visible = false;
-        });
-        recomputeEdgeVisibility();
-        convertData();
-      }
-    },
-    [cyDataNodes, revAdjRef, recomputeEdgeVisibility, convertData, freezeNode],
-  );
 
   const toggleChildren = useCallback(
     (id: string) => {
@@ -306,13 +261,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         });
 
       if (allVisible) {
-        collapseDescendants(id);
+        hideChildren(id);
       } else {
         showChildren(id);
         freezeNode(id, 500, 1000, 0.3);
       }
     },
-    [freezeNode, showChildren, collapseDescendants, cyDataNodes, adjacencyRef, ghostNodes],
+    [freezeNode, showChildren, hideChildren, cyDataNodes, adjacencyRef, ghostNodes],
   );
 
   const toggleParents = useCallback(
@@ -331,13 +286,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         });
 
       if (allVisible) {
-        collapseAncestors(id);
+        hideParents(id);
       } else {
         showParents(id);
         freezeNode(id, 500, 1000, 0.3);
       }
     },
-    [freezeNode, showParents, collapseAncestors, cyDataNodes, revAdjRef, ghostNodes],
+    [freezeNode, showParents, hideParents, cyDataNodes, revAdjRef, ghostNodes],
   );
 
   const rightDraggingRef = useRef(false);
