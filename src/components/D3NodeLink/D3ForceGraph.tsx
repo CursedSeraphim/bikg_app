@@ -116,7 +116,43 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     initialCentering,
   );
 
-  const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef);
+  const centerView = useCallback(() => {
+    if (!zoomBehaviorRef.current || !canvasRef.current) return;
+
+    const nodesToFit = [...d3Nodes, ...ghostNodes];
+    if (nodesToFit.length === 0) return;
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    nodesToFit.forEach((n) => {
+      const x = n.x ?? 0;
+      const y = n.y ?? 0;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    });
+
+    const padding = 40;
+    const boundsWidth = maxX - minX || 1;
+    const boundsHeight = maxY - minY || 1;
+    const scale = Math.min(dimensions.width / (boundsWidth + padding * 2), dimensions.height / (boundsHeight + padding * 2), 10);
+
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+
+    const transform = d3.zoomIdentity.translate(dimensions.width / 2 - scale * cx, dimensions.height / 2 - scale * cy).scale(scale);
+
+    transformRef.current = transform;
+    d3.select(canvasRef.current)
+      .transition()
+      .duration(300)
+      .call(zoomBehaviorRef.current.transform, transform as any);
+  }, [zoomBehaviorRef, canvasRef, d3Nodes, ghostNodes, dimensions, transformRef]);
+
+  const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef, centerView);
 
   const { showChildren, showParents } = useNodeVisibility(cyDataNodes, cyDataEdges, adjacencyRef, revAdjRef, hiddenNodesRef, originRef, convertData);
 
