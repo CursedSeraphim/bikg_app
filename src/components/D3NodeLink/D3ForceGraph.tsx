@@ -166,16 +166,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     convertData,
   );
 
-  const recomputeEdgeVisibility = useCallback(() => {
-    const visible = new Set(
-      cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id),
-    );
-    // eslint-disable-next-line no-param-reassign
-    cyDataEdges.forEach((edge) => {
-      const hidden = hiddenEdgesRef.current.has(edge.data.id);
-      edge.data.visible = !hidden && visible.has(edge.data.source) && visible.has(edge.data.target);
-    });
-  }, [cyDataNodes, cyDataEdges]);
 
   // Freeze nodes for a short period. By default, all currently visible nodes are
   // frozen for `otherDuration` milliseconds (500ms) while the triggering node

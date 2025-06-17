@@ -70,19 +70,19 @@ export function useNodeVisibility(
   );
   const showChildren = useCallback(
     (nodeId: string) => {
-      const { nodeIds } = computeExpansion(nodeId, 'children');
+      const { nodeIds, edges: expansionEdges } = computeExpansion(nodeId, 'children');
+
       cyDataNodes.forEach((node) => {
         if (nodeIds.includes(node.data.id)) {
           if (!node.data.visible && originRef.current[node.data.id] === undefined) {
             originRef.current[node.data.id] = nodeId;
           }
           node.data.visible = true;
-          cyDataEdges.forEach((edge) => {
-            if (edge.data.source === nodeId && edge.data.target === node.data.id) {
-              hiddenEdgesRef.current.delete(edge.data.id);
-            }
-          });
         }
+      });
+
+      expansionEdges.forEach((edge) => {
+        hiddenEdgesRef.current.delete(edge.id);
       });
 
       recomputeEdgeVisibility();
@@ -132,19 +132,19 @@ export function useNodeVisibility(
 
   const showParents = useCallback(
     (nodeId: string) => {
-      const { nodeIds } = computeExpansion(nodeId, 'parents');
+      const { nodeIds, edges: expansionEdges } = computeExpansion(nodeId, 'parents');
+
       cyDataNodes.forEach((node) => {
         if (nodeIds.includes(node.data.id)) {
           if (!node.data.visible && originRef.current[node.data.id] === undefined) {
             originRef.current[node.data.id] = nodeId;
           }
           node.data.visible = true;
-          cyDataEdges.forEach((edge) => {
-            if (edge.data.source === node.data.id && edge.data.target === nodeId) {
-              hiddenEdgesRef.current.delete(edge.data.id);
-            }
-          });
         }
+      });
+
+      expansionEdges.forEach((edge) => {
+        hiddenEdgesRef.current.delete(edge.id);
       });
 
       recomputeEdgeVisibility();
