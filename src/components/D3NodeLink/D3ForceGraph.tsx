@@ -441,6 +441,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
       const newGhostNodes: CanvasNode[] = [];
       const newGhostEdges: CanvasEdge[] = [];
+      const addedEdgeKeys = new Set<string>();
 
       if (allVisible) {
         visibleIds.forEach((nid) => {
@@ -448,16 +449,25 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
             (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
           );
           if (edgeData) {
-            newGhostEdges.push({
-              source: edgeData.data.source,
-              target: edgeData.data.target,
-              label: edgeData.data.label,
-              visible: true,
-              previewRemoval: true,
-            });
+            const key = `${edgeData.data.source}->${edgeData.data.target}`;
+            if (!addedEdgeKeys.has(key)) {
+              addedEdgeKeys.add(key);
+              newGhostEdges.push({
+                source: edgeData.data.source,
+                target: edgeData.data.target,
+                label: edgeData.data.label,
+                visible: true,
+                previewRemoval: true,
+              });
+            }
           }
         });
       } else {
+        const visibleSet = new Set(
+          cyDataNodes
+            .filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id))
+            .map((n) => n.data.id),
+        );
         hiddenIds.forEach((nid) => {
           const nodeData = cyDataNodes.find((n) => n.data.id === nid);
           if (!nodeData) return;
@@ -472,12 +482,45 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
             y: closest?.y,
             ghost: true,
           });
-          newGhostEdges.push({
-            source: mode === 'children' ? closest.id : nid,
-            target: mode === 'children' ? nid : closest.id,
-            label: edgeData?.data.label,
-            visible: true,
-            ghost: true,
+          const baseSource = mode === 'children' ? closest.id : nid;
+          const baseTarget = mode === 'children' ? nid : closest.id;
+          const baseKey = `${baseSource}->${baseTarget}`;
+          if (!addedEdgeKeys.has(baseKey)) {
+            addedEdgeKeys.add(baseKey);
+            newGhostEdges.push({
+              source: baseSource,
+              target: baseTarget,
+              label: edgeData?.data.label,
+              visible: true,
+              ghost: true,
+            });
+          }
+          cyDataEdges.forEach((edge) => {
+            if (edge.data.source === nid && visibleSet.has(edge.data.target) && edge.data.target !== closest.id) {
+              const key = `${edge.data.source}->${edge.data.target}`;
+              if (!addedEdgeKeys.has(key)) {
+                addedEdgeKeys.add(key);
+                newGhostEdges.push({
+                  source: edge.data.source,
+                  target: edge.data.target,
+                  label: edge.data.label,
+                  visible: true,
+                  ghost: true,
+                });
+              }
+            } else if (edge.data.target === nid && visibleSet.has(edge.data.source) && edge.data.source !== closest.id) {
+              const key = `${edge.data.source}->${edge.data.target}`;
+              if (!addedEdgeKeys.has(key)) {
+                addedEdgeKeys.add(key);
+                newGhostEdges.push({
+                  source: edge.data.source,
+                  target: edge.data.target,
+                  label: edge.data.label,
+                  visible: true,
+                  ghost: true,
+                });
+              }
+            }
           });
         });
       }
