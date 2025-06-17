@@ -155,7 +155,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
   const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef, centerView);
 
-  const { showChildren, hideChildren, showParents, hideParents } = useNodeVisibility(
+  const { computeExpansion, showChildren, hideChildren, showParents, hideParents } = useNodeVisibility(
     cyDataNodes,
     cyDataEdges,
     adjacencyRef,
@@ -434,29 +434,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       }
       activePreviewRef.current = { mode, nodeId: closest.id };
 
-      const ids = mode === 'children' ? adjacencyRef.current[closest.id] || [] : revAdjRef.current[closest.id] || [];
-
-      const hiddenIds: string[] = [];
-      const visibleIds: string[] = [];
-
-      ids.forEach((nid) => {
-        const nodeData = cyDataNodes.find((n) => n.data.id === nid);
-        if (!nodeData) return;
-        const visible = nodeData.data.visible && !hiddenNodesRef.current.has(nid);
-        if (visible) {
-          visibleIds.push(nid);
-        } else {
-          hiddenIds.push(nid);
-        }
-      });
-
-      const allVisible = hiddenIds.length === 0;
+      const { nodeIds, edges: expansionEdges } = computeExpansion(closest.id, mode);
+      const allVisible = nodeIds.length === 0;
 
       const newGhostNodes: CanvasNode[] = [];
       const newGhostEdges: CanvasEdge[] = [];
       const addedEdgeKeys = new Set<string>();
 
       if (allVisible) {
+        const visibleIds = mode === 'children' ? adjacencyRef.current[closest.id] || [] : revAdjRef.current[closest.id] || [];
         visibleIds.forEach((nid) => {
           const edgeData = cyDataEdges.find(
             (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
@@ -476,17 +462,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           }
         });
       } else {
-        const visibleSet = new Set(
-          cyDataNodes
-            .filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id))
-            .map((n) => n.data.id),
-        );
-        hiddenIds.forEach((nid) => {
+        nodeIds.forEach((nid) => {
           const nodeData = cyDataNodes.find((n) => n.data.id === nid);
           if (!nodeData) return;
-          const edgeData = cyDataEdges.find(
-            (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
-          );
           newGhostNodes.push({
             id: nid,
             label: nodeData.data.label,
@@ -495,46 +473,19 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
             y: closest?.y,
             ghost: true,
           });
-          const baseSource = mode === 'children' ? closest.id : nid;
-          const baseTarget = mode === 'children' ? nid : closest.id;
-          const baseKey = `${baseSource}->${baseTarget}`;
-          if (!addedEdgeKeys.has(baseKey)) {
-            addedEdgeKeys.add(baseKey);
+        });
+        expansionEdges.forEach((edge) => {
+          const key = `${edge.source}->${edge.target}`;
+          if (!addedEdgeKeys.has(key)) {
+            addedEdgeKeys.add(key);
             newGhostEdges.push({
-              source: baseSource,
-              target: baseTarget,
-              label: edgeData?.data.label,
+              source: edge.source,
+              target: edge.target,
+              label: edge.label,
               visible: true,
               ghost: true,
             });
           }
-          cyDataEdges.forEach((edge) => {
-            if (edge.data.source === nid && visibleSet.has(edge.data.target) && edge.data.target !== closest.id) {
-              const key = `${edge.data.source}->${edge.data.target}`;
-              if (!addedEdgeKeys.has(key)) {
-                addedEdgeKeys.add(key);
-                newGhostEdges.push({
-                  source: edge.data.source,
-                  target: edge.data.target,
-                  label: edge.data.label,
-                  visible: true,
-                  ghost: true,
-                });
-              }
-            } else if (edge.data.target === nid && visibleSet.has(edge.data.source) && edge.data.source !== closest.id) {
-              const key = `${edge.data.source}->${edge.data.target}`;
-              if (!addedEdgeKeys.has(key)) {
-                addedEdgeKeys.add(key);
-                newGhostEdges.push({
-                  source: edge.data.source,
-                  target: edge.data.target,
-                  label: edge.data.label,
-                  visible: true,
-                  ghost: true,
-                });
-              }
-            }
-          });
         });
       }
 
@@ -559,7 +510,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         setGhostEdges(newGhostEdges);
       }
     },
-    [d3Nodes, transformRef, adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, simulationRef, clearPreview],
+    [d3Nodes, transformRef, adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, simulationRef, clearPreview, computeExpansion],
   );
 
   useEffect(() => {
