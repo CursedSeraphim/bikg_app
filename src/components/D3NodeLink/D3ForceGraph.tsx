@@ -45,6 +45,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const { adjacencyRef, revAdjRef } = useAdjacency(cyDataEdges);
 
   const hiddenNodesRef = useRef<Set<string>>(new Set());
+  const hiddenEdgesRef = useRef<Set<string>>(new Set());
   const originRef = useRef<Record<string, string | null>>({});
   const nodeMapRef = useRef<Record<string, CanvasNode>>({});
   const savedPositionsRef = useRef<Record<string, { x?: number; y?: number }>>({});
@@ -154,13 +155,25 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
   const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef, centerView);
 
-  const { showChildren, hideChildren, showParents, hideParents } = useNodeVisibility(cyDataNodes, cyDataEdges, adjacencyRef, revAdjRef, hiddenNodesRef, originRef, convertData);
+  const { showChildren, hideChildren, showParents, hideParents } = useNodeVisibility(
+    cyDataNodes,
+    cyDataEdges,
+    adjacencyRef,
+    revAdjRef,
+    hiddenNodesRef,
+    hiddenEdgesRef,
+    originRef,
+    convertData,
+  );
 
   const recomputeEdgeVisibility = useCallback(() => {
-    const visible = new Set(cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
+    const visible = new Set(
+      cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id),
+    );
     // eslint-disable-next-line no-param-reassign
     cyDataEdges.forEach((edge) => {
-      edge.data.visible = visible.has(edge.data.source) && visible.has(edge.data.target);
+      const hidden = hiddenEdgesRef.current.has(edge.data.id);
+      edge.data.visible = !hidden && visible.has(edge.data.source) && visible.has(edge.data.target);
     });
   }, [cyDataNodes, cyDataEdges]);
 
