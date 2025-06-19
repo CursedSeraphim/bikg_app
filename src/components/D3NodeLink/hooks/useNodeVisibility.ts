@@ -85,6 +85,14 @@ export function useNodeVisibility(
         hiddenEdgesRef.current.delete(edge.id);
       });
 
+      // Unhide existing edges between the node and its children
+      const children = adjacencyRef.current[nodeId] || [];
+      cyDataEdges.forEach((edge) => {
+        if (edge.data.source === nodeId && children.includes(edge.data.target)) {
+          hiddenEdgesRef.current.delete(edge.data.id);
+        }
+      });
+
       recomputeEdgeVisibility();
       refresh();
     },
@@ -145,6 +153,14 @@ export function useNodeVisibility(
 
       expansionEdges.forEach((edge) => {
         hiddenEdgesRef.current.delete(edge.id);
+      });
+
+      // Unhide existing edges between the node and its parents
+      const parents = revAdjRef.current[nodeId] || [];
+      cyDataEdges.forEach((edge) => {
+        if (edge.data.target === nodeId && parents.includes(edge.data.source)) {
+          hiddenEdgesRef.current.delete(edge.data.id);
+        }
       });
 
       recomputeEdgeVisibility();
