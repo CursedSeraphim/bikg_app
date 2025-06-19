@@ -581,6 +581,16 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   }, [handleDrag, handleDoubleClick, zoomBehaviorRef, updateHoverPreview, clearPreview]);
 
   useEffect(() => {
+    if (ghostNodes.length > 0 || ghostEdges.length > 0) {
+      const sim = simulationRef.current;
+      if (sim) {
+        sim.alpha(0.001);
+        sim.alphaTarget(0).restart();
+      }
+    }
+  }, [ghostNodes, ghostEdges, simulationRef]);
+
+  useEffect(() => {
     if (ghostNodes.length === 0 && ghostEdges.length === 0) {
       const sim = simulationRef.current;
       if (sim) {
