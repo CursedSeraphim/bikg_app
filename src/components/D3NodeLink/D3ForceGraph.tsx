@@ -493,9 +493,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         });
       }
 
-      const hasRemovalEdges = newGhostEdges.some((e) => e.previewRemoval);
-
-      if (newGhostNodes.length > 0 || hasRemovalEdges) {
+      if (newGhostNodes.length > 0) {
         Object.values(nodeMapRef.current).forEach((n) => {
           // eslint-disable-next-line no-param-reassign
           n.fx = n.x;
