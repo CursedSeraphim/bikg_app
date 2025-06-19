@@ -495,7 +495,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
       const hasRemovalEdges = newGhostEdges.some((e) => e.previewRemoval);
 
-      if (newGhostNodes.length > 0 || hasRemovalEdges) {
+      if (newGhostNodes.length > 0) {
         Object.values(nodeMapRef.current).forEach((n) => {
           // eslint-disable-next-line no-param-reassign
           n.fx = n.x;
@@ -512,6 +512,23 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       } else {
         setGhostNodes([]);
         setGhostEdges(newGhostEdges);
+        if (hasRemovalEdges) {
+          Object.values(nodeMapRef.current).forEach((n) => {
+            // eslint-disable-next-line no-param-reassign
+            n.fx = n.x;
+            // eslint-disable-next-line no-param-reassign
+            n.fy = n.y;
+            // eslint-disable-next-line no-param-reassign
+            n.vx = 0;
+            // eslint-disable-next-line no-param-reassign
+            n.vy = 0;
+          });
+          const sim = simulationRef.current;
+          if (sim) {
+            sim.alpha(0.001);
+            sim.alphaTarget(0).restart();
+          }
+        }
       }
     },
     [d3Nodes, transformRef, adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, simulationRef, clearPreview, computeExpansion],
@@ -562,6 +579,19 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       canvas.removeEventListener('dblclick', handleDoubleClick);
     };
   }, [handleDrag, handleDoubleClick, zoomBehaviorRef, updateHoverPreview, clearPreview]);
+
+  useEffect(() => {
+    if (
+      ghostNodes.length === 0 &&
+      ghostEdges.some((e) => (e as any).previewRemoval)
+    ) {
+      const sim = simulationRef.current;
+      if (sim) {
+        sim.alpha(0.001);
+        sim.alphaTarget(0).restart();
+      }
+    }
+  }, [ghostNodes.length, ghostEdges, simulationRef]);
 
   useEffect(() => {
     if (ghostNodes.length === 0 && ghostEdges.length === 0) {
