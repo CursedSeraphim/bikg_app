@@ -5,8 +5,6 @@ export function useNodeVisibility(
   cyDataEdges: any[],
   adjacencyRef: React.MutableRefObject<Record<string, string[]>>,
   revAdjRef: React.MutableRefObject<Record<string, string[]>>,
-  hiddenNodesRef: React.MutableRefObject<Set<string>>,
-  hiddenEdgesRef: React.MutableRefObject<Set<string>>,
   originRef: React.MutableRefObject<Record<string, string | null>>,
   refresh: () => void,
 ) {
@@ -16,23 +14,18 @@ export function useNodeVisibility(
    * nodes are visible.
    */
   const recomputeEdgeVisibility = useCallback(() => {
-    const visible = new Set(cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
+    const visible = new Set(cyDataNodes.filter((n) => n.data.visible).map((n) => n.data.id));
 
     cyDataEdges.forEach((edge) => {
-      const hidden = hiddenEdgesRef.current.has(edge.data.id);
-      edge.data.visible = !hidden && visible.has(edge.data.source) && visible.has(edge.data.target);
+      edge.data.visible = edge.data.visible && visible.has(edge.data.source) && visible.has(edge.data.target);
     });
-  }, [cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef]);
+  }, [cyDataNodes, cyDataEdges]);
 
   const computeExpansion = useCallback(
     (nodeId: string, mode: 'children' | 'parents') => {
       const neighborIds = mode === 'children' ? adjacencyRef.current[nodeId] || [] : revAdjRef.current[nodeId] || [];
 
-      const visibleSet = new Set(
-        cyDataNodes
-          .filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id))
-          .map((n) => n.data.id),
-      );
+      const visibleSet = new Set(cyDataNodes.filter((n) => n.data.visible).map((n) => n.data.id));
 
       const nodeIds: string[] = [];
       const edges: { id: string; source: string; target: string; label?: string }[] = [];
@@ -66,7 +59,7 @@ export function useNodeVisibility(
 
       return { nodeIds, edges };
     },
-    [adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, hiddenNodesRef],
+    [adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges],
   );
   const showChildren = useCallback(
     (nodeId: string) => {
@@ -82,34 +75,33 @@ export function useNodeVisibility(
       });
 
       expansionEdges.forEach((edge) => {
-        hiddenEdgesRef.current.delete(edge.id);
+        const e = cyDataEdges.find((ed) => ed.data.id === edge.id);
+        if (e) {
+          e.data.visible = true;
+        }
       });
 
       recomputeEdgeVisibility();
       refresh();
     },
-    [cyDataNodes, cyDataEdges, computeExpansion, recomputeEdgeVisibility, refresh, hiddenEdgesRef, originRef],
+    [cyDataNodes, cyDataEdges, computeExpansion, recomputeEdgeVisibility, refresh, originRef],
   );
 
   const hideChildren = useCallback(
     (nodeId: string) => {
-      const visibleNodes = new Set(
-        cyDataNodes
-          .filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id))
-          .map((n) => n.data.id),
-      );
+      const visibleNodes = new Set(cyDataNodes.filter((n) => n.data.visible).map((n) => n.data.id));
 
       const children = adjacencyRef.current[nodeId] || [];
 
       children.forEach((childId) => {
         cyDataEdges.forEach((edge) => {
           if (edge.data.source === nodeId && edge.data.target === childId) {
-            hiddenEdgesRef.current.add(edge.data.id);
+            edge.data.visible = false;
           }
         });
 
         const stillConnected = cyDataEdges.some((edge) => {
-          if (hiddenEdgesRef.current.has(edge.data.id)) return false;
+          if (!edge.data.visible) return false;
           if (!visibleNodes.has(edge.data.source) || !visibleNodes.has(edge.data.target)) return false;
           if (edge.data.source === nodeId && edge.data.target === childId) return false;
           return edge.data.source === childId || edge.data.target === childId;
@@ -127,7 +119,7 @@ export function useNodeVisibility(
       recomputeEdgeVisibility();
       refresh();
     },
-    [cyDataNodes, cyDataEdges, adjacencyRef, recomputeEdgeVisibility, refresh, hiddenNodesRef, hiddenEdgesRef],
+    [cyDataNodes, cyDataEdges, adjacencyRef, recomputeEdgeVisibility, refresh],
   );
 
   const showParents = useCallback(
@@ -144,34 +136,33 @@ export function useNodeVisibility(
       });
 
       expansionEdges.forEach((edge) => {
-        hiddenEdgesRef.current.delete(edge.id);
+        const e = cyDataEdges.find((ed) => ed.data.id === edge.id);
+        if (e) {
+          e.data.visible = true;
+        }
       });
 
       recomputeEdgeVisibility();
       refresh();
     },
-    [cyDataNodes, cyDataEdges, computeExpansion, recomputeEdgeVisibility, refresh, hiddenEdgesRef, originRef],
+    [cyDataNodes, cyDataEdges, computeExpansion, recomputeEdgeVisibility, refresh, originRef],
   );
 
   const hideParents = useCallback(
     (nodeId: string) => {
-      const visibleNodes = new Set(
-        cyDataNodes
-          .filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id))
-          .map((n) => n.data.id),
-      );
+      const visibleNodes = new Set(cyDataNodes.filter((n) => n.data.visible).map((n) => n.data.id));
 
       const parents = revAdjRef.current[nodeId] || [];
 
       parents.forEach((parentId) => {
         cyDataEdges.forEach((edge) => {
           if (edge.data.source === parentId && edge.data.target === nodeId) {
-            hiddenEdgesRef.current.add(edge.data.id);
+            edge.data.visible = false;
           }
         });
 
         const stillConnected = cyDataEdges.some((edge) => {
-          if (hiddenEdgesRef.current.has(edge.data.id)) return false;
+          if (!edge.data.visible) return false;
           if (!visibleNodes.has(edge.data.source) || !visibleNodes.has(edge.data.target)) return false;
           if (edge.data.source === parentId && edge.data.target === nodeId) return false;
           return edge.data.source === parentId || edge.data.target === parentId;
@@ -189,16 +180,17 @@ export function useNodeVisibility(
       recomputeEdgeVisibility();
       refresh();
     },
-    [cyDataNodes, cyDataEdges, revAdjRef, recomputeEdgeVisibility, refresh, hiddenNodesRef, hiddenEdgesRef],
+    [cyDataNodes, cyDataEdges, revAdjRef, recomputeEdgeVisibility, refresh],
   );
 
   const hideNode = useCallback(
     (nodeId: string) => {
-      hiddenNodesRef.current.add(nodeId);
+      const node = cyDataNodes.find((n) => n.data.id === nodeId);
+      if (node) node.data.visible = false;
       recomputeEdgeVisibility();
       refresh();
     },
-    [refresh, hiddenNodesRef, recomputeEdgeVisibility],
+    [refresh, recomputeEdgeVisibility, cyDataNodes],
   );
 
   return { computeExpansion, showChildren, hideChildren, showParents, hideParents, hideNode };

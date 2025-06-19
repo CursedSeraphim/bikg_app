@@ -44,14 +44,12 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
   const { adjacencyRef, revAdjRef } = useAdjacency(cyDataEdges);
 
-  const hiddenNodesRef = useRef<Set<string>>(new Set());
-  const hiddenEdgesRef = useRef<Set<string>>(new Set());
   const originRef = useRef<Record<string, string | null>>({});
   const nodeMapRef = useRef<Record<string, CanvasNode>>({});
   const savedPositionsRef = useRef<Record<string, { x?: number; y?: number }>>({});
 
   const convertData = useCallback(() => {
-    const visibleNodeData = cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id));
+    const visibleNodeData = cyDataNodes.filter((n) => n.data.visible);
     const visibleIds = new Set(visibleNodeData.map((n) => n.data.id));
 
     const visibleEdgeData = cyDataEdges.filter((e) => e.data.visible && visibleIds.has(e.data.source) && visibleIds.has(e.data.target));
@@ -160,8 +158,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     cyDataEdges,
     adjacencyRef,
     revAdjRef,
-    hiddenNodesRef,
-    hiddenEdgesRef,
     originRef,
     convertData,
   );
@@ -260,7 +256,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         childIds.length > 0 &&
         childIds.every((childId) => {
           const node = cyDataNodes.find((n) => n.data.id === childId);
-          return node && node.data.visible && !hiddenNodesRef.current.has(childId);
+          return node && node.data.visible;
         });
 
       if (allVisible) {
@@ -285,7 +281,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         parentIds.length > 0 &&
         parentIds.every((parentId) => {
           const node = cyDataNodes.find((n) => n.data.id === parentId);
-          return node && node.data.visible && !hiddenNodesRef.current.has(parentId);
+          return node && node.data.visible;
         });
 
       if (allVisible) {
