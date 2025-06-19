@@ -26,7 +26,8 @@ export function useNodeVisibility(
 
   const computeExpansion = useCallback(
     (nodeId: string, mode: 'children' | 'parents') => {
-      const neighborIds = mode === 'children' ? adjacencyRef.current[nodeId] || [] : revAdjRef.current[nodeId] || [];
+      const neighborIds =
+        mode === 'children' ? adjacencyRef.current[nodeId] || [] : revAdjRef.current[nodeId] || [];
 
       const visibleSet = new Set(
         cyDataNodes
@@ -61,12 +62,26 @@ export function useNodeVisibility(
               }
             }
           });
+        } else {
+          cyDataEdges.forEach((edge) => {
+            const { source, target } = edge.data;
+            if (
+              hiddenEdgesRef.current.has(edge.data.id) &&
+              ((source === nodeId && target === nid) || (source === nid && target === nodeId))
+            ) {
+              const key = `${source}->${target}`;
+              if (!addedKeys.has(key)) {
+                addedKeys.add(key);
+                edges.push({ id: edge.data.id, source, target, label: edge.data.label });
+              }
+            }
+          });
         }
       });
 
       return { nodeIds, edges };
     },
-    [adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, hiddenNodesRef],
+    [adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef],
   );
   const showChildren = useCallback(
     (nodeId: string) => {
@@ -83,6 +98,14 @@ export function useNodeVisibility(
 
       expansionEdges.forEach((edge) => {
         hiddenEdgesRef.current.delete(edge.id);
+      });
+
+      // Unhide existing edges between the node and its children
+      const children = adjacencyRef.current[nodeId] || [];
+      cyDataEdges.forEach((edge) => {
+        if (edge.data.source === nodeId && children.includes(edge.data.target)) {
+          hiddenEdgesRef.current.delete(edge.data.id);
+        }
       });
 
       recomputeEdgeVisibility();
@@ -145,6 +168,14 @@ export function useNodeVisibility(
 
       expansionEdges.forEach((edge) => {
         hiddenEdgesRef.current.delete(edge.id);
+      });
+
+      // Unhide existing edges between the node and its parents
+      const parents = revAdjRef.current[nodeId] || [];
+      cyDataEdges.forEach((edge) => {
+        if (edge.data.target === nodeId && parents.includes(edge.data.source)) {
+          hiddenEdgesRef.current.delete(edge.data.id);
+        }
       });
 
       recomputeEdgeVisibility();
