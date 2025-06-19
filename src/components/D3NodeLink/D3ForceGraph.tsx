@@ -166,7 +166,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     convertData,
   );
 
-
   // Freeze nodes for a short period. By default, all currently visible nodes are
   // frozen for `otherDuration` milliseconds (500ms) while the triggering node
   // is frozen for `triggerDuration` milliseconds (1000ms). Passing `otherDuration`
@@ -247,7 +246,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     activePreviewRef.current = { mode: null, nodeId: null };
   }, [ghostNodes, ghostEdges, simulationRef]);
 
-
   const toggleChildren = useCallback(
     (id: string) => {
       if (activePreviewRef.current.mode === 'children' && activePreviewRef.current.nodeId === id) {
@@ -260,7 +258,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         childIds.length > 0 &&
         childIds.every((childId) => {
           const node = cyDataNodes.find((n) => n.data.id === childId);
-          return node && node.data.visible && !hiddenNodesRef.current.has(childId);
+          if (!node || !node.data.visible || hiddenNodesRef.current.has(childId)) {
+            return false;
+          }
+
+          return cyDataEdges.some(
+            (e) =>
+              !hiddenEdgesRef.current.has(e.data.id) &&
+              ((e.data.source === id && e.data.target === childId) || (e.data.source === childId && e.data.target === id)),
+          );
         });
 
       if (allVisible) {
@@ -285,7 +291,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         parentIds.length > 0 &&
         parentIds.every((parentId) => {
           const node = cyDataNodes.find((n) => n.data.id === parentId);
-          return node && node.data.visible && !hiddenNodesRef.current.has(parentId);
+          if (!node || !node.data.visible || hiddenNodesRef.current.has(parentId)) {
+            return false;
+          }
+
+          return cyDataEdges.some(
+            (e) =>
+              !hiddenEdgesRef.current.has(e.data.id) &&
+              ((e.data.source === parentId && e.data.target === id) || (e.data.source === id && e.data.target === parentId)),
+          );
         });
 
       if (allVisible) {
