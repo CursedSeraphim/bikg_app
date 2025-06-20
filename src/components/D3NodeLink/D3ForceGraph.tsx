@@ -10,9 +10,9 @@ import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
 import { computeColorForId } from './D3NldUtils';
 import { useAdjacency } from './hooks/useAdjacency';
 import { useCanvasDimensions } from './hooks/useCanvasDimensions';
+import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 import { useD3Force } from './hooks/useD3Force';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
-import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering = true }: D3NLDViewProps) {
@@ -216,7 +216,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   );
 
   const clearPreview = useCallback(() => {
-    if (ghostNodes.length === 0 && ghostEdges.length === 0) return;
+    if (activePreviewRef.current.nodeId === null) {
+      return;
+    }
     setGhostNodes([]);
     setGhostEdges([]);
     // Reset any mutated edge references back to their id form so d3-force
@@ -244,7 +246,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       sim.alphaTarget(0);
     }
     activePreviewRef.current = { mode: null, nodeId: null };
-  }, [ghostNodes, ghostEdges, simulationRef]);
+  }, [simulationRef]);
 
   const toggleChildren = useCallback(
     (id: string) => {
@@ -276,7 +278,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         freezeNode(id, 500, 1000, 0.3);
       }
     },
-    [freezeNode, showChildren, hideChildren, cyDataNodes, adjacencyRef, ghostNodes],
+    [freezeNode, showChildren, hideChildren, cyDataNodes, cyDataEdges, adjacencyRef, ghostNodes],
   );
 
   const toggleParents = useCallback(
@@ -309,7 +311,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         freezeNode(id, 500, 1000, 0.3);
       }
     },
-    [freezeNode, showParents, hideParents, cyDataNodes, revAdjRef, ghostNodes],
+    [freezeNode, showParents, hideParents, cyDataNodes, cyDataEdges, revAdjRef, ghostNodes],
   );
 
   const rightDraggingRef = useRef(false);
@@ -436,7 +438,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       if (activePreviewRef.current.mode === mode && activePreviewRef.current.nodeId === closest.id) {
         return;
       }
-      activePreviewRef.current = { mode, nodeId: closest.id };
 
       const { nodeIds, edges: expansionEdges } = computeExpansion(closest.id, mode);
       const allVisible = nodeIds.length === 0;
@@ -496,6 +497,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       const hasRemovalEdges = newGhostEdges.some((e) => e.previewRemoval);
 
       if (newGhostNodes.length > 0 || hasRemovalEdges) {
+        activePreviewRef.current = { mode, nodeId: closest.id };
         Object.values(nodeMapRef.current).forEach((n) => {
           // eslint-disable-next-line no-param-reassign
           n.fx = n.x;
@@ -510,8 +512,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         setGhostEdges(newGhostEdges);
         simulationRef.current?.alphaTarget(0.3).restart();
       } else {
-        setGhostNodes([]);
-        setGhostEdges(newGhostEdges);
+        clearPreview();
       }
     },
     [d3Nodes, transformRef, adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, simulationRef, clearPreview, computeExpansion],
