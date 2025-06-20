@@ -240,10 +240,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     });
     const sim = simulationRef.current;
     if (sim) {
-      sim.alpha(0);
-      sim.alphaTarget(0);
-      // Trigger a manual tick so the canvas redraws immediately
-      sim.tick();
+      sim.alpha(0.001);
+      sim.alphaTarget(0).restart();
     }
     activePreviewRef.current = { mode: null, nodeId: null };
   }, [ghostNodes, ghostEdges, simulationRef]);
@@ -583,10 +581,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   }, [handleDrag, handleDoubleClick, zoomBehaviorRef, updateHoverPreview, clearPreview]);
 
   useEffect(() => {
-    if (
-      ghostNodes.length === 0 &&
-      ghostEdges.some((e) => (e as any).previewRemoval)
-    ) {
+    if (ghostNodes.length === 0 && ghostEdges.some((e) => (e as any).previewRemoval)) {
       const sim = simulationRef.current;
       if (sim) {
         sim.alpha(0.001);
