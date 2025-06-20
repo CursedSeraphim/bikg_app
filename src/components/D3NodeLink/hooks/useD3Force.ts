@@ -1,7 +1,7 @@
 // File: src/components/D3NodeLink/hooks/useD3Force.ts
 
 import * as d3 from 'd3';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
 
 /**
@@ -36,6 +36,7 @@ export function useD3Force(
   simulationRef: React.MutableRefObject<d3.Simulation<CanvasNode, CanvasEdge> | null>;
   transformRef: React.MutableRefObject<d3.ZoomTransform>;
   zoomBehaviorRef: React.MutableRefObject<d3.ZoomBehavior<HTMLCanvasElement, unknown> | null>;
+  redraw: () => void;
 } {
   const simulationRef = useRef<d3.Simulation<CanvasNode, CanvasEdge> | null>(null);
   const transformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
@@ -272,10 +273,7 @@ export function useD3Force(
       .zoom<HTMLCanvasElement, unknown>()
       .filter((event: any) => {
         // allow wheel for zoom, or left-click (button 0) for pan, but skip if Ctrl or Alt is held
-        return (
-          event.type === 'wheel' ||
-          (event.type === 'mousedown' && event.button === 0 && !event.ctrlKey && !event.altKey)
-        );
+        return event.type === 'wheel' || (event.type === 'mousedown' && event.button === 0 && !event.ctrlKey && !event.altKey);
       })
       .scaleExtent([0.1, 10])
       .on('zoom', (event) => {
@@ -293,9 +291,14 @@ export function useD3Force(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges, dimensions.width, dimensions.height]);
 
+  const redraw = useCallback(() => {
+    drawCanvas(nodes, edges);
+  }, [nodes, edges]);
+
   return {
     simulationRef,
     transformRef,
     zoomBehaviorRef,
+    redraw,
   };
 }

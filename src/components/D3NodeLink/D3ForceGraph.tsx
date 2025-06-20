@@ -107,7 +107,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     }
   }, [loading, convertData]);
 
-  const { transformRef, simulationRef, zoomBehaviorRef } = useD3Force(
+  const { transformRef, simulationRef, zoomBehaviorRef, redraw } = useD3Force(
     canvasRef,
     [...d3Nodes, ...ghostNodes],
     [...d3Edges, ...ghostEdges],
@@ -238,13 +238,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       // eslint-disable-next-line no-param-reassign
       n.vy = 0;
     });
-    const sim = simulationRef.current;
-    if (sim) {
-      sim.alpha(0.001);
-      sim.alphaTarget(0).restart();
-    }
+    redraw();
     activePreviewRef.current = { mode: null, nodeId: null };
-  }, [ghostNodes, ghostEdges, simulationRef]);
+  }, [ghostNodes, ghostEdges, redraw]);
 
   const toggleChildren = useCallback(
     (id: string) => {
@@ -582,13 +578,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
   useEffect(() => {
     if (ghostNodes.length === 0 && ghostEdges.some((e) => (e as any).previewRemoval)) {
-      const sim = simulationRef.current;
-      if (sim) {
-        sim.alpha(0.001);
-        sim.alphaTarget(0).restart();
-      }
+      redraw();
     }
-  }, [ghostNodes.length, ghostEdges, simulationRef]);
+  }, [ghostNodes.length, ghostEdges, redraw]);
 
   useEffect(() => {
     if (ghostNodes.length === 0 && ghostEdges.length === 0) {
