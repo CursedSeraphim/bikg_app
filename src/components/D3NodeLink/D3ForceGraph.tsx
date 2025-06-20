@@ -242,6 +242,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     if (sim) {
       sim.alpha(0);
       sim.alphaTarget(0);
+      // Trigger a manual tick so the canvas redraws immediately
+      sim.tick();
     }
     activePreviewRef.current = { mode: null, nodeId: null };
   }, [ghostNodes, ghostEdges, simulationRef]);
