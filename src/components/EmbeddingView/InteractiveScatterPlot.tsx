@@ -19,7 +19,7 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
   const svgOverlayRef = useRef<SVGSVGElement>(null);
   const transformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
   const quadtreeRef = useRef<d3.Quadtree<IScatterNode>>();
-  const [hovered, setHovered] = useState<{ text: string; x: number; y: number } | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<IScatterNode | null>(null);
 
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const margins = useMemo(() => ({ top: 20, right: 20, bottom: 20, left: 20 }), []);
@@ -138,8 +138,32 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
         .text((d) => d.text);
 
       labels.exit().remove();
+
+      const hoverSel = svg.selectAll('text.hover-label').data(
+        hoveredNode ? [hoveredNode] : [],
+        (d: IScatterNode) => d.text,
+      );
+
+      hoverSel
+        .enter()
+        .append('text')
+        .attr('class', 'hover-label')
+        .attr('font-size', 10)
+        .attr('pointer-events', 'none')
+        .merge(hoverSel as any)
+        .attr('paint-order', 'stroke')
+        .attr('stroke', 'white')
+        .attr('stroke-width', 3)
+        .attr('fill', 'black')
+        .attr('text-anchor', 'middle')
+        .attr('x', (d) => transformRef.current.applyX(xScale(d.x) + margins.left))
+        .attr('y', (d) => transformRef.current.applyY(yScale(d.y) + margins.top) - 6)
+        .text((d) => d.text)
+        .raise();
+
+      hoverSel.exit().remove();
     }
-  }, [data, selectedNodes, dimensions, xScale, yScale, margins]);
+  }, [data, selectedNodes, dimensions, xScale, yScale, margins, hoveredNode]);
 
   const handleMouseMove = useCallback(
     (event: React.MouseEvent<SVGSVGElement>) => {
@@ -150,18 +174,16 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
       const radius = 6;
       const found = quadtreeRef.current.find(searchX, searchY, radius);
       if (found) {
-        const sx = transformRef.current.applyX(xScale(found.x) + margins.left);
-        const sy = transformRef.current.applyY(yScale(found.y) + margins.top);
-        setHovered({ text: found.text, x: sx, y: sy });
+        setHoveredNode(found);
       } else {
-        setHovered(null);
+        setHoveredNode(null);
       }
     },
-    [xScale, yScale, margins],
+    [],
   );
 
   const handleMouseLeave = useCallback(() => {
-    setHovered(null);
+    setHoveredNode(null);
   }, []);
 
   // ---------- Brush setup with consistent cleanup return ----------
@@ -280,24 +302,6 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
           height: '100%',
         }}
       />
-      {hovered && (
-        <div
-          style={{
-            pointerEvents: 'none',
-            position: 'absolute',
-            top: hovered.y - 10,
-            left: hovered.x + 10,
-            background: 'rgba(255,255,255,0.9)',
-            padding: '2px 4px',
-            border: '1px solid lightgray',
-            borderRadius: '4px',
-            fontSize: '10px',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {hovered.text}
-        </div>
-      )}
     </div>
   );
 }
