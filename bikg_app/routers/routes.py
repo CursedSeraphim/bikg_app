@@ -19,6 +19,7 @@ from bikg_app.routers.utils import (
     serialize_dict_keys_and_values,
     serialize_nested_count_dict,
 )
+from bikg_app.nld_naming import rename_graph_exemplar_term
 
 SH = Namespace("http://www.w3.org/ns/shacl#")
 OWL = Namespace("http://www.w3.org/2002/07/owl#")
@@ -62,6 +63,7 @@ for column in violations_list:
 # load the ontology
 g = Graph()
 g.parse(ONTOLOGY_TTL_FILE_PATH, format="ttl")
+rename_graph_exemplar_term(g)
 ttl_data = g.serialize(format="turtle")
 
 overall_violation_value_counts = {

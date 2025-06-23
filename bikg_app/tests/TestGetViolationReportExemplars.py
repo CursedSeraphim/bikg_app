@@ -8,6 +8,7 @@ from rdflib import Graph, Namespace, URIRef
 from rdflib.compare import graph_diff, isomorphic, to_isomorphic
 
 from bikg_app.routers.utils import get_violation_report_exemplars
+from bikg_app.nld_constants import EXEMPLAR_TERM
 
 
 def print_graph_human_readable(graph):
@@ -30,10 +31,18 @@ class TestGetViolationReportExemplars(unittest.TestCase):
     RDFS = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
     RUT = Namespace("http://rdfunit.aksw.org/ns/core#")
 
-    shape1_exemplar_1 = URIRef("http://www.w3.org/ns/shacl#shape1_exemplar_1")
-    shape1_exemplar_2 = URIRef("http://www.w3.org/ns/shacl#shape1_exemplar_2")
-    shape2_exemplar_3 = URIRef("http://www.w3.org/ns/shacl#shape2_exemplar_3")
-    shape2_exemplar_4 = URIRef("http://www.w3.org/ns/shacl#shape2_exemplar_4")
+    shape1_exemplar_1 = URIRef(
+        f"http://www.w3.org/ns/shacl#shape1_{EXEMPLAR_TERM}_1"
+    )
+    shape1_exemplar_2 = URIRef(
+        f"http://www.w3.org/ns/shacl#shape1_{EXEMPLAR_TERM}_2"
+    )
+    shape2_exemplar_3 = URIRef(
+        f"http://www.w3.org/ns/shacl#shape2_{EXEMPLAR_TERM}_3"
+    )
+    shape2_exemplar_4 = URIRef(
+        f"http://www.w3.org/ns/shacl#shape2_{EXEMPLAR_TERM}_4"
+    )
     shape1 = URIRef(SH.shape1)
     shape2 = URIRef(SH.shape2)
     edge1 = URIRef(SH.edge1)
