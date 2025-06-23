@@ -20,6 +20,24 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
   const transformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
   const quadtreeRef = useRef<d3.Quadtree<IScatterNode>>();
   const [hovered, setHovered] = useState<{ text: string; x: number; y: number } | null>(null);
+  const staticLabels = useMemo(() => {
+    const minDist = 40; // minimum distance in pixels between labels
+    const q = d3
+      .quadtree<IScatterNode>()
+      .x((d) => xScale(d.x) + margins.left)
+      .y((d) => yScale(d.y) + margins.top);
+
+    const chosen: IScatterNode[] = [];
+    data.forEach((d) => {
+      const sx = xScale(d.x) + margins.left;
+      const sy = yScale(d.y) + margins.top;
+      if (!q.find(sx, sy, minDist)) {
+        q.add(d);
+        chosen.push(d);
+      }
+    });
+    return chosen;
+  }, [data, xScale, yScale, margins]);
 
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const margins = useMemo(() => ({ top: 20, right: 20, bottom: 20, left: 20 }), []);
@@ -94,7 +112,26 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
       ctx.arc(screenX, screenY, 4, 0, 2 * Math.PI);
       ctx.fill();
     });
-  }, [data, selectedNodes, dimensions, xScale, yScale, margins]);
+
+    if (svgOverlayRef.current) {
+      const svg = d3.select(svgOverlayRef.current);
+      const labels = svg.selectAll('text.static-label').data(staticLabels, (d: IScatterNode) => d.text);
+
+      labels
+        .enter()
+        .append('text')
+        .attr('class', 'static-label')
+        .attr('font-size', 10)
+        .attr('fill', 'black')
+        .attr('pointer-events', 'none')
+        .merge(labels as any)
+        .attr('x', (d) => transformRef.current.applyX(xScale(d.x) + margins.left) + 6)
+        .attr('y', (d) => transformRef.current.applyY(yScale(d.y) + margins.top) - 6)
+        .text((d) => d.text);
+
+      labels.exit().remove();
+    }
+  }, [data, selectedNodes, dimensions, xScale, yScale, margins, staticLabels]);
 
   const handleMouseMove = useCallback(
     (event: React.MouseEvent<SVGSVGElement>) => {
@@ -221,7 +258,7 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
   }, [drawPoints]);
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
       <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
       <svg
         ref={svgOverlayRef}

@@ -257,8 +257,8 @@ def get_violation_report_exemplars(ontology_g, violation_report_g, study_g):
             # Use rdflib's split_uri to extract localname
             try:
                 namespace, localname = split_uri(str(shape))
-            except ValueError:
-                raise ValueError(f"Could not split URI {shape}")
+            except ValueError as err:
+                raise ValueError(f"Could not split URI {shape}") from err
 
             exemplar_name = URIRef(f"{ex}{localname}_exemplar_{len(exemplar_sets)+1}")
             print(f"Exemplar name: {exemplar_name}")
@@ -302,4 +302,3 @@ def process_edge_object_pairs(ontology_g, study_g, sh, edge_count_dict, edge_obj
     for sh_value in shacl_values:
         for s, p, o in study_g.triples((sh_value, None, None)):
             ontology_g.add((s, p, o))  # type: ignore
-
