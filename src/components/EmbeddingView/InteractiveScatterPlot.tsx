@@ -20,24 +20,6 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
   const transformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
   const quadtreeRef = useRef<d3.Quadtree<IScatterNode>>();
   const [hovered, setHovered] = useState<{ text: string; x: number; y: number } | null>(null);
-  const staticLabels = useMemo(() => {
-    const minDist = 40; // minimum distance in pixels between labels
-    const q = d3
-      .quadtree<IScatterNode>()
-      .x((d) => xScale(d.x) + margins.left)
-      .y((d) => yScale(d.y) + margins.top);
-
-    const chosen: IScatterNode[] = [];
-    data.forEach((d) => {
-      const sx = xScale(d.x) + margins.left;
-      const sy = yScale(d.y) + margins.top;
-      if (!q.find(sx, sy, minDist)) {
-        q.add(d);
-        chosen.push(d);
-      }
-    });
-    return chosen;
-  }, [data, xScale, yScale, margins]);
 
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const margins = useMemo(() => ({ top: 20, right: 20, bottom: 20, left: 20 }), []);
@@ -55,6 +37,25 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
   const selectedNodes = useSelector((state: IRootState) => state.combined.selectedNodes);
   const store = useStore<IRootState>();
   const { dispatch } = store;
+
+  const staticLabels = useMemo(() => {
+    const minDist = 40; // minimum distance in pixels between labels
+    const q = d3
+      .quadtree<IScatterNode>()
+      .x((d) => xScale(d.x) + margins.left)
+      .y((d) => yScale(d.y) + margins.top);
+
+    const chosen: IScatterNode[] = [];
+    data.forEach((d: IScatterNode) => {
+      const sx = xScale(d.x) + margins.left;
+      const sy = yScale(d.y) + margins.top;
+      if (!q.find(sx, sy, minDist)) {
+        q.add(d);
+        chosen.push(d);
+      }
+    });
+    return chosen;
+  }, [data, xScale, yScale, margins]);
 
   useEffect(() => {
     const q = d3
@@ -99,7 +100,7 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
 
     ctx.clearRect(0, 0, dimensions.width, dimensions.height);
 
-    data.forEach((d) => {
+    data.forEach((d: IScatterNode) => {
       const isSelected = selectedNodes.includes(d.text);
       const rawX = xScale(d.x) + margins.left;
       const rawY = yScale(d.y) + margins.top;
@@ -124,6 +125,7 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
         .attr('font-size', 10)
         .attr('fill', 'black')
         .attr('pointer-events', 'none')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .merge(labels as any)
         .attr('x', (d) => transformRef.current.applyX(xScale(d.x) + margins.left) + 6)
         .attr('y', (d) => transformRef.current.applyY(yScale(d.y) + margins.top) - 6)
@@ -149,7 +151,7 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
         setHovered(null);
       }
     },
-    [xScale, yScale, margins]
+    [xScale, yScale, margins],
   );
 
   const handleMouseLeave = useCallback(() => {
@@ -180,14 +182,14 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
           const [[x1, y1], [x2, y2]] = event.selection as [[number, number], [number, number]];
 
           const newlySelected = data
-            .filter((d) => {
+            .filter((d: IScatterNode) => {
               const rawX = xScale(d.x) + margins.left;
               const rawY = yScale(d.y) + margins.top;
               const screenX = transformRef.current.applyX(rawX);
               const screenY = transformRef.current.applyY(rawY);
               return screenX >= x1 && screenX <= x2 && screenY >= y1 && screenY <= y2;
             })
-            .map((d) => d.text);
+            .map((d: IScatterNode) => d.text);
 
           dispatch(setSelectedFocusNodes(newlySelected));
         }
