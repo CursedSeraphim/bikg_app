@@ -1,6 +1,6 @@
 // Legend.tsx
 import React from 'react';
-import { SELECTED_EXEMPLAR_NODE_COLOR, SELECTED_TYPE_NODE_COLOR, SELECTED_VIOLATION_NODE_COLOR } from '../../constants';
+import { SELECTED_GROUP_NODE_COLOR, SELECTED_TYPE_NODE_COLOR, SELECTED_VIOLATION_NODE_COLOR } from '../../constants';
 import './Legend.css';
 
 const SHAPES = {
@@ -15,7 +15,7 @@ const SHAPES = {
 const COLORS = {
   Ontology: SELECTED_TYPE_NODE_COLOR,
   'SHACL Constraint': SELECTED_VIOLATION_NODE_COLOR,
-  'Constraint Violations': SELECTED_EXEMPLAR_NODE_COLOR,
+  'Constraint Violations': SELECTED_GROUP_NODE_COLOR,
 };
 
 function Legend() {

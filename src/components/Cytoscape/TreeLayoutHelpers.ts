@@ -83,13 +83,13 @@ export function getNodesFromIds(ids, cy) {
 }
 
 /**
- * Fetch and categorize nodes based on violations, types, and exemplars.
+ * Fetch and categorize nodes based on violations, types, and groups.
  * Uses selectedViolations to get the nodes that need to be visible to show the path to the types using violationsTypesMap.
  * Differentiates whether these nodes are selected types or not.
- * Independently of this logic also returns the selectedViolatoinExemplars.
- * @returns {Object} An object containing categorized nodes: violationNodes, typeNodes, otherNodes, and exemplarNodes.
+ * Independently of this logic also returns the selectedViolatoinGroups.
+ * @returns {Object} An object containing categorized nodes: violationNodes, typeNodes, otherNodes, and groupNodes.
  */
-export function getFilteredNodes(cy, selectedViolations, violationsTypesMap, selectedTypes, selectedViolationExemplars) {
+export function getFilteredNodes(cy, selectedViolations, violationsTypesMap, selectedTypes, selectedViolationGroups) {
   const violationNodes = getNodesFromIds(selectedViolations, cy);
   const connectedNodesIds = selectedViolations.flatMap((violation) => violationsTypesMap[violation]);
 
@@ -100,7 +100,7 @@ export function getFilteredNodes(cy, selectedViolations, violationsTypesMap, sel
     violationNodes,
     typeNodes: getNodesFromIds(typeNodeIds, cy),
     otherNodes: getNodesFromIds(otherNodeIds, cy),
-    exemplarNodes: getNodesFromIds(selectedViolationExemplars, cy),
+    groupNodes: getNodesFromIds(selectedViolationGroups, cy),
   };
 }
 
@@ -115,11 +115,11 @@ export function showCytoElements(element) {
  * @param {Collection} violationNodes - Nodes representing violations.
  * @param {Collection} typeNodes - Nodes representing types.
  * @param {Collection} otherNodes - Other nodes.
- * @param {Collection} exemplarNodes - Nodes representing exemplars.
+ * @param {Collection} groupNodes - Nodes representing groups.
  */
-export function adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes) {
+export function adjustLayout(cy, violationNodes, typeNodes, otherNodes, groupNodes) {
   const potentialRoots = typeNodes.union(otherNodes).union(violationNodes);
-  const everything = potentialRoots.union(violationNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets());
+  const everything = potentialRoots.union(violationNodes).union(groupNodes).union(groupNodes.outgoers().targets());
   const roots = findRootNodes(potentialRoots);
   const layoutSpacing = { x: 70, y: 500 };
 
@@ -152,10 +152,10 @@ export function adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplar
  * @param {Collection} violationNodes - Nodes representing violations.
  * @param {Collection} typeNodes - Nodes representing types.
  * @param {Collection} otherNodes - Other nodes.
- * @param {Collection} exemplarNodes - Nodes representing exemplars.
+ * @param {Collection} groupNodes - Nodes representing groups.
  */
-export function styleAndDisplayNodes(typeNodes, otherNodes, exemplarNodes, violationNodes) {
-  showCytoElements(violationNodes.union(otherNodes).union(typeNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets()));
+export function styleAndDisplayNodes(typeNodes, otherNodes, groupNodes, violationNodes) {
+  showCytoElements(violationNodes.union(otherNodes).union(typeNodes).union(groupNodes).union(groupNodes.outgoers().targets()));
 }
 
 export function hideAllNonPermanentNodes(cy) {

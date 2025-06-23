@@ -21,9 +21,9 @@
   --selected-violation-node-color: orange;
   --unselected-violation-node-color: #FFCC99;
 
-  /* Exemplar Node Colors */
-  --selected-exemplar-node-color: red;
-  --unselected-exemplar-node-color: #FF7F7F;
+  /* Group Node Colors */
+  --selected-group-node-color: red;
+  --unselected-group-node-color: #FF7F7F;
 
   /* Children/parent alignment constants */
   --node-layout-offset-x: 500;

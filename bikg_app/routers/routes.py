@@ -33,11 +33,11 @@ ORIGINAL_VIOLATION_REPORT_FILE_PATH = "bikg_app/ttl/violation_report.ttl"
 
 VIOLATIONS_FILE_PATH = os.path.join("bikg_app/json", "violation_list.json")
 STUDY_CSV_FILE_PATH = "bikg_app/csv/study.csv"
-ONTOLOGY_TTL_FILE_PATH = "bikg_app/ttl/omics_model_union_violation_exemplar.ttl"
-EXEMPLAR_EDGE_COUNT_JSON_PATH = "bikg_app/json/exemplar_edge_count_dict.json"
-FOCUS_NODE_EXEMPLAR_DICT_JSON_PATH = "bikg_app/json/focus_node_exemplar_dict.json"
-EXEMPLAR_FOCUS_NODE_DICT_JSON_PATH = "bikg_app/json/exemplar_focus_node_dict.json"
-VIOLATION_EXEMPLAR_DICT_PATH = "bikg_app/json/violation_exemplar_dict.json"
+ONTOLOGY_TTL_FILE_PATH = "bikg_app/ttl/omics_model_union_violation_group.ttl"
+GROUP_EDGE_COUNT_JSON_PATH = "bikg_app/json/group_edge_count_dict.json"
+FOCUS_NODE_GROUP_DICT_JSON_PATH = "bikg_app/json/focus_node_group_dict.json"
+GROUP_FOCUS_NODE_DICT_JSON_PATH = "bikg_app/json/group_focus_node_dict.json"
+VIOLATION_GROUP_DICT_PATH = "bikg_app/json/violation_group_dict.json"
 
 # load the violations
 assert os.path.exists(VIOLATIONS_FILE_PATH)
@@ -96,14 +96,14 @@ def shorten_uris_in_nested_dict(nested_dict, g: Graph):
     return new_dict
 
 
-# load the edge_count_dict that gives edge counts within each exemplar
-edge_count_dict = load_nested_counts_dict_json(EXEMPLAR_EDGE_COUNT_JSON_PATH)
-# load the focus_node_exemplar_dict that gives the exemplars for each focus node
-focus_node_exemplar_dict = load_lists_dict(FOCUS_NODE_EXEMPLAR_DICT_JSON_PATH)
-# exemplar_focus_node_dict that gives the focus node for each exemplar
-exemplar_focus_node_dict = load_lists_dict(EXEMPLAR_FOCUS_NODE_DICT_JSON_PATH)
-# violation_exemplar_dict that gives the exemplars and their counts for each violation
-violation_exemplar_dict = shorten_uris_in_nested_dict(load_nested_counts_dict_json(VIOLATION_EXEMPLAR_DICT_PATH), g)
+# load the edge_count_dict that gives edge counts within each group
+edge_count_dict = load_nested_counts_dict_json(GROUP_EDGE_COUNT_JSON_PATH)
+# load the focus_node_group_dict that gives the groups for each focus node
+focus_node_group_dict = load_lists_dict(FOCUS_NODE_GROUP_DICT_JSON_PATH)
+# group_focus_node_dict that gives the focus node for each group
+group_focus_node_dict = load_lists_dict(GROUP_FOCUS_NODE_DICT_JSON_PATH)
+# violation_group_dict that gives the groups and their counts for each violation
+violation_group_dict = shorten_uris_in_nested_dict(load_nested_counts_dict_json(VIOLATION_GROUP_DICT_PATH), g)
 
 router = APIRouter()
 
@@ -275,17 +275,17 @@ async def get_edge_count_dict():
     return serialize_nested_count_dict(shorten_dict_uris(edge_count_dict, prefixes))
 
 
-@router.get("/file/focus_node_exemplar_dict")
-async def get_focus_node_exemplar_dict():
+@router.get("/file/focus_node_group_dict")
+async def get_focus_node_group_dict():
     # TODO shorten uris with shorten_dict_uris then return serialized shortened dict
     prefixes = get_prefixes(g)  # Get the prefixes from the graph
-    return serialize_dict_keys_and_values(shorten_dict_uris(focus_node_exemplar_dict, prefixes))
+    return serialize_dict_keys_and_values(shorten_dict_uris(focus_node_group_dict, prefixes))
 
 
-@router.get("/file/exemplar_focus_node_dict")
-async def get_exemplar_focus_node_dict():
+@router.get("/file/group_focus_node_dict")
+async def get_group_focus_node_dict():
     prefixes = get_prefixes(g)  # Get the prefixes from the graph
-    return serialize_dict_keys_and_values(shorten_dict_uris(exemplar_focus_node_dict, prefixes))
+    return serialize_dict_keys_and_values(shorten_dict_uris(group_focus_node_dict, prefixes))
 
 
 def dynamically_parse_array_columns(df):
@@ -585,7 +585,7 @@ class Node:
         }
 
 
-def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar_dict, g):
+def build_ontology_tree(type_violation_dict, type_count_dict, violation_group_dict, g):
     query = """SELECT ?s ?o WHERE { ?s rdfs:subClassOf ?o . }"""
     parent_child_map = defaultdict(list)
     ontology_type_nodes = set()
@@ -634,14 +634,14 @@ def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar
                 violation_node.count = count
                 current_node.children.append(violation_node)
 
-    def add_exemplars(current_node):
+    def add_groups(current_node):
         for child in current_node.children:
-            add_exemplars(child)
-        if current_node.id in violation_exemplar_dict:
-            for exemplar, exemplar_count in violation_exemplar_dict[current_node.id].items():
-                exemplar_node = Node(exemplar)
-                exemplar_node.count = exemplar_count
-                current_node.children.append(exemplar_node)
+            add_groups(child)
+        if current_node.id in violation_group_dict:
+            for group, group_count in violation_group_dict[current_node.id].items():
+                group_node = Node(group)
+                group_node.count = group_count
+                current_node.children.append(group_node)
 
     def compute_cumulative_counts(current_node):
         for child in current_node.children:
@@ -666,7 +666,7 @@ def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar
     for node in root.children:
         add_violations(node)
         for violation_node in node.children:
-            add_exemplars(violation_node)
+            add_groups(violation_node)
 
     compute_cumulative_counts(root)
 
@@ -699,7 +699,7 @@ def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar
     return root, node_count_dict
 
 
-ontology_tree, node_count_dict = build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar_dict, g)
+ontology_tree, node_count_dict = build_ontology_tree(type_violation_dict, type_count_dict, violation_group_dict, g)
 
 
 @router.get("/get_ontology_tree")
@@ -718,17 +718,17 @@ async def get_type_node_count_dict():
     return node_count_dict
 
 
-@router.get("/get_violation_exemplar_dict")
-async def get_violation_exemplar_dict():
-    if violation_exemplar_dict is None:
-        return {"error": "Violation exemplar dict not built yet"}
+@router.get("/get_violation_group_dict")
+async def get_violation_group_dict():
+    if violation_group_dict is None:
+        return {"error": "Violation group dict not built yet"}
 
-    return violation_exemplar_dict
+    return violation_group_dict
 
 
 @router.get("/get_type_violation_dict")
 async def get_type_violation_dict():
-    if violation_exemplar_dict is None:
+    if violation_group_dict is None:
         return {"error": "Type violation dict not built yet"}
 
     return type_violation_dict

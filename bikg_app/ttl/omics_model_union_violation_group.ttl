@@ -1,4 +1,4 @@
-@prefix ex: <http://example.com/exemplar#> .
+@prefix ex: <http://example.com/group#> .
 @prefix lotr: <http://example.org/lotr#> .
 @prefix ns1: <http://customnamespace.com/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -13,14 +13,14 @@ lotr:Ancestry a owl:Class ;
 lotr:Continent a owl:Class ;
     rdfs:subClassOf lotr:Thing .
 
-ex:CharacterShape-hasAncestry_exemplar_3 a rut:TestCaseResult,
+ex:CharacterShape-hasAncestry_group_3 a rut:TestCaseResult,
         sh:PropertyShape,
         sh:ValidationResult ;
     sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Character" ;
     sh:resultPath lotr:hasAncestry ;
     sh:severity sh:Violation .
 
-ex:CharacterShape-hasHome_exemplar_1 a rut:TestCaseResult,
+ex:CharacterShape-hasHome_group_1 a rut:TestCaseResult,
         sh:PropertyShape,
         sh:ValidationResult ;
     sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
@@ -28,14 +28,14 @@ ex:CharacterShape-hasHome_exemplar_1 a rut:TestCaseResult,
     sh:severity sh:Violation ;
     sh:value lotr:MinasTirith .
 
-ex:CharacterShape-hasHome_exemplar_2 a rut:TestCaseResult,
+ex:CharacterShape-hasHome_group_2 a rut:TestCaseResult,
         sh:PropertyShape,
         sh:ValidationResult ;
     sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasHome for entity of type lotr:Character" ;
     sh:resultPath lotr:hasHome ;
     sh:severity sh:Violation .
 
-ex:CharacterShape-hasHome_exemplar_4 a rut:TestCaseResult,
+ex:CharacterShape-hasHome_group_4 a rut:TestCaseResult,
         sh:PropertyShape,
         sh:ValidationResult ;
     sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
@@ -43,7 +43,7 @@ ex:CharacterShape-hasHome_exemplar_4 a rut:TestCaseResult,
     sh:severity sh:Violation ;
     sh:value lotr:TheShire .
 
-ex:CharacterShape-hasHome_exemplar_9 a rut:TestCaseResult,
+ex:CharacterShape-hasHome_group_9 a rut:TestCaseResult,
         sh:PropertyShape,
         sh:ValidationResult ;
     sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
@@ -51,7 +51,7 @@ ex:CharacterShape-hasHome_exemplar_9 a rut:TestCaseResult,
     sh:severity sh:Violation ;
     sh:value lotr:Edoras .
 
-ex:LocationShape-isInRegion_exemplar_5 a rut:TestCaseResult,
+ex:LocationShape-isInRegion_group_5 a rut:TestCaseResult,
         sh:PropertyShape,
         sh:ValidationResult ;
     sh:resultMessage "Expected value for lotr:isInRegion to conform to RegionShape" ;
@@ -59,7 +59,7 @@ ex:LocationShape-isInRegion_exemplar_5 a rut:TestCaseResult,
     sh:severity sh:Violation ;
     sh:value lotr:Rohan .
 
-ex:LocationShape-isInRegion_exemplar_7 a rut:TestCaseResult,
+ex:LocationShape-isInRegion_group_7 a rut:TestCaseResult,
         sh:PropertyShape,
         sh:ValidationResult ;
     sh:resultMessage "Expected value for lotr:isInRegion to conform to RegionShape" ;
@@ -67,7 +67,7 @@ ex:LocationShape-isInRegion_exemplar_7 a rut:TestCaseResult,
     sh:severity sh:Violation ;
     sh:value lotr:Gondor .
 
-ex:LocationShape-isInRegion_exemplar_8 a rut:TestCaseResult,
+ex:LocationShape-isInRegion_group_8 a rut:TestCaseResult,
         sh:PropertyShape,
         sh:ValidationResult ;
     sh:resultMessage "Expected value for lotr:isInRegion to conform to RegionShape" ;
@@ -75,7 +75,7 @@ ex:LocationShape-isInRegion_exemplar_8 a rut:TestCaseResult,
     sh:severity sh:Violation ;
     sh:value lotr:Eriador .
 
-ex:RegionShape-isInContinent_exemplar_6 a rut:TestCaseResult,
+ex:RegionShape-isInContinent_group_6 a rut:TestCaseResult,
         sh:PropertyShape,
         sh:ValidationResult ;
     sh:resultMessage "Expected value for lotr:isInContinent to conform to ContinentShape" ;
@@ -92,16 +92,16 @@ lotr:CharacterShape a sh:NodeShape ;
     sh:targetClass lotr:Character .
 
 lotr:CharacterShape-hasAncestry a sh:PropertyShape ;
-    ns1:hasExemplar ex:CharacterShape-hasAncestry_exemplar_3 ;
+    ns1:hasGroup ex:CharacterShape-hasAncestry_group_3 ;
     sh:minCount 1 ;
     sh:node lotr:CharacterShape ;
     sh:path lotr:hasAncestry .
 
 lotr:CharacterShape-hasHome a sh:PropertyShape ;
-    ns1:hasExemplar ex:CharacterShape-hasHome_exemplar_1,
-        ex:CharacterShape-hasHome_exemplar_2,
-        ex:CharacterShape-hasHome_exemplar_4,
-        ex:CharacterShape-hasHome_exemplar_9 ;
+    ns1:hasGroup ex:CharacterShape-hasHome_group_1,
+        ex:CharacterShape-hasHome_group_2,
+        ex:CharacterShape-hasHome_group_4,
+        ex:CharacterShape-hasHome_group_9 ;
     sh:minCount 1 ;
     sh:node lotr:LocationShape ;
     sh:path lotr:hasHome .
@@ -114,9 +114,9 @@ lotr:LocationShape a sh:NodeShape ;
     sh:targetClass lotr:Location .
 
 lotr:LocationShape-isInRegion a sh:PropertyShape ;
-    ns1:hasExemplar ex:LocationShape-isInRegion_exemplar_5,
-        ex:LocationShape-isInRegion_exemplar_7,
-        ex:LocationShape-isInRegion_exemplar_8 ;
+    ns1:hasGroup ex:LocationShape-isInRegion_group_5,
+        ex:LocationShape-isInRegion_group_7,
+        ex:LocationShape-isInRegion_group_8 ;
     sh:minCount 1 ;
     sh:node lotr:RegionShape ;
     sh:path lotr:isInRegion .
@@ -129,7 +129,7 @@ lotr:RegionShape a sh:NodeShape ;
     sh:targetClass lotr:Region .
 
 lotr:RegionShape-isInContinent a sh:PropertyShape ;
-    ns1:hasExemplar ex:RegionShape-isInContinent_exemplar_6 ;
+    ns1:hasGroup ex:RegionShape-isInContinent_group_6 ;
     sh:minCount 1 ;
     sh:node lotr:ContinentShape ;
     sh:path lotr:isInContinent .

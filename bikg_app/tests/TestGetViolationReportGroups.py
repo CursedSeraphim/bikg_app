@@ -1,5 +1,5 @@
 """
-This module defines some unit tests for the get_violation_report_exemplars function.
+This module defines some unit tests for the get_violation_report_groups function.
 """
 import unittest
 from collections import defaultdict
@@ -7,7 +7,7 @@ from collections import defaultdict
 from rdflib import Graph, Namespace, URIRef
 from rdflib.compare import graph_diff, isomorphic, to_isomorphic
 
-from bikg_app.routers.utils import get_violation_report_exemplars
+from bikg_app.routers.utils import get_violation_report_groups
 
 
 def print_graph_human_readable(graph):
@@ -25,15 +25,15 @@ def print_defaultdict_human_readable(d):
     print("\n".join(sorted(lines)))
 
 
-class TestGetViolationReportExemplars(unittest.TestCase):
+class TestGetViolationReportGroups(unittest.TestCase):
     SH = Namespace("http://www.w3.org/ns/shacl#")
     RDFS = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
     RUT = Namespace("http://rdfunit.aksw.org/ns/core#")
 
-    shape1_exemplar_1 = URIRef("http://www.w3.org/ns/shacl#shape1_exemplar_1")
-    shape1_exemplar_2 = URIRef("http://www.w3.org/ns/shacl#shape1_exemplar_2")
-    shape2_exemplar_3 = URIRef("http://www.w3.org/ns/shacl#shape2_exemplar_3")
-    shape2_exemplar_4 = URIRef("http://www.w3.org/ns/shacl#shape2_exemplar_4")
+    shape1_group_1 = URIRef("http://www.w3.org/ns/shacl#shape1_group_1")
+    shape1_group_2 = URIRef("http://www.w3.org/ns/shacl#shape1_group_2")
+    shape2_group_3 = URIRef("http://www.w3.org/ns/shacl#shape2_group_3")
+    shape2_group_4 = URIRef("http://www.w3.org/ns/shacl#shape2_group_4")
     shape1 = URIRef(SH.shape1)
     shape2 = URIRef(SH.shape2)
     edge1 = URIRef(SH.edge1)
@@ -53,10 +53,10 @@ class TestGetViolationReportExemplars(unittest.TestCase):
     fn5 = URIRef(SH.fn5)
     fn6 = URIRef(SH.fn6)
 
-    base_dir = "bikg_app/bikg_app/tests/test_cases_exemplar_violations/"
+    base_dir = "bikg_app/bikg_app/tests/test_cases_group_violations/"
 
     test_cases = [
-        # test case for one exemplar and only one occurrence of the violation, now including focus node as well
+        # test case for one group and only one occurrence of the violation, now including focus node as well
         {
             "ontology_file": base_dir + "ontology_1.ttl",
             "violation_report_file": base_dir + "violation_report_1.ttl",
@@ -64,7 +64,7 @@ class TestGetViolationReportExemplars(unittest.TestCase):
             "expected_edge_count_dict": defaultdict(
                 lambda: defaultdict(int),
                 {
-                    shape1_exemplar_1: {
+                    shape1_group_1: {
                         (RDFS.type, SH.ValidationResult): 1,
                         (RDFS.type, RUT.TestCaseResult): 1,
                         (SH.sourceShape, shape1): 1,
@@ -73,10 +73,10 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                     }
                 },
             ),
-            "expected_exemplar_focus_node_dict": defaultdict(lambda: defaultdict(set), {shape1_exemplar_1: {fn1}}),
-            "expected_focus_node_exemplar_dict": defaultdict(lambda: defaultdict(set), {fn1: {shape1_exemplar_1}}),
+            "expected_group_focus_node_dict": defaultdict(lambda: defaultdict(set), {shape1_group_1: {fn1}}),
+            "expected_focus_node_group_dict": defaultdict(lambda: defaultdict(set), {fn1: {shape1_group_1}}),
         },
-        # test case for one exemplar and multiple occurrences of the violation
+        # test case for one group and multiple occurrences of the violation
         {
             "ontology_file": base_dir + "ontology_1.ttl",
             "violation_report_file": base_dir + "violation_report_2.ttl",
@@ -84,14 +84,14 @@ class TestGetViolationReportExemplars(unittest.TestCase):
             "expected_edge_count_dict": defaultdict(
                 lambda: defaultdict(int),
                 {
-                    shape1_exemplar_1: {
+                    shape1_group_1: {
                         (RDFS.type, SH.ValidationResult): 2,
                         (RDFS.type, RUT.TestCaseResult): 2,
                         (SH.sourceShape, shape1): 2,
                         (edge1, object1): 2,
                         (edge2, object2): 2,
                     },
-                    shape1_exemplar_2: {
+                    shape1_group_2: {
                         (RDFS.type, SH.ValidationResult): 1,
                         (RDFS.type, RUT.TestCaseResult): 1,
                         (SH.sourceShape, shape1): 1,
@@ -99,16 +99,16 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                     },
                 },
             ),  # Missing comma was added here
-            "expected_exemplar_focus_node_dict": defaultdict(
+            "expected_group_focus_node_dict": defaultdict(
                 lambda: defaultdict(set),
-                {shape1_exemplar_1: {fn1, fn2}, shape1_exemplar_2: {fn3}},
+                {shape1_group_1: {fn1, fn2}, shape1_group_2: {fn3}},
             ),
-            "expected_focus_node_exemplar_dict": defaultdict(
+            "expected_focus_node_group_dict": defaultdict(
                 lambda: defaultdict(set),
                 {
-                    fn1: {shape1_exemplar_1},
-                    fn2: {shape1_exemplar_1},
-                    fn3: {shape1_exemplar_2},
+                    fn1: {shape1_group_1},
+                    fn2: {shape1_group_1},
+                    fn3: {shape1_group_2},
                 },
             ),
         },
@@ -120,7 +120,7 @@ class TestGetViolationReportExemplars(unittest.TestCase):
             "expected_edge_count_dict": defaultdict(
                 lambda: defaultdict(int),
                 {
-                    shape1_exemplar_1: {
+                    shape1_group_1: {
                         (RDFS.type, SH.ValidationResult): 2,
                         (RDFS.type, RUT.TestCaseResult): 2,
                         (SH.sourceShape, shape1): 2,
@@ -129,13 +129,13 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                     }
                 },
             ),
-            "expected_exemplar_focus_node_dict": defaultdict(lambda: defaultdict(set), {shape1_exemplar_1: {fn1, fn2}}),
-            "expected_focus_node_exemplar_dict": defaultdict(
+            "expected_group_focus_node_dict": defaultdict(lambda: defaultdict(set), {shape1_group_1: {fn1, fn2}}),
+            "expected_focus_node_group_dict": defaultdict(
                 lambda: defaultdict(set),
-                {fn1: {shape1_exemplar_1}, fn2: {shape1_exemplar_1}},
+                {fn1: {shape1_group_1}, fn2: {shape1_group_1}},
             ),
         },
-        # test case for multiple shapes with multiple exemplars and multiple occurrences of the violation and ignored edges
+        # test case for multiple shapes with multiple groups and multiple occurrences of the violation and ignored edges
         {
             "ontology_file": base_dir + "ontology_4.ttl",
             "violation_report_file": base_dir + "violation_report_4.ttl",
@@ -143,14 +143,14 @@ class TestGetViolationReportExemplars(unittest.TestCase):
             "expected_edge_count_dict": defaultdict(
                 lambda: defaultdict(int),
                 {
-                    shape1_exemplar_1: {
+                    shape1_group_1: {
                         (RDFS.type, SH.ValidationResult): 1,
                         (RDFS.type, RUT.TestCaseResult): 1,
                         (SH.sourceShape, shape1): 1,
                         (edge1, object1): 1,
                         (edge2, object2): 1,
                     },
-                    shape1_exemplar_2: {
+                    shape1_group_2: {
                         (RDFS.type, SH.ValidationResult): 2,
                         (RDFS.type, RUT.TestCaseResult): 2,
                         (SH.sourceShape, shape1): 2,
@@ -158,14 +158,14 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                         (edge2, object2): 2,
                         (edge3, object3): 2,
                     },
-                    shape2_exemplar_3: {
+                    shape2_group_3: {
                         (RDFS.type, SH.ValidationResult): 1,
                         (RDFS.type, RUT.TestCaseResult): 1,
                         (SH.sourceShape, shape2): 1,
                         (edge1, object1): 1,
                         (edge4, object4): 1,
                     },
-                    shape2_exemplar_4: {
+                    shape2_group_4: {
                         (RDFS.type, SH.ValidationResult): 2,
                         (RDFS.type, RUT.TestCaseResult): 2,
                         (SH.sourceShape, shape2): 2,
@@ -174,28 +174,28 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                     },
                 },
             ),
-            "expected_exemplar_focus_node_dict": defaultdict(
+            "expected_group_focus_node_dict": defaultdict(
                 lambda: defaultdict(set),
                 {
-                    shape1_exemplar_1: {fn1},
-                    shape1_exemplar_2: {fn2, fn5},
-                    shape2_exemplar_3: {fn3},
-                    shape2_exemplar_4: {fn4, fn6},
+                    shape1_group_1: {fn1},
+                    shape1_group_2: {fn2, fn5},
+                    shape2_group_3: {fn3},
+                    shape2_group_4: {fn4, fn6},
                 },
             ),
-            "expected_focus_node_exemplar_dict": defaultdict(
+            "expected_focus_node_group_dict": defaultdict(
                 lambda: defaultdict(set),
                 {
-                    fn1: {shape1_exemplar_1},
-                    fn2: {shape1_exemplar_2},
-                    fn3: {shape2_exemplar_3},
-                    fn4: {shape2_exemplar_4},
-                    fn5: {shape1_exemplar_2},
-                    fn6: {shape2_exemplar_4},
+                    fn1: {shape1_group_1},
+                    fn2: {shape1_group_2},
+                    fn3: {shape2_group_3},
+                    fn4: {shape2_group_4},
+                    fn5: {shape1_group_2},
+                    fn6: {shape2_group_4},
                 },
             ),
         },
-        # fn has multiple exemplars
+        # fn has multiple groups
         {
             "ontology_file": base_dir + "ontology_5.ttl",
             "violation_report_file": base_dir + "violation_report_5.ttl",
@@ -203,14 +203,14 @@ class TestGetViolationReportExemplars(unittest.TestCase):
             "expected_edge_count_dict": defaultdict(
                 lambda: defaultdict(int),
                 {
-                    shape1_exemplar_1: {
+                    shape1_group_1: {
                         (RDFS.type, SH.ValidationResult): 1,
                         (RDFS.type, RUT.TestCaseResult): 1,
                         (SH.sourceShape, shape1): 1,
                         (edge1, object1): 1,
                         (edge2, object2): 1,
                     },
-                    shape1_exemplar_2: {
+                    shape1_group_2: {
                         (RDFS.type, SH.ValidationResult): 1,
                         (RDFS.type, RUT.TestCaseResult): 1,
                         (SH.sourceShape, shape1): 1,
@@ -219,11 +219,11 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                     },
                 },
             ),
-            "expected_exemplar_focus_node_dict": defaultdict(
+            "expected_group_focus_node_dict": defaultdict(
                 lambda: defaultdict(set),
-                {shape1_exemplar_1: {fn1}, shape1_exemplar_2: {fn1}},
+                {shape1_group_1: {fn1}, shape1_group_2: {fn1}},
             ),
-            "expected_focus_node_exemplar_dict": defaultdict(lambda: defaultdict(set), {fn1: {shape1_exemplar_1, shape1_exemplar_2}}),
+            "expected_focus_node_group_dict": defaultdict(lambda: defaultdict(set), {fn1: {shape1_group_1, shape1_group_2}}),
         },
     ]
 
@@ -235,7 +235,7 @@ class TestGetViolationReportExemplars(unittest.TestCase):
 
                 g_v = Graph()
                 g_v.parse(test_case["violation_report_file"], format="ttl")
-                result_graph, _, _, _, _ = get_violation_report_exemplars(g, g_v)
+                result_graph, _, _, _, _ = get_violation_report_groups(g, g_v)
                 expected_graph = Graph()
                 expected_graph.parse(test_case["result_graph_file"], format="turtle")
                 if not isomorphic(result_graph, expected_graph):
@@ -261,7 +261,7 @@ class TestGetViolationReportExemplars(unittest.TestCase):
 
                 g_v = Graph()
                 g_v.parse(test_case["violation_report_file"], format="ttl")
-                _, edge_count_dict, _, _, _ = get_violation_report_exemplars(g, g_v)
+                _, edge_count_dict, _, _, _ = get_violation_report_groups(g, g_v)
                 expected_edge_count_dict = test_case["expected_edge_count_dict"]
                 # print('\nsorted(edge_count_dict)')
                 # print_defaultdict_human_readable(edge_count_dict)
@@ -269,7 +269,7 @@ class TestGetViolationReportExemplars(unittest.TestCase):
                 # print_defaultdict_human_readable(expected_edge_count_dict)
                 assert edge_count_dict == expected_edge_count_dict
 
-    def test_focus_node_exemplar_dict(self):
+    def test_focus_node_group_dict(self):
         for test_case in self.test_cases:
             with self.subTest(test_case=test_case):
                 g = Graph()
@@ -277,17 +277,17 @@ class TestGetViolationReportExemplars(unittest.TestCase):
 
                 g_v = Graph()
                 g_v.parse(test_case["violation_report_file"], format="ttl")
-                _, _, focus_node_exemplar_dict, _, _ = get_violation_report_exemplars(g, g_v)
-                exepected_focus_node_exemplar_dict = test_case["expected_focus_node_exemplar_dict"]
-                # print('\n tcprint focus_node_exemplar_dict')
-                # [print(k,v) for k,v in focus_node_exemplar_dict.items()]
+                _, _, focus_node_group_dict, _, _ = get_violation_report_groups(g, g_v)
+                exepected_focus_node_group_dict = test_case["expected_focus_node_group_dict"]
+                # print('\n tcprint focus_node_group_dict')
+                # [print(k,v) for k,v in focus_node_group_dict.items()]
                 # print()
-                # print('\n tcprint exepected_focus_node_exemplar_dict')
-                # [print(k,v) for k,v in exepected_focus_node_exemplar_dict.items()]
+                # print('\n tcprint exepected_focus_node_group_dict')
+                # [print(k,v) for k,v in exepected_focus_node_group_dict.items()]
                 # print()
-                assert focus_node_exemplar_dict == exepected_focus_node_exemplar_dict
+                assert focus_node_group_dict == exepected_focus_node_group_dict
 
-    def test_expected_exemplar_focus_node_dict(self):
+    def test_expected_group_focus_node_dict(self):
         for test_case in self.test_cases:
             with self.subTest(test_case=test_case):
                 g = Graph()
@@ -295,15 +295,15 @@ class TestGetViolationReportExemplars(unittest.TestCase):
 
                 g_v = Graph()
                 g_v.parse(test_case["violation_report_file"], format="ttl")
-                _, _, _, exemplar_focus_node_dict, _ = get_violation_report_exemplars(g, g_v)
-                expected_exemplar_focus_node_dict = test_case["expected_exemplar_focus_node_dict"]
-                # print('\n tcprint exemplar_focus_node_dict')
-                # [print(k,v) for k,v in exemplar_focus_node_dict.items()]
+                _, _, _, group_focus_node_dict, _ = get_violation_report_groups(g, g_v)
+                expected_group_focus_node_dict = test_case["expected_group_focus_node_dict"]
+                # print('\n tcprint group_focus_node_dict')
+                # [print(k,v) for k,v in group_focus_node_dict.items()]
                 # print()
-                # print('\n tcprint expected_exemplar_focus_node_dict')
-                # [print(k,v) for k,v in expected_exemplar_focus_node_dict.items()]
+                # print('\n tcprint expected_group_focus_node_dict')
+                # [print(k,v) for k,v in expected_group_focus_node_dict.items()]
                 # print()
-                assert exemplar_focus_node_dict == expected_exemplar_focus_node_dict
+                assert group_focus_node_dict == expected_group_focus_node_dict
 
 
 if __name__ == "__main__":

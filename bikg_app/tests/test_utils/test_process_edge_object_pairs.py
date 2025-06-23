@@ -22,13 +22,13 @@ class TestProcessEdgeObjectPairs(unittest.TestCase):
 
     def test_empty_pairs(self):
         edge_object_pairs = []
-        exemplar_name = URIRef("http://example.com/exemplar1")
+        group_name = URIRef("http://example.com/group1")
         process_edge_object_pairs(
             self.ontology_g,
             self.sh,
             self.edge_count_dict,
             edge_object_pairs,
-            exemplar_name,
+            group_name,
         )
         assert len(self.ontology_g) == 0  # type: ignore
         assert self.edge_count_dict == defaultdict(lambda: defaultdict(int))
@@ -41,33 +41,33 @@ class TestProcessEdgeObjectPairs(unittest.TestCase):
                 URIRef("http://example.com/object1"),
             ),
         ]
-        exemplar_name = URIRef("http://example.com/exemplar1")
+        group_name = URIRef("http://example.com/group1")
         process_edge_object_pairs(
             self.ontology_g,
             self.sh,
             self.edge_count_dict,
             edge_object_pairs,
-            exemplar_name,
+            group_name,
         )
 
         # Check if edge_count_dict is updated correctly
-        assert self.edge_count_dict[exemplar_name][f"{self.sh.sourceShape}__{URIRef('http://example.com/shape1')}"] == 1
+        assert self.edge_count_dict[group_name][f"{self.sh.sourceShape}__{URIRef('http://example.com/shape1')}"] == 1
         assert (
-            self.edge_count_dict[exemplar_name][f"{URIRef('http://example.com/predicate1')}__{URIRef('http://example.com/object1')}"] == 1
+            self.edge_count_dict[group_name][f"{URIRef('http://example.com/predicate1')}__{URIRef('http://example.com/object1')}"] == 1
         )
 
         # Check if triples are added to ontology_g
         assert (
             URIRef("http://example.com/shape1"),
-            URIRef("http://customnamespace.com/hasExemplar"),
-            exemplar_name,
+            URIRef("http://customnamespace.com/hasGroup"),
+            group_name,
         ) in self.ontology_g
         assert (
-            exemplar_name,
+            group_name,
             URIRef("http://example.com/predicate1"),
             URIRef("http://example.com/object1"),
         ) in self.ontology_g
-        assert (exemplar_name, RDF.type, self.sh.PropertyShape) in self.ontology_g
+        assert (group_name, RDF.type, self.sh.PropertyShape) in self.ontology_g
         print("self.edge_count_dict: ", self.edge_count_dict)
 
 
@@ -137,31 +137,31 @@ class TestSaveAndLoadEdgeCountWithGraph(unittest.TestCase):
         if os.path.exists(self.test_filename):
             os.remove(self.test_filename)
 
-    def add_exemplars_to_graph(self):
-        exemplar1 = URIRef("http://example.com/exemplar1")
-        exemplar2 = URIRef("http://example.com/exemplar2")
+    def add_groups_to_graph(self):
+        group1 = URIRef("http://example.com/group1")
+        group2 = URIRef("http://example.com/group2")
         po_pair = (
             URIRef("http://example.com/predicate"),
             URIRef("http://example.com/object"),
         )
 
-        self.ontology_g.add((exemplar1, *po_pair))
-        self.ontology_g.add((exemplar2, *po_pair))
+        self.ontology_g.add((group1, *po_pair))
+        self.ontology_g.add((group2, *po_pair))
 
         po_str = f"{po_pair[0]}__{po_pair[1]}"
-        self.edge_count_dict[exemplar1][po_str] += 1
-        self.edge_count_dict[exemplar2][po_str] += 1
-        self.edge_count_dict[exemplar1][po_str] += 1  # Reoccurring pair for exemplar1
+        self.edge_count_dict[group1][po_str] += 1
+        self.edge_count_dict[group2][po_str] += 1
+        self.edge_count_dict[group1][po_str] += 1  # Reoccurring pair for group1
 
     def test_save_and_load_edge_count_with_graph(self):
-        self.add_exemplars_to_graph()
+        self.add_groups_to_graph()
         save_nested_counts_dict_json(self.edge_count_dict, self.test_filename)
 
         loaded_edge_count_dict = load_nested_counts_dict_json(self.test_filename)
 
         expected_dict = {
-            "http://example.com/exemplar1": {"http://example.com/predicate__http://example.com/object": 2},
-            "http://example.com/exemplar2": {"http://example.com/predicate__http://example.com/object": 1},
+            "http://example.com/group1": {"http://example.com/predicate__http://example.com/object": 2},
+            "http://example.com/group2": {"http://example.com/predicate__http://example.com/object": 1},
         }
 
         assert loaded_edge_count_dict == expected_dict
@@ -178,9 +178,9 @@ class TestProcessEdgeObjectPairsWithSaveAndLoad(unittest.TestCase):
         if os.path.exists(self.test_filename):
             os.remove(self.test_filename)
 
-    def add_exemplars_using_function(self):
-        exemplar1 = URIRef("http://example.com/exemplar_func1")
-        exemplar2 = URIRef("http://example.com/exemplar_func2")
+    def add_groups_using_function(self):
+        group1 = URIRef("http://example.com/group_func1")
+        group2 = URIRef("http://example.com/group_func2")
         po_pairs = [
             (
                 URIRef("http://example.com/predicate"),
@@ -188,19 +188,19 @@ class TestProcessEdgeObjectPairsWithSaveAndLoad(unittest.TestCase):
             )
         ]
 
-        process_edge_object_pairs(self.ontology_g, self.sh, self.edge_count_dict, po_pairs, exemplar1)
-        process_edge_object_pairs(self.ontology_g, self.sh, self.edge_count_dict, po_pairs, exemplar2)
-        process_edge_object_pairs(self.ontology_g, self.sh, self.edge_count_dict, po_pairs, exemplar1)  # Reoccurring pair for exemplar1
+        process_edge_object_pairs(self.ontology_g, self.sh, self.edge_count_dict, po_pairs, group1)
+        process_edge_object_pairs(self.ontology_g, self.sh, self.edge_count_dict, po_pairs, group2)
+        process_edge_object_pairs(self.ontology_g, self.sh, self.edge_count_dict, po_pairs, group1)  # Reoccurring pair for group1
 
     def test_process_edge_object_pairs_with_save_and_load(self):
-        self.add_exemplars_using_function()
+        self.add_groups_using_function()
         save_nested_counts_dict_json(self.edge_count_dict, self.test_filename)
 
         loaded_edge_count_dict = load_nested_counts_dict_json(self.test_filename)
 
         expected_dict = {
-            "http://example.com/exemplar_func1": {"http://example.com/predicate__http://example.com/object": 2},
-            "http://example.com/exemplar_func2": {"http://example.com/predicate__http://example.com/object": 1},
+            "http://example.com/group_func1": {"http://example.com/predicate__http://example.com/object": 2},
+            "http://example.com/group_func2": {"http://example.com/predicate__http://example.com/object": 1},
         }
 
         assert loaded_edge_count_dict == expected_dict
@@ -218,11 +218,11 @@ class TestProcessEdgeObjectPairsWithMultiplePairs(unittest.TestCase):
             os.remove(self.test_filename)
 
     def add_multiple_po_pairs(self):
-        exemplar1 = URIRef("http://example.com/exemplar_multipair1")
-        exemplar2 = URIRef("http://example.com/exemplar_multipair2")
+        group1 = URIRef("http://example.com/group_multipair1")
+        group2 = URIRef("http://example.com/group_multipair2")
 
-        # Multiple different p, o pairs for each exemplar
-        po_pairs_exemplar1 = [
+        # Multiple different p, o pairs for each group
+        po_pairs_group1 = [
             (
                 URIRef("http://example.com/predicate1"),
                 URIRef("http://example.com/object1"),
@@ -232,7 +232,7 @@ class TestProcessEdgeObjectPairsWithMultiplePairs(unittest.TestCase):
                 URIRef("http://example.com/object2"),
             ),
         ]
-        po_pairs_exemplar2 = [
+        po_pairs_group2 = [
             (
                 URIRef("http://example.com/predicate3"),
                 URIRef("http://example.com/object3"),
@@ -247,23 +247,23 @@ class TestProcessEdgeObjectPairsWithMultiplePairs(unittest.TestCase):
             self.ontology_g,
             self.sh,
             self.edge_count_dict,
-            po_pairs_exemplar1,
-            exemplar1,
+            po_pairs_group1,
+            group1,
         )
         process_edge_object_pairs(
             self.ontology_g,
             self.sh,
             self.edge_count_dict,
-            po_pairs_exemplar2,
-            exemplar2,
+            po_pairs_group2,
+            group2,
         )
         process_edge_object_pairs(
             self.ontology_g,
             self.sh,
             self.edge_count_dict,
-            po_pairs_exemplar1,
-            exemplar1,
-        )  # Reoccurring pair for exemplar1
+            po_pairs_group1,
+            group1,
+        )  # Reoccurring pair for group1
 
     def test_process_edge_object_pairs_with_multiple_pairs(self):
         self.add_multiple_po_pairs()
@@ -272,11 +272,11 @@ class TestProcessEdgeObjectPairsWithMultiplePairs(unittest.TestCase):
         loaded_edge_count_dict = load_nested_counts_dict_json(self.test_filename)
 
         expected_dict = {
-            "http://example.com/exemplar_multipair1": {
+            "http://example.com/group_multipair1": {
                 "http://example.com/predicate1__http://example.com/object1": 2,
                 "http://example.com/predicate2__http://example.com/object2": 2,
             },
-            "http://example.com/exemplar_multipair2": {
+            "http://example.com/group_multipair2": {
                 "http://example.com/predicate3__http://example.com/object3": 1,
                 "http://example.com/predicate4__http://example.com/object4": 1,
             },

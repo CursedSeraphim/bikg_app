@@ -3,15 +3,15 @@ import { Core, NodeSingular } from 'cytoscape';
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { ActionFunctionMap } from '../../types';
-import { addHiddenLabels, setSelectedTypes, setSelectedViolationExemplars, setSelectedViolations } from '../Store/CombinedSlice';
+import { addHiddenLabels, setSelectedTypes, setSelectedViolationGroups, setSelectedViolations } from '../Store/CombinedSlice';
 import { getContextMenuOptions } from './CytoscapeContextMenu';
 
 const selectConnectedViolations = (node: NodeSingular, dispatch): void => {
   if (node.data('violation')) {
     dispatch(setSelectedViolations([node.id()]));
   }
-  if (node.data('exemplar')) {
-    dispatch(setSelectedViolationExemplars([node.id()]));
+  if (node.data('group')) {
+    dispatch(setSelectedViolationGroups([node.id()]));
   }
   if (node.data('type')) {
     dispatch(setSelectedTypes([node.id()]));

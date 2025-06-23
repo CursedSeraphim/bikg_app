@@ -56,10 +56,10 @@ def serialize_nested_count_dict(d) -> str:
 
 
 def serialize_dict_keys_and_values(d):
-    """Serializes a dictionary that maps focus nodes to exemplar nodes.
+    """Serializes a dictionary that maps focus nodes to group nodes.
 
     Args:
-        d (dict): A dictionary mapping focus nodes to exemplar nodes.
+        d (dict): A dictionary mapping focus nodes to group nodes.
 
     Returns:
         dict: A serialized version of the input dictionary.
@@ -100,10 +100,10 @@ def load_nested_counts_dict_json(path):
 
 
 def deserialize_dict_keys_and_values(d):
-    """Deserializes a dictionary that maps focus nodes to exemplar nodes.
+    """Deserializes a dictionary that maps focus nodes to group nodes.
 
     Args:
-        d (dict): A serialized dictionary mapping focus nodes to exemplar nodes.
+        d (dict): A serialized dictionary mapping focus nodes to group nodes.
 
     Returns:
         dict: A deserialized version of the input dictionary.
@@ -172,13 +172,13 @@ def copy_namespaces(source_g, target_g):
         target_g.namespace_manager.bind(prefix, ns)
 
 
-def get_violation_report_exemplars(ontology_g, violation_report_g, study_g):
+def get_violation_report_groups(ontology_g, violation_report_g, study_g):
     """
-    Generates and returns violation report exemplars based on ontology and violation graphs.
+    Generates and returns violation report groups based on ontology and violation graphs.
 
-    This function generates exemplars for the ontology graph based on the violations
+    This function generates groups for the ontology graph based on the violations
     found in the violation report graph. It also counts edge-object pairs and keeps
-    track of focus nodes and their related exemplars.
+    track of focus nodes and their related groups.
 
     Args:
         ontology_g (rdflib.Graph): The ontology graph.
@@ -187,17 +187,17 @@ def get_violation_report_exemplars(ontology_g, violation_report_g, study_g):
 
     Returns:
         tuple: A 4-tuple containing the updated ontology graph, a dictionary of
-        edge counts, a dictionary mapping focus nodes to exemplars, and a dictionary
-        mapping exemplars to focus nodes.
+        edge counts, a dictionary mapping focus nodes to groups, and a dictionary
+        mapping groups to focus nodes.
 
     TODO:
-        - Instead of counting the edge-object pairs, consider counting the exemplar occurrences.
+        - Instead of counting the edge-object pairs, consider counting the group occurrences.
         - Keep track of ignored edges as well.
     """
     # TODO define these in a constants file or have them be defined at the top of the preprocessing notebook
     sh = Namespace("http://www.w3.org/ns/shacl#")
     dcterms = Namespace("http://purl.org/dc/terms/")
-    ex = Namespace("http://example.com/exemplar#")
+    ex = Namespace("http://example.com/group#")
     ontology_g.namespace_manager.bind("dcterms", dcterms)
     ontology_g.namespace_manager.bind("sh", sh)
     ontology_g.namespace_manager.bind("ex", ex)
@@ -216,9 +216,9 @@ def get_violation_report_exemplars(ontology_g, violation_report_g, study_g):
     validation_results = [row[0] for row in violation_report_g.query(violations_query)]  # type: ignore
 
     edge_count_dict = defaultdict(lambda: defaultdict(int))
-    focus_node_exemplar_dict = defaultdict(set)
-    exemplar_focus_node_dict = defaultdict(set)
-    violation_exemplar_dict = defaultdict(lambda: defaultdict(int))  # New dictionary to keep track of violation-exemplar pairs
+    focus_node_group_dict = defaultdict(set)
+    group_focus_node_dict = defaultdict(set)
+    violation_group_dict = defaultdict(lambda: defaultdict(int))  # New dictionary to keep track of violation-group pairs
 
     # TODO - can also be defined as constant or on top of preprocessing notebook
     ignored_edges = {
@@ -227,7 +227,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g, study_g):
         URIRef("http://rdfunit.aksw.org/ns/core#testCase"),
     }
 
-    exemplar_sets = {}
+    group_sets = {}
 
     for validation_result in TQDMInstance(validation_results, desc="Processing violations"):
         violations_query = f"""
@@ -249,54 +249,54 @@ def get_violation_report_exemplars(ontology_g, violation_report_g, study_g):
                 continue
             edge_object_pairs.append((p, o))
 
-        exemplar_name = exemplar_sets.get(frozenset(edge_object_pairs))
-        print(f"Exemplar name: {exemplar_name}")
+        group_name = group_sets.get(frozenset(edge_object_pairs))
+        print(f"Group name: {group_name}")
 
-        if exemplar_name is None:
-            print(f"Creating new exemplar for {shape}")
+        if group_name is None:
+            print(f"Creating new group for {shape}")
             # Use rdflib's split_uri to extract localname
             try:
                 namespace, localname = split_uri(str(shape))
             except ValueError:
                 raise ValueError(f"Could not split URI {shape}")
 
-            exemplar_name = URIRef(f"{ex}{localname}_exemplar_{len(exemplar_sets)+1}")
-            print(f"Exemplar name: {exemplar_name}")
-            exemplar_sets[frozenset(edge_object_pairs)] = exemplar_name
+            group_name = URIRef(f"{ex}{localname}_group_{len(group_sets)+1}")
+            print(f"Group name: {group_name}")
+            group_sets[frozenset(edge_object_pairs)] = group_name
 
-        focus_node_exemplar_dict[current_focus_node].add(exemplar_name)
-        exemplar_focus_node_dict[exemplar_name].add(current_focus_node)
-        violation_exemplar_dict[shape][
-            exemplar_name
-        ] += 1  # Updating the new dictionary to associate the violation with the exemplar and count
+        focus_node_group_dict[current_focus_node].add(group_name)
+        group_focus_node_dict[group_name].add(current_focus_node)
+        violation_group_dict[shape][
+            group_name
+        ] += 1  # Updating the new dictionary to associate the violation with the group and count
 
-        process_edge_object_pairs(ontology_g, study_g, sh, edge_count_dict, edge_object_pairs, exemplar_name)
+        process_edge_object_pairs(ontology_g, study_g, sh, edge_count_dict, edge_object_pairs, group_name)
 
     return (
         ontology_g,
         edge_count_dict,
-        focus_node_exemplar_dict,
-        exemplar_focus_node_dict,
-        violation_exemplar_dict,
+        focus_node_group_dict,
+        group_focus_node_dict,
+        violation_group_dict,
     )
 
 
-def process_edge_object_pairs(ontology_g, study_g, sh, edge_count_dict, edge_object_pairs, exemplar_name):
+def process_edge_object_pairs(ontology_g, study_g, sh, edge_count_dict, edge_object_pairs, group_name):
     # prepare list of shacl values of violation reports, i.e., the objects for all triples  (focusnode, http://www.w3.org/ns/shacl#value, object)
     shacl_values = []
     for p, o in edge_object_pairs:
         po_str = f"{p}__{o}"
-        if edge_count_dict[exemplar_name][po_str] == 0:
+        if edge_count_dict[group_name][po_str] == 0:
             if p == sh.sourceShape:
-                ontology_g.add((o, URIRef("http://customnamespace.com/hasExemplar"), exemplar_name))  # type: ignore
+                ontology_g.add((o, URIRef("http://customnamespace.com/hasGroup"), group_name))  # type: ignore
             else:
-                ontology_g.add((exemplar_name, p, o))  # type: ignore
-                print(f"Adding edge {exemplar_name} {p} {o}")
+                ontology_g.add((group_name, p, o))  # type: ignore
+                print(f"Adding edge {group_name} {p} {o}")
                 if p == sh.value:
                     shacl_values.append(o)
                 # TODO create custom URI instead of object property
-            ontology_g.add((exemplar_name, RDF.type, sh.PropertyShape))
-        edge_count_dict[exemplar_name][po_str] += 1
+            ontology_g.add((group_name, RDF.type, sh.PropertyShape))
+        edge_count_dict[group_name][po_str] += 1
 
     # add triples from study_g where the subject is a shacl value we have written to shacl_values, add its one hop neighbors to ontology_g
     for sh_value in shacl_values:

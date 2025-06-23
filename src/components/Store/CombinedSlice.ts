@@ -8,12 +8,12 @@ import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRI
 import {
   D3BoundingBoxSetting,
   EdgeCountDict,
-  ExemplarFocusNodeDict,
+  GroupFocusNodeDict,
   FilterType,
-  FocusNodeExemplarDict,
+  FocusNodeGroupDict,
   ICombinedState,
   ICsvData,
-  IExemplarMap,
+  IGroupMap,
   IFocusNodeMap,
   INamespaces,
   INumberViolationsPerNodeMap,
@@ -93,9 +93,9 @@ const initialState: ICombinedState = {
   missingEdgeOption: 'keep',
   missingEdgeLabel: loadMissingEdgeLabel(),
   edgeCountDict: {},
-  focusNodeExemplarDict: {},
-  exemplarFocusNodeDict: {},
-  selectedViolationExemplars: [],
+  focusNodeGroupDict: {},
+  groupFocusNodeDict: {},
+  selectedViolationGroups: [],
   namespaces: {},
   types: [],
   subClassOfTriples: [],
@@ -104,7 +104,7 @@ const initialState: ICombinedState = {
   violationMap: {},
   focusNodeMap: {},
   typeMap: {},
-  exemplarMap: {},
+  groupMap: {},
   ontologyTree: null,
   hiddenLabels: loadFromLocalStorage(),
   hiddenLineupColumns: loadHiddenLineupColumns(),
@@ -118,35 +118,35 @@ export function createMaps(
   samples: ICsvData[],
   violations: string[],
   types: string[],
-  focusNodeExemplarDict: Record<string, string[]>,
-  exemplarFocusNodeDict: Record<string, string[]>,
-): { violationMap: IViolationMap; typeMap: ITypeMap; exemplarMap: IExemplarMap; focusNodeMap: IFocusNodeMap } {
+  focusNodeGroupDict: Record<string, string[]>,
+  groupFocusNodeDict: Record<string, string[]>,
+): { violationMap: IViolationMap; typeMap: ITypeMap; groupMap: IGroupMap; focusNodeMap: IFocusNodeMap } {
   // Create an empty map using a different structure to accommodate Sets for de-duplication
-  const tempViolationMap: { [key: string]: { focusNodes: Set<string>; types: Set<string>; exemplars: Set<string> } } = {};
-  const tempTypeMap: { [key: string]: { focusNodes: Set<string>; violations: Set<string>; exemplars: Set<string> } } = {};
-  const tempExemplarMap: { [key: string]: { focusNodes: Set<string>; types: Set<string>; violations: Set<string> } } = {};
-  const tempFocusNodeMap: { [key: string]: { types: Set<string>; violations: Set<string>; exemplars: Set<string> } } = {};
+  const tempViolationMap: { [key: string]: { focusNodes: Set<string>; types: Set<string>; groups: Set<string> } } = {};
+  const tempTypeMap: { [key: string]: { focusNodes: Set<string>; violations: Set<string>; groups: Set<string> } } = {};
+  const tempGroupMap: { [key: string]: { focusNodes: Set<string>; types: Set<string>; violations: Set<string> } } = {};
+  const tempFocusNodeMap: { [key: string]: { types: Set<string>; violations: Set<string>; groups: Set<string> } } = {};
 
   // TODO transcriptomicsstudy exists in the csv instance data but is not initialized in types because it is not in the ontology?
 
   // Initialize the tempViolationMap with empty Sets
   violations.forEach((violation) => {
-    tempViolationMap[violation] = { focusNodes: new Set(), types: new Set(), exemplars: new Set() };
+    tempViolationMap[violation] = { focusNodes: new Set(), types: new Set(), groups: new Set() };
   });
 
   // Initialize the tempTypeMap with empty Sets
   types.forEach((type) => {
-    tempTypeMap[type] = { focusNodes: new Set(), violations: new Set(), exemplars: new Set() };
+    tempTypeMap[type] = { focusNodes: new Set(), violations: new Set(), groups: new Set() };
   });
 
-  // Initialize the tempExemplarMap with empty Sets
-  Object.keys(exemplarFocusNodeDict).forEach((exemplar) => {
-    tempExemplarMap[exemplar] = { focusNodes: new Set(), types: new Set(), violations: new Set() };
+  // Initialize the tempGroupMap with empty Sets
+  Object.keys(groupFocusNodeDict).forEach((group) => {
+    tempGroupMap[group] = { focusNodes: new Set(), types: new Set(), violations: new Set() };
   });
 
   // Initialize the tempFocusNodeMap with empty Sets
-  Object.keys(focusNodeExemplarDict).forEach((focusNode) => {
-    tempFocusNodeMap[focusNode] = { types: new Set(), violations: new Set(), exemplars: new Set() };
+  Object.keys(focusNodeGroupDict).forEach((focusNode) => {
+    tempFocusNodeMap[focusNode] = { types: new Set(), violations: new Set(), groups: new Set() };
   });
 
   // Iterate through samples to populate the maps
@@ -168,25 +168,25 @@ export function createMaps(
       sampleTypes = Array.isArray(sample['rdf:type']) ? sample['rdf:type'].map(String) : [String(sample['rdf:type'])];
     }
     const focusNode = sample.focus_node;
-    const exemplars = focusNodeExemplarDict[focusNode] || [];
+    const groups = focusNodeGroupDict[focusNode] || [];
 
     sampleTypes.forEach((type) => {
       // Iterate over each type in sampleTypes
       // There might be types in the instance data that do not appear in the ontology
       // console.log('type from sampleTypes', type);
       if (!tempTypeMap[type]) {
-        tempTypeMap[type] = { focusNodes: new Set(), violations: new Set(), exemplars: new Set() };
+        tempTypeMap[type] = { focusNodes: new Set(), violations: new Set(), groups: new Set() };
       }
       tempTypeMap[type].focusNodes.add(focusNode);
-      exemplars.forEach((exemplar) => tempTypeMap[type].exemplars.add(exemplar));
+      groups.forEach((group) => tempTypeMap[type].groups.add(group));
 
       // Since a focus node can belong to multiple types, add all types to it
       tempFocusNodeMap[focusNode].types.add(type);
-      exemplars.forEach((exemplar) => tempFocusNodeMap[focusNode].exemplars.add(exemplar));
+      groups.forEach((group) => tempFocusNodeMap[focusNode].groups.add(group));
 
-      exemplars.forEach((exemplar) => {
-        tempExemplarMap[exemplar].focusNodes.add(focusNode);
-        tempExemplarMap[exemplar].types.add(type);
+      groups.forEach((group) => {
+        tempGroupMap[group].focusNodes.add(focusNode);
+        tempGroupMap[group].types.add(type);
       });
     });
 
@@ -200,7 +200,7 @@ export function createMaps(
 
         tempFocusNodeMap[focusNode].violations.add(violation);
 
-        exemplars.forEach((exemplar) => tempExemplarMap[exemplar].violations.add(violation));
+        groups.forEach((group) => tempGroupMap[group].violations.add(violation));
 
         // Add to the focus node list for each violation
         tempViolationMap[violation].focusNodes.add(sample.focus_node);
@@ -210,8 +210,8 @@ export function createMaps(
           tempViolationMap[violation].types.add(type);
         });
 
-        // Add to the exemplar list using FocusNodeExemplarDict for each violation
-        exemplars.forEach((exemplar) => tempViolationMap[violation].exemplars.add(exemplar));
+        // Add to the group list using FocusNodeGroupDict for each violation
+        groups.forEach((group) => tempViolationMap[violation].groups.add(group));
       }
     });
   });
@@ -222,7 +222,7 @@ export function createMaps(
     violationMap[key] = {
       nodes: Array.from(tempViolationMap[key].focusNodes),
       types: Array.from(tempViolationMap[key].types),
-      exemplars: Array.from(tempViolationMap[key].exemplars),
+      groups: Array.from(tempViolationMap[key].groups),
     };
   });
 
@@ -231,16 +231,16 @@ export function createMaps(
     typeMap[key] = {
       nodes: Array.from(tempTypeMap[key].focusNodes),
       violations: Array.from(tempTypeMap[key].violations),
-      exemplars: Array.from(tempTypeMap[key].exemplars),
+      groups: Array.from(tempTypeMap[key].groups),
     };
   });
 
-  const exemplarMap: IExemplarMap = {};
-  Object.keys(tempExemplarMap).forEach((key) => {
-    exemplarMap[key] = {
-      nodes: Array.from(tempExemplarMap[key].focusNodes),
-      types: Array.from(tempExemplarMap[key].types),
-      violations: Array.from(tempExemplarMap[key].violations),
+  const groupMap: IGroupMap = {};
+  Object.keys(tempGroupMap).forEach((key) => {
+    groupMap[key] = {
+      nodes: Array.from(tempGroupMap[key].focusNodes),
+      types: Array.from(tempGroupMap[key].types),
+      violations: Array.from(tempGroupMap[key].violations),
     };
   });
 
@@ -249,11 +249,11 @@ export function createMaps(
     focusNodeMap[key] = {
       types: Array.from(tempFocusNodeMap[key].types),
       violations: Array.from(tempFocusNodeMap[key].violations),
-      exemplars: Array.from(tempFocusNodeMap[key].exemplars),
+      groups: Array.from(tempFocusNodeMap[key].groups),
     };
   });
 
-  return { violationMap, typeMap, exemplarMap, focusNodeMap };
+  return { violationMap, typeMap, groupMap, focusNodeMap };
 }
 
 function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
@@ -334,14 +334,14 @@ const updateSelectedTypes = (state, valueCounts) => {
     .map(([category, count]) => category);
 };
 
-// Helper function to update selected violation exemplars
-const updateSelectedViolationExemplars = (state) => {
-  const selectedViolationExemplarsSet = new Set();
+// Helper function to update selected violation groups
+const updateSelectedViolationGroups = (state) => {
+  const selectedViolationGroupsSet = new Set();
   state.selectedNodes.forEach((node) => {
-    const exemplars = state.focusNodeExemplarDict[node] || [];
-    exemplars.forEach((exemplar) => selectedViolationExemplarsSet.add(exemplar));
+    const groups = state.focusNodeGroupDict[node] || [];
+    groups.forEach((group) => selectedViolationGroupsSet.add(group));
   });
-  state.selectedViolationExemplars = Array.from(selectedViolationExemplarsSet);
+  state.selectedViolationGroups = Array.from(selectedViolationGroupsSet);
 };
 
 export function constructViolationsPerNodeValueObject(): INumberViolationsPerNodeValue {
@@ -423,18 +423,18 @@ function calculateNewNumberViolationsPerNode(
 ) {
   const newSelectedTypesMap = new Map<string, number>();
   const newSelectedViolationsMap = new Map<string, number>();
-  const newSelectedExemplarsMap = new Map<string, number>();
+  const newSelectedGroupsMap = new Map<string, number>();
 
   newSelectedNodes.forEach((node) => {
-    const { types, violations, exemplars } = focusNodeMap[node];
+    const { types, violations, groups } = focusNodeMap[node];
     types.forEach((type: string) => incrementMapValue(newSelectedTypesMap, type));
     violations.forEach((violation: string) => incrementMapValue(newSelectedViolationsMap, violation));
-    exemplars.forEach((exemplar: string) => incrementMapValue(newSelectedExemplarsMap, exemplar));
+    groups.forEach((group: string) => incrementMapValue(newSelectedGroupsMap, group));
   });
 
   updateViolationsPerNode(newSelectedTypesMap, numberViolationsPerNode);
   updateViolationsPerNode(newSelectedViolationsMap, numberViolationsPerNode);
-  updateViolationsPerNode(newSelectedExemplarsMap, numberViolationsPerNode);
+  updateViolationsPerNode(newSelectedGroupsMap, numberViolationsPerNode);
 
   resetTypesCounts(numberViolationsPerNode, newSelectedTypesMap, knownTypes);
   updateCumulativeCounts(ontologyTree, numberViolationsPerNode, knownTypes);
@@ -566,8 +566,8 @@ const combinedSlice = createSlice({
     setTypeMap: (state, action: PayloadAction<ITypeMap>) => {
       state.typeMap = action.payload;
     },
-    setExemplarMap: (state, action: PayloadAction<IExemplarMap>) => {
-      state.exemplarMap = action.payload;
+    setGroupMap: (state, action: PayloadAction<IGroupMap>) => {
+      state.groupMap = action.payload;
     },
     setFocusNodeMap: (state, action: PayloadAction<IFocusNodeMap>) => {
       state.focusNodeMap = action.payload;
@@ -581,35 +581,35 @@ const combinedSlice = createSlice({
     setNamespaces: (state, action: PayloadAction<INamespaces>) => {
       state.namespaces = action.payload;
     },
-    setSelectedViolationExemplars: (state, action: PayloadAction<string[]>) => {
-      // uses exemplars to select all focus nodes with those exemplars
-      // then uses nodes to select all types and violations of those nodes and their exemplars
+    setSelectedViolationGroups: (state, action: PayloadAction<string[]>) => {
+      // uses groups to select all focus nodes with those groups
+      // then uses nodes to select all types and violations of those nodes and their groups
 
-      let newSelectedExemplars = action.payload;
+      let newSelectedGroups = action.payload;
       let newSelectedNodes = [];
       let newSelectedTypes = [];
       let newSelectedViolations = [];
 
-      newSelectedExemplars.forEach((exemplar) => {
-        newSelectedNodes = [...newSelectedNodes, ...state.exemplarMap[exemplar].nodes];
+      newSelectedGroups.forEach((group) => {
+        newSelectedNodes = [...newSelectedNodes, ...state.groupMap[group].nodes];
       });
 
       newSelectedNodes.forEach((node) => {
         newSelectedTypes = [...newSelectedTypes, ...state.focusNodeMap[node].types];
         newSelectedViolations = [...newSelectedViolations, ...state.focusNodeMap[node].violations];
-        newSelectedExemplars = [...newSelectedExemplars, ...state.focusNodeMap[node].exemplars];
+        newSelectedGroups = [...newSelectedGroups, ...state.focusNodeMap[node].groups];
       });
 
       // Remove duplicates by converting to a Set and then back to an array
       newSelectedNodes = [...new Set(newSelectedNodes)];
       newSelectedTypes = [...new Set(newSelectedTypes)];
       newSelectedViolations = [...new Set(newSelectedViolations)];
-      newSelectedExemplars = [...new Set(newSelectedExemplars)];
+      newSelectedGroups = [...new Set(newSelectedGroups)];
 
       state.selectedNodes = newSelectedNodes;
       state.selectedTypes = newSelectedTypes;
       state.selectedViolations = newSelectedViolations;
-      state.selectedViolationExemplars = newSelectedExemplars;
+      state.selectedViolationGroups = newSelectedGroups;
 
       const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
         state.selectedNodes,
@@ -623,11 +623,11 @@ const combinedSlice = createSlice({
     setEdgeCountDict: (state, action: PayloadAction<EdgeCountDict>) => {
       state.edgeCountDict = action.payload;
     },
-    setFocusNodeExemplarDict: (state, action: PayloadAction<FocusNodeExemplarDict>) => {
-      state.focusNodeExemplarDict = action.payload;
+    setFocusNodeGroupDict: (state, action: PayloadAction<FocusNodeGroupDict>) => {
+      state.focusNodeGroupDict = action.payload;
     },
-    setExemplarFocusNodeDict: (state, action: PayloadAction<ExemplarFocusNodeDict>) => {
-      state.exemplarFocusNodeDict = action.payload;
+    setGroupFocusNodeDict: (state, action: PayloadAction<GroupFocusNodeDict>) => {
+      state.groupFocusNodeDict = action.payload;
     },
     setMissingEdgeOption: (state, action: PayloadAction<MissingEdgeOptionType>) => {
       state.missingEdgeOption = action.payload;
@@ -685,7 +685,7 @@ const combinedSlice = createSlice({
 
       updateSelectedViolations(state, valueCounts);
       updateSelectedTypes(state, valueCounts);
-      updateSelectedViolationExemplars(state);
+      updateSelectedViolationGroups(state);
       state.numberViolationsPerNode = calculateNewNumberViolationsPerNode(
         state.selectedNodes,
         state.focusNodeMap,
@@ -766,17 +766,17 @@ const combinedSlice = createSlice({
         new Set(state.types),
       );
 
-      updateSelectedViolationExemplars(state);
+      updateSelectedViolationGroups(state);
     },
 
     setSelectedViolations: (state, action) => {
       // use violations to select all focus nodes with those violations
-      // then use nodes to select all types and violations of those nodes and their exemplars
+      // then use nodes to select all types and violations of those nodes and their groups
 
       let newSelectedViolations = action.payload;
       let newSelectedNodes = [];
       let newSelectedTypes = [];
-      let newSelectedViolationExemplars = [];
+      let newSelectedViolationGroups = [];
 
       newSelectedViolations.forEach((violation) => {
         newSelectedNodes = [...newSelectedNodes, ...state.violationMap[violation].nodes];
@@ -784,19 +784,19 @@ const combinedSlice = createSlice({
 
       newSelectedNodes.forEach((node) => {
         newSelectedTypes = [...newSelectedTypes, ...state.focusNodeMap[node].types];
-        newSelectedViolationExemplars = [...newSelectedViolationExemplars, ...state.focusNodeMap[node].exemplars];
+        newSelectedViolationGroups = [...newSelectedViolationGroups, ...state.focusNodeMap[node].groups];
         newSelectedViolations = [...newSelectedViolations, ...state.focusNodeMap[node].violations];
       });
 
       // Remove duplicates by converting to a Set and then back to an array
       newSelectedNodes = [...new Set(newSelectedNodes)];
       newSelectedTypes = [...new Set(newSelectedTypes)];
-      newSelectedViolationExemplars = [...new Set(newSelectedViolationExemplars)];
+      newSelectedViolationGroups = [...new Set(newSelectedViolationGroups)];
       newSelectedViolations = [...new Set(newSelectedViolations)];
 
       state.selectedNodes = newSelectedNodes;
       state.selectedTypes = newSelectedTypes;
-      state.selectedViolationExemplars = newSelectedViolationExemplars;
+      state.selectedViolationGroups = newSelectedViolationGroups;
       state.selectedViolations = newSelectedViolations;
 
       const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
@@ -813,22 +813,22 @@ const combinedSlice = createSlice({
 
       let newSelectedNodes = [];
       let newSelectedViolations = [];
-      let newSelectedViolationExemplars = [];
+      let newSelectedViolationGroups = [];
 
       state.selectedTypes.forEach((type) => {
         newSelectedNodes = [...newSelectedNodes, ...state.typeMap[type].nodes];
         newSelectedViolations = [...newSelectedViolations, ...state.typeMap[type].violations];
-        newSelectedViolationExemplars = [...newSelectedViolationExemplars, ...state.typeMap[type].exemplars];
+        newSelectedViolationGroups = [...newSelectedViolationGroups, ...state.typeMap[type].groups];
       });
 
       // Remove duplicates by converting to a Set and then back to an array
       newSelectedNodes = [...new Set(newSelectedNodes)];
       newSelectedViolations = [...new Set(newSelectedViolations)];
-      newSelectedViolationExemplars = [...new Set(newSelectedViolationExemplars)];
+      newSelectedViolationGroups = [...new Set(newSelectedViolationGroups)];
 
       state.selectedNodes = newSelectedNodes;
       state.selectedViolations = newSelectedViolations;
-      state.selectedViolationExemplars = newSelectedViolationExemplars;
+      state.selectedViolationGroups = newSelectedViolationGroups;
       state.numberViolationsPerNode = calculateNewNumberViolationsPerNode(
         state.selectedNodes,
         state.focusNodeMap,
@@ -856,7 +856,7 @@ const combinedSlice = createSlice({
       state.selectedNodes = [...new Set([...state.selectedNodes, ...newSelectedNodes])];
       state.selectedViolations = [...new Set([...state.selectedViolations, ...calculateNewSelectedViolations(newViolationCount)])];
 
-      updateSelectedViolationExemplars(state);
+      updateSelectedViolationGroups(state);
 
       const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
         state.selectedNodes,
@@ -912,7 +912,7 @@ const combinedSlice = createSlice({
 
       state.selectedViolations = newSelectedViolations;
 
-      updateSelectedViolationExemplars(state);
+      updateSelectedViolationGroups(state);
       const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
         state.selectedNodes,
         state.focusNodeMap,
@@ -962,7 +962,7 @@ const combinedSlice = createSlice({
 
       state.selectedViolations = newSelectedViolations;
 
-      updateSelectedViolationExemplars(state);
+      updateSelectedViolationGroups(state);
 
       const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
         state.selectedNodes,
@@ -1004,7 +1004,7 @@ export const selectSelectedTypes = (state: { combined: ICombinedState }) => stat
 export const selectRdfData = (state: { combined: ICombinedState }) => state.combined.rdfString;
 export const selectOriginalInstanceData = (state: { combined: ICombinedState }) => state.combined.originalInstanceData;
 export const selectOriginalViolationReport = (state: { combined: ICombinedState }) => state.combined.originalViolationReport;
-export const selectSelectedViolationExemplars = (state: { combined: ICombinedState }) => state.combined.selectedViolationExemplars;
+export const selectSelectedViolationGroups = (state: { combined: ICombinedState }) => state.combined.selectedViolationGroups;
 export const selectNamespaces = (state: { combined: ICombinedState }) => state.combined.namespaces;
 export const selectTypes = (state: { combined: ICombinedState }) => state.combined.types;
 export const selectSubClassOfTriples = (state: { combined: ICombinedState }) => state.combined.subClassOfTriples;
@@ -1313,7 +1313,7 @@ const findOrAddNode = (id, label, visible, nodes, types, numberViolationsPerNode
         defaultColor,
         selectedColor,
         violation: violationList.includes(id),
-        exemplar: namespace === 'ex',
+        group: namespace === 'ex',
         type: types.includes(id),
       },
     };
@@ -1384,16 +1384,16 @@ export const {
   setMissingEdgeOption,
   setMissingEdgeLabel,
   setEdgeCountDict,
-  setFocusNodeExemplarDict,
-  setExemplarFocusNodeDict,
-  setSelectedViolationExemplars,
+  setFocusNodeGroupDict,
+  setGroupFocusNodeDict,
+  setSelectedViolationGroups,
   setNamespaces,
   setTypes,
   setSubClassOfTriples,
   setViolationMap,
   setFocusNodeMap,
   setTypeMap,
-  setExemplarMap,
+  setGroupMap,
   setOntologyTree,
   setCumulativeNumberViolationsPerNode,
   addHiddenLabels,

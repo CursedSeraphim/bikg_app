@@ -78,12 +78,12 @@ export const useSubscribeCytoscape = (cy: Core | null, initialNodeData, blacklis
         const connectedNodesIds = state.selectedViolations.flatMap((v) => violationsTypesMap[v]);
         const otherNodeIds = connectedNodesIds.filter((nodeId) => !state.selectedTypes.includes(nodeId));
         const otherNodes = getNodesFromIds(otherNodeIds, cy);
-        const exemplarNodes = cy.nodes().filter((node) => state.selectedViolationExemplars.includes(node.id()));
+        const groupNodes = cy.nodes().filter((node) => state.selectedViolationGroups.includes(node.id()));
 
-        showCytoElements(violationNodes.union(typeNodes).union(otherNodes).union(exemplarNodes).union(exemplarNodes.outgoers().targets()));
-        adjustLayout(cy, violationNodes, typeNodes, otherNodes, exemplarNodes);
+        showCytoElements(violationNodes.union(typeNodes).union(otherNodes).union(groupNodes).union(groupNodes.outgoers().targets()));
+        adjustLayout(cy, violationNodes, typeNodes, otherNodes, groupNodes);
 
-        violationNodes.union(typeNodes).union(otherNodes).union(exemplarNodes).union(getSuccessors(exemplarNodes)).select();
+        violationNodes.union(typeNodes).union(otherNodes).union(groupNodes).union(getSuccessors(groupNodes)).select();
       }
 
       // 2b) Apply blacklisting *after* the reset and layout so hidden nodes don't flicker

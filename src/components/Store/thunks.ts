@@ -1,13 +1,13 @@
 // thunks.ts
 
 import { Dispatch } from 'redux';
-import { fetchCSVFile, fetchClasses, fetchExemplarFocusNodeDict, fetchFocusNodeExemplarDict, fetchViolationList } from '../../api';
+import { fetchCSVFile, fetchClasses, fetchGroupFocusNodeDict, fetchFocusNodeGroupDict, fetchViolationList } from '../../api';
 import {
   createMaps,
   setCsvData,
-  setExemplarFocusNodeDict,
-  setExemplarMap,
-  setFocusNodeExemplarDict,
+  setGroupFocusNodeDict,
+  setGroupMap,
+  setFocusNodeGroupDict,
   setFocusNodeMap,
   setTypeMap,
   setTypes,
@@ -17,32 +17,32 @@ import {
 import { RootState } from './Store';
 
 export const fetchAndInitializeData = () => async (dispatch: Dispatch, getState: () => RootState) => {
-  const [csvData, violationList, types, focusNodeExemplarDict, exemplarFocusNodeDict] = await Promise.all([
+  const [csvData, violationList, types, focusNodeGroupDict, groupFocusNodeDict] = await Promise.all([
     fetchCSVFile(),
     fetchViolationList(),
     fetchClasses(),
-    fetchFocusNodeExemplarDict(),
-    fetchExemplarFocusNodeDict(),
+    fetchFocusNodeGroupDict(),
+    fetchGroupFocusNodeDict(),
   ]);
 
   dispatch(setCsvData(JSON.parse(csvData)));
   dispatch(setViolations(violationList));
   dispatch(setTypes(types));
-  dispatch(setFocusNodeExemplarDict(focusNodeExemplarDict));
-  dispatch(setExemplarFocusNodeDict(exemplarFocusNodeDict));
+  dispatch(setFocusNodeGroupDict(focusNodeGroupDict));
+  dispatch(setGroupFocusNodeDict(groupFocusNodeDict));
 
   // Here, we wait for the Redux state to get updated, and then read it.
   const state = getState().combined;
-  const { violationMap, typeMap, exemplarMap, focusNodeMap } = createMaps(
+  const { violationMap, typeMap, groupMap, focusNodeMap } = createMaps(
     state.samples,
     state.violations,
     state.types,
-    state.focusNodeExemplarDict,
-    state.exemplarFocusNodeDict,
+    state.focusNodeGroupDict,
+    state.groupFocusNodeDict,
   );
 
   dispatch(setViolationMap(violationMap));
   dispatch(setTypeMap(typeMap));
-  dispatch(setExemplarMap(exemplarMap));
+  dispatch(setGroupMap(groupMap));
   dispatch(setFocusNodeMap(focusNodeMap));
 };

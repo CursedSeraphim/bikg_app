@@ -28,7 +28,7 @@ export type CsvCell = string | number | undefined;
 export interface IViolationValue {
   nodes: string[];
   types: string[];
-  exemplars: string[];
+  groups: string[];
 }
 
 export interface IViolationMap {
@@ -51,7 +51,7 @@ export interface ICytoNode {
     visible?: boolean;
     permanent?: boolean;
     violation?: boolean;
-    exemplar?: boolean;
+    group?: boolean;
     namespace: string;
     defaultColor?: string;
     selectedColor?: string;
@@ -91,12 +91,12 @@ export type EdgeCountDict = {
   };
 };
 
-export type FocusNodeExemplarDict = {
+export type FocusNodeGroupDict = {
   [focusNodeUrl: string]: string[];
 };
 
-export type ExemplarFocusNodeDict = {
-  [exemplarUrl: string]: string[];
+export type GroupFocusNodeDict = {
+  [groupUrl: string]: string[];
 };
 
 export type FilterType = 'none' | 'unimodal' | 'nan';
@@ -149,16 +149,16 @@ export interface IFocusNodeSampleMap {
 export interface IFocusNodeValue {
   types: string[];
   violations: string[];
-  exemplars: string[];
+  groups: string[];
 }
 
 export interface ITypeValue {
   nodes: string[];
   violations: string[];
-  exemplars: string[];
+  groups: string[];
 }
 
-export interface IExemplarValue {
+export interface IGroupValue {
   nodes: string[];
   types: string[];
   violations: string[];
@@ -172,8 +172,8 @@ export interface ITypeMap {
   [key: string]: ITypeValue;
 }
 
-export interface IExemplarMap {
-  [key: string]: IExemplarValue;
+export interface IGroupMap {
+  [key: string]: IGroupValue;
 }
 
 export interface ICombinedState {
@@ -194,9 +194,9 @@ export interface ICombinedState {
   /** Label shown for edges that are not present in the data */
   missingEdgeLabel: string;
   edgeCountDict: EdgeCountDict;
-  focusNodeExemplarDict: FocusNodeExemplarDict;
-  exemplarFocusNodeDict: ExemplarFocusNodeDict;
-  selectedViolationExemplars: string[];
+  focusNodeGroupDict: FocusNodeGroupDict;
+  groupFocusNodeDict: GroupFocusNodeDict;
+  selectedViolationGroups: string[];
   namespaces: INamespaces;
   types: string[];
   subClassOfTriples: ITriple[];
@@ -205,7 +205,7 @@ export interface ICombinedState {
   violationMap: IViolationMap;
   focusNodeMap: IFocusNodeMap;
   typeMap: ITypeMap;
-  exemplarMap: IExemplarMap;
+  groupMap: IGroupMap;
   ontologyTree: ServerTree;
   cumulativeNumberViolationsPerNode: INumberViolationsPerNodeMap;
   hiddenLabels: string[];

@@ -2,11 +2,11 @@
 import {
   MANTINE_HEADER_COLOR,
   SELECTED_DEFAULT_COLOR,
-  SELECTED_EXEMPLAR_NODE_COLOR,
+  SELECTED_GROUP_NODE_COLOR,
   SELECTED_TYPE_NODE_COLOR,
   SELECTED_VIOLATION_NODE_COLOR,
   UNSELECTED_DEFAULT_COLOR,
-  UNSELECTED_EXEMPLAR_NODE_COLOR,
+  UNSELECTED_GROUP_NODE_COLOR,
   UNSELECTED_TYPE_NODE_COLOR,
   UNSELECTED_VIOLATION_NODE_COLOR,
 } from '../../constants';
@@ -58,15 +58,15 @@ export function getStyle(getShapeForNamespace) {
       },
     },
     {
-      selector: 'node[?exemplar]',
+      selector: 'node[?group]',
       style: {
-        'background-color': UNSELECTED_EXEMPLAR_NODE_COLOR,
+        'background-color': UNSELECTED_GROUP_NODE_COLOR,
       },
     },
     {
-      selector: 'node[?exemplar]:selected',
+      selector: 'node[?group]:selected',
       style: {
-        'background-color': SELECTED_EXEMPLAR_NODE_COLOR,
+        'background-color': SELECTED_GROUP_NODE_COLOR,
       },
     },
     {
@@ -106,13 +106,13 @@ export function getStyle(getShapeForNamespace) {
       },
     },
     {
-      selector: 'node[?exemplar].hidden',
+      selector: 'node[?group].hidden',
       style: {
         display: 'none',
       },
     },
     {
-      selector: 'node[?exemplar].visible',
+      selector: 'node[?group].visible',
       style: {
         display: 'element',
       },

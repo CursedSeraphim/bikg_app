@@ -133,15 +133,15 @@ export async function fetchEdgeCountDict() {
   return data;
 }
 
-export async function fetchFocusNodeExemplarDict() {
-  const endpoint = `/api/bikg/file/focus_node_exemplar_dict`;
+export async function fetchFocusNodeGroupDict() {
+  const endpoint = `/api/bikg/file/focus_node_group_dict`;
   const response = await fetch(endpoint);
   const data = await response.json();
   return data;
 }
 
-export async function fetchExemplarFocusNodeDict() {
-  const endpoint = `/api/bikg/file/exemplar_focus_node_dict`;
+export async function fetchGroupFocusNodeDict() {
+  const endpoint = `/api/bikg/file/group_focus_node_dict`;
   const response = await fetch(endpoint);
   const data = await response.json();
   return data;
@@ -182,8 +182,8 @@ export async function fetchNodeFocusNodeCountDict() {
   return data;
 }
 
-export async function fetchViolationExemplarDict() {
-  const endpoint = `/api/bikg/get_violation_exemplar_dict`;
+export async function fetchViolationGroupDict() {
+  const endpoint = `/api/bikg/get_violation_group_dict`;
   const response = await fetch(endpoint);
   const data = await response.json();
   return data;

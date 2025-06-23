@@ -2,7 +2,7 @@
 import { DynamicTool } from 'langchain/tools';
 import { useDispatch, useStore } from 'react-redux';
 import { IRootState } from '../../types';
-import { setSelectedTypes, setSelectedViolationExemplars, setSelectedViolations } from '../Store/CombinedSlice';
+import { setSelectedTypes, setSelectedViolationGroups, setSelectedViolations } from '../Store/CombinedSlice';
 
 const parseArrayString = (arrayString) => {
   const array = arrayString.replace(/[[\]\s]/g, '').split(',');
@@ -31,10 +31,10 @@ const useTools = () => {
     return violations;
   };
 
-  const handleLLMSetViolationExemplars = (exemplars) => {
-    const parsedExemplars = parseArrayString(exemplars);
-    dispatch(setSelectedViolationExemplars(parsedExemplars));
-    return exemplars;
+  const handleLLMSetViolationGroups = (groups) => {
+    const parsedGroups = parseArrayString(groups);
+    dispatch(setSelectedViolationGroups(parsedGroups));
+    return groups;
   };
 
   const getExistingTypes = async (): Promise<string> => {
@@ -49,11 +49,11 @@ const useTools = () => {
     return JSON.stringify(violations);
   };
 
-  const getExistingExemplars = async (): Promise<string> => {
+  const getExistingGroups = async (): Promise<string> => {
     const state = store.getState();
-    const { exemplarMap } = state.combined;
-    const exemplarKeys = Object.keys(exemplarMap);
-    return JSON.stringify(exemplarKeys);
+    const { groupMap } = state.combined;
+    const groupKeys = Object.keys(groupMap);
+    return JSON.stringify(groupKeys);
   };
 
   const getRDFOntology = async (): Promise<string> => {
@@ -94,10 +94,10 @@ const useTools = () => {
     return JSON.stringify(selectedViolations);
   };
 
-  const getSelectedViolationExemplars = async (): Promise<string> => {
+  const getSelectedViolationGroups = async (): Promise<string> => {
     const state = store.getState();
-    const { selectedViolationExemplars } = state.combined;
-    return JSON.stringify(selectedViolationExemplars);
+    const { selectedViolationGroups } = state.combined;
+    return JSON.stringify(selectedViolationGroups);
   };
 
   const getNumberViolationsPerNode = async (): Promise<string> => {
@@ -165,7 +165,7 @@ const useTools = () => {
     }),
     new DynamicTool({
       name: 'select_reported_violations',
-      func: handleLLMSetViolationExemplars,
+      func: handleLLMSetViolationGroups,
       description: 'Selects a list of reported violations that appear in the data.',
     }),
     new DynamicTool({
@@ -180,8 +180,8 @@ const useTools = () => {
     }),
     new DynamicTool({
       name: 'get_reported_violations',
-      func: getExistingExemplars,
-      description: 'Returns a list of violation exemplars in the ontology',
+      func: getExistingGroups,
+      description: 'Returns a list of violation groups in the ontology',
     }),
     // new DynamicTool({
     //   name: 'find_node_by_id_substring',
@@ -200,7 +200,7 @@ const useTools = () => {
     }),
     new DynamicTool({
       name: 'get_selected_reported_violations',
-      func: getSelectedViolationExemplars,
+      func: getSelectedViolationGroups,
       description: 'Returns the reported violations that are currently selected in this vis tool',
     }),
     new DynamicTool({
