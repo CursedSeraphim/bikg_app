@@ -4656,7 +4656,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/d3v7@npm:@types/d3@^7.4.0":
+"@types/d3@npm:^7.4.3, @types/d3v7@npm:@types/d3@^7.4.0":
   version: 7.4.3
   resolution: "@types/d3@npm:7.4.3"
   dependencies:
@@ -6936,6 +6936,7 @@ __metadata:
     "@mui/material": ^5.2.1
     "@mui/utils": ^5.2.1
     "@reduxjs/toolkit": ^1.9.2
+    "@types/d3": ^7.4.3
     chroma-js: ^2.4.2
     clsx: ^2.0.0
     colorbrewer: ^1.5.3

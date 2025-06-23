@@ -18,6 +18,8 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const svgOverlayRef = useRef<SVGSVGElement>(null);
   const transformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
+  const quadtreeRef = useRef<d3.Quadtree<IScatterNode>>();
+  const [hoveredNode, setHoveredNode] = useState<IScatterNode | null>(null);
 
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const margins = useMemo(() => ({ top: 20, right: 20, bottom: 20, left: 20 }), []);
@@ -35,6 +37,16 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
   const selectedNodes = useSelector((state: IRootState) => state.combined.selectedNodes);
   const store = useStore<IRootState>();
   const { dispatch } = store;
+
+
+  useEffect(() => {
+    const q = d3
+      .quadtree<IScatterNode>()
+      .x((d) => xScale(d.x) + margins.left)
+      .y((d) => yScale(d.y) + margins.top)
+      .addAll(data);
+    quadtreeRef.current = q;
+  }, [data, xScale, yScale, margins]);
 
   const handleResize = useCallback(() => {
     if (!canvasRef.current?.parentElement) {
@@ -70,7 +82,7 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
 
     ctx.clearRect(0, 0, dimensions.width, dimensions.height);
 
-    data.forEach((d) => {
+    data.forEach((d: IScatterNode) => {
       const isSelected = selectedNodes.includes(d.text);
       const rawX = xScale(d.x) + margins.left;
       const rawY = yScale(d.y) + margins.top;
@@ -83,7 +95,96 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
       ctx.arc(screenX, screenY, 4, 0, 2 * Math.PI);
       ctx.fill();
     });
-  }, [data, selectedNodes, dimensions, xScale, yScale, margins]);
+
+    if (svgOverlayRef.current) {
+      const svg = d3.select(svgOverlayRef.current);
+
+      const minDist = 20; // minimum pixel distance between labels
+      const q = d3
+        .quadtree<{ x: number; y: number }>()
+        .x((d) => d.x)
+        .y((d) => d.y);
+
+      const visible: IScatterNode[] = [];
+      data.forEach((d: IScatterNode) => {
+        const screenX = transformRef.current.applyX(xScale(d.x) + margins.left);
+        const screenY = transformRef.current.applyY(yScale(d.y) + margins.top);
+        if (!q.find(screenX, screenY, minDist)) {
+          q.add({ x: screenX, y: screenY });
+          visible.push(d);
+        }
+      });
+
+      const labels = svg.selectAll('text.static-label').data(
+        visible,
+        (d: IScatterNode) => d.text,
+      );
+
+      labels
+        .enter()
+        .append('text')
+        .attr('class', 'static-label')
+        .attr('font-size', 10)
+        .attr('pointer-events', 'none')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .merge(labels as any)
+        .attr('paint-order', 'stroke')
+        .attr('stroke', 'white')
+        .attr('stroke-width', 3)
+        .attr('fill', 'black')
+        .attr('text-anchor', 'middle')
+        .attr('x', (d) => transformRef.current.applyX(xScale(d.x) + margins.left))
+        .attr('y', (d) => transformRef.current.applyY(yScale(d.y) + margins.top) - 6)
+        .text((d) => d.text);
+
+      labels.exit().remove();
+
+      const hoverSel = svg.selectAll('text.hover-label').data(
+        hoveredNode ? [hoveredNode] : [],
+        (d: IScatterNode) => d.text,
+      );
+
+      hoverSel
+        .enter()
+        .append('text')
+        .attr('class', 'hover-label')
+        .attr('font-size', 10)
+        .attr('pointer-events', 'none')
+        .merge(hoverSel as any)
+        .attr('paint-order', 'stroke')
+        .attr('stroke', 'white')
+        .attr('stroke-width', 3)
+        .attr('fill', 'black')
+        .attr('text-anchor', 'middle')
+        .attr('x', (d) => transformRef.current.applyX(xScale(d.x) + margins.left))
+        .attr('y', (d) => transformRef.current.applyY(yScale(d.y) + margins.top) - 6)
+        .text((d) => d.text)
+        .raise();
+
+      hoverSel.exit().remove();
+    }
+  }, [data, selectedNodes, dimensions, xScale, yScale, margins, hoveredNode]);
+
+  const handleMouseMove = useCallback(
+    (event: React.MouseEvent<SVGSVGElement>) => {
+      if (!quadtreeRef.current || !svgOverlayRef.current) return;
+      const [mx, my] = d3.pointer(event, svgOverlayRef.current);
+      const searchX = transformRef.current.invertX(mx);
+      const searchY = transformRef.current.invertY(my);
+      const radius = 6;
+      const found = quadtreeRef.current.find(searchX, searchY, radius);
+      if (found) {
+        setHoveredNode(found);
+      } else {
+        setHoveredNode(null);
+      }
+    },
+    [],
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredNode(null);
+  }, []);
 
   // ---------- Brush setup with consistent cleanup return ----------
   useEffect(() => {
@@ -109,14 +210,14 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
           const [[x1, y1], [x2, y2]] = event.selection as [[number, number], [number, number]];
 
           const newlySelected = data
-            .filter((d) => {
+            .filter((d: IScatterNode) => {
               const rawX = xScale(d.x) + margins.left;
               const rawY = yScale(d.y) + margins.top;
               const screenX = transformRef.current.applyX(rawX);
               const screenY = transformRef.current.applyY(rawY);
               return screenX >= x1 && screenX <= x2 && screenY >= y1 && screenY <= y2;
             })
-            .map((d) => d.text);
+            .map((d: IScatterNode) => d.text);
 
           dispatch(setSelectedFocusNodes(newlySelected));
         }
@@ -187,10 +288,12 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
   }, [drawPoints]);
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
       <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
       <svg
         ref={svgOverlayRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
         style={{
           position: 'absolute',
           top: 0,
