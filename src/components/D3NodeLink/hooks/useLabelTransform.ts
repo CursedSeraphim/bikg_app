@@ -7,7 +7,7 @@ export const GROUP_TERM = 'Group';
  */
 export function useLabelTransform() {
   const mapNodeLabel = (label: string): string => {
-    const regex = new RegExp(`_${EXEMPLAR_TERM.toLowerCase()}_(\\d+)$`, 'i');
+    const regex = new RegExp(`_${EXEMPLAR_TERM.toLowerCase()}_(\\d+)`, 'gi');
     return label.replace(regex, `_${GROUP_TERM.toLowerCase()}_$1`);
   };
 
