@@ -115,7 +115,10 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
         }
       });
 
-      const labels = svg.selectAll('text.static-label').data(visible, (d: IScatterNode) => d.text);
+      const labels = svg.selectAll('text.static-label').data(
+        visible,
+        (d: IScatterNode) => d.text,
+      );
 
       labels
         .enter()
@@ -129,7 +132,8 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
         .attr('stroke', 'white')
         .attr('stroke-width', 3)
         .attr('fill', 'black')
-        .attr('x', (d) => transformRef.current.applyX(xScale(d.x) + margins.left) + 6)
+        .attr('text-anchor', 'middle')
+        .attr('x', (d) => transformRef.current.applyX(xScale(d.x) + margins.left))
         .attr('y', (d) => transformRef.current.applyY(yScale(d.y) + margins.top) - 6)
         .text((d) => d.text);
 
