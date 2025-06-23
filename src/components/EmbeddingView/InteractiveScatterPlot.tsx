@@ -38,24 +38,6 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
   const store = useStore<IRootState>();
   const { dispatch } = store;
 
-  const staticLabels = useMemo(() => {
-    const minDist = 40; // minimum distance in pixels between labels
-    const q = d3
-      .quadtree<IScatterNode>()
-      .x((d) => xScale(d.x) + margins.left)
-      .y((d) => yScale(d.y) + margins.top);
-
-    const chosen: IScatterNode[] = [];
-    data.forEach((d: IScatterNode) => {
-      const sx = xScale(d.x) + margins.left;
-      const sy = yScale(d.y) + margins.top;
-      if (!q.find(sx, sy, minDist)) {
-        q.add(d);
-        chosen.push(d);
-      }
-    });
-    return chosen;
-  }, [data, xScale, yScale, margins]);
 
   useEffect(() => {
     const q = d3
@@ -116,24 +98,44 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
 
     if (svgOverlayRef.current) {
       const svg = d3.select(svgOverlayRef.current);
-      const labels = svg.selectAll('text.static-label').data(staticLabels, (d: IScatterNode) => d.text);
+
+      const minDist = 20; // minimum pixel distance between labels
+      const q = d3
+        .quadtree<{ x: number; y: number }>()
+        .x((d) => d.x)
+        .y((d) => d.y);
+
+      const visible: IScatterNode[] = [];
+      data.forEach((d: IScatterNode) => {
+        const screenX = transformRef.current.applyX(xScale(d.x) + margins.left);
+        const screenY = transformRef.current.applyY(yScale(d.y) + margins.top);
+        if (!q.find(screenX, screenY, minDist)) {
+          q.add({ x: screenX, y: screenY });
+          visible.push(d);
+        }
+      });
+
+      const labels = svg.selectAll('text.static-label').data(visible, (d: IScatterNode) => d.text);
 
       labels
         .enter()
         .append('text')
         .attr('class', 'static-label')
         .attr('font-size', 10)
-        .attr('fill', 'black')
         .attr('pointer-events', 'none')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .merge(labels as any)
+        .attr('paint-order', 'stroke')
+        .attr('stroke', 'white')
+        .attr('stroke-width', 3)
+        .attr('fill', 'black')
         .attr('x', (d) => transformRef.current.applyX(xScale(d.x) + margins.left) + 6)
         .attr('y', (d) => transformRef.current.applyY(yScale(d.y) + margins.top) - 6)
         .text((d) => d.text);
 
       labels.exit().remove();
     }
-  }, [data, selectedNodes, dimensions, xScale, yScale, margins, staticLabels]);
+  }, [data, selectedNodes, dimensions, xScale, yScale, margins]);
 
   const handleMouseMove = useCallback(
     (event: React.MouseEvent<SVGSVGElement>) => {
