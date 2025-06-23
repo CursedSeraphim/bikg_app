@@ -496,12 +496,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
       const hasRemovalEdges = newGhostEdges.some((e) => e.previewRemoval);
 
-<<<<<<< HEAD
       if (newGhostNodes.length > 0 || hasRemovalEdges) {
         activePreviewRef.current = { mode, nodeId: closest.id };
-=======
-      if (newGhostNodes.length > 0) {
->>>>>>> d3cf5699cea322e5b6f8b62f5e07316be8f02bb3
         Object.values(nodeMapRef.current).forEach((n) => {
           // eslint-disable-next-line no-param-reassign
           n.fx = n.x;
@@ -516,29 +512,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         setGhostEdges(newGhostEdges);
         simulationRef.current?.alphaTarget(0.3).restart();
       } else {
-<<<<<<< HEAD
         clearPreview();
-=======
-        setGhostNodes([]);
-        setGhostEdges(newGhostEdges);
-        if (hasRemovalEdges) {
-          Object.values(nodeMapRef.current).forEach((n) => {
-            // eslint-disable-next-line no-param-reassign
-            n.fx = n.x;
-            // eslint-disable-next-line no-param-reassign
-            n.fy = n.y;
-            // eslint-disable-next-line no-param-reassign
-            n.vx = 0;
-            // eslint-disable-next-line no-param-reassign
-            n.vy = 0;
-          });
-          const sim = simulationRef.current;
-          if (sim) {
-            sim.alpha(0.001);
-            sim.alphaTarget(0).restart();
-          }
-        }
->>>>>>> d3cf5699cea322e5b6f8b62f5e07316be8f02bb3
       }
     },
     [d3Nodes, transformRef, adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, simulationRef, clearPreview, computeExpansion],
@@ -591,10 +565,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   }, [handleDrag, handleDoubleClick, zoomBehaviorRef, updateHoverPreview, clearPreview]);
 
   useEffect(() => {
-    if (
-      ghostNodes.length === 0 &&
-      ghostEdges.some((e) => (e as any).previewRemoval)
-    ) {
+    if (ghostNodes.length === 0 && ghostEdges.some((e) => (e as any).previewRemoval)) {
       const sim = simulationRef.current;
       if (sim) {
         sim.alpha(0.001);
