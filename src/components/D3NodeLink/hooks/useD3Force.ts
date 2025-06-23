@@ -3,6 +3,7 @@
 import * as d3 from 'd3';
 import { useEffect, useRef } from 'react';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
+import { useLabelTransform } from './useLabelTransform';
 
 /**
  * Hook that manages:
@@ -43,6 +44,7 @@ export function useD3Force(
   const centerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dpi = window.devicePixelRatio ?? 1;
+  const { mapNodeLabel, mapEdgeLabel } = useLabelTransform();
 
   /**
    * Renders all nodes and edges onto the canvas, using the latest transformRef.
@@ -136,12 +138,13 @@ export function useD3Force(
       if (edge.label) {
         const midX = (sx + tx) / 2;
         const midY = (sy + ty) / 2 - 5;
+        const label = mapEdgeLabel(edge.label);
         context.save();
         context.lineWidth = 3;
         context.strokeStyle = '#fff';
-        context.strokeText(edge.label, midX, midY);
+        context.strokeText(label, midX, midY);
         context.fillStyle = '#333';
-        context.fillText(edge.label, midX, midY);
+        context.fillText(label, midX, midY);
         context.restore();
       }
     });
@@ -162,11 +165,12 @@ export function useD3Force(
       context.stroke();
 
       context.save();
+      const label = mapNodeLabel(node.label);
       context.lineWidth = 3;
       context.strokeStyle = '#fff';
-      context.strokeText(node.label, node.x ?? 0, (node.y ?? 0) - 12);
+      context.strokeText(label, node.x ?? 0, (node.y ?? 0) - 12);
       context.fillStyle = '#000';
-      context.fillText(node.label, node.x ?? 0, (node.y ?? 0) - 12);
+      context.fillText(label, node.x ?? 0, (node.y ?? 0) - 12);
       context.restore();
     });
 
