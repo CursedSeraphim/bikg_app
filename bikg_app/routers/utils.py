@@ -7,6 +7,12 @@ from collections import defaultdict
 import numpy as np
 from rdflib import RDF, Namespace, URIRef
 from rdflib.namespace import split_uri
+
+from bikg_app.nld_constants import (
+    EXEMPLAR_EDGE_URI,
+    EXEMPLAR_NAMESPACE,
+    EXEMPLAR_TERM,
+)
 from tqdm.auto import tqdm
 
 if "ipykernel" in sys.modules:
@@ -197,7 +203,7 @@ def get_violation_report_exemplars(ontology_g, violation_report_g, study_g):
     # TODO define these in a constants file or have them be defined at the top of the preprocessing notebook
     sh = Namespace("http://www.w3.org/ns/shacl#")
     dcterms = Namespace("http://purl.org/dc/terms/")
-    ex = Namespace("http://example.com/exemplar#")
+    ex = EXEMPLAR_NAMESPACE
     ontology_g.namespace_manager.bind("dcterms", dcterms)
     ontology_g.namespace_manager.bind("sh", sh)
     ontology_g.namespace_manager.bind("ex", ex)
@@ -260,7 +266,9 @@ def get_violation_report_exemplars(ontology_g, violation_report_g, study_g):
             except ValueError:
                 raise ValueError(f"Could not split URI {shape}")
 
-            exemplar_name = URIRef(f"{ex}{localname}_exemplar_{len(exemplar_sets)+1}")
+            exemplar_name = URIRef(
+                f"{ex}{localname}_{EXEMPLAR_TERM}_{len(exemplar_sets)+1}"
+            )
             print(f"Exemplar name: {exemplar_name}")
             exemplar_sets[frozenset(edge_object_pairs)] = exemplar_name
 
@@ -288,7 +296,7 @@ def process_edge_object_pairs(ontology_g, study_g, sh, edge_count_dict, edge_obj
         po_str = f"{p}__{o}"
         if edge_count_dict[exemplar_name][po_str] == 0:
             if p == sh.sourceShape:
-                ontology_g.add((o, URIRef("http://customnamespace.com/hasExemplar"), exemplar_name))  # type: ignore
+                ontology_g.add((o, EXEMPLAR_EDGE_URI, exemplar_name))  # type: ignore
             else:
                 ontology_g.add((exemplar_name, p, o))  # type: ignore
                 print(f"Adding edge {exemplar_name} {p} {o}")

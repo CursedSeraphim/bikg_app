@@ -6,6 +6,8 @@ from collections import defaultdict
 
 from rdflib import RDF, Graph, Namespace, URIRef
 
+from bikg_app.nld_constants import EXEMPLAR_EDGE_URI, EXEMPLAR_TERM
+
 from bikg_app.routers.utils import (
     load_nested_counts_dict_json,
     process_edge_object_pairs,
@@ -22,7 +24,7 @@ class TestProcessEdgeObjectPairs(unittest.TestCase):
 
     def test_empty_pairs(self):
         edge_object_pairs = []
-        exemplar_name = URIRef("http://example.com/exemplar1")
+        exemplar_name = URIRef(f"http://example.com/{EXEMPLAR_TERM}1")
         process_edge_object_pairs(
             self.ontology_g,
             self.sh,
@@ -41,7 +43,7 @@ class TestProcessEdgeObjectPairs(unittest.TestCase):
                 URIRef("http://example.com/object1"),
             ),
         ]
-        exemplar_name = URIRef("http://example.com/exemplar1")
+        exemplar_name = URIRef(f"http://example.com/{EXEMPLAR_TERM}1")
         process_edge_object_pairs(
             self.ontology_g,
             self.sh,
@@ -59,7 +61,7 @@ class TestProcessEdgeObjectPairs(unittest.TestCase):
         # Check if triples are added to ontology_g
         assert (
             URIRef("http://example.com/shape1"),
-            URIRef("http://customnamespace.com/hasExemplar"),
+            EXEMPLAR_EDGE_URI,
             exemplar_name,
         ) in self.ontology_g
         assert (
@@ -138,8 +140,8 @@ class TestSaveAndLoadEdgeCountWithGraph(unittest.TestCase):
             os.remove(self.test_filename)
 
     def add_exemplars_to_graph(self):
-        exemplar1 = URIRef("http://example.com/exemplar1")
-        exemplar2 = URIRef("http://example.com/exemplar2")
+        exemplar1 = URIRef(f"http://example.com/{EXEMPLAR_TERM}1")
+        exemplar2 = URIRef(f"http://example.com/{EXEMPLAR_TERM}2")
         po_pair = (
             URIRef("http://example.com/predicate"),
             URIRef("http://example.com/object"),
@@ -160,8 +162,8 @@ class TestSaveAndLoadEdgeCountWithGraph(unittest.TestCase):
         loaded_edge_count_dict = load_nested_counts_dict_json(self.test_filename)
 
         expected_dict = {
-            "http://example.com/exemplar1": {"http://example.com/predicate__http://example.com/object": 2},
-            "http://example.com/exemplar2": {"http://example.com/predicate__http://example.com/object": 1},
+            f"http://example.com/{EXEMPLAR_TERM}1": {"http://example.com/predicate__http://example.com/object": 2},
+            f"http://example.com/{EXEMPLAR_TERM}2": {"http://example.com/predicate__http://example.com/object": 1},
         }
 
         assert loaded_edge_count_dict == expected_dict
@@ -179,8 +181,8 @@ class TestProcessEdgeObjectPairsWithSaveAndLoad(unittest.TestCase):
             os.remove(self.test_filename)
 
     def add_exemplars_using_function(self):
-        exemplar1 = URIRef("http://example.com/exemplar_func1")
-        exemplar2 = URIRef("http://example.com/exemplar_func2")
+        exemplar1 = URIRef(f"http://example.com/{EXEMPLAR_TERM}_func1")
+        exemplar2 = URIRef(f"http://example.com/{EXEMPLAR_TERM}_func2")
         po_pairs = [
             (
                 URIRef("http://example.com/predicate"),
@@ -199,8 +201,8 @@ class TestProcessEdgeObjectPairsWithSaveAndLoad(unittest.TestCase):
         loaded_edge_count_dict = load_nested_counts_dict_json(self.test_filename)
 
         expected_dict = {
-            "http://example.com/exemplar_func1": {"http://example.com/predicate__http://example.com/object": 2},
-            "http://example.com/exemplar_func2": {"http://example.com/predicate__http://example.com/object": 1},
+            f"http://example.com/{EXEMPLAR_TERM}_func1": {"http://example.com/predicate__http://example.com/object": 2},
+            f"http://example.com/{EXEMPLAR_TERM}_func2": {"http://example.com/predicate__http://example.com/object": 1},
         }
 
         assert loaded_edge_count_dict == expected_dict
@@ -218,8 +220,8 @@ class TestProcessEdgeObjectPairsWithMultiplePairs(unittest.TestCase):
             os.remove(self.test_filename)
 
     def add_multiple_po_pairs(self):
-        exemplar1 = URIRef("http://example.com/exemplar_multipair1")
-        exemplar2 = URIRef("http://example.com/exemplar_multipair2")
+        exemplar1 = URIRef(f"http://example.com/{EXEMPLAR_TERM}_multipair1")
+        exemplar2 = URIRef(f"http://example.com/{EXEMPLAR_TERM}_multipair2")
 
         # Multiple different p, o pairs for each exemplar
         po_pairs_exemplar1 = [
@@ -272,11 +274,11 @@ class TestProcessEdgeObjectPairsWithMultiplePairs(unittest.TestCase):
         loaded_edge_count_dict = load_nested_counts_dict_json(self.test_filename)
 
         expected_dict = {
-            "http://example.com/exemplar_multipair1": {
+            f"http://example.com/{EXEMPLAR_TERM}_multipair1": {
                 "http://example.com/predicate1__http://example.com/object1": 2,
                 "http://example.com/predicate2__http://example.com/object2": 2,
             },
-            "http://example.com/exemplar_multipair2": {
+            f"http://example.com/{EXEMPLAR_TERM}_multipair2": {
                 "http://example.com/predicate3__http://example.com/object3": 1,
                 "http://example.com/predicate4__http://example.com/object4": 1,
             },
