@@ -18,6 +18,8 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const svgOverlayRef = useRef<SVGSVGElement>(null);
   const transformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
+  const quadtreeRef = useRef<d3.Quadtree<IScatterNode>>();
+  const [hovered, setHovered] = useState<{ text: string; x: number; y: number } | null>(null);
 
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const margins = useMemo(() => ({ top: 20, right: 20, bottom: 20, left: 20 }), []);
@@ -35,6 +37,15 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
   const selectedNodes = useSelector((state: IRootState) => state.combined.selectedNodes);
   const store = useStore<IRootState>();
   const { dispatch } = store;
+
+  useEffect(() => {
+    const q = d3
+      .quadtree<IScatterNode>()
+      .x((d) => xScale(d.x) + margins.left)
+      .y((d) => yScale(d.y) + margins.top)
+      .addAll(data);
+    quadtreeRef.current = q;
+  }, [data, xScale, yScale, margins]);
 
   const handleResize = useCallback(() => {
     if (!canvasRef.current?.parentElement) {
@@ -84,6 +95,29 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
       ctx.fill();
     });
   }, [data, selectedNodes, dimensions, xScale, yScale, margins]);
+
+  const handleMouseMove = useCallback(
+    (event: React.MouseEvent<SVGSVGElement>) => {
+      if (!quadtreeRef.current || !svgOverlayRef.current) return;
+      const [mx, my] = d3.pointer(event, svgOverlayRef.current);
+      const searchX = transformRef.current.invertX(mx);
+      const searchY = transformRef.current.invertY(my);
+      const radius = 6;
+      const found = quadtreeRef.current.find(searchX, searchY, radius);
+      if (found) {
+        const sx = transformRef.current.applyX(xScale(found.x) + margins.left);
+        const sy = transformRef.current.applyY(yScale(found.y) + margins.top);
+        setHovered({ text: found.text, x: sx, y: sy });
+      } else {
+        setHovered(null);
+      }
+    },
+    [xScale, yScale, margins]
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    setHovered(null);
+  }, []);
 
   // ---------- Brush setup with consistent cleanup return ----------
   useEffect(() => {
@@ -191,6 +225,8 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
       <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
       <svg
         ref={svgOverlayRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
         style={{
           position: 'absolute',
           top: 0,
@@ -199,6 +235,24 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
           height: '100%',
         }}
       />
+      {hovered && (
+        <div
+          style={{
+            pointerEvents: 'none',
+            position: 'absolute',
+            top: hovered.y - 10,
+            left: hovered.x + 10,
+            background: 'rgba(255,255,255,0.9)',
+            padding: '2px 4px',
+            border: '1px solid lightgray',
+            borderRadius: '4px',
+            fontSize: '10px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {hovered.text}
+        </div>
+      )}
     </div>
   );
 }
