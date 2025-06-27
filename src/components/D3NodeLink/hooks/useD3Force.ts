@@ -24,6 +24,7 @@ import { useLabelTransform } from './useLabelTransform';
  * - simulationRef: reference to the D3 forceSimulation instance.
  * - transformRef:  reference to the current ZoomTransform (translate + scale).
  * - zoomBehaviorRef: the ZoomBehavior instance (so the parent can call .transform on it).
+ * - redraw: function that re-renders the canvas with current nodes and edges.
  */
 export function useD3Force(
   canvasRef: React.RefObject<HTMLCanvasElement>,
@@ -37,10 +38,12 @@ export function useD3Force(
   simulationRef: React.MutableRefObject<d3.Simulation<CanvasNode, CanvasEdge> | null>;
   transformRef: React.MutableRefObject<d3.ZoomTransform>;
   zoomBehaviorRef: React.MutableRefObject<d3.ZoomBehavior<HTMLCanvasElement, unknown> | null>;
+  redraw: () => void;
 } {
   const simulationRef = useRef<d3.Simulation<CanvasNode, CanvasEdge> | null>(null);
   const transformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown> | null>(null);
+  const drawRef = useRef<() => void>(() => {});
   const centerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dpi = window.devicePixelRatio ?? 1;
@@ -227,6 +230,9 @@ export function useD3Force(
     sim.force('charge', d3.forceManyBody().strength(-9999).distanceMax(9999));
     sim.force('collision', d3.forceCollide(nodeRadius + labelPadding));
 
+    drawRef.current = () => drawCanvas(nodes, edges);
+    drawRef.current();
+
     sim.on('tick', () => {
       if (boundingBox === 'on') {
         nodes.forEach((node) => {
@@ -276,10 +282,7 @@ export function useD3Force(
       .zoom<HTMLCanvasElement, unknown>()
       .filter((event: any) => {
         // allow wheel for zoom, or left-click (button 0) for pan, but skip if Ctrl or Alt is held
-        return (
-          event.type === 'wheel' ||
-          (event.type === 'mousedown' && event.button === 0 && !event.ctrlKey && !event.altKey)
-        );
+        return event.type === 'wheel' || (event.type === 'mousedown' && event.button === 0 && !event.ctrlKey && !event.altKey);
       })
       .scaleExtent([0.1, 10])
       .on('zoom', (event) => {
@@ -301,5 +304,6 @@ export function useD3Force(
     simulationRef,
     transformRef,
     zoomBehaviorRef,
+    redraw: () => drawRef.current(),
   };
 }

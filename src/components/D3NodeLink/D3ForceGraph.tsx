@@ -13,6 +13,7 @@ import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 import { useD3Force } from './hooks/useD3Force';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
+import useD3CumulativeCounts from './hooks/useD3CumulativeCounts';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering = true }: D3NLDViewProps) {
@@ -107,7 +108,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     }
   }, [loading, convertData]);
 
-  const { transformRef, simulationRef, zoomBehaviorRef } = useD3Force(
+  const { transformRef, simulationRef, zoomBehaviorRef, redraw } = useD3Force(
     canvasRef,
     [...d3Nodes, ...ghostNodes],
     [...d3Edges, ...ghostEdges],
@@ -116,6 +117,12 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     false,
     initialCentering,
   );
+
+  useEffect(() => {
+    redraw();
+  }, [redraw, d3Nodes, d3Edges, ghostNodes, ghostEdges]);
+
+  useD3CumulativeCounts(d3Nodes, setD3Nodes, redraw);
 
   const centerView = useCallback(() => {
     if (!zoomBehaviorRef.current || !canvasRef.current) return;
