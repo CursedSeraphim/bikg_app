@@ -16,7 +16,7 @@ export const updateD3NodesGivenCounts = (nodes: CanvasNode[], numberViolationsPe
   });
 };
 
-export function useD3CumulativeCounts(nodes: CanvasNode[], setNodes: (n: CanvasNode[]) => void) {
+export function useD3CumulativeCounts(nodes: CanvasNode[], setNodes: (n: CanvasNode[]) => void, redraw?: () => void) {
   const nodesRef = useRef<CanvasNode[]>(nodes);
   const numberViolationsPerNodeRef = useRef<INumberViolationsPerNodeMap>({});
 
@@ -32,10 +32,13 @@ export function useD3CumulativeCounts(nodes: CanvasNode[], setNodes: (n: CanvasN
         numberViolationsPerNodeRef.current = numberViolationsPerNode;
         updateD3NodesGivenCounts(nodesRef.current, numberViolationsPerNode);
         setNodes([...nodesRef.current]);
+        if (redraw) {
+          redraw();
+        }
       }
     });
     return () => unsubscribe();
-  }, [setNodes]);
+  }, [setNodes, redraw]);
 }
 
 export default useD3CumulativeCounts;

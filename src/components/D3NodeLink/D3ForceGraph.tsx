@@ -35,8 +35,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const [d3Nodes, setD3Nodes] = useState<CanvasNode[]>([]);
   const [d3Edges, setD3Edges] = useState<CanvasEdge[]>([]);
 
-  useD3CumulativeCounts(d3Nodes, setD3Nodes);
-
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { dimensions } = useCanvasDimensions(canvasRef);
   const dpi = window.devicePixelRatio ?? 1;
@@ -110,7 +108,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     }
   }, [loading, convertData]);
 
-  const { transformRef, simulationRef, zoomBehaviorRef } = useD3Force(
+  const { transformRef, simulationRef, zoomBehaviorRef, redraw } = useD3Force(
     canvasRef,
     [...d3Nodes, ...ghostNodes],
     [...d3Edges, ...ghostEdges],
@@ -119,6 +117,12 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     false,
     initialCentering,
   );
+
+  useEffect(() => {
+    redraw();
+  }, [redraw, d3Nodes, d3Edges, ghostNodes, ghostEdges]);
+
+  useD3CumulativeCounts(d3Nodes, setD3Nodes, redraw);
 
   const centerView = useCallback(() => {
     if (!zoomBehaviorRef.current || !canvasRef.current) return;
