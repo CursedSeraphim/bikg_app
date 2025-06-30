@@ -20,7 +20,7 @@ ReactDOM.render(
               components={{
                 title: (
                   <Title order={3} weight={100} color="white">
-                    Boehringer Ingelheim Knowledge Graphs
+                    unVEx
                   </Title>
                 ),
                 logo: <BILogo color="white" />,

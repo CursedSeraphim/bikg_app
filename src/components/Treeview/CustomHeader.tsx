@@ -1,12 +1,12 @@
 // src/components/Treeview/CustomHeader.tsx
 import React, { useState } from 'react';
 import {
-  SELECTED_CUMULATIVE_NODE_COLOR,
-  SELECTED_EXEMPLAR_NODE_COLOR,
-  SELECTED_TYPE_NODE_COLOR,
-  UNSELECTED_CUMULATIVE_NODE_COLOR,
-  UNSELECTED_EXEMPLAR_NODE_COLOR,
-  UNSELECTED_TYPE_NODE_COLOR,
+    SELECTED_CUMULATIVE_NODE_COLOR,
+    SELECTED_EXEMPLAR_NODE_COLOR,
+    SELECTED_TYPE_NODE_COLOR,
+    UNSELECTED_CUMULATIVE_NODE_COLOR,
+    UNSELECTED_EXEMPLAR_NODE_COLOR,
+    UNSELECTED_TYPE_NODE_COLOR,
 } from '../../constants';
 
 interface CustomHeaderProps {
@@ -46,7 +46,7 @@ export function CustomHeader({ onSelect, style, node }: CustomHeaderProps) {
     };
   }
 
-  // Distinguish exemplars vs. cumulative
+  // Distinguish groups vs. cumulative
   const selectedNodeCountColor = node.nViolatingNodes !== 0 ? SELECTED_EXEMPLAR_NODE_COLOR : SELECTED_CUMULATIVE_NODE_COLOR;
   const unselectedNodeCountColor = node.nViolatingNodes !== 0 ? UNSELECTED_EXEMPLAR_NODE_COLOR : UNSELECTED_CUMULATIVE_NODE_COLOR;
 

@@ -14,7 +14,7 @@ export function useInitializeAgentExecutor(tools, model, executorRef) {
 3. If yes, call the appropriate tools.
 4. then ALWAYS think "Can I select/highlight the data I am giving information about in this visualization app by calling the appropriate tools?"
 5. If yes, call the appropriate tools. For instance, by calling select_types (the class of a node), select_constraints (the SHACL constraint of a node), or select_reported_violations (the reported violation of a node) tools.
-The reported violation will have some suffix like _exemplar_6 because it is a grouping of similar violations.
+The reported violation will have some suffix like _group_6 because it is a grouping of similar violations.
 6. Base the final answer exactly on that data and if you selected something inform the user about it.
 
 If the user asks to describe what is selected in the app:
