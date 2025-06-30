@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import _ from 'lodash';
-import store from '../../Store/Store';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../Store/Store';
 import { INumberViolationsPerNodeMap } from '../../../types';
 import { CanvasNode } from '../D3NldTypes';
 
@@ -18,27 +19,24 @@ export const updateD3NodesGivenCounts = (nodes: CanvasNode[], numberViolationsPe
 
 export function useD3CumulativeCounts(nodes: CanvasNode[], setNodes: (n: CanvasNode[]) => void, redraw?: () => void) {
   const nodesRef = useRef<CanvasNode[]>(nodes);
-  const numberViolationsPerNodeRef = useRef<INumberViolationsPerNodeMap>({});
+  const prevCountsRef = useRef<INumberViolationsPerNodeMap>({});
+  const numberViolationsPerNode = useSelector((state: RootState) => state.combined.numberViolationsPerNode);
 
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
 
   useEffect(() => {
-    const unsubscribe = store.subscribe(() => {
-      const { numberViolationsPerNode } = store.getState().combined;
-      const shouldUpdate = !_.isEqual(numberViolationsPerNode, numberViolationsPerNodeRef.current);
-      if (shouldUpdate) {
-        numberViolationsPerNodeRef.current = numberViolationsPerNode;
-        updateD3NodesGivenCounts(nodesRef.current, numberViolationsPerNode);
-        setNodes([...nodesRef.current]);
-        if (redraw) {
-          redraw();
-        }
+    if (!_.isEqual(numberViolationsPerNode, prevCountsRef.current)) {
+      prevCountsRef.current = numberViolationsPerNode;
+      const updatedNodes = nodesRef.current.map((n) => ({ ...n }));
+      updateD3NodesGivenCounts(updatedNodes, numberViolationsPerNode);
+      setNodes(updatedNodes);
+      if (redraw) {
+        redraw();
       }
-    });
-    return () => unsubscribe();
-  }, [setNodes, redraw]);
+    }
+  }, [numberViolationsPerNode, setNodes, redraw]);
 }
 
 export default useD3CumulativeCounts;

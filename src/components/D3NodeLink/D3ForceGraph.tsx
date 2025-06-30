@@ -3,7 +3,13 @@
 import * as d3 from 'd3';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { selectCumulativeNumberViolationsPerNode, selectD3BoundingBox, selectTypes, selectViolations } from '../Store/CombinedSlice';
+import {
+  selectCumulativeNumberViolationsPerNode,
+  selectD3BoundingBox,
+  selectTypes,
+  selectViolations,
+  selectNumberViolationsPerNode,
+} from '../Store/CombinedSlice';
 import { useD3Data } from './useD3Data';
 
 import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
@@ -14,7 +20,6 @@ import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 import { useD3Force } from './hooks/useD3Force';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 import useD3CumulativeCounts, { updateD3NodesGivenCounts } from './hooks/useD3CumulativeCounts';
-import store from '../Store/Store';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering = true }: D3NLDViewProps) {
@@ -23,6 +28,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const types = useSelector(selectTypes);
   const cumulativeNumberViolationsPerType = useSelector(selectCumulativeNumberViolationsPerNode);
   const d3BoundingBox = useSelector(selectD3BoundingBox);
+  const numberViolationsPerNode = useSelector(selectNumberViolationsPerNode);
 
   // Fetch Cytoscape‐like data used by the D3 view
   const { loading, cyDataNodes, cyDataEdges } = useD3Data({
@@ -100,12 +106,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     }));
 
     // Ensure node labels include the current cumulative counts
-    const { numberViolationsPerNode } = store.getState().combined;
     updateD3NodesGivenCounts(nextNodes, numberViolationsPerNode);
 
     setD3Nodes(nextNodes);
     setD3Edges(newEdges);
-  }, [cyDataNodes, cyDataEdges]);
+  }, [cyDataNodes, cyDataEdges, numberViolationsPerNode]);
 
   useEffect(() => {
     if (!loading) {

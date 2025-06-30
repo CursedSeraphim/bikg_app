@@ -1009,6 +1009,7 @@ export const selectNamespaces = (state: { combined: ICombinedState }) => state.c
 export const selectTypes = (state: { combined: ICombinedState }) => state.combined.types;
 export const selectSubClassOfTriples = (state: { combined: ICombinedState }) => state.combined.subClassOfTriples;
 export const selectCumulativeNumberViolationsPerNode = (state: { combined: ICombinedState }) => state.combined.cumulativeNumberViolationsPerNode;
+export const selectNumberViolationsPerNode = (state: { combined: ICombinedState }) => state.combined.numberViolationsPerNode;
 export const selectHiddenLabels = (state: { combined: ICombinedState }) => state.combined.hiddenLabels;
 export const selectHiddenLineupColumns = (state: { combined: ICombinedState }) => state.combined.hiddenLineupColumns;
 export const selectNodeLabels = (state: { combined: ICombinedState }) => state.combined.nodeLabels;
