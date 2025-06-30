@@ -8,6 +8,8 @@ import { useD3Data } from './useD3Data';
 
 import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
 import { computeColorForId } from './D3NldUtils';
+import store from '../Store/Store';
+import { updateD3NodesGivenCounts } from './hooks/useD3CumulativeCounts';
 import { useAdjacency } from './hooks/useAdjacency';
 import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3ContextMenu } from './hooks/useD3ContextMenu';
@@ -98,6 +100,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       visible: true,
     }));
 
+    updateD3NodesGivenCounts(nextNodes, store.getState().combined.numberViolationsPerNode);
     setD3Nodes(nextNodes);
     setD3Edges(newEdges);
   }, [cyDataNodes, cyDataEdges]);
