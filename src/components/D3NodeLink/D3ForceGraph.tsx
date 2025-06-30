@@ -13,7 +13,8 @@ import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 import { useD3Force } from './hooks/useD3Force';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
-import useD3CumulativeCounts from './hooks/useD3CumulativeCounts';
+import useD3CumulativeCounts, { updateD3NodesGivenCounts } from './hooks/useD3CumulativeCounts';
+import store from '../Store/Store';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering = true }: D3NLDViewProps) {
@@ -97,6 +98,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       label: e.data.label,
       visible: true,
     }));
+
+    // Ensure node labels include the current cumulative counts
+    const { numberViolationsPerNode } = store.getState().combined;
+    updateD3NodesGivenCounts(nextNodes, numberViolationsPerNode);
 
     setD3Nodes(nextNodes);
     setD3Edges(newEdges);
