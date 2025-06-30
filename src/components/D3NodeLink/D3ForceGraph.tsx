@@ -527,7 +527,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         });
         setGhostNodes(newGhostNodes);
         setGhostEdges(newGhostEdges);
-        simulationRef.current?.alphaTarget(0.3).restart();
+        if (newGhostNodes.length > 0) {
+          simulationRef.current?.alphaTarget(0.3).restart();
+        }
       } else {
         clearPreview();
       }
