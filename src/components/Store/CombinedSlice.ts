@@ -378,23 +378,26 @@ const updateViolationsPerNode = (sourceMap: Map<string, number>, numberViolation
 /**
  * Function to update cumulative counts in the tree hierarchy.
  */
-const updateCumulativeCounts = (
-  node: IServerTreeNode,
-  numberViolationsPerNode: INumberViolationsPerNodeMap,
-  knownTypes: Set<string>,
-) => {
-  let cumulativeCount = numberViolationsPerNode[node.id]?.selected ?? 0;
+const updateCumulativeCounts = (node: IServerTreeNode, numberViolationsPerNode: INumberViolationsPerNodeMap, knownTypes: Set<string>) => {
+  if (knownTypes.has(node.id)) {
+    let cumulativeCount = 0;
 
-  for (const child of node.children) {
-    cumulativeCount += updateCumulativeCounts(child, numberViolationsPerNode, knownTypes);
+    for (const child of node.children) {
+      updateCumulativeCounts(child, numberViolationsPerNode, knownTypes);
+      if (numberViolationsPerNode[child.id] && knownTypes.has(child.id)) {
+        cumulativeCount += numberViolationsPerNode[child.id].cumulativeSelected;
+      }
+    }
+
+    if (numberViolationsPerNode[node.id]) {
+      // eslint-disable-next-line no-param-reassign
+      numberViolationsPerNode[node.id].cumulativeSelected += cumulativeCount;
+    }
+  } else {
+    for (const child of node.children) {
+      updateCumulativeCounts(child, numberViolationsPerNode, knownTypes);
+    }
   }
-
-  if (numberViolationsPerNode[node.id]) {
-    // eslint-disable-next-line no-param-reassign
-    numberViolationsPerNode[node.id].cumulativeSelected = cumulativeCount;
-  }
-
-  return cumulativeCount;
 };
 
 function resetTypesCounts(numberViolationsPerNode: INumberViolationsPerNodeMap, selectedTypesMap: Map<string, number>, knownTypes: Set<string>): void {
