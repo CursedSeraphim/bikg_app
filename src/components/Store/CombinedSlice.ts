@@ -400,9 +400,12 @@ const updateCumulativeCounts = (node: IServerTreeNode, numberViolationsPerNode: 
   }
 };
 
-function resetTypesCounts(numberViolationsPerNode: INumberViolationsPerNodeMap, selectedTypesMap: Map<string, number>, knownTypes: Set<string>): void {
+function resetTypesCounts(
+  numberViolationsPerNode: INumberViolationsPerNodeMap,
+  selectedTypesMap: Map<string, number>,
+): void {
   Object.keys(numberViolationsPerNode).forEach((key) => {
-    if (knownTypes.has(key) && !selectedTypesMap.has(key)) {
+    if (!selectedTypesMap.has(key)) {
       // eslint-disable-next-line no-param-reassign
       numberViolationsPerNode[key].cumulativeSelected = 0;
       // eslint-disable-next-line no-param-reassign
@@ -436,7 +439,7 @@ function calculateNewNumberViolationsPerNode(
   updateViolationsPerNode(newSelectedViolationsMap, numberViolationsPerNode);
   updateViolationsPerNode(newSelectedExemplarsMap, numberViolationsPerNode);
 
-  resetTypesCounts(numberViolationsPerNode, newSelectedTypesMap, knownTypes);
+  resetTypesCounts(numberViolationsPerNode, newSelectedTypesMap);
   updateCumulativeCounts(ontologyTree, numberViolationsPerNode, knownTypes);
 
   return numberViolationsPerNode;
