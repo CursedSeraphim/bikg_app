@@ -450,33 +450,21 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       }
 
       const { nodeIds, edges: expansionEdges } = computeExpansion(closest.id, mode);
-      const allVisible = nodeIds.length === 0;
+      const edgesToAdd = expansionEdges.filter((e) => hiddenEdgesRef.current.has(e.id));
+      const edgesToRemove = expansionEdges.filter((e) => !hiddenEdgesRef.current.has(e.id));
+
+      // reset preview before computing new one to avoid leftover highlights
+      activePreviewRef.current = { mode: null, nodeId: null };
+      setGhostNodes([]);
+      setGhostEdges([]);
 
       const newGhostNodes: CanvasNode[] = [];
       const newGhostEdges: CanvasEdge[] = [];
       const addedEdgeKeys = new Set<string>();
 
-      if (allVisible) {
-        const visibleIds = mode === 'children' ? adjacencyRef.current[closest.id] || [] : revAdjRef.current[closest.id] || [];
-        visibleIds.forEach((nid) => {
-          const edgeData = cyDataEdges.find(
-            (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
-          );
-          if (edgeData) {
-            const key = `${edgeData.data.source}->${edgeData.data.target}`;
-            if (!addedEdgeKeys.has(key)) {
-              addedEdgeKeys.add(key);
-              newGhostEdges.push({
-                source: edgeData.data.source,
-                target: edgeData.data.target,
-                label: edgeData.data.label,
-                visible: true,
-                previewRemoval: true,
-              });
-            }
-          }
-        });
-      } else {
+      const useAddition = edgesToAdd.length > 0 || nodeIds.length > 0;
+
+      if (useAddition) {
         nodeIds.forEach((nid) => {
           const nodeData = cyDataNodes.find((n) => n.data.id === nid);
           if (!nodeData) return;
@@ -502,11 +490,27 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
             });
           }
         });
+      } else {
+        edgesToRemove.forEach((edge) => {
+          const edgeData = cyDataEdges.find((e) => e.data.id === edge.id);
+          if (!edgeData) return;
+          const key = `${edgeData.data.source}->${edgeData.data.target}`;
+          if (!addedEdgeKeys.has(key)) {
+            addedEdgeKeys.add(key);
+            newGhostEdges.push({
+              source: edgeData.data.source,
+              target: edgeData.data.target,
+              label: edgeData.data.label,
+              visible: true,
+              previewRemoval: true,
+            });
+          }
+        });
       }
 
-      const hasRemovalEdges = newGhostEdges.some((e) => e.previewRemoval);
+      const hasPreview = newGhostNodes.length > 0 || newGhostEdges.length > 0;
 
-      if (newGhostNodes.length > 0 || hasRemovalEdges) {
+      if (hasPreview) {
         activePreviewRef.current = { mode, nodeId: closest.id };
         Object.values(nodeMapRef.current).forEach((n) => {
           // eslint-disable-next-line no-param-reassign
