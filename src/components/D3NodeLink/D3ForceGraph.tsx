@@ -450,7 +450,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       }
 
       const { nodeIds, edges: expansionEdges } = computeExpansion(closest.id, mode);
-      const allVisible = nodeIds.length === 0;
+      const hasHiddenEdges = expansionEdges.some((e) => hiddenEdgesRef.current.has(e.id));
+      const allVisible = nodeIds.length === 0 && !hasHiddenEdges;
 
       const newGhostNodes: CanvasNode[] = [];
       const newGhostEdges: CanvasEdge[] = [];
@@ -525,7 +526,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         clearPreview();
       }
     },
-    [d3Nodes, transformRef, adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, simulationRef, clearPreview, computeExpansion],
+    [d3Nodes, transformRef, adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, hiddenEdgesRef, simulationRef, clearPreview, computeExpansion],
   );
 
   useEffect(() => {
