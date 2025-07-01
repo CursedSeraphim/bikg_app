@@ -9,13 +9,13 @@ import { useD3Data } from './useD3Data';
 import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
 import { computeColorForId } from './D3NldUtils';
 import store from '../Store/Store';
-import { updateD3NodesGivenCounts } from './hooks/useD3CumulativeCounts';
+import useD3CumulativeCounts, { updateD3NodesGivenCounts } from './hooks/useD3CumulativeCounts';
 import { useAdjacency } from './hooks/useAdjacency';
 import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 import { useD3Force } from './hooks/useD3Force';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
-import useD3CumulativeCounts from './hooks/useD3CumulativeCounts';
+import useViolationGroupHoverList from './hooks/useViolationGroupHoverList';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering = true }: D3NLDViewProps) {
@@ -126,6 +126,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   }, [redraw, d3Nodes, d3Edges, ghostNodes, ghostEdges]);
 
   useD3CumulativeCounts(d3Nodes, setD3Nodes, redraw);
+
+  const focusNodeTooltip = useViolationGroupHoverList(canvasRef, [...d3Nodes, ...ghostNodes], transformRef);
 
   const centerView = useCallback(() => {
     if (!zoomBehaviorRef.current || !canvasRef.current) return;
@@ -617,6 +619,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         }}
       />
       {contextMenu}
+      {focusNodeTooltip}
     </div>
   );
 }
