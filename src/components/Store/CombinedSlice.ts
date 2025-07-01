@@ -361,52 +361,7 @@ const incrementMapValue = (map: Map<string, number>, key: string) => {
   map.set(key, (map.get(key) || 0) + 1);
 };
 
-/**
- * Helper function to update numberViolationsPerNode based on a map.
- */
-const updateViolationsPerNode = (
-  sourceMap: Map<string, number>,
-  numberViolationsPerNode: INumberViolationsPerNodeMap,
-) => {
-  sourceMap.forEach((value, key) => {
-    if (Object.hasOwnProperty.call(numberViolationsPerNode, key)) {
-      // eslint-disable-next-line no-param-reassign
-      numberViolationsPerNode[key].selected = value;
-      // eslint-disable-next-line no-param-reassign
-      numberViolationsPerNode[key].cumulativeSelected = value;
-    }
-  });
-};
-
-/**
- * Function to update cumulative counts in the tree hierarchy.
- */
-const updateCumulativeCounts = (node: IServerTreeNode, numberViolationsPerNode: INumberViolationsPerNodeMap, knownTypes: Set<string>) => {
-  if (knownTypes.has(node.id)) {
-    let cumulativeCount = 0;
-
-    for (const child of node.children) {
-      updateCumulativeCounts(child, numberViolationsPerNode, knownTypes);
-      if (numberViolationsPerNode[child.id] && knownTypes.has(child.id)) {
-        cumulativeCount += numberViolationsPerNode[child.id].cumulativeSelected;
-      }
-    }
-
-    if (numberViolationsPerNode[node.id]) {
-      // eslint-disable-next-line no-param-reassign
-      numberViolationsPerNode[node.id].cumulativeSelected += cumulativeCount;
-    }
-  } else {
-    for (const child of node.children) {
-      updateCumulativeCounts(child, numberViolationsPerNode, knownTypes);
-    }
-  }
-};
-
-function resetCounts(
-  numberViolationsPerNode: INumberViolationsPerNodeMap,
-  selectionMaps: Map<string, number>[],
-): void {
+function resetCounts(numberViolationsPerNode: INumberViolationsPerNodeMap, selectionMaps: Map<string, number>[]): void {
   Object.keys(numberViolationsPerNode).forEach((key) => {
     const isSelected = selectionMaps.some((m) => m.has(key));
     if (!isSelected) {
@@ -432,19 +387,57 @@ function calculateNewNumberViolationsPerNode(
   const newSelectedViolationsMap = new Map<string, number>();
   const newSelectedExemplarsMap = new Map<string, number>();
 
+  const selectedNodeSets = new Map<string, Set<string>>();
+
+  const addToSet = (map: Map<string, Set<string>>, key: string, value: string) => {
+    if (!map.has(key)) {
+      map.set(key, new Set<string>());
+    }
+    map.get(key)?.add(value);
+  };
+
   newSelectedNodes.forEach((node) => {
     const { types, violations, exemplars } = focusNodeMap[node];
-    types.forEach((type: string) => incrementMapValue(newSelectedTypesMap, type));
-    violations.forEach((violation: string) => incrementMapValue(newSelectedViolationsMap, violation));
-    exemplars.forEach((exemplar: string) => incrementMapValue(newSelectedExemplarsMap, exemplar));
+    types.forEach((type: string) => {
+      incrementMapValue(newSelectedTypesMap, type);
+      addToSet(selectedNodeSets, type, node);
+    });
+    violations.forEach((violation: string) => {
+      incrementMapValue(newSelectedViolationsMap, violation);
+      addToSet(selectedNodeSets, violation, node);
+    });
+    exemplars.forEach((exemplar: string) => {
+      incrementMapValue(newSelectedExemplarsMap, exemplar);
+      addToSet(selectedNodeSets, exemplar, node);
+    });
   });
 
-  updateViolationsPerNode(newSelectedTypesMap, numberViolationsPerNode);
-  updateViolationsPerNode(newSelectedViolationsMap, numberViolationsPerNode);
-  updateViolationsPerNode(newSelectedExemplarsMap, numberViolationsPerNode);
+  // Update selected counts based on unique node sets
+  selectedNodeSets.forEach((set, key) => {
+    if (Object.hasOwnProperty.call(numberViolationsPerNode, key)) {
+      // eslint-disable-next-line no-param-reassign
+      numberViolationsPerNode[key].selected = set.size;
+      // eslint-disable-next-line no-param-reassign
+      numberViolationsPerNode[key].cumulativeSelected = set.size;
+    }
+  });
 
-  resetCounts(numberViolationsPerNode, [newSelectedTypesMap, newSelectedViolationsMap]);
-  updateCumulativeCounts(ontologyTree, numberViolationsPerNode, knownTypes);
+  resetCounts(numberViolationsPerNode, [newSelectedTypesMap, newSelectedViolationsMap, newSelectedExemplarsMap]);
+
+  const accumulateSets = (node: IServerTreeNode): Set<string> => {
+    const currentSet = new Set<string>(selectedNodeSets.get(node.id) ?? []);
+    node.children.forEach((child) => {
+      const childSet = accumulateSets(child);
+      childSet.forEach((fn) => currentSet.add(fn));
+    });
+    if (knownTypes.has(node.id) && numberViolationsPerNode[node.id]) {
+      // eslint-disable-next-line no-param-reassign
+      numberViolationsPerNode[node.id].cumulativeSelected = currentSet.size;
+    }
+    return currentSet;
+  };
+
+  accumulateSets(ontologyTree);
 
   return numberViolationsPerNode;
 }
