@@ -364,10 +364,7 @@ const incrementMapValue = (map: Map<string, number>, key: string) => {
 /**
  * Helper function to update numberViolationsPerNode based on a map.
  */
-const updateViolationsPerNode = (
-  sourceMap: Map<string, number>,
-  numberViolationsPerNode: INumberViolationsPerNodeMap,
-) => {
+const updateViolationsPerNode = (sourceMap: Map<string, number>, numberViolationsPerNode: INumberViolationsPerNodeMap) => {
   sourceMap.forEach((value, key) => {
     if (Object.hasOwnProperty.call(numberViolationsPerNode, key)) {
       // eslint-disable-next-line no-param-reassign
@@ -403,10 +400,7 @@ const updateCumulativeCounts = (node: IServerTreeNode, numberViolationsPerNode: 
   }
 };
 
-function resetCounts(
-  numberViolationsPerNode: INumberViolationsPerNodeMap,
-  selectionMaps: Map<string, number>[],
-): void {
+function resetCounts(numberViolationsPerNode: INumberViolationsPerNodeMap, selectionMaps: Map<string, number>[]): void {
   Object.keys(numberViolationsPerNode).forEach((key) => {
     const isSelected = selectionMaps.some((m) => m.has(key));
     if (!isSelected) {
@@ -443,7 +437,7 @@ function calculateNewNumberViolationsPerNode(
   updateViolationsPerNode(newSelectedViolationsMap, numberViolationsPerNode);
   updateViolationsPerNode(newSelectedExemplarsMap, numberViolationsPerNode);
 
-  resetCounts(numberViolationsPerNode, [newSelectedTypesMap, newSelectedViolationsMap]);
+  resetCounts(numberViolationsPerNode, [newSelectedTypesMap, newSelectedViolationsMap, newSelectedExemplarsMap]);
   updateCumulativeCounts(ontologyTree, numberViolationsPerNode, knownTypes);
 
   return numberViolationsPerNode;
