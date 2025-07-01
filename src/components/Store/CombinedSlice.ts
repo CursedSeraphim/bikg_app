@@ -364,7 +364,10 @@ const incrementMapValue = (map: Map<string, number>, key: string) => {
 /**
  * Helper function to update numberViolationsPerNode based on a map.
  */
-const updateViolationsPerNode = (sourceMap: Map<string, number>, numberViolationsPerNode: INumberViolationsPerNodeMap) => {
+const updateViolationsPerNode = (
+  sourceMap: Map<string, number>,
+  numberViolationsPerNode: INumberViolationsPerNodeMap,
+) => {
   sourceMap.forEach((value, key) => {
     if (Object.hasOwnProperty.call(numberViolationsPerNode, key)) {
       // eslint-disable-next-line no-param-reassign
@@ -400,9 +403,13 @@ const updateCumulativeCounts = (node: IServerTreeNode, numberViolationsPerNode: 
   }
 };
 
-function resetTypesCounts(numberViolationsPerNode: INumberViolationsPerNodeMap, selectedTypesMap: Map<string, number>, knownTypes: Set<string>): void {
+function resetCounts(
+  numberViolationsPerNode: INumberViolationsPerNodeMap,
+  selectionMaps: Map<string, number>[],
+): void {
   Object.keys(numberViolationsPerNode).forEach((key) => {
-    if (knownTypes.has(key) && !selectedTypesMap.has(key)) {
+    const isSelected = selectionMaps.some((m) => m.has(key));
+    if (!isSelected) {
       // eslint-disable-next-line no-param-reassign
       numberViolationsPerNode[key].cumulativeSelected = 0;
       // eslint-disable-next-line no-param-reassign
@@ -436,7 +443,7 @@ function calculateNewNumberViolationsPerNode(
   updateViolationsPerNode(newSelectedViolationsMap, numberViolationsPerNode);
   updateViolationsPerNode(newSelectedExemplarsMap, numberViolationsPerNode);
 
-  resetTypesCounts(numberViolationsPerNode, newSelectedTypesMap, knownTypes);
+  resetCounts(numberViolationsPerNode, [newSelectedTypesMap, newSelectedViolationsMap]);
   updateCumulativeCounts(ontologyTree, numberViolationsPerNode, knownTypes);
 
   return numberViolationsPerNode;
@@ -616,7 +623,7 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
@@ -691,7 +698,7 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
     },
     setSelectedFocusNodes: (state, action) => {
@@ -763,7 +770,7 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
 
       updateSelectedViolationExemplars(state);
@@ -804,7 +811,7 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
@@ -834,7 +841,7 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
     },
     addSingleSelectedType: (state, action) => {
@@ -863,7 +870,7 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
@@ -918,7 +925,7 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
@@ -969,7 +976,7 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
