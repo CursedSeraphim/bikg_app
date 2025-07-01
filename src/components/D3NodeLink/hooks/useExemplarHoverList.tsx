@@ -11,15 +11,15 @@ interface HoverState {
 }
 
 /**
- * Displays a floating list of focus nodes when hovering over a violation group node.
- * The list is rendered as a fixed overlay so it is always visible on screen.
+ * Displays a floating list of focus nodes when hovering over a violation exemplar node.
+ * The list is positioned near the node and appears on top of the UI.
  */
-export default function useViolationGroupHoverList(
+export default function useExemplarHoverList(
   canvasRef: React.RefObject<HTMLCanvasElement>,
   nodes: CanvasNode[],
   transformRef: React.MutableRefObject<d3.ZoomTransform>,
 ) {
-  const violationMap = useSelector((state: any) => state.combined.violationMap as Record<string, { nodes: string[] }>);
+  const exemplarMap = useSelector((state: any) => state.combined.exemplarMap as Record<string, { nodes: string[] }>);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const [state, setState] = useState<HoverState>({ visible: false, x: 0, y: 0, focusNodes: [] });
 
@@ -49,15 +49,22 @@ export default function useViolationGroupHoverList(
       });
 
       if (closest && minDist < threshold) {
-        const data = violationMap?.[closest.id];
-        if (data?.nodes?.length) {
-          setState({ visible: true, x: event.clientX + 10, y: event.clientY + 10, focusNodes: data.nodes });
+        const data = exemplarMap?.[closest.id];
+        if (data?.nodes?.length && canvasRef.current) {
+          const canvasRect = canvasRef.current.getBoundingClientRect();
+          const [sx, sy] = transformRef.current.apply([closest.x ?? 0, closest.y ?? 0]);
+          setState({
+            visible: true,
+            x: canvasRect.left + sx + 10,
+            y: canvasRect.top + sy + 10,
+            focusNodes: data.nodes,
+          });
           return;
         }
       }
       hide();
     },
-    [canvasRef, nodes, transformRef, violationMap, hide],
+    [canvasRef, nodes, transformRef, exemplarMap, hide],
   );
 
   useEffect(() => {
@@ -90,7 +97,7 @@ export default function useViolationGroupHoverList(
         position: 'fixed',
         top: state.y,
         left: state.x,
-        maxHeight: '50vh',
+        maxHeight: '14em', // ~7 items
         overflowY: 'auto',
         background: '#fff',
         border: '1px solid #ccc',

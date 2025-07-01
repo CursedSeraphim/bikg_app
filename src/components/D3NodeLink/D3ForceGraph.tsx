@@ -15,7 +15,7 @@ import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 import { useD3Force } from './hooks/useD3Force';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
-import useViolationGroupHoverList from './hooks/useViolationGroupHoverList';
+import useExemplarHoverList from './hooks/useExemplarHoverList';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering = true }: D3NLDViewProps) {
@@ -127,7 +127,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
   useD3CumulativeCounts(d3Nodes, setD3Nodes, redraw);
 
-  const focusNodeTooltip = useViolationGroupHoverList(canvasRef, [...d3Nodes, ...ghostNodes], transformRef);
+  const focusNodeTooltip = useExemplarHoverList(canvasRef, [...d3Nodes, ...ghostNodes], transformRef);
 
   const centerView = useCallback(() => {
     if (!zoomBehaviorRef.current || !canvasRef.current) return;
