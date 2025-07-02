@@ -7,8 +7,7 @@ import { INumberViolationsPerNodeMap } from './types';
 
 // Gets the base node name from the composite key
 const getBaseId = (id: string): string => {
-  const [base] = id.split(' ');
-  return base.replace(/_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, '');
+  return id.replace(/_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, '');
 };
 
 const updateNodeLabel = (node: any, baseId: string, cumulativeSelected: number, cumulativeViolations: number, violations: number) => {

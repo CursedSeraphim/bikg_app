@@ -9,9 +9,8 @@ import { CanvasNode } from '../D3NldTypes';
  * This keeps human readable labels intact when cumulative counts are added.
  */
 const getBaseId = (id: string): string => {
-  const [base] = id.split(' ');
-  // Remove trailing "_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" if present
-  return base.replace(/_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, '');
+  // Remove trailing UUID ("_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx") if present
+  return id.replace(/_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, '');
 };
 
 export const updateD3NodesGivenCounts = (nodes: CanvasNode[], numberViolationsPerNode: INumberViolationsPerNodeMap) => {
