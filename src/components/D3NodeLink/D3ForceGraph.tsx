@@ -15,6 +15,7 @@ import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 import { useD3Force } from './hooks/useD3Force';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
+import { useD3ResetView } from './hooks/useD3ResetView';
 import useExemplarHoverList from './hooks/useExemplarHoverList';
 import { getNearNodeThreshold } from './hooks/hoverRadius';
 
@@ -166,7 +167,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       .call(zoomBehaviorRef.current.transform, transform as any);
   }, [zoomBehaviorRef, canvasRef, d3Nodes, ghostNodes, dimensions, transformRef]);
 
-  const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef, centerView);
+  const { resetView } = useD3ResetView(cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef, originRef, convertData);
+
+  const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef, centerView, resetView);
 
   const { computeExpansion, showChildren, hideChildren, showParents, hideParents } = useNodeVisibility(
     cyDataNodes,
