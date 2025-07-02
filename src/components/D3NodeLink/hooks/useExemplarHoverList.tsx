@@ -1,6 +1,7 @@
 import * as d3 from 'd3';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { RootState } from '../../Store/Store';
 import { CanvasNode } from '../D3NldTypes';
 
 interface HoverState {
@@ -19,9 +20,18 @@ export default function useExemplarHoverList(
   nodes: CanvasNode[],
   transformRef: React.MutableRefObject<d3.ZoomTransform>,
 ) {
-  const exemplarMap = useSelector((state: any) => state.combined.exemplarMap as Record<string, { nodes: string[] }>);
+  const exemplarMap = useSelector((state: RootState) => state.combined.exemplarMap);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const overTooltipRef = useRef(false);
+  const leaveTimeoutRef = useRef<number>();
   const [state, setState] = useState<HoverState>({ visible: false, x: 0, y: 0, focusNodes: [] });
+
+  const clearLeaveTimeout = useCallback(() => {
+    if (leaveTimeoutRef.current !== undefined) {
+      window.clearTimeout(leaveTimeoutRef.current);
+      leaveTimeoutRef.current = undefined;
+    }
+  }, []);
 
   const hide = useCallback(() => {
     setState((s) => ({ ...s, visible: false }));
@@ -30,6 +40,7 @@ export default function useExemplarHoverList(
   const handleMove = useCallback(
     (event: MouseEvent) => {
       if (!canvasRef.current) return;
+      clearLeaveTimeout();
       const [pxRaw, pyRaw] = d3.pointer(event, canvasRef.current);
       const [px, py] = transformRef.current.invert([pxRaw, pyRaw]);
 
@@ -64,19 +75,31 @@ export default function useExemplarHoverList(
       }
       hide();
     },
-    [canvasRef, nodes, transformRef, exemplarMap, hide],
+    [canvasRef, nodes, transformRef, exemplarMap, hide, clearLeaveTimeout],
   );
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
+    const handleLeave = () => {
+      leaveTimeoutRef.current = window.setTimeout(() => {
+        if (!overTooltipRef.current) hide();
+      }, 50);
+    };
+    const handleEnter = () => {
+      clearLeaveTimeout();
+    };
+
     canvas.addEventListener('mousemove', handleMove);
-    canvas.addEventListener('mouseleave', hide);
+    canvas.addEventListener('mouseleave', handleLeave);
+    canvas.addEventListener('mouseenter', handleEnter);
     return () => {
       canvas.removeEventListener('mousemove', handleMove);
-      canvas.removeEventListener('mouseleave', hide);
+      canvas.removeEventListener('mouseleave', handleLeave);
+      canvas.removeEventListener('mouseenter', handleEnter);
+      clearLeaveTimeout();
     };
-  }, [canvasRef, handleMove, hide]);
+  }, [canvasRef, handleMove, hide, clearLeaveTimeout]);
 
   useEffect(() => {
     if (state.visible && tooltipRef.current) {
@@ -93,6 +116,14 @@ export default function useExemplarHoverList(
   const tooltip = state.visible ? (
     <div
       ref={tooltipRef}
+      onMouseEnter={() => {
+        overTooltipRef.current = true;
+        clearLeaveTimeout();
+      }}
+      onMouseLeave={() => {
+        overTooltipRef.current = false;
+        hide();
+      }}
       style={{
         position: 'fixed',
         top: state.y,
