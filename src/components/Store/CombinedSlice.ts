@@ -1291,7 +1291,8 @@ const extractNamespace = (uri) => {
 
 // Helper function to find or add node
 const findOrAddNode = (id, label, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList) => {
-  const { cumulativeSelected = 0, cumulativeViolations = 0, violations = 0 } = numberViolationsPerNode[id] || numberViolationsPerNode[id.split(' ')[0]] || {};
+  const baseId = id.replace(/_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, '');
+  const { cumulativeSelected = 0, cumulativeViolations = 0, violations = 0 } = numberViolationsPerNode[id] || numberViolationsPerNode[baseId] || {};
 
   const hasCounts = cumulativeSelected !== 0 || cumulativeViolations !== 0;
   const labelSuffix = hasCounts ? ` (${cumulativeSelected}/${cumulativeViolations})` : '';
