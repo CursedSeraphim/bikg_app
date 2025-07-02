@@ -4,7 +4,15 @@ import store from '../../Store/Store';
 import { INumberViolationsPerNodeMap } from '../../../types';
 import { CanvasNode } from '../D3NldTypes';
 
-const getBaseId = (compositeKey: string): string => compositeKey.split(' ')[0];
+/**
+ * Extracts the underlying node id without any auto generated UUID suffix.
+ * This keeps human readable labels intact when cumulative counts are added.
+ */
+const getBaseId = (id: string): string => {
+  const [base] = id.split(' ');
+  // Remove trailing "_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" if present
+  return base.replace(/_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, '');
+};
 
 export const updateD3NodesGivenCounts = (nodes: CanvasNode[], numberViolationsPerNode: INumberViolationsPerNodeMap) => {
   nodes.forEach((node) => {
