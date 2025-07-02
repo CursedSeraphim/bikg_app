@@ -1,6 +1,6 @@
 import type { ZoomTransform } from 'd3';
 
-export const NODE_RADIUS_PX = 200;
+export const NODE_RADIUS_PX = 50;
 export const HOVER_RADIUS_MULTIPLIER = 2;
 
 /**
