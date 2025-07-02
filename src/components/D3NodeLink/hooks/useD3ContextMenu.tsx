@@ -1,6 +1,7 @@
 import * as d3 from 'd3';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { CanvasNode } from '../D3NldTypes';
+import { getNearNodeThreshold } from './hoverRadius';
 
 interface ContextMenuState {
   visible: boolean;
@@ -32,10 +33,7 @@ export function useD3ContextMenu(
       const transform = transformRef.current;
       const [px, py] = transform.invert([pxRaw, pyRaw]);
 
-      const NODE_RADIUS_PX = 200;
-      const CLICK_RADIUS_PX = NODE_RADIUS_PX * 2;
-      const effectiveRadius = CLICK_RADIUS_PX / (transform?.k ?? 1);
-      const THRESHOLD = effectiveRadius * effectiveRadius;
+      const THRESHOLD = getNearNodeThreshold(transform);
 
       let closest: CanvasNode | null = null;
       let minDist = Infinity;
