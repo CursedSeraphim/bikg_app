@@ -11,11 +11,15 @@ export function useD3ResetView(
 ) {
   const initialNodesRef = useRef<ICytoNode[]>([]);
   const initialEdgesRef = useRef<ICytoEdge[]>([]);
+  const initialNodeIdsRef = useRef<Set<string>>(new Set());
+  const initialEdgeIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (initialNodesRef.current.length === 0 && cyDataNodes.length > 0) {
       initialNodesRef.current = cyDataNodes.map((n) => ({ ...n, data: { ...n.data } }));
       initialEdgesRef.current = cyDataEdges.map((e) => ({ ...e, data: { ...e.data } }));
+      initialNodeIdsRef.current = new Set(cyDataNodes.map((n) => n.data.id));
+      initialEdgeIdsRef.current = new Set(cyDataEdges.map((e) => e.data.id));
     }
   }, [cyDataNodes, cyDataEdges]);
 
@@ -40,10 +44,22 @@ export function useD3ResetView(
       }
     });
 
+    cyDataNodes.forEach((node) => {
+      if (!initialNodeIdsRef.current.has(node.data.id)) {
+        node.data.visible = false;
+      }
+    });
+
     initialEdgesRef.current.forEach((e) => {
       const edge = cyDataEdges.find((v) => v.data.id === e.data.id);
       if (edge) {
         edge.data.visible = e.data.visible;
+      }
+    });
+
+    cyDataEdges.forEach((edge) => {
+      if (!initialEdgeIdsRef.current.has(edge.data.id)) {
+        edge.data.visible = false;
       }
     });
 
