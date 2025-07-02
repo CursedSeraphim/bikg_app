@@ -55,8 +55,8 @@ export default function useExemplarHoverList(
           const [sx, sy] = transformRef.current.apply([closest.x ?? 0, closest.y ?? 0]);
           setState({
             visible: true,
-            x: canvasRect.left + sx + 10,
-            y: canvasRect.top + sy + 10,
+            x: canvasRect.left + sx,
+            y: canvasRect.top + sy,
             focusNodes: data.nodes,
           });
           return;
@@ -97,7 +97,7 @@ export default function useExemplarHoverList(
         position: 'fixed',
         top: state.y,
         left: state.x,
-        maxHeight: '14em', // ~7 items
+        maxHeight: '10em',
         overflowY: 'auto',
         background: '#fff',
         border: '1px solid #ccc',
