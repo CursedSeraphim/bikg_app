@@ -16,6 +16,7 @@ import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 import { useD3Force } from './hooks/useD3Force';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 import useExemplarHoverList from './hooks/useExemplarHoverList';
+import { getNearNodeThreshold } from './hooks/hoverRadius';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering = true }: D3NLDViewProps) {
@@ -380,12 +381,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       const transform = transformRef.current;
       const [px, py] = transform.invert([pxRaw, pyRaw]);
 
-      // Compute "near‐node" threshold from node radius (and zoom level):
-      const NODE_RADIUS_PX = 200;
-      const CLICK_RADIUS_PX = NODE_RADIUS_PX * 2;
-      // adjust for zoom:
-      const effectiveRadius = CLICK_RADIUS_PX / (transform?.k ?? 1);
-      const NEAR_NODE_DIST_SQ = effectiveRadius * effectiveRadius;
+      // Compute "near‐node" threshold from node radius (and zoom level)
+      const NEAR_NODE_DIST_SQ = getNearNodeThreshold(transform);
 
       let closest: CanvasNode | null = null;
       let minDist = Infinity;
@@ -423,10 +420,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       const transform = transformRef.current;
       const [px, py] = transform.invert([pxRaw, pyRaw]);
 
-      const NODE_RADIUS_PX = 200;
-      const CLICK_RADIUS_PX = NODE_RADIUS_PX * 2;
-      const effectiveRadius = CLICK_RADIUS_PX / (transform?.k ?? 1);
-      const NEAR_NODE_DIST_SQ = effectiveRadius * effectiveRadius;
+      const NEAR_NODE_DIST_SQ = getNearNodeThreshold(transform);
 
       let closest: CanvasNode | null = null;
       let minDist = Infinity;

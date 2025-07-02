@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../Store/Store';
 import { CanvasNode } from '../D3NldTypes';
+import { getNearNodeThreshold } from './hoverRadius';
 
 interface HoverState {
   visible: boolean;
@@ -44,8 +45,7 @@ export default function useExemplarHoverList(
       const [pxRaw, pyRaw] = d3.pointer(event, canvasRef.current);
       const [px, py] = transformRef.current.invert([pxRaw, pyRaw]);
 
-      const RADIUS = 200 * 2; // match detection radius used elsewhere
-      const threshold = (RADIUS / (transformRef.current.k || 1)) ** 2;
+      const threshold = getNearNodeThreshold(transformRef.current);
 
       let closest: CanvasNode | null = null;
       let minDist = Infinity;
