@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { CanvasNode } from '../D3NldTypes';
 import { getNearNodeThreshold } from './hoverRadius';
 
@@ -108,9 +108,7 @@ export function useD3ContextMenu(
     >
       {state.targetNode ? (
         <>
-          <div className="d3-context-menu-title">
-            {state.targetNode.label}
-          </div>
+          <div className="d3-context-menu-title">{state.targetNode.label}</div>
           <button type="button" className="d3-context-menu-item">
             Node action for {state.targetNode.label}
           </button>
@@ -118,11 +116,7 @@ export function useD3ContextMenu(
             Another node action
           </button>
         </>
-      ) : (
-        <button type="button" className="d3-context-menu-item">
-          Empty space action
-        </button>
-      )}
+      ) : null}
       <button
         type="button"
         className="d3-context-menu-item"
