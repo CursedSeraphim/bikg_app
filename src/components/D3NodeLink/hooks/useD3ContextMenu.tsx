@@ -93,6 +93,7 @@ export function useD3ContextMenu(
   const menu = state.visible ? (
     <div
       ref={menuRef}
+      className="d3-context-menu"
       style={{
         position: 'fixed',
         top: state.y,
@@ -107,21 +108,21 @@ export function useD3ContextMenu(
     >
       {state.targetNode ? (
         <>
-          <button type="button" style={{ display: 'block', width: '100%', background: 'none', border: 'none', textAlign: 'left', padding: '4px 12px' }}>
+          <button type="button" className="d3-context-menu-item">
             Node action for {state.targetNode.label}
           </button>
-          <button type="button" style={{ display: 'block', width: '100%', background: 'none', border: 'none', textAlign: 'left', padding: '4px 12px' }}>
+          <button type="button" className="d3-context-menu-item">
             Another node action
           </button>
         </>
       ) : (
-        <button type="button" style={{ display: 'block', width: '100%', background: 'none', border: 'none', textAlign: 'left', padding: '4px 12px' }}>
+        <button type="button" className="d3-context-menu-item">
           Empty space action
         </button>
       )}
       <button
         type="button"
-        style={{ display: 'block', width: '100%', background: 'none', border: 'none', textAlign: 'left', padding: '4px 12px' }}
+        className="d3-context-menu-item"
         onClick={() => {
           resetView();
           hideMenu();
@@ -131,7 +132,7 @@ export function useD3ContextMenu(
       </button>
       <button
         type="button"
-        style={{ display: 'block', width: '100%', background: 'none', border: 'none', textAlign: 'left', padding: '4px 12px' }}
+        className="d3-context-menu-item"
         onClick={() => {
           centerView();
           hideMenu();
