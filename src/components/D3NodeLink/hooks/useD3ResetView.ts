@@ -13,9 +13,18 @@ export function useD3ResetView(
   const initialVisibleEdges = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (initialVisibleNodes.current.size === 0 && cyDataNodes.length > 0) {
-      initialVisibleNodes.current = new Set(cyDataNodes.filter((n) => n.data.visible !== false).map((n) => n.data.id));
-      initialVisibleEdges.current = new Set(cyDataEdges.filter((e) => e.data.visible !== false).map((e) => e.data.id));
+    if (
+      initialVisibleNodes.current.size === 0 &&
+      initialVisibleEdges.current.size === 0 &&
+      cyDataNodes.length > 0 &&
+      cyDataEdges.length > 0
+    ) {
+      initialVisibleNodes.current = new Set(
+        cyDataNodes.filter((n) => n.data.visible !== false).map((n) => n.data.id),
+      );
+      initialVisibleEdges.current = new Set(
+        cyDataEdges.filter((e) => e.data.visible !== false).map((e) => e.data.id),
+      );
     }
   }, [cyDataNodes, cyDataEdges]);
 
