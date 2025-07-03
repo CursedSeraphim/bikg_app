@@ -124,7 +124,7 @@ export function useD3ContextMenu(
         style={{ display: 'block', width: '100%', background: 'none', border: 'none', textAlign: 'left', padding: '4px 12px' }}
         onClick={() => {
           resetView();
-          centerView();
+          setTimeout(() => centerView(), 0);
           hideMenu();
         }}
       >
