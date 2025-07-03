@@ -71,6 +71,14 @@ body,
   transition: background-color 0.2s ease-in-out;
 }
 
+.d3-context-menu-title {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 4px 12px;
+  font-weight: bold;
+}
+
 .d3-context-menu-item:hover {
   background-color: var(--mantine-header-hover-color);
   color: #ffffff;
