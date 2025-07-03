@@ -32,6 +32,21 @@ export function useD3ResetView(
       edge.data.visible = initialVisibleEdges.current.has(edge.data.id);
     });
 
+    // Recompute edge visibility based on the restored node set
+    const visibleNodes = new Set(
+      cyDataNodes
+        .filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id))
+        .map((n) => n.data.id),
+    );
+    cyDataEdges.forEach((edge) => {
+      const hidden = hiddenEdgesRef.current.has(edge.data.id);
+      edge.data.visible =
+        !hidden &&
+        visibleNodes.has(edge.data.source) &&
+        visibleNodes.has(edge.data.target) &&
+        initialVisibleEdges.current.has(edge.data.id);
+    });
+
     refresh();
   }, [cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef, originRef, refresh]);
 
