@@ -54,10 +54,40 @@ body,
 }
 
 /* Active/Focused state could also be added */
-.cy-context-menus-cxt-menuitem:active, 
+.cy-context-menus-cxt-menuitem:active,
 .cy-context-menus-cxt-menuitem:focus {
   background-color: var(--mantine-header-color);
   color: #ffffff;  /* Keep text white for consistency */
+}
+
+/* D3 context menu styling */
+.d3-context-menu-item {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 4px 12px;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.d3-context-menu-title {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 4px 12px;
+  font-weight: bold;
+}
+
+.d3-context-menu-item:hover {
+  background-color: var(--mantine-header-hover-color);
+  color: #ffffff;
+}
+
+.d3-context-menu-item:active,
+.d3-context-menu-item:focus {
+  background-color: var(--mantine-header-color);
+  color: #ffffff;
 }
 
 .cytoscape_container {

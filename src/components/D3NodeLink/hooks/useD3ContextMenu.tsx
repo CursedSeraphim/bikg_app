@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { CanvasNode } from '../D3NldTypes';
 import { getNearNodeThreshold } from './hoverRadius';
 
@@ -93,6 +93,7 @@ export function useD3ContextMenu(
   const menu = state.visible ? (
     <div
       ref={menuRef}
+      className="d3-context-menu"
       style={{
         position: 'fixed',
         top: state.y,
@@ -107,21 +108,18 @@ export function useD3ContextMenu(
     >
       {state.targetNode ? (
         <>
-          <button type="button" style={{ display: 'block', width: '100%', background: 'none', border: 'none', textAlign: 'left', padding: '4px 12px' }}>
+          <div className="d3-context-menu-title">{state.targetNode.label}</div>
+          <button type="button" className="d3-context-menu-item">
             Node action for {state.targetNode.label}
           </button>
-          <button type="button" style={{ display: 'block', width: '100%', background: 'none', border: 'none', textAlign: 'left', padding: '4px 12px' }}>
+          <button type="button" className="d3-context-menu-item">
             Another node action
           </button>
         </>
-      ) : (
-        <button type="button" style={{ display: 'block', width: '100%', background: 'none', border: 'none', textAlign: 'left', padding: '4px 12px' }}>
-          Empty space action
-        </button>
-      )}
+      ) : null}
       <button
         type="button"
-        style={{ display: 'block', width: '100%', background: 'none', border: 'none', textAlign: 'left', padding: '4px 12px' }}
+        className="d3-context-menu-item"
         onClick={() => {
           resetView();
           hideMenu();
@@ -131,7 +129,7 @@ export function useD3ContextMenu(
       </button>
       <button
         type="button"
-        style={{ display: 'block', width: '100%', background: 'none', border: 'none', textAlign: 'left', padding: '4px 12px' }}
+        className="d3-context-menu-item"
         onClick={() => {
           centerView();
           hideMenu();
