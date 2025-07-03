@@ -15,6 +15,7 @@ export function useD3ContextMenu(
   nodes: CanvasNode[],
   transformRef: React.MutableRefObject<d3.ZoomTransform>,
   centerView: () => void,
+  resetView: () => void,
 ) {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [state, setState] = useState<ContextMenuState>({
@@ -118,6 +119,16 @@ export function useD3ContextMenu(
           Empty space action
         </button>
       )}
+      <button
+        type="button"
+        style={{ display: 'block', width: '100%', background: 'none', border: 'none', textAlign: 'left', padding: '4px 12px' }}
+        onClick={() => {
+          resetView();
+          hideMenu();
+        }}
+      >
+        Reset View
+      </button>
       <button
         type="button"
         style={{ display: 'block', width: '100%', background: 'none', border: 'none', textAlign: 'left', padding: '4px 12px' }}
