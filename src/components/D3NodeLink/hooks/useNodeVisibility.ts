@@ -83,6 +83,74 @@ export function useNodeVisibility(
     },
     [adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef],
   );
+
+  const computeConnected = useCallback(
+    (nodeId: string) => {
+      const neighborIds = [
+        ...(adjacencyRef.current[nodeId] || []),
+        ...(revAdjRef.current[nodeId] || []),
+      ];
+
+      const visibleSet = new Set(
+        cyDataNodes
+          .filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id))
+          .map((n) => n.data.id),
+      );
+
+      const nodeIds: string[] = [];
+      const edges: { id: string; source: string; target: string; label?: string }[] = [];
+      const addedKeys = new Set<string>();
+
+      neighborIds.forEach((nid) => {
+        const nodeData = cyDataNodes.find((n) => n.data.id === nid);
+        if (!nodeData) return;
+        const qualifies =
+          nodeData.data.type ||
+          nodeData.data.violation ||
+          /Shape/i.test(nid);
+        if (!qualifies) return;
+
+        const isVisible = visibleSet.has(nid);
+
+        if (!isVisible) {
+          nodeIds.push(nid);
+
+          cyDataEdges.forEach((edge) => {
+            const { source, target } = edge.data;
+            if (
+              (source === nodeId && target === nid) ||
+              (source === nid && target === nodeId) ||
+              (source === nid && visibleSet.has(target) && target !== nodeId) ||
+              (target === nid && visibleSet.has(source) && source !== nodeId)
+            ) {
+              const key = `${source}->${target}`;
+              if (!addedKeys.has(key)) {
+                addedKeys.add(key);
+                edges.push({ id: edge.data.id, source, target, label: edge.data.label });
+              }
+            }
+          });
+        } else {
+          cyDataEdges.forEach((edge) => {
+            const { source, target } = edge.data;
+            if (
+              hiddenEdgesRef.current.has(edge.data.id) &&
+              ((source === nodeId && target === nid) || (source === nid && target === nodeId))
+            ) {
+              const key = `${source}->${target}`;
+              if (!addedKeys.has(key)) {
+                addedKeys.add(key);
+                edges.push({ id: edge.data.id, source, target, label: edge.data.label });
+              }
+            }
+          });
+        }
+      });
+
+      return { nodeIds, edges };
+    },
+    [adjacencyRef, revAdjRef, cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef],
+  );
   const showChildren = useCallback(
     (nodeId: string) => {
       const { nodeIds, edges: expansionEdges } = computeExpansion(nodeId, 'children');
@@ -223,6 +291,91 @@ export function useNodeVisibility(
     [cyDataNodes, cyDataEdges, revAdjRef, recomputeEdgeVisibility, refresh, hiddenNodesRef, hiddenEdgesRef],
   );
 
+  const showConnected = useCallback(
+    (nodeId: string) => {
+      const { nodeIds, edges: expansionEdges } = computeConnected(nodeId);
+
+      cyDataNodes.forEach((node) => {
+        if (nodeIds.includes(node.data.id)) {
+          if (!node.data.visible && originRef.current[node.data.id] === undefined) {
+            originRef.current[node.data.id] = nodeId;
+          }
+          node.data.visible = true;
+        }
+      });
+
+      expansionEdges.forEach((edge) => {
+        hiddenEdgesRef.current.delete(edge.id);
+      });
+
+      const neighbors = [
+        ...(adjacencyRef.current[nodeId] || []),
+        ...(revAdjRef.current[nodeId] || []),
+      ];
+      cyDataEdges.forEach((edge) => {
+        if (
+          (edge.data.source === nodeId && neighbors.includes(edge.data.target)) ||
+          (edge.data.target === nodeId && neighbors.includes(edge.data.source))
+        ) {
+          hiddenEdgesRef.current.delete(edge.data.id);
+        }
+      });
+
+      recomputeEdgeVisibility();
+      refresh();
+    },
+    [cyDataNodes, cyDataEdges, computeConnected, adjacencyRef, revAdjRef, recomputeEdgeVisibility, refresh, hiddenEdgesRef, originRef],
+  );
+
+  const hideConnected = useCallback(
+    (nodeId: string) => {
+      const visibleNodes = new Set(
+        cyDataNodes
+          .filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id))
+          .map((n) => n.data.id),
+      );
+
+      const neighbors = [
+        ...(adjacencyRef.current[nodeId] || []),
+        ...(revAdjRef.current[nodeId] || []),
+      ];
+
+      neighbors.forEach((nid) => {
+        cyDataEdges.forEach((edge) => {
+          if (
+            (edge.data.source === nodeId && edge.data.target === nid) ||
+            (edge.data.source === nid && edge.data.target === nodeId)
+          ) {
+            hiddenEdgesRef.current.add(edge.data.id);
+          }
+        });
+
+        const stillConnected = cyDataEdges.some((edge) => {
+          if (hiddenEdgesRef.current.has(edge.data.id)) return false;
+          if (!visibleNodes.has(edge.data.source) || !visibleNodes.has(edge.data.target)) return false;
+          if (
+            (edge.data.source === nodeId && edge.data.target === nid) ||
+            (edge.data.source === nid && edge.data.target === nodeId)
+          )
+            return false;
+          return edge.data.source === nid || edge.data.target === nid;
+        });
+
+        if (!stillConnected) {
+          const n = cyDataNodes.find((x) => x.data.id === nid);
+          if (n) {
+            n.data.visible = false;
+            visibleNodes.delete(nid);
+          }
+        }
+      });
+
+      recomputeEdgeVisibility();
+      refresh();
+    },
+    [cyDataNodes, cyDataEdges, adjacencyRef, revAdjRef, recomputeEdgeVisibility, refresh, hiddenNodesRef, hiddenEdgesRef],
+  );
+
   const hideNode = useCallback(
     (nodeId: string) => {
       hiddenNodesRef.current.add(nodeId);
@@ -232,5 +385,15 @@ export function useNodeVisibility(
     [refresh, hiddenNodesRef, recomputeEdgeVisibility],
   );
 
-  return { computeExpansion, showChildren, hideChildren, showParents, hideParents, hideNode };
+  return {
+    computeExpansion,
+    computeConnected,
+    showChildren,
+    hideChildren,
+    showParents,
+    hideParents,
+    showConnected,
+    hideConnected,
+    hideNode,
+  };
 }
