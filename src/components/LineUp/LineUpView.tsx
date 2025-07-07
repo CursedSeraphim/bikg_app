@@ -319,7 +319,7 @@ export default function LineUpView() {
     return buildCategoricalColumn(column, categories)
       .width(width)
       .asSet()
-      .renderer('coloredupset');
+      .renderer('upset');
   }
 
   function buildStringColumnWithSettings(column: string, data: DataType[], width: number): LineUpJS.ColumnBuilder {
@@ -339,7 +339,7 @@ export default function LineUpView() {
   // Existing buildColumns remains mostly unchanged
   function buildColumns(data: DataType[]): LineUpJS.DataBuilder {
     const builder = LineUpJS.builder(data);
-    builder.registerRenderer('coloredupset', new ColoredUpSetCellRenderer());
+    builder.registerRenderer('upset', new ColoredUpSetCellRenderer());
     const columns = Object.keys(data[0]).filter((c) => !hiddenLineupColumns.includes(c));
 
     columns.forEach((column) => {
