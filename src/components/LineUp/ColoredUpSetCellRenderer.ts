@@ -8,7 +8,7 @@ export default class ColoredUpSetCellRenderer implements ICellRendererFactory {
   readonly title = 'ColoredUpSet';
 
   canRender(col: Column) {
-    return isSetColumn(col) && !isCategoricalColumn(col);
+    return isSetColumn(col);
   }
 
   private static calculateSetPath(setData: boolean[], cellDimension: number) {
@@ -26,8 +26,9 @@ export default class ColoredUpSetCellRenderer implements ICellRendererFactory {
       templateRows += `<div class="${cssClass('upset-dot')}" title="${sanitize(cat.label)}"></div>`;
     }
     return {
-      template: `<div><div class="${cssClass('upset-line')}"></div>${templateRows}</div>`,
+      template: `<div class="${cssClass('upset')}"><div class="${cssClass('upset-line')}"></div>${templateRows}</div>`,
       render: (n: HTMLElement, value: boolean[]) => {
+        const cats = col.categories;
         const isOverview = Boolean(n.closest(`.${cssClass('low')}`));
         Array.from(n.children)
           .slice(1)
@@ -35,7 +36,7 @@ export default class ColoredUpSetCellRenderer implements ICellRendererFactory {
             const v = value[i];
             d.classList.toggle(cssClass('enabled'), v);
             if (isOverview) {
-              (d as HTMLElement).style.backgroundColor = categories[i]?.color ?? UPSET.color;
+              (d as HTMLElement).style.backgroundColor = cats[i]?.color ?? UPSET.color;
               (d as HTMLElement).style.opacity = v ? '1' : String(UPSET.inactive);
             } else {
               (d as HTMLElement).style.backgroundColor = '';
@@ -69,7 +70,6 @@ export default class ColoredUpSetCellRenderer implements ICellRendererFactory {
     const { template, render } = ColoredUpSetCellRenderer.createDOMContext(col, context.sanitize);
     const width = context.colWidth(col);
     const cellDimension = width / col.categories.length;
-    const { categories } = col;
 
     return {
       template,
@@ -97,9 +97,10 @@ export default class ColoredUpSetCellRenderer implements ICellRendererFactory {
           ctx.stroke();
         }
 
+        const cats = col.categories;
         data.forEach((val, j) => {
           const posX = j * cellDimension;
-          ctx.fillStyle = isOverview ? categories[j]?.color ?? UPSET.color : UPSET.color;
+          ctx.fillStyle = isOverview ? cats[j]?.color ?? UPSET.color : UPSET.color;
           ctx.globalAlpha = val ? 1 : UPSET.inactive;
           ctx.fillRect(posX, 0, cellDimension, CANVAS_HEIGHT);
         });
