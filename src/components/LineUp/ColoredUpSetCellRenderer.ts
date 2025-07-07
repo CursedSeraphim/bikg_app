@@ -5,7 +5,7 @@ import type { ICellRendererFactory, IRenderContext, ISummaryRenderer, IGroupCell
 import { renderMissingCanvas, renderMissingDOM } from 'lineupjs/build/src/renderer/missing';
 
 export default class ColoredUpSetCellRenderer implements ICellRendererFactory {
-  readonly title = 'ColoredUpSet';
+  readonly title = 'UpSet';
 
   canRender(col: Column) {
     return isSetColumn(col) && !isCategoricalColumn(col);
