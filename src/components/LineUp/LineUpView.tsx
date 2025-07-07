@@ -251,22 +251,30 @@ export default function LineUpView() {
   function buildCategoricalColumnWithSettings(column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }): LineUpJS.ColumnBuilder {
     const uniqueCategories = data.reduce<Set<string>>((acc, row) => acc.add(String(row[column])), new Set());
 
-    const categories = [] as { name: string; color?: string }[];
-
-    uniqueCategories.forEach((cat) => {
+    const categories = Array.from(uniqueCategories).map((cat) => {
       const entry: { name: string; color?: string } = { name: cat };
       if (cat === missingEdgeLabel || cat === CSV_EDGE_NOT_IN_ONTOLOGY_STRING) {
         entry.color = MISSING_EDGE_COLOR;
       } else if (colorMap && colorMap[cat]) {
         entry.color = colorMap[cat];
       }
-      categories.push(entry);
+      return entry;
     });
+
+    const isBoolean = uniqueCategories.has('True') && uniqueCategories.has('False');
 
     categories.sort((a, b) => {
       if (a.name === missingEdgeLabel || a.name === CSV_EDGE_NOT_IN_ONTOLOGY_STRING) return -1;
       if (b.name === missingEdgeLabel || b.name === CSV_EDGE_NOT_IN_ONTOLOGY_STRING) return 1;
-      return 0;
+
+      if (isBoolean) {
+        if (a.name === 'True' && b.name !== 'True') return -1;
+        if (b.name === 'True' && a.name !== 'True') return 1;
+        if (a.name === 'False' && b.name !== 'False') return -1;
+        if (b.name === 'False' && a.name !== 'False') return 1;
+      }
+
+      return a.name.localeCompare(b.name);
     });
 
     return buildCategoricalColumn(column, categories).width(width);
@@ -316,10 +324,7 @@ export default function LineUpView() {
       return 0;
     });
 
-    return buildCategoricalColumn(column, categories)
-      .width(width)
-      .asSet()
-      .renderer('upset');
+    return buildCategoricalColumn(column, categories).width(width).asSet().renderer('upset');
   }
 
   function buildStringColumnWithSettings(column: string, data: DataType[], width: number): LineUpJS.ColumnBuilder {
