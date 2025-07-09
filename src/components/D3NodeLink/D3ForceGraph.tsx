@@ -12,6 +12,8 @@ import {
   selectTypeMap,
   selectExemplarMap,
   selectFocusNodeMap,
+  selectViolationTypesMap,
+  selectTypesViolationMap,
 } from '../Store/CombinedSlice';
 import { useD3Data } from './useD3Data';
 
@@ -39,6 +41,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const typeMap = useSelector(selectTypeMap);
   const exemplarMap = useSelector(selectExemplarMap);
   const focusNodeMap = useSelector(selectFocusNodeMap);
+  const violationTypesMap = useSelector(selectViolationTypesMap);
+  const typesViolationMap = useSelector(selectTypesViolationMap);
 
   // Fetch Cytoscape‐like data used by the D3 view
   const { loading, cyDataNodes, cyDataEdges } = useD3Data({
@@ -358,22 +362,35 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const computeAssociations = useCallback(
     (nodeId: string) => {
       const assoc = new Set<string>();
+
       if (focusNodeMap[nodeId]) {
         focusNodeMap[nodeId].types.forEach((t: string) => assoc.add(t));
         focusNodeMap[nodeId].violations.forEach((v: string) => assoc.add(v));
         focusNodeMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
-      } else if (typeMap[nodeId]) {
+      }
+
+      if (typeMap[nodeId]) {
         typeMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
         typeMap[nodeId].violations.forEach((v: string) => assoc.add(v));
         typeMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
-      } else if (violationMap[nodeId]) {
+        const extra = typesViolationMap[nodeId] || [];
+        extra.forEach((n: string) => assoc.add(n));
+      }
+
+      if (violationMap[nodeId]) {
         violationMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
         violationMap[nodeId].types.forEach((t: string) => assoc.add(t));
         violationMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
-      } else if (exemplarMap[nodeId]) {
+      }
+
+      if (exemplarMap[nodeId]) {
         exemplarMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
         exemplarMap[nodeId].types.forEach((t: string) => assoc.add(t));
         exemplarMap[nodeId].violations.forEach((v: string) => assoc.add(v));
+      }
+
+      if (violationTypesMap[nodeId]) {
+        violationTypesMap[nodeId].forEach((n: string) => assoc.add(n));
       }
 
       const allIds = new Set<string>([nodeId, ...Array.from(assoc)]);
@@ -394,17 +411,21 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       cyDataEdges.forEach((edge) => {
         const { source, target } = edge.data;
         if (allIds.has(source) && allIds.has(target)) {
-          const key = `${source}->${target}`;
-          if (!added.has(key)) {
-            added.add(key);
-            edges.push({ id: edge.data.id, source, target, label: edge.data.label });
+          const sourceExists = cyDataNodes.some((n) => n.data.id === source);
+          const targetExists = cyDataNodes.some((n) => n.data.id === target);
+          if (sourceExists && targetExists) {
+            const key = `${source}->${target}`;
+            if (!added.has(key)) {
+              added.add(key);
+              edges.push({ id: edge.data.id, source, target, label: edge.data.label });
+            }
           }
         }
       });
 
       return { nodeIds, edges };
     },
-    [focusNodeMap, typeMap, violationMap, exemplarMap, cyDataNodes, cyDataEdges],
+    [focusNodeMap, typeMap, violationMap, exemplarMap, violationTypesMap, typesViolationMap, cyDataNodes, cyDataEdges],
   );
 
   const showAssociated = useCallback(
