@@ -423,16 +423,17 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         }
       });
 
-      return { nodeIds, edges };
+      return { nodeIds, allIds: Array.from(allIds), edges };
     },
     [focusNodeMap, typeMap, violationMap, exemplarMap, violationTypesMap, typesViolationMap, cyDataNodes, cyDataEdges],
   );
 
   const showAssociated = useCallback(
     (nodeId: string) => {
-      const { nodeIds } = computeAssociations(nodeId);
+      const { allIds, edges } = computeAssociations(nodeId);
+
       cyDataNodes.forEach((node) => {
-        if (nodeIds.includes(node.data.id)) {
+        if (allIds.includes(node.data.id)) {
           if (!node.data.visible && originRef.current[node.data.id] === undefined) {
             originRef.current[node.data.id] = nodeId;
           }
@@ -440,6 +441,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           hiddenNodesRef.current.delete(node.data.id);
         }
       });
+
+      edges.forEach((edge) => {
+        hiddenEdgesRef.current.delete(edge.id);
+      });
+
       recomputeEdgeVisibility();
       convertData();
     },
@@ -448,10 +454,17 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
   const hideAssociated = useCallback(
     (nodeId: string) => {
-      const { nodeIds } = computeAssociations(nodeId);
-      nodeIds.forEach((nid) => {
-        hiddenNodesRef.current.add(nid);
+      const { allIds, edges } = computeAssociations(nodeId);
+      allIds.forEach((nid) => {
+        if (nid !== nodeId && originRef.current[nid] === nodeId) {
+          hiddenNodesRef.current.add(nid);
+        }
       });
+
+      edges.forEach((edge) => {
+        hiddenEdgesRef.current.add(edge.id);
+      });
+
       recomputeEdgeVisibility();
       convertData();
     },
@@ -465,13 +478,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           savedPositionsRef.current[gn.id] = { x: gn.x, y: gn.y };
         });
       }
-      const { nodeIds } = computeAssociations(id);
-      const allVisible =
-        nodeIds.length > 0 &&
-        nodeIds.every((nid) => {
-          const node = cyDataNodes.find((n) => n.data.id === nid);
-          return node && node.data.visible && !hiddenNodesRef.current.has(nid);
-        });
+      const { allIds, edges } = computeAssociations(id);
+      const nodesVisible = allIds.every((nid) => {
+        const node = cyDataNodes.find((n) => n.data.id === nid);
+        return node && node.data.visible && !hiddenNodesRef.current.has(nid);
+      });
+
+      const edgesVisible = edges.every((e) => !hiddenEdgesRef.current.has(e.id));
+
+      const allVisible = nodesVisible && edgesVisible;
 
       if (allVisible) {
         hideAssociated(id);
