@@ -410,7 +410,17 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
       cyDataEdges.forEach((edge) => {
         const { source, target } = edge.data;
-        if (allIds.has(source) && allIds.has(target)) {
+        const sourceIn = allIds.has(source);
+        const targetIn = allIds.has(target);
+        const sourceVisible = visibleSet.has(source);
+        const targetVisible = visibleSet.has(target);
+
+        if (
+          (sourceIn && targetIn) ||
+          (sourceIn && targetVisible) ||
+          (targetIn && sourceVisible) ||
+          (hiddenEdgesRef.current.has(edge.data.id) && (sourceIn || targetIn))
+        ) {
           const sourceExists = cyDataNodes.some((n) => n.data.id === source);
           const targetExists = cyDataNodes.some((n) => n.data.id === target);
           if (sourceExists && targetExists) {
