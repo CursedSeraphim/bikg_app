@@ -376,24 +376,24 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         exemplarMap[nodeId].violations.forEach((v: string) => assoc.add(v));
       }
 
+      const allIds = new Set<string>([nodeId, ...Array.from(assoc)]);
+
       const visibleSet = new Set(cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
 
       const nodeIds: string[] = [];
-      const edges: { id: string; source: string; target: string; label?: string }[] = [];
-      const added = new Set<string>();
-
-      assoc.forEach((nid) => {
+      allIds.forEach((nid) => {
         const nodeData = cyDataNodes.find((n) => n.data.id === nid);
-        if (!nodeData) return;
-        if (!visibleSet.has(nid)) {
+        if (nodeData && !visibleSet.has(nid)) {
           nodeIds.push(nid);
         }
       });
 
-      const allIds = new Set<string>([nodeId, ...Array.from(assoc)]);
+      const edges: { id: string; source: string; target: string; label?: string }[] = [];
+      const added = new Set<string>();
+
       cyDataEdges.forEach((edge) => {
         const { source, target } = edge.data;
-        if (allIds.has(source) || allIds.has(target)) {
+        if (allIds.has(source) && allIds.has(target)) {
           const key = `${source}->${target}`;
           if (!added.has(key)) {
             added.add(key);
