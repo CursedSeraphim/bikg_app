@@ -636,25 +636,41 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       const addedEdgeKeys = new Set<string>();
 
       if (allVisible) {
-        const visibleIds = mode === 'children' ? adjacencyRef.current[closest.id] || [] : revAdjRef.current[closest.id] || [];
-        visibleIds.forEach((nid) => {
-          const edgeData = cyDataEdges.find(
-            (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
-          );
-          if (edgeData) {
-            const key = `${edgeData.data.source}->${edgeData.data.target}`;
+        if (mode === 'associated') {
+          expansionEdges.forEach((edge) => {
+            const key = `${edge.source}->${edge.target}`;
             if (!addedEdgeKeys.has(key)) {
               addedEdgeKeys.add(key);
               newGhostEdges.push({
-                source: edgeData.data.source,
-                target: edgeData.data.target,
-                label: edgeData.data.label,
+                source: edge.source,
+                target: edge.target,
+                label: edge.label,
                 visible: true,
                 previewRemoval: true,
               });
             }
-          }
-        });
+          });
+        } else {
+          const visibleIds = mode === 'children' ? adjacencyRef.current[closest.id] || [] : revAdjRef.current[closest.id] || [];
+          visibleIds.forEach((nid) => {
+            const edgeData = cyDataEdges.find(
+              (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
+            );
+            if (edgeData) {
+              const key = `${edgeData.data.source}->${edgeData.data.target}`;
+              if (!addedEdgeKeys.has(key)) {
+                addedEdgeKeys.add(key);
+                newGhostEdges.push({
+                  source: edgeData.data.source,
+                  target: edgeData.data.target,
+                  label: edgeData.data.label,
+                  visible: true,
+                  previewRemoval: true,
+                });
+              }
+            }
+          });
+        }
       } else {
         nodeIds.forEach((nid) => {
           const nodeData = cyDataNodes.find((n) => n.data.id === nid);
