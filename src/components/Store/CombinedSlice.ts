@@ -1007,6 +1007,10 @@ export const selectOriginalViolationReport = (state: { combined: ICombinedState 
 export const selectSelectedViolationExemplars = (state: { combined: ICombinedState }) => state.combined.selectedViolationExemplars;
 export const selectNamespaces = (state: { combined: ICombinedState }) => state.combined.namespaces;
 export const selectTypes = (state: { combined: ICombinedState }) => state.combined.types;
+export const selectViolationMap = (state: { combined: ICombinedState }) => state.combined.violationMap;
+export const selectTypeMap = (state: { combined: ICombinedState }) => state.combined.typeMap;
+export const selectExemplarMap = (state: { combined: ICombinedState }) => state.combined.exemplarMap;
+export const selectFocusNodeMap = (state: { combined: ICombinedState }) => state.combined.focusNodeMap;
 export const selectSubClassOfTriples = (state: { combined: ICombinedState }) => state.combined.subClassOfTriples;
 export const selectCumulativeNumberViolationsPerNode = (state: { combined: ICombinedState }) => state.combined.cumulativeNumberViolationsPerNode;
 export const selectHiddenLabels = (state: { combined: ICombinedState }) => state.combined.hiddenLabels;

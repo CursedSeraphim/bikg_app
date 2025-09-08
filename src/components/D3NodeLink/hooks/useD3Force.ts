@@ -180,6 +180,15 @@ export function useD3Force(
     context.restore();
   }
 
+  function toId(v: string | CanvasNode): string {
+    return typeof v === 'object' ? v.id : v;
+  }
+
+  function filterEdgesByNodes(n: CanvasNode[], e: CanvasEdge[]): CanvasEdge[] {
+    const set = new Set(n.map((x) => x.id));
+    return e.filter((edge) => set.has(toId(edge.source)) && set.has(toId(edge.target)));
+  }
+
   /**
    * Initializes the force simulation and updates it whenever nodes or edges
    * change. Existing node positions are reused to avoid large jumps.
@@ -215,22 +224,26 @@ export function useD3Force(
 
     sim.nodes(nodes);
 
+    // Ensure the link force only receives edges whose endpoints exist in the current node set
+    const edgesForSim = filterEdgesByNodes(nodes, edges);
+
     let linkForce = sim.force('link') as d3.ForceLink<CanvasNode, CanvasEdge> | undefined;
     if (!linkForce) {
       linkForce = d3
-        .forceLink<CanvasNode, CanvasEdge>(edges)
+        .forceLink<CanvasNode, CanvasEdge>(edgesForSim)
         .id((d) => d.id)
         .distance(150)
         .strength(1);
       sim.force('link', linkForce);
     } else {
-      linkForce.links(edges);
+      linkForce.links(edgesForSim);
     }
 
     sim.force('charge', d3.forceManyBody().strength(-9999).distanceMax(9999));
     sim.force('collision', d3.forceCollide(nodeRadius + labelPadding));
 
-    drawRef.current = () => drawCanvas(nodes, edges);
+    // Draw only edges that are valid for the current node set
+    drawRef.current = () => drawCanvas(nodes, edgesForSim);
     drawRef.current();
 
     sim.on('tick', () => {
@@ -240,7 +253,7 @@ export function useD3Force(
           node.y = Math.max(nodeRadius, Math.min(height - nodeRadius, node.y ?? 0));
         });
       }
-      drawCanvas(nodes, edges);
+      drawCanvas(nodes, edgesForSim);
     });
 
     if (autoRestart) {
@@ -287,7 +300,8 @@ export function useD3Force(
       .scaleExtent([0.1, 10])
       .on('zoom', (event) => {
         transformRef.current = event.transform;
-        drawCanvas(nodes, edges);
+        const edgesForDraw = filterEdgesByNodes(nodes, edges);
+        drawCanvas(nodes, edgesForDraw);
       });
 
     zoomBehaviorRef.current = zoomBehavior;
