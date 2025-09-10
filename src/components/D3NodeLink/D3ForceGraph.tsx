@@ -6,29 +6,30 @@ import { useSelector } from 'react-redux';
 import {
   selectCumulativeNumberViolationsPerNode,
   selectD3BoundingBox,
-  selectTypes,
-  selectViolations,
-  selectViolationMap,
-  selectTypeMap,
   selectExemplarMap,
   selectFocusNodeMap,
-  selectViolationTypesMap,
+  selectHiddenLabels,
+  selectTypeMap,
+  selectTypes,
   selectTypesViolationMap,
+  selectViolationMap,
+  selectViolations,
+  selectViolationTypesMap,
 } from '../Store/CombinedSlice';
 import { useD3Data } from './useD3Data';
 
+import store from '../Store/Store';
 import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
 import { computeColorForId } from './D3NldUtils';
-import store from '../Store/Store';
-import useD3CumulativeCounts, { updateD3NodesGivenCounts } from './hooks/useD3CumulativeCounts';
+import { getNearNodeThreshold } from './hooks/hoverRadius';
 import { useAdjacency } from './hooks/useAdjacency';
 import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3ContextMenu } from './hooks/useD3ContextMenu';
+import useD3CumulativeCounts, { updateD3NodesGivenCounts } from './hooks/useD3CumulativeCounts';
 import { useD3Force } from './hooks/useD3Force';
-import { useNodeVisibility } from './hooks/useNodeVisibility';
 import { useD3ResetView } from './hooks/useD3ResetView';
 import useExemplarHoverList from './hooks/useExemplarHoverList';
-import { getNearNodeThreshold } from './hooks/hoverRadius';
+import { useNodeVisibility } from './hooks/useNodeVisibility';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering = true }: D3NLDViewProps) {
@@ -43,6 +44,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const focusNodeMap = useSelector(selectFocusNodeMap);
   const violationTypesMap = useSelector(selectViolationTypesMap);
   const typesViolationMap = useSelector(selectTypesViolationMap);
+  const hiddenLabels = useSelector(selectHiddenLabels);
 
   // Fetch Cytoscape‐like data used by the D3 view
   const { loading, cyDataNodes, cyDataEdges } = useD3Data({
@@ -75,10 +77,40 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const nodeMapRef = useRef<Record<string, CanvasNode>>({});
   const savedPositionsRef = useRef<Record<string, { x?: number; y?: number }>>({});
 
+  // --- Blacklist helpers ----------------------------------------------------
+
+  const stripDecorations = useCallback((label: string | undefined) => {
+    if (!label) return '';
+    // remove a trailing " (…)" count suffix and a trailing "*"
+    return label.replace(/\s*\([^)]*\)\s*$/, '').replace(/\*$/, '');
+  }, []);
+
+  const isLabelBlacklisted = useCallback(
+    (label: string | undefined) => {
+      if (!hiddenLabels || hiddenLabels.length === 0) return false;
+      const base = stripDecorations(label);
+      return hiddenLabels.includes(base);
+    },
+    [hiddenLabels, stripDecorations],
+  );
+
+  const isIdBlacklisted = useCallback(
+    (id: string) => {
+      // prefer matching by base label; fall back to id match
+      const n = cyDataNodes.find((x) => x.data.id === id);
+      return (n ? isLabelBlacklisted(n.data.label) : false) || hiddenLabels.includes(id);
+    },
+    [cyDataNodes, hiddenLabels, isLabelBlacklisted],
+  );
+
+  // -------------------------------------------------------------------------
+
   const convertData = useCallback(() => {
-    const visibleNodeData = cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id));
+    // filter nodes: must be visible, not in hiddenNodesRef, and not blacklisted
+    const visibleNodeData = cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label));
     const visibleIds = new Set(visibleNodeData.map((n) => n.data.id));
 
+    // edges: visible flag + both ends in visibleIds (which already excludes blacklisted nodes)
     const visibleEdgeData = cyDataEdges.filter((e) => e.data.visible && visibleIds.has(e.data.source) && visibleIds.has(e.data.target));
 
     const nextNodes: CanvasNode[] = [];
@@ -125,13 +157,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     updateD3NodesGivenCounts(nextNodes, store.getState().combined.numberViolationsPerNode);
     setD3Nodes(nextNodes);
     setD3Edges(newEdges);
-  }, [cyDataNodes, cyDataEdges]);
+  }, [cyDataNodes, cyDataEdges, isLabelBlacklisted]);
 
   useEffect(() => {
     if (!loading) {
       convertData();
     }
-  }, [loading, convertData]);
+  }, [loading, convertData, hiddenLabels]);
 
   const { transformRef, simulationRef, zoomBehaviorRef, redraw } = useD3Force(
     canvasRef,
@@ -202,11 +234,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     convertData,
   );
 
-  // Freeze nodes for a short period. By default, all currently visible nodes are
-  // frozen for `otherDuration` milliseconds (500ms) while the triggering node
-  // is frozen for `triggerDuration` milliseconds (1000ms). Passing `otherDuration`
-  // as `0` skips freezing the other nodes. The `alphaTarget` parameter controls
-  // the force simulation strength during the freeze.
+  // Freeze nodes for a short period…
   const freezeNode = useCallback(
     (id: string, otherDuration = 500, triggerDuration = 1000, alphaTarget = 0.1) => {
       const sim = simulationRef.current;
@@ -215,9 +243,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       const allNodes = Object.values(nodeMapRef.current);
       allNodes.forEach((node) => {
         if (otherDuration > 0 || node.id === id) {
-          // eslint-disable-next-line no-param-reassign
           node.fx = node.x;
-          // eslint-disable-next-line no-param-reassign
           node.fy = node.y;
         }
       });
@@ -225,20 +251,16 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       sim.alphaTarget(alphaTarget).restart();
 
       if (otherDuration > 0) {
-        // Release other nodes after `otherDuration`
         setTimeout(() => {
           allNodes.forEach((node) => {
             if (node.id !== id) {
-              // eslint-disable-next-line no-param-reassign
               node.fx = null;
-              // eslint-disable-next-line no-param-reassign
               node.fy = null;
             }
           });
         }, otherDuration);
       }
 
-      // Release the triggering node after `triggerDuration`
       setTimeout(() => {
         const triggerNode = nodeMapRef.current[id];
         if (triggerNode) {
@@ -257,8 +279,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     }
     setGhostNodes([]);
     setGhostEdges([]);
-    // Reset any mutated edge references back to their id form so d3-force
-    // rebinds them to the correct nodes next tick
     setD3Edges((edges) =>
       edges.map((e) => ({
         ...e,
@@ -267,13 +287,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       })),
     );
     Object.values(nodeMapRef.current).forEach((n) => {
-      // eslint-disable-next-line no-param-reassign
       n.fx = null;
-      // eslint-disable-next-line no-param-reassign
       n.fy = null;
-      // eslint-disable-next-line no-param-reassign
       n.vx = 0;
-      // eslint-disable-next-line no-param-reassign
       n.vy = 0;
     });
     const sim = simulationRef.current;
@@ -291,7 +307,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           savedPositionsRef.current[gn.id] = { x: gn.x, y: gn.y };
         });
       }
-      const childIds = adjacencyRef.current[id] || [];
+      const childIds = (adjacencyRef.current[id] || []).filter((cid) => !isIdBlacklisted(cid));
       const allVisible =
         childIds.length > 0 &&
         childIds.every((childId) => {
@@ -314,7 +330,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         freezeNode(id, 500, 1000, 0.3);
       }
     },
-    [freezeNode, showChildren, hideChildren, cyDataNodes, cyDataEdges, adjacencyRef, ghostNodes],
+    [freezeNode, showChildren, hideChildren, cyDataNodes, cyDataEdges, adjacencyRef, ghostNodes, isIdBlacklisted],
   );
 
   const toggleParents = useCallback(
@@ -324,7 +340,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           savedPositionsRef.current[gn.id] = { x: gn.x, y: gn.y };
         });
       }
-      const parentIds = revAdjRef.current[id] || [];
+      const parentIds = (revAdjRef.current[id] || []).filter((pid) => !isIdBlacklisted(pid));
       const allVisible =
         parentIds.length > 0 &&
         parentIds.every((parentId) => {
@@ -347,17 +363,19 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         freezeNode(id, 500, 1000, 0.3);
       }
     },
-    [freezeNode, showParents, hideParents, cyDataNodes, cyDataEdges, revAdjRef, ghostNodes],
+    [freezeNode, showParents, hideParents, cyDataNodes, cyDataEdges, revAdjRef, ghostNodes, isIdBlacklisted],
   );
 
   const recomputeEdgeVisibility = useCallback(() => {
-    const visible = new Set(cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
+    const visible = new Set(
+      cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label)).map((n) => n.data.id),
+    );
 
     cyDataEdges.forEach((edge) => {
       const hidden = hiddenEdgesRef.current.has(edge.data.id);
       edge.data.visible = !hidden && visible.has(edge.data.source) && visible.has(edge.data.target);
     });
-  }, [cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef]);
+  }, [cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef, isLabelBlacklisted]);
 
   const computeAssociations = useCallback(
     (nodeId: string) => {
@@ -395,10 +413,14 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
       const allIds = new Set<string>([nodeId, ...Array.from(assoc)]);
 
-      const visibleSet = new Set(cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
+      // Only treat as visible if not blacklisted as well
+      const visibleSet = new Set(
+        cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label)).map((n) => n.data.id),
+      );
 
       const nodeIds: string[] = [];
       allIds.forEach((nid) => {
+        if (isIdBlacklisted(nid)) return;
         const nodeData = cyDataNodes.find((n) => n.data.id === nid);
         if (nodeData && !visibleSet.has(nid)) {
           nodeIds.push(nid);
@@ -410,6 +432,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
       cyDataEdges.forEach((edge) => {
         const { source, target } = edge.data;
+        if (isIdBlacklisted(source) || isIdBlacklisted(target)) return;
+
         const sourceIn = allIds.has(source);
         const targetIn = allIds.has(target);
         const sourceVisible = visibleSet.has(source);
@@ -435,7 +459,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
       return { nodeIds, allIds: Array.from(allIds), edges };
     },
-    [focusNodeMap, typeMap, violationMap, exemplarMap, violationTypesMap, typesViolationMap, cyDataNodes, cyDataEdges],
+    [focusNodeMap, typeMap, violationMap, exemplarMap, violationTypesMap, typesViolationMap, cyDataNodes, cyDataEdges, isLabelBlacklisted, isIdBlacklisted],
   );
 
   const showAssociated = useCallback(
@@ -443,7 +467,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       const { allIds, edges } = computeAssociations(nodeId);
 
       cyDataNodes.forEach((node) => {
-        if (allIds.includes(node.data.id)) {
+        if (allIds.includes(node.data.id) && !isIdBlacklisted(node.data.id)) {
           if (!node.data.visible && originRef.current[node.data.id] === undefined) {
             originRef.current[node.data.id] = nodeId;
           }
@@ -453,13 +477,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       });
 
       edges.forEach((edge) => {
-        hiddenEdgesRef.current.delete(edge.id);
+        if (!isIdBlacklisted(edge.source) && !isIdBlacklisted(edge.target)) {
+          hiddenEdgesRef.current.delete(edge.id);
+        }
       });
 
       recomputeEdgeVisibility();
       convertData();
     },
-    [computeAssociations, cyDataNodes, recomputeEdgeVisibility, convertData],
+    [computeAssociations, cyDataNodes, recomputeEdgeVisibility, convertData, isIdBlacklisted],
   );
 
   const hideAssociated = useCallback(
@@ -490,6 +516,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       }
       const { allIds, edges } = computeAssociations(id);
       const nodesVisible = allIds.every((nid) => {
+        if (isIdBlacklisted(nid)) return false;
         const node = cyDataNodes.find((n) => n.data.id === nid);
         return node && node.data.visible && !hiddenNodesRef.current.has(nid);
       });
@@ -505,7 +532,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         freezeNode(id, 500, 1000, 0.3);
       }
     },
-    [computeAssociations, showAssociated, hideAssociated, freezeNode, cyDataNodes, ghostNodes],
+    [computeAssociations, showAssociated, hideAssociated, freezeNode, cyDataNodes, ghostNodes, isIdBlacklisted],
   );
 
   const rightDraggingRef = useRef(false);
@@ -530,26 +557,20 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       const sim = simulationRef.current;
       if (!sim) return;
       if (!event.active) sim.alphaTarget(0.3).restart();
-      // eslint-disable-next-line no-param-reassign
       event.subject.fx = event.subject.x;
-      // eslint-disable-next-line no-param-reassign
       event.subject.fy = event.subject.y;
     })
     .on('drag', (event) => {
       const [px, py] = d3.pointer(event, canvasRef.current);
       const [tx, ty] = transformRef.current.invert([px, py]);
-      // eslint-disable-next-line no-param-reassign
       event.subject.fx = tx;
-      // eslint-disable-next-line no-param-reassign
       event.subject.fy = ty;
     })
     .on('end', (event) => {
       const sim = simulationRef.current;
       if (!sim) return;
       if (!event.active) sim.alphaTarget(0);
-      // eslint-disable-next-line no-param-reassign
       event.subject.fx = null;
-      // eslint-disable-next-line no-param-reassign
       event.subject.fy = null;
     });
 
@@ -590,7 +611,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         clearPreview();
       }
     },
-    [d3Nodes, ghostNodes, transformRef, simulationRef, toggleChildren, toggleParents, clearPreview],
+    [d3Nodes, ghostNodes, transformRef, simulationRef, toggleChildren, toggleParents, clearPreview, toggleAssociated],
   );
 
   const updateHoverPreview = useCallback(
@@ -628,20 +649,29 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         return;
       }
       const { nodeIds, edges: expansionEdges } = mode === 'associated' ? computeAssociations(closest.id) : computeExpansion(closest.id, mode);
-      const hasHiddenEdges = expansionEdges.some((e) => hiddenEdgesRef.current.has(e.id));
-      const allVisible = nodeIds.length === 0 && !hasHiddenEdges;
+
+      // apply blacklist to preview targets
+      const filteredNodeIds = nodeIds.filter((nid) => !isIdBlacklisted(nid));
+      const filteredExpansionEdges = expansionEdges.filter((e) => !isIdBlacklisted(e.source) && !isIdBlacklisted(e.target));
+
+      const hasHiddenEdges = filteredExpansionEdges.some((e) => hiddenEdgesRef.current.has(e.id));
+      const allVisible = filteredNodeIds.length === 0 && !hasHiddenEdges;
 
       const newGhostNodes: CanvasNode[] = [];
       const newGhostEdges: CanvasEdge[] = [];
       const addedEdgeKeys = new Set<string>();
 
       if (allVisible) {
-        const visibleIds = mode === 'children' ? adjacencyRef.current[closest.id] || [] : revAdjRef.current[closest.id] || [];
+        const visibleIds =
+          mode === 'children'
+            ? (adjacencyRef.current[closest.id] || []).filter((nid) => !isIdBlacklisted(nid))
+            : (revAdjRef.current[closest.id] || []).filter((nid) => !isIdBlacklisted(nid));
+
         visibleIds.forEach((nid) => {
           const edgeData = cyDataEdges.find(
             (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
           );
-          if (edgeData) {
+          if (edgeData && !isIdBlacklisted(edgeData.data.source) && !isIdBlacklisted(edgeData.data.target)) {
             const key = `${edgeData.data.source}->${edgeData.data.target}`;
             if (!addedEdgeKeys.has(key)) {
               addedEdgeKeys.add(key);
@@ -656,7 +686,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           }
         });
       } else {
-        nodeIds.forEach((nid) => {
+        filteredNodeIds.forEach((nid) => {
           const nodeData = cyDataNodes.find((n) => n.data.id === nid);
           if (!nodeData) return;
           newGhostNodes.push({
@@ -668,7 +698,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
             ghost: true,
           });
         });
-        expansionEdges.forEach((edge) => {
+        filteredExpansionEdges.forEach((edge) => {
           const key = `${edge.source}->${edge.target}`;
           if (!addedEdgeKeys.has(key)) {
             addedEdgeKeys.add(key);
@@ -683,19 +713,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         });
       }
 
-      const hasRemovalEdges = newGhostEdges.some((e) => e.previewRemoval);
-      const hasAdditionEdges = newGhostEdges.some((e) => !e.previewRemoval);
+      const hasRemovalEdges = newGhostEdges.some((e) => (e as any).previewRemoval);
+      const hasAdditionEdges = newGhostEdges.some((e) => !(e as any).previewRemoval);
 
       if (newGhostNodes.length > 0 || hasRemovalEdges || hasAdditionEdges) {
         activePreviewRef.current = { mode, nodeId: closest.id };
         Object.values(nodeMapRef.current).forEach((n) => {
-          // eslint-disable-next-line no-param-reassign
           n.fx = n.x;
-          // eslint-disable-next-line no-param-reassign
           n.fy = n.y;
-          // eslint-disable-next-line no-param-reassign
           n.vx = 0;
-          // eslint-disable-next-line no-param-reassign
           n.vy = 0;
         });
         setGhostNodes(newGhostNodes);
@@ -717,6 +743,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       clearPreview,
       computeExpansion,
       computeAssociations,
+      isIdBlacklisted,
     ],
   );
 
