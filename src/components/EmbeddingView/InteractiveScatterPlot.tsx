@@ -99,9 +99,9 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
     if (svgOverlayRef.current) {
       const svg = d3.select(svgOverlayRef.current);
 
-      const minDist = 20; // minimum pixel distance between labels
+      const minDist = 20; // base minimum pixel distance between labels
       const q = d3
-        .quadtree<{ x: number; y: number }>()
+        .quadtree<{ x: number; y: number; r: number }>()
         .x((d) => d.x)
         .y((d) => d.y);
 
@@ -109,8 +109,11 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
       data.forEach((d: IScatterNode) => {
         const screenX = transformRef.current.applyX(xScale(d.x) + margins.left);
         const screenY = transformRef.current.applyY(yScale(d.y) + margins.top);
-        if (!q.find(screenX, screenY, minDist)) {
-          q.add({ x: screenX, y: screenY });
+        // Estimate label half-width in pixels (approx. 6px per character)
+        const r = Math.max(minDist, (d.text.length * 6) / 2);
+        const nearest = q.find(screenX, screenY);
+        if (!nearest || Math.hypot(nearest.x - screenX, nearest.y - screenY) > nearest.r + r) {
+          q.add({ x: screenX, y: screenY, r });
           visible.push(d);
         }
       });
@@ -247,7 +250,7 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
 
     const zoomBehavior = d3
       .zoom<SVGSVGElement, undefined>()
-      .scaleExtent([0.5, 10])
+      .scaleExtent([0.1, 100])
       .translateExtent([
         [0, 0],
         [dimensions.width, dimensions.height],
