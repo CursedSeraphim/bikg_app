@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSelector, useStore } from 'react-redux';
 import { IRootState } from '../../types';
 import { setSelectedFocusNodes } from '../Store/CombinedSlice';
@@ -143,7 +143,7 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
   /** Preproject data to raw pixel coords (pre-transform), cache label + width. */
   const preprojRef = useRef<Proj[]>([]);
   const quadtreeRef = useRef<d3.Quadtree<Proj>>();
-  useEffect(() => {
+  const buildPreprojection = useCallback(() => {
     const projs: Proj[] = new Array(data.length);
     for (let i = 0; i < data.length; i += 1) {
       const d = data[i];
@@ -163,11 +163,17 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
     quadtreeRef.current = qt;
   }, [data, xScale, yScale, margins, measureLabelWidth]);
 
+  /** Resize handling */
   const handleResize = useCallback((): void => {
     if (!canvasRef.current?.parentElement) return;
     const { width, height } = canvasRef.current.parentElement.getBoundingClientRect();
     setDimensions({ width, height });
   }, []);
+
+  // Ensure dimensions are set before first paint
+  useLayoutEffect(() => {
+    handleResize();
+  }, [handleResize]);
 
   useEffect(() => {
     const observer = new ResizeObserver(handleResize);
@@ -198,9 +204,7 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
     }
 
     qt.visit((node, x0, y0, x1, y1) => {
-      // Skip subtrees completely outside the query box
       if (x1 < minX || x0 > maxX || y1 < minY || y0 > maxY) return true;
-
       if (isLeaf(node)) {
         let leaf: d3.QuadtreeLeaf<Proj> | undefined = node;
         do {
@@ -211,7 +215,7 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
           leaf = leaf.next;
         } while (leaf);
       }
-      return false; // keep visiting
+      return false;
     });
 
     return result;
@@ -238,11 +242,10 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
     const tx = t.x;
     const ty = t.y;
 
-    // 1) Compute visible set via quadtree (O(m log n))
+    // 1) Visible set via quadtree
     const visible = collectVisible();
 
-    // 2) Draw points (two passes to avoid state flips)
-    // Non-selected first
+    // 2) Draw points batched
     ctx.fillStyle = 'lightgrey';
     ctx.beginPath();
     for (const p of visible) {
@@ -255,7 +258,6 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
     }
     ctx.fill();
 
-    // Selected on top
     ctx.fillStyle = '#DA5700';
     ctx.beginPath();
     for (const p of visible) {
@@ -281,13 +283,12 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
       const sy = k * p.rawY + ty - LABEL_Y_OFFSET_PX;
       if (sx < -200 || sx > width + 200 || sy < -100 || sy > height + 100) continue;
 
-      const w = p.labelW; // measured once at mount
+      const w = p.labelW;
       const h = fontPx + 2;
       const rect: Rect = { x1: sx - w / 2, y1: sy - h, x2: sx + w / 2, y2: sy };
       candidates.push({ p, sx, sy, text: p.label, rect });
     }
 
-    // Priority: selected first, then shorter labels to fit more
     candidates.sort((a, b) => {
       const aSel = selectedSet.has(a.p.node.text);
       const bSel = selectedSet.has(b.p.node.text);
@@ -349,8 +350,8 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
       .attr('pointer-events', 'none')
       .merge(hoverSel as d3.Selection<SVGTextElement, HoverDatum, SVGGElement, unknown>)
       .attr('paint-order', 'stroke')
-      .attr('stroke', 'white')
       .attr('stroke-width', LABEL_STROKE_WIDTH)
+      .attr('stroke', 'white')
       .attr('fill', '#111')
       .attr('text-anchor', 'middle')
       .attr('font-family', LABEL_FONT_FAMILY)
@@ -372,6 +373,12 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
     });
   }, [renderFrame]);
 
+  /** Build preprojection when data/scales change, then draw immediately (initial paint) */
+  useEffect(() => {
+    buildPreprojection();
+    draw();
+  }, [buildPreprojection, draw]);
+
   /** Pointer handling uses quadtree in raw-pixel space; radius kept in screen px */
   const handleMouseMove = useCallback((event: React.MouseEvent<SVGSVGElement>): void => {
     if (!quadtreeRef.current || !svgOverlayRef.current) return;
@@ -379,7 +386,7 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
     const t = transformRef.current;
     const searchX = t.invertX(mx);
     const searchY = t.invertY(my);
-    const r = 6 / Math.max(1e-9, t.k); // keep ~6px in screen space
+    const r = 6 / Math.max(1e-9, t.k);
     const found = quadtreeRef.current.find(searchX, searchY, r) ?? null;
     setHoveredProj(found);
   }, []);
@@ -435,7 +442,6 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
 
     const zoomed = (event: d3.D3ZoomEvent<SVGSVGElement, undefined>): void => {
       transformRef.current = event.transform;
-      // clear stale brush on zoom/pan
       if (brushGRef.current && brushRef.current) {
         brushRef.current.move(brushGRef.current as d3.Selection<SVGGElement, unknown, null, undefined>, null);
       }
@@ -484,6 +490,7 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
     }
   }, [dimensions]);
 
+  // In case other deps change, ensure a redraw
   useEffect(() => {
     draw();
   }, [draw]);
