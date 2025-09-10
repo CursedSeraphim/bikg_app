@@ -45,7 +45,7 @@ class SpatialHash {
     this.cell = cellSize;
   }
 
-  private key(ix: number, iy: number) {
+  private key(ix: number, iy: number): string {
     return `${ix},${iy}`;
   }
 
@@ -56,7 +56,11 @@ class SpatialHash {
     const x2 = Math.floor(r.x2 / cs);
     const y2 = Math.floor(r.y2 / cs);
     const cells: Array<[number, number]> = [];
-    for (let ix = x1; ix <= x2; ix += 1) for (let iy = y1; iy <= y2; iy += 1) cells.push([ix, iy]);
+    for (let ix = x1; ix <= x2; ix += 1) {
+      for (let iy = y1; iy <= y2; iy += 1) {
+        cells.push([ix, iy]);
+      }
+    }
     return cells;
   }
 
@@ -81,7 +85,7 @@ class SpatialHash {
   }
 }
 
-function CanvasScatterPlot({ data }: IScatterPlotProps) {
+function InteractiveScatterPlot({ data }: IScatterPlotProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const svgOverlayRef = useRef<SVGSVGElement>(null);
   const transformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
@@ -89,10 +93,14 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
   const [hoveredNode, setHoveredNode] = useState<IScatterNode | null>(null);
   const rafIdRef = useRef<number | null>(null);
 
-  // offscreen canvas for accurate text measurement
+  // Brush refs to clear selection on zoom/resize
+  const brushRef = useRef<d3.BrushBehavior<unknown> | null>(null);
+  const brushGRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
+
+  // Offscreen canvas for accurate text measurement
   const measureCanvasRef = useRef<HTMLCanvasElement | null>(null);
   if (!measureCanvasRef.current) measureCanvasRef.current = document.createElement('canvas');
-  const measureCtx = measureCanvasRef.current.getContext('2d')!;
+  const measureCtx = measureCanvasRef.current.getContext('2d') as CanvasRenderingContext2D;
 
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const margins = useMemo(() => ({ top: 20, right: 20, bottom: 20, left: 20 }), []);
@@ -124,7 +132,7 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
     quadtreeRef.current = q;
   }, [data, xScale, yScale, margins]);
 
-  const handleResize = useCallback(() => {
+  const handleResize = useCallback((): void => {
     if (!canvasRef.current?.parentElement) return;
     const { width, height } = canvasRef.current.parentElement.getBoundingClientRect();
     setDimensions({ width, height });
@@ -136,7 +144,7 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
     return () => observer.disconnect();
   }, [handleResize]);
 
-  /** Measures text width in device-independent pixels for given font size and family. */
+  /** Measures text width for given font size and family. */
   const measureTextWidth = useCallback(
     (text: string, fontPx: number): number => {
       const key = widthKey(text, fontPx);
@@ -150,15 +158,20 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
     [measureCtx],
   );
 
+  /** Clears any active brush rectangle (typed, no `any`). */
+  const clearBrush = useCallback((): void => {
+    if (brushGRef.current && brushRef.current) {
+      brushRef.current.move(brushGRef.current as d3.Selection<SVGGElement, unknown, null, undefined>, null);
+    }
+  }, []);
+
   /** Draws points and strictly decluttered labels. */
-  const renderFrame = useCallback(() => {
+  const renderFrame = useCallback((): void => {
     const canvas = canvasRef.current;
     const svgEl = svgOverlayRef.current;
     if (!canvas || !svgEl) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
     const { width, height } = dimensions;
 
     // HiDPI crispness while keeping CSS pixel coordinates
@@ -184,7 +197,7 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
       ctx.fill();
     }
 
-    // Labels: constant screen-space size (semantic zoom preserved)
+    // Labels: constant screen-space size (semantic zoom)
     const fontPx = BASE_LABEL_FONT_PX;
     const svg = d3.select(svgEl);
     const spatial = new SpatialHash(32);
@@ -232,14 +245,14 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
     }
 
     // Static labels (decluttered)
-    const labels = svg.selectAll<SVGTextElement, LabelDatum>('text.static-label').data(visible, (d) => d.node.text);
+    const labels = svg.selectAll<SVGTextElement, LabelDatum>('text.static-label').data(visible, (d: LabelDatum) => d.node.text);
 
     labels
       .enter()
       .append('text')
       .attr('class', 'static-label')
       .attr('pointer-events', 'none')
-      .merge(labels)
+      .merge(labels as d3.Selection<SVGTextElement, LabelDatum, SVGGElement, unknown>)
       .attr('paint-order', 'stroke')
       .attr('stroke', 'white')
       .attr('stroke-width', LABEL_STROKE_WIDTH)
@@ -247,14 +260,15 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
       .attr('text-anchor', 'middle')
       .attr('font-family', LABEL_FONT_FAMILY)
       .attr('font-size', fontPx)
-      .attr('x', (d) => d.sx)
-      .attr('y', (d) => d.sy)
-      .text((d) => d.text as string);
+      .attr('x', (d: LabelDatum) => d.sx)
+      .attr('y', (d: LabelDatum) => d.sy)
+      .text((d: LabelDatum) => d.text);
 
     labels.exit().remove();
 
     // Hover label (always visible even if overlapping)
-    const hoverData = hoveredNode
+    type HoverDatum = { node: IScatterNode; sx: number; sy: number; text: string };
+    const hoverData: HoverDatum[] = hoveredNode
       ? [
           {
             node: hoveredNode,
@@ -265,16 +279,14 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
         ]
       : [];
 
-    const hoverSel = svg
-      .selectAll<SVGTextElement, { node: IScatterNode; sx: number; sy: number; text: string }>('text.hover-label')
-      .data(hoverData, (d) => d.node.text);
+    const hoverSel = svg.selectAll<SVGTextElement, HoverDatum>('text.hover-label').data(hoverData, (d: HoverDatum) => d.node.text);
 
     hoverSel
       .enter()
       .append('text')
       .attr('class', 'hover-label')
       .attr('pointer-events', 'none')
-      .merge(hoverSel)
+      .merge(hoverSel as d3.Selection<SVGTextElement, HoverDatum, SVGGElement, unknown>)
       .attr('paint-order', 'stroke')
       .attr('stroke', 'white')
       .attr('stroke-width', LABEL_STROKE_WIDTH)
@@ -282,16 +294,16 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
       .attr('text-anchor', 'middle')
       .attr('font-family', LABEL_FONT_FAMILY)
       .attr('font-size', fontPx)
-      .attr('x', (d) => d.sx)
-      .attr('y', (d) => d.sy)
-      .text((d) => d.text)
+      .attr('x', (d: HoverDatum) => d.sx)
+      .attr('y', (d: HoverDatum) => d.sy)
+      .text((d: HoverDatum) => d.text)
       .raise();
 
     hoverSel.exit().remove();
   }, [data, dimensions, hoveredNode, margins, measureTextWidth, selectedNodes, xScale, yScale]);
 
   /** Schedules a render on the next animation frame. */
-  const drawPoints = useCallback(() => {
+  const drawPoints = useCallback((): void => {
     if (rafIdRef.current != null) cancelAnimationFrame(rafIdRef.current);
     rafIdRef.current = requestAnimationFrame(() => {
       rafIdRef.current = null;
@@ -299,19 +311,19 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
     });
   }, [renderFrame]);
 
-  const handleMouseMove = useCallback((event: React.MouseEvent<SVGSVGElement>) => {
+  const handleMouseMove = useCallback((event: React.MouseEvent<SVGSVGElement>): void => {
     if (!quadtreeRef.current || !svgOverlayRef.current) return;
-    const [mx, my] = d3.pointer(event, svgOverlayRef.current);
+    const [mx, my] = d3.pointer(event, svgOverlayRef.current as Element);
     const searchX = transformRef.current.invertX(mx);
     const searchY = transformRef.current.invertY(my);
     const radius = 6;
-    const found = quadtreeRef.current.find(searchX, searchY, radius);
-    setHoveredNode(found ?? null);
+    const found = quadtreeRef.current.find(searchX, searchY, radius) ?? null;
+    setHoveredNode(found);
   }, []);
 
-  const handleMouseLeave = useCallback(() => setHoveredNode(null), []);
+  const handleMouseLeave = useCallback((): void => setHoveredNode(null), []);
 
-  // Brush
+  // Brush (screen-space); selection rectangle cleared on zoom/resize to avoid desync
   useEffect(() => {
     if (!svgOverlayRef.current) return () => {};
     const svgOverlay = d3.select(svgOverlayRef.current);
@@ -319,6 +331,7 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
     svgOverlay.style('pointer-events', 'all');
 
     const brushG = svgOverlay.append('g').attr('class', 'brush');
+    brushGRef.current = brushG;
 
     const brush = d3
       .brush<unknown>()
@@ -330,20 +343,24 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
         if (event.selection) {
           const [[x1, y1], [x2, y2]] = event.selection as [[number, number], [number, number]];
           const newlySelected = data
-            .filter((d) => {
+            .filter((d: IScatterNode) => {
               const rawX = xScale(d.x) + margins.left;
               const rawY = yScale(d.y) + margins.top;
               const screenX = transformRef.current.applyX(rawX);
               const screenY = transformRef.current.applyY(rawY);
               return screenX >= x1 && screenX <= x2 && screenY >= y1 && screenY <= y2;
             })
-            .map((d) => d.text);
+            .map((d: IScatterNode) => d.text);
           dispatch(setSelectedFocusNodes(newlySelected));
         }
       });
 
+    brushRef.current = brush;
     brushG.call(brush);
+
     return () => {
+      brushGRef.current = null;
+      brushRef.current = null;
       brushG.remove();
     };
   }, [data, dimensions, dispatch, xScale, yScale, margins]);
@@ -353,8 +370,9 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
     if (!svgOverlayRef.current) return () => {};
     const svgOverlay = d3.select(svgOverlayRef.current);
 
-    const zoomed = (event: d3.D3ZoomEvent<SVGSVGElement, undefined>) => {
+    const zoomed = (event: d3.D3ZoomEvent<SVGSVGElement, undefined>): void => {
       transformRef.current = event.transform;
+      clearBrush(); // clear stale brush on zoom/pan
       drawPoints();
     };
 
@@ -369,7 +387,7 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
         [0, 0],
         [dimensions.width, dimensions.height],
       ])
-      .filter((event: KeyboardEvent | MouseEvent | TouchEvent | d3.D3ZoomEvent<SVGSVGElement, undefined>) => {
+      .filter((event: KeyboardEvent | MouseEvent | TouchEvent | d3.D3ZoomEvent<SVGSVGElement, undefined>): boolean => {
         const et = (event as Event).type;
         return et === 'wheel' || et === 'dblclick' || (et === 'mousedown' && ((event as MouseEvent).ctrlKey || (event as MouseEvent).shiftKey));
       })
@@ -377,8 +395,9 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
 
     svgOverlay.call(zoomBehavior);
 
-    const handleDoubleClick = () => {
+    const handleDoubleClick = (): void => {
       transformRef.current = d3.zoomIdentity;
+      clearBrush();
       svgOverlay.transition().duration(200).call(zoomBehavior.transform, d3.zoomIdentity);
       drawPoints();
     };
@@ -388,7 +407,12 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
       svgOverlay.on('.zoom', null);
       svgOverlay.on('dblclick.zoom', null);
     };
-  }, [dimensions, drawPoints]);
+  }, [dimensions, drawPoints, clearBrush]);
+
+  // Clear any lingering brush on resize (view changes in screen space)
+  useEffect(() => {
+    clearBrush();
+  }, [dimensions, clearBrush]);
 
   useEffect(() => {
     drawPoints();
@@ -407,4 +431,4 @@ function CanvasScatterPlot({ data }: IScatterPlotProps) {
   );
 }
 
-export default CanvasScatterPlot;
+export default InteractiveScatterPlot;
