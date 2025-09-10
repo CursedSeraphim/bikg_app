@@ -28,13 +28,22 @@ const LABEL_STROKE_WIDTH = 3;
 
 const LABEL_FONT_FAMILY = 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
 
-/** ---------- Helpers ---------- */
+/** ---------- Types & helpers ---------- */
 function formatLabel(raw: string): string {
   if (!STRIP_BI_PREFIX) return raw;
   return raw.startsWith(BI_PREFIX) ? raw.slice(BI_PREFIX.length) : raw;
 }
 
 type Rect = { x1: number; y1: number; x2: number; y2: number };
+
+/** Preprojected point used everywhere during rendering */
+type Proj = {
+  node: IScatterNode;
+  rawX: number; // xScale(x) + margins.left  (pre-transform pixels)
+  rawY: number; // yScale(y) + margins.top   (pre-transform pixels)
+  label: string; // formatted once (prefix-stripped)
+  labelW: number; // measured once at BASE_LABEL_FONT_PX
+};
 
 class SpatialHash {
   private cell: number;
@@ -56,11 +65,7 @@ class SpatialHash {
     const x2 = Math.floor(r.x2 / cs);
     const y2 = Math.floor(r.y2 / cs);
     const cells: Array<[number, number]> = [];
-    for (let ix = x1; ix <= x2; ix += 1) {
-      for (let iy = y1; iy <= y2; iy += 1) {
-        cells.push([ix, iy]);
-      }
-    }
+    for (let ix = x1; ix <= x2; ix += 1) for (let iy = y1; iy <= y2; iy += 1) cells.push([ix, iy]);
     return cells;
   }
 
@@ -89,8 +94,8 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const svgOverlayRef = useRef<SVGSVGElement>(null);
   const transformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
-  const quadtreeRef = useRef<d3.Quadtree<IScatterNode>>();
-  const [hoveredNode, setHoveredNode] = useState<IScatterNode | null>(null);
+
+  const [hoveredProj, setHoveredProj] = useState<Proj | null>(null);
   const rafIdRef = useRef<number | null>(null);
 
   // Brush refs to clear selection on zoom/resize
@@ -116,21 +121,47 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
   }, [dimensions, margins]);
 
   const selectedNodes = useSelector((state: IRootState) => state.combined.selectedNodes);
+  const selectedSet = useMemo(() => new Set<string>(selectedNodes), [selectedNodes]);
+
   const store = useStore<IRootState>();
   const { dispatch } = store;
 
-  // Cache measured widths per (text, fontPx)
+  /** Precompute label widths once at the base font size. */
   const widthCacheRef = useRef<Map<string, number>>(new Map());
-  const widthKey = (txt: string, fontPx: number) => `${fontPx}::${txt}`;
+  const measureLabelWidth = useCallback(
+    (text: string): number => {
+      const cached = widthCacheRef.current.get(text);
+      if (cached !== undefined) return cached;
+      measureCtx.font = `${BASE_LABEL_FONT_PX}px ${LABEL_FONT_FAMILY}`;
+      const w = measureCtx.measureText(text).width + 2 * LABEL_PADDING_PX;
+      widthCacheRef.current.set(text, w);
+      return w;
+    },
+    [measureCtx],
+  );
 
+  /** Preproject data to raw pixel coords (pre-transform), cache label + width. */
+  const preprojRef = useRef<Proj[]>([]);
+  const quadtreeRef = useRef<d3.Quadtree<Proj>>();
   useEffect(() => {
-    const q = d3
-      .quadtree<IScatterNode>()
-      .x((d) => xScale(d.x) + margins.left)
-      .y((d) => yScale(d.y) + margins.top)
-      .addAll(data);
-    quadtreeRef.current = q;
-  }, [data, xScale, yScale, margins]);
+    const projs: Proj[] = new Array(data.length);
+    for (let i = 0; i < data.length; i += 1) {
+      const d = data[i];
+      const rawX = xScale(d.x) + margins.left;
+      const rawY = yScale(d.y) + margins.top;
+      const label = formatLabel(d.text);
+      const labelW = measureLabelWidth(label);
+      projs[i] = { node: d, rawX, rawY, label, labelW };
+    }
+    preprojRef.current = projs;
+
+    const qt = d3
+      .quadtree<Proj>()
+      .x((p) => p.rawX)
+      .y((p) => p.rawY)
+      .addAll(projs);
+    quadtreeRef.current = qt;
+  }, [data, xScale, yScale, margins, measureLabelWidth]);
 
   const handleResize = useCallback((): void => {
     if (!canvasRef.current?.parentElement) return;
@@ -144,28 +175,49 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
     return () => observer.disconnect();
   }, [handleResize]);
 
-  /** Measures text width for given font size and family. */
-  const measureTextWidth = useCallback(
-    (text: string, fontPx: number): number => {
-      const key = widthKey(text, fontPx);
-      const cached = widthCacheRef.current.get(key);
-      if (cached !== undefined) return cached;
-      measureCtx.font = `${fontPx}px ${LABEL_FONT_FAMILY}`;
-      const w = measureCtx.measureText(text).width;
-      widthCacheRef.current.set(key, w);
-      return w;
-    },
-    [measureCtx],
-  );
+  /** Collect visible points using quadtree range query in raw-pixel space (pre-transform). */
+  const collectVisible = useCallback((): Proj[] => {
+    const qt = quadtreeRef.current;
+    if (!qt) return preprojRef.current;
 
-  /** Clears any active brush rectangle (typed, no `any`). */
-  const clearBrush = useCallback((): void => {
-    if (brushGRef.current && brushRef.current) {
-      brushRef.current.move(brushGRef.current as d3.Selection<SVGGElement, unknown, null, undefined>, null);
+    const t = transformRef.current;
+    const rx0 = t.invertX(0);
+    const ry0 = t.invertY(0);
+    const rx1 = t.invertX(dimensions.width);
+    const ry1 = t.invertY(dimensions.height);
+
+    const minX = Math.min(rx0, rx1);
+    const maxX = Math.max(rx0, rx1);
+    const minY = Math.min(ry0, ry1);
+    const maxY = Math.max(ry0, ry1);
+
+    const result: Proj[] = [];
+
+    function isLeaf(node: d3.QuadtreeNode<Proj>): node is d3.QuadtreeLeaf<Proj> {
+      return (node as d3.QuadtreeLeaf<Proj>).data !== undefined;
     }
-  }, []);
 
-  /** Draws points and strictly decluttered labels. */
+    qt.visit((node, x0, y0, x1, y1) => {
+      // Skip subtrees completely outside the query box
+      if (x1 < minX || x0 > maxX || y1 < minY || y0 > maxY) return true;
+
+      if (isLeaf(node)) {
+        let leaf: d3.QuadtreeLeaf<Proj> | undefined = node;
+        do {
+          const p = leaf.data;
+          if (p.rawX >= minX && p.rawX <= maxX && p.rawY >= minY && p.rawY <= maxY) {
+            result.push(p);
+          }
+          leaf = leaf.next;
+        } while (leaf);
+      }
+      return false; // keep visiting
+    });
+
+    return result;
+  }, [dimensions.width, dimensions.height]);
+
+  /** Draw frame: only process/draw visible points; declutter labels strictly. */
   const renderFrame = useCallback((): void => {
     const canvas = canvasRef.current;
     const svgEl = svgOverlayRef.current;
@@ -181,71 +233,80 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
-    // Points (fixed 4px radius in screen space)
-    for (const d of data) {
-      const isSelected = selectedNodes.includes(d.text);
-      const rawX = xScale(d.x) + margins.left;
-      const rawY = yScale(d.y) + margins.top;
-      const screenX = transformRef.current.applyX(rawX);
-      const screenY = transformRef.current.applyY(rawY);
+    const t = transformRef.current;
+    const { k } = t;
+    const tx = t.x;
+    const ty = t.y;
 
-      if (screenX < -8 || screenX > width + 8 || screenY < -8 || screenY > height + 8) continue;
+    // 1) Compute visible set via quadtree (O(m log n))
+    const visible = collectVisible();
 
-      ctx.beginPath();
-      ctx.fillStyle = isSelected ? '#DA5700' : 'lightgrey';
-      ctx.arc(screenX, screenY, 4, 0, 2 * Math.PI);
-      ctx.fill();
+    // 2) Draw points (two passes to avoid state flips)
+    // Non-selected first
+    ctx.fillStyle = 'lightgrey';
+    ctx.beginPath();
+    for (const p of visible) {
+      if (selectedSet.has(p.node.text)) continue;
+      const sx = k * p.rawX + tx;
+      const sy = k * p.rawY + ty;
+      if (sx < -8 || sx > width + 8 || sy < -8 || sy > height + 8) continue;
+      ctx.moveTo(sx + 4, sy);
+      ctx.arc(sx, sy, 4, 0, 2 * Math.PI);
     }
+    ctx.fill();
 
-    // Labels: constant screen-space size (semantic zoom)
+    // Selected on top
+    ctx.fillStyle = '#DA5700';
+    ctx.beginPath();
+    for (const p of visible) {
+      if (!selectedSet.has(p.node.text)) continue;
+      const sx = k * p.rawX + tx;
+      const sy = k * p.rawY + ty;
+      if (sx < -8 || sx > width + 8 || sy < -8 || sy > height + 8) continue;
+      ctx.moveTo(sx + 4, sy);
+      ctx.arc(sx, sy, 4, 0, 2 * Math.PI);
+    }
+    ctx.fill();
+
+    // 3) Strict decluttering of labels (screen-space boxes, constant font size)
     const fontPx = BASE_LABEL_FONT_PX;
     const svg = d3.select(svgEl);
     const spatial = new SpatialHash(32);
 
-    type LabelDatum = {
-      node: IScatterNode;
-      sx: number;
-      sy: number;
-      text: string;
-      rect: Rect;
-    };
-
+    type LabelDatum = { p: Proj; sx: number; sy: number; text: string; rect: Rect };
     const candidates: LabelDatum[] = [];
-    for (const d of data) {
-      const sx = transformRef.current.applyX(xScale(d.x) + margins.left);
-      const sy = transformRef.current.applyY(yScale(d.y) + margins.top) - LABEL_Y_OFFSET_PX;
 
+    for (const p of visible) {
+      const sx = k * p.rawX + tx;
+      const sy = k * p.rawY + ty - LABEL_Y_OFFSET_PX;
       if (sx < -200 || sx > width + 200 || sy < -100 || sy > height + 100) continue;
 
-      const txt = formatLabel(d.text);
-      const w = measureTextWidth(txt, fontPx) + 2 * LABEL_PADDING_PX;
+      const w = p.labelW; // measured once at mount
       const h = fontPx + 2;
-
       const rect: Rect = { x1: sx - w / 2, y1: sy - h, x2: sx + w / 2, y2: sy };
-      candidates.push({ node: d, sx, sy, text: txt, rect });
+      candidates.push({ p, sx, sy, text: p.label, rect });
     }
 
     // Priority: selected first, then shorter labels to fit more
     candidates.sort((a, b) => {
-      const aSel = selectedNodes.includes(a.node.text);
-      const bSel = selectedNodes.includes(b.node.text);
+      const aSel = selectedSet.has(a.p.node.text);
+      const bSel = selectedSet.has(b.p.node.text);
       if (aSel !== bSel) return aSel ? -1 : 1;
       const aw = a.rect.x2 - a.rect.x1;
       const bw = b.rect.x2 - b.rect.x1;
       return aw - bw;
     });
 
-    const visible: LabelDatum[] = [];
+    const visibleLabels: LabelDatum[] = [];
     for (const c of candidates) {
       if (c.rect.x2 < 0 || c.rect.x1 > width || c.rect.y2 < 0 || c.rect.y1 > height) continue;
       if (!spatial.collides(c.rect)) {
         spatial.insert(c.rect);
-        visible.push(c);
+        visibleLabels.push(c);
       }
     }
 
-    // Static labels (decluttered)
-    const labels = svg.selectAll<SVGTextElement, LabelDatum>('text.static-label').data(visible, (d: LabelDatum) => d.node.text);
+    const labels = svg.selectAll<SVGTextElement, LabelDatum>('text.static-label').data(visibleLabels, (d: LabelDatum) => d.p.node.text);
 
     labels
       .enter()
@@ -266,20 +327,20 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
 
     labels.exit().remove();
 
-    // Hover label (always visible even if overlapping)
-    type HoverDatum = { node: IScatterNode; sx: number; sy: number; text: string };
-    const hoverData: HoverDatum[] = hoveredNode
+    // Hover label (always visible)
+    type HoverDatum = { p: Proj; sx: number; sy: number; text: string };
+    const hoverData: HoverDatum[] = hoveredProj
       ? [
           {
-            node: hoveredNode,
-            sx: transformRef.current.applyX(xScale(hoveredNode.x) + margins.left),
-            sy: transformRef.current.applyY(yScale(hoveredNode.y) + margins.top) - LABEL_Y_OFFSET_PX,
-            text: formatLabel(hoveredNode.text),
+            p: hoveredProj,
+            sx: k * hoveredProj.rawX + tx,
+            sy: k * hoveredProj.rawY + ty - LABEL_Y_OFFSET_PX,
+            text: hoveredProj.label,
           },
         ]
       : [];
 
-    const hoverSel = svg.selectAll<SVGTextElement, HoverDatum>('text.hover-label').data(hoverData, (d: HoverDatum) => d.node.text);
+    const hoverSel = svg.selectAll<SVGTextElement, HoverDatum>('text.hover-label').data(hoverData, (d: HoverDatum) => d.p.node.text);
 
     hoverSel
       .enter()
@@ -300,10 +361,10 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
       .raise();
 
     hoverSel.exit().remove();
-  }, [data, dimensions, hoveredNode, margins, measureTextWidth, selectedNodes, xScale, yScale]);
+  }, [dimensions, collectVisible, hoveredProj, selectedSet]);
 
-  /** Schedules a render on the next animation frame. */
-  const drawPoints = useCallback((): void => {
+  /** rAF-batched redraw */
+  const draw = useCallback((): void => {
     if (rafIdRef.current != null) cancelAnimationFrame(rafIdRef.current);
     rafIdRef.current = requestAnimationFrame(() => {
       rafIdRef.current = null;
@@ -311,17 +372,19 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
     });
   }, [renderFrame]);
 
+  /** Pointer handling uses quadtree in raw-pixel space; radius kept in screen px */
   const handleMouseMove = useCallback((event: React.MouseEvent<SVGSVGElement>): void => {
     if (!quadtreeRef.current || !svgOverlayRef.current) return;
     const [mx, my] = d3.pointer(event, svgOverlayRef.current as Element);
-    const searchX = transformRef.current.invertX(mx);
-    const searchY = transformRef.current.invertY(my);
-    const radius = 6;
-    const found = quadtreeRef.current.find(searchX, searchY, radius) ?? null;
-    setHoveredNode(found);
+    const t = transformRef.current;
+    const searchX = t.invertX(mx);
+    const searchY = t.invertY(my);
+    const r = 6 / Math.max(1e-9, t.k); // keep ~6px in screen space
+    const found = quadtreeRef.current.find(searchX, searchY, r) ?? null;
+    setHoveredProj(found);
   }, []);
 
-  const handleMouseLeave = useCallback((): void => setHoveredNode(null), []);
+  const handleMouseLeave = useCallback((): void => setHoveredProj(null), []);
 
   // Brush (screen-space); selection rectangle cleared on zoom/resize to avoid desync
   useEffect(() => {
@@ -340,19 +403,19 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
         [dimensions.width - margins.right, dimensions.height - margins.bottom],
       ])
       .on('end', (event: d3.D3BrushEvent<unknown>) => {
-        if (event.selection) {
-          const [[x1, y1], [x2, y2]] = event.selection as [[number, number], [number, number]];
-          const newlySelected = data
-            .filter((d: IScatterNode) => {
-              const rawX = xScale(d.x) + margins.left;
-              const rawY = yScale(d.y) + margins.top;
-              const screenX = transformRef.current.applyX(rawX);
-              const screenY = transformRef.current.applyY(rawY);
-              return screenX >= x1 && screenX <= x2 && screenY >= y1 && screenY <= y2;
-            })
-            .map((d: IScatterNode) => d.text);
-          dispatch(setSelectedFocusNodes(newlySelected));
-        }
+        if (!event.selection) return;
+        const [[x1, y1], [x2, y2]] = event.selection as [[number, number], [number, number]];
+
+        const t = transformRef.current;
+        const newlySelected = preprojRef.current
+          .filter((p) => {
+            const sx = t.k * p.rawX + t.x;
+            const sy = t.k * p.rawY + t.y;
+            return sx >= x1 && sx <= x2 && sy >= y1 && sy <= y2;
+          })
+          .map((p) => p.node.text);
+
+        dispatch(setSelectedFocusNodes(newlySelected));
       });
 
     brushRef.current = brush;
@@ -363,17 +426,20 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
       brushRef.current = null;
       brushG.remove();
     };
-  }, [data, dimensions, dispatch, xScale, yScale, margins]);
+  }, [dimensions, dispatch, margins]);
 
-  // Zoom
+  // Zoom: clear brush (screen-space) and rAF redraw
   useEffect(() => {
     if (!svgOverlayRef.current) return () => {};
     const svgOverlay = d3.select(svgOverlayRef.current);
 
     const zoomed = (event: d3.D3ZoomEvent<SVGSVGElement, undefined>): void => {
       transformRef.current = event.transform;
-      clearBrush(); // clear stale brush on zoom/pan
-      drawPoints();
+      // clear stale brush on zoom/pan
+      if (brushGRef.current && brushRef.current) {
+        brushRef.current.move(brushGRef.current as d3.Selection<SVGGElement, unknown, null, undefined>, null);
+      }
+      draw();
     };
 
     const zoomBehavior = d3
@@ -397,9 +463,11 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
 
     const handleDoubleClick = (): void => {
       transformRef.current = d3.zoomIdentity;
-      clearBrush();
+      if (brushGRef.current && brushRef.current) {
+        brushRef.current.move(brushGRef.current as d3.Selection<SVGGElement, unknown, null, undefined>, null);
+      }
       svgOverlay.transition().duration(200).call(zoomBehavior.transform, d3.zoomIdentity);
-      drawPoints();
+      draw();
     };
 
     svgOverlay.on('dblclick.zoom', handleDoubleClick);
@@ -407,16 +475,18 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
       svgOverlay.on('.zoom', null);
       svgOverlay.on('dblclick.zoom', null);
     };
-  }, [dimensions, drawPoints, clearBrush]);
+  }, [dimensions, draw]);
 
   // Clear any lingering brush on resize (view changes in screen space)
   useEffect(() => {
-    clearBrush();
-  }, [dimensions, clearBrush]);
+    if (brushGRef.current && brushRef.current) {
+      brushRef.current.move(brushGRef.current as d3.Selection<SVGGElement, unknown, null, undefined>, null);
+    }
+  }, [dimensions]);
 
   useEffect(() => {
-    drawPoints();
-  }, [drawPoints]);
+    draw();
+  }, [draw]);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
