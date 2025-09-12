@@ -234,7 +234,13 @@ export default function LineUpView() {
     builder.registerRenderer('upset', new ColoredUpSetCellRenderer());
 
     // exclude helper meta fields from appearing as columns
-    const columns = Object.keys(data[0]).filter((c) => !hiddenLineupColumns.includes(c) && !c.startsWith('__'));
+    // TEMPORARY: restrict visible columns to the four we need for figures
+    const allowedCols = Object.keys(data[0]).filter(
+      (c) => c.includes('focus_node') || c.includes('type') || c.includes('has1Species') || c.includes('hasSpecies'),
+    );
+
+    // Apply hidden column filtering afterwards
+    const columns = allowedCols.filter((c) => !hiddenLineupColumns.includes(c));
 
     columns.forEach((column) => {
       const type = inferType(data, column);
