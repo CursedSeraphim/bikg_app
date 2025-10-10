@@ -109,12 +109,9 @@ export function useD3ContextMenu(
       {state.targetNode ? (
         <>
           <div className="d3-context-menu-title">{state.targetNode.label}</div>
-          <button type="button" className="d3-context-menu-item">
+          {/* <button type="button" className="d3-context-menu-item">
             Node action for {state.targetNode.label}
-          </button>
-          <button type="button" className="d3-context-menu-item">
-            Another node action
-          </button>
+          </button> */}
         </>
       ) : null}
       <button
