@@ -115,10 +115,17 @@ export default function LineUpView() {
   }
 
   function removePrefix(text: string) {
-    const parts = text.split(':');
-    if (parts.length > 1) {
-      return parts[1].trim();
+    if (text.includes('://')) {
+      return text;
     }
+
+    const colonIndex = text.indexOf(':');
+    if (colonIndex !== -1) {
+      return text
+        .slice(colonIndex + 1)
+        .trim();
+    }
+
     return text;
   }
 
