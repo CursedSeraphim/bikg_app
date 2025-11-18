@@ -24,9 +24,9 @@ export default function MainBottomTabs() {
           opacity={0.7}
           withArrow
           transitionProps={{ duration: 300 }}
-          label="An AI chat interface that uses GPT and function calling to provide a conversational interface. It allows users to ask questions about the dashboard as well as control it using natural language."
+          label="An LLM chat interface that uses GPT and function calling to provide a conversational interface. It allows users to ask questions about the dashboard as well as control it using natural language."
         >
-          <Tabs.Tab value="aiChat">AI Chat</Tabs.Tab>
+          <Tabs.Tab value="aiChat">LLM Chat</Tabs.Tab>
         </Tooltip>
       </Tabs.List>
 
