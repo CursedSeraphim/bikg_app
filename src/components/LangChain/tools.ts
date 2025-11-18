@@ -1,15 +1,14 @@
-// tools.ts
+// src/components/LangChain/tools.ts
 import { DynamicTool } from 'langchain/tools';
 import { useDispatch, useStore } from 'react-redux';
 import { IRootState } from '../../types';
 import { setSelectedTypes, setSelectedViolationExemplars, setSelectedViolations } from '../Store/CombinedSlice';
+import { grepAround } from './rdfGrepEngine';
 
 const parseArrayString = (arrayString) => {
   const array = arrayString.replace(/[[\]\s]/g, '').split(',');
   const lowerCaseFirstLetter = (str) => {
-    // Remove surrounding quotes if present
     const strippedStr = str.replace(/^"|"$/g, '');
-    // Convert first letter to lowercase and return
     return strippedStr.charAt(0).toLowerCase() + strippedStr.slice(1);
   };
   return array.filter((item) => item).map(lowerCaseFirstLetter);
@@ -110,48 +109,6 @@ const useTools = () => {
     return ret;
   };
 
-  // const findNodeByIdSubstring = (tree, substr) => {
-  //   let path = [];
-
-  //   function traverse(node, currentPath) {
-  //     if (node.id.includes(substr)) {
-  //       path = [...currentPath, node.id];
-  //       return node;
-  //     }
-
-  //     for (const child of node.children || []) {
-  //       const result = traverse(child, [...currentPath, node.id]);
-  //       if (result) {
-  //         return result;
-  //       }
-  //     }
-
-  //     return null;
-  //   }
-
-  //   const foundNode = traverse(tree, []);
-
-  //   if (!foundNode) {
-  //     return 'Node not found';
-  //   }
-
-  //   let output = `Node ID: ${foundNode.id}\n`;
-
-  //   if (path.length > 1) {
-  //     output += `Parents: ${path.slice(0, -1).join(' -> ')}\n`;
-  //   } else {
-  //     output += 'No parents\n';
-  //   }
-
-  //   if (foundNode.children && foundNode.children.length) {
-  //     output += `Children: ${foundNode.children.map((child) => child.id).join(', ')}\n`;
-  //   } else {
-  //     output += 'No children\n';
-  //   }
-
-  //   return output;
-  // };
-
   return [
     new DynamicTool({
       name: 'select_types',
@@ -183,11 +140,6 @@ const useTools = () => {
       func: getExistingExemplars,
       description: 'Returns a list of violation exemplars in the ontology',
     }),
-    // new DynamicTool({
-    //   name: 'find_node_by_id_substring',
-    //   func: findNodeByIdSubstring,
-    //   description: 'Returns the node and its parents and children in the ontology tree given a substring of the node id',
-    // }),
     new DynamicTool({
       name: 'get_selected_classes',
       func: getSelectedTypes,
@@ -227,6 +179,16 @@ const useTools = () => {
       name: 'get_focus_node_by_name',
       func: getFocusNodeByName,
       description: 'Takes the name of a focus node and returns the detailed information about that node',
+    }),
+
+    new DynamicTool({
+      name: 'grep_around',
+      description:
+        'Search raw RDF text (ontology, instance, report, or union) for a term and return line-numbered snippets with surrounding context and IRI candidates. Use this tool before making any factual claims about nodes or violations. Keep searches narrow.',
+      func: async (input: string): Promise<string> => {
+        const state = store.getState();
+        return grepAround(input, state.combined as any);
+      },
     }),
   ];
 };

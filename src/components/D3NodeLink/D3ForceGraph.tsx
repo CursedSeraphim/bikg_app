@@ -77,12 +77,47 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const nodeMapRef = useRef<Record<string, CanvasNode>>({});
   const savedPositionsRef = useRef<Record<string, { x?: number; y?: number }>>({});
 
-  // --- Blacklist helpers ----------------------------------------------------
+  // --- Helpers --------------------------------------------------------------
 
   const stripDecorations = useCallback((label: string | undefined) => {
     if (!label) return '';
     // remove a trailing " (…)" count suffix and a trailing "*"
     return label.replace(/\s*\([^)]*\)\s*$/, '').replace(/\*$/, '');
+  }, []);
+
+  // TEMP (figure-only): anonymize any occurrence of "boehringer" for display strings
+  const anonymizeLabel = useCallback((value: string | undefined): string => {
+    if (!value) return '';
+    return value.replace(/boehringer/gi, 'anonymized');
+  }, []);
+
+  // Figure-only: force anonymization at the canvas API level as a last line of defense.
+  // This guarantees that any text drawn anywhere on any canvas will be sanitized.
+  useEffect(() => {
+    const proto = CanvasRenderingContext2D.prototype as any;
+    if (proto.__biAnonymizePatched) return;
+
+    const re = /boehringer/gi;
+    const sanitize = (t: unknown) => String(t ?? '').replace(re, 'anonymized');
+
+    const origFill = proto.fillText;
+    const origStroke = proto.strokeText;
+    const origMeasure = proto.measureText;
+
+    proto.fillText = function (text: any, x: number, y: number, maxWidth?: number) {
+      const s = sanitize(text);
+      return maxWidth !== undefined ? origFill.call(this, s, x, y, maxWidth) : origFill.call(this, s, x, y);
+    };
+    proto.strokeText = function (text: any, x: number, y: number, maxWidth?: number) {
+      const s = sanitize(text);
+      return maxWidth !== undefined ? origStroke.call(this, s, x, y, maxWidth) : origStroke.call(this, s, x, y);
+    };
+    proto.measureText = function (text: any) {
+      const s = sanitize(text);
+      return origMeasure.call(this, s);
+    };
+
+    proto.__biAnonymizePatched = true;
   }, []);
 
   const isLabelBlacklisted = useCallback(
@@ -117,18 +152,19 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
     visibleNodeData.forEach((n) => {
       const { id } = n.data;
+      const display = anonymizeLabel(n.data.label ?? n.data.id); // sanitize (fallback to id)
       let node = nodeMapRef.current[id];
       if (!node) {
         const saved = savedPositionsRef.current[id];
         node = {
           id,
-          label: n.data.label,
+          label: display,
           color: computeColorForId(id),
           x: saved?.x,
           y: saved?.y,
         };
       } else {
-        node.label = n.data.label;
+        node.label = display;
         node.color = computeColorForId(id);
       }
       if (originRef.current[id] === undefined) {
@@ -150,20 +186,23 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     const newEdges: CanvasEdge[] = visibleEdgeData.map((e) => ({
       source: e.data.source,
       target: e.data.target,
-      label: e.data.label,
+      label: anonymizeLabel(e.data.label ?? e.data.id), // sanitize
       visible: true,
     }));
 
     updateD3NodesGivenCounts(nextNodes, store.getState().combined.numberViolationsPerNode);
     setD3Nodes(nextNodes);
     setD3Edges(newEdges);
-  }, [cyDataNodes, cyDataEdges, isLabelBlacklisted]);
+  }, [cyDataNodes, cyDataEdges, isLabelBlacklisted, anonymizeLabel]);
 
   useEffect(() => {
     if (!loading) {
+      // also sanitize the source data in place so any other consumer reads anonymized labels
+      cyDataNodes.forEach((n) => (n.data.label = anonymizeLabel(n.data.label ?? n.data.id)));
+      cyDataEdges.forEach((e) => (e.data.label = anonymizeLabel(e.data.label ?? e.data.id)));
       convertData();
     }
-  }, [loading, convertData, hiddenLabels]);
+  }, [loading, convertData, hiddenLabels, cyDataNodes, cyDataEdges, anonymizeLabel]);
 
   const { transformRef, simulationRef, zoomBehaviorRef, redraw } = useD3Force(
     canvasRef,
@@ -243,8 +282,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       const allNodes = Object.values(nodeMapRef.current);
       allNodes.forEach((node) => {
         if (otherDuration > 0 || node.id === id) {
-          node.fx = node.x;
-          node.fy = node.y;
+          (node as any).fx = node.x;
+          (node as any).fy = node.y;
         }
       });
 
@@ -254,8 +293,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         setTimeout(() => {
           allNodes.forEach((node) => {
             if (node.id !== id) {
-              node.fx = null;
-              node.fy = null;
+              (node as any).fx = null;
+              (node as any).fy = null;
             }
           });
         }, otherDuration);
@@ -264,8 +303,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       setTimeout(() => {
         const triggerNode = nodeMapRef.current[id];
         if (triggerNode) {
-          triggerNode.fx = null;
-          triggerNode.fy = null;
+          (triggerNode as any).fx = null;
+          (triggerNode as any).fy = null;
         }
         sim.alphaTarget(0);
       }, triggerDuration);
@@ -282,15 +321,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     setD3Edges((edges) =>
       edges.map((e) => ({
         ...e,
-        source: typeof e.source === 'object' ? e.source.id : e.source,
-        target: typeof e.target === 'object' ? e.target.id : e.target,
+        source: typeof e.source === 'object' ? (e.source as any).id : e.source,
+        target: typeof e.target === 'object' ? (e.target as any).id : e.target,
       })),
     );
     Object.values(nodeMapRef.current).forEach((n) => {
-      n.fx = null;
-      n.fy = null;
-      n.vx = 0;
-      n.vy = 0;
+      (n as any).fx = null;
+      (n as any).fy = null;
+      (n as any).vx = 0;
+      (n as any).vy = 0;
     });
     const sim = simulationRef.current;
     if (sim) {
@@ -551,22 +590,22 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         const dx = (node.x ?? 0) - tx;
         const dy = (node.y ?? 0) - ty;
         return dx * dx + dy * dy;
-      });
+      }) as any;
     })
-    .on('start', (event) => {
+    .on('start', (event: any) => {
       const sim = simulationRef.current;
       if (!sim) return;
       if (!event.active) sim.alphaTarget(0.3).restart();
       event.subject.fx = event.subject.x;
       event.subject.fy = event.subject.y;
     })
-    .on('drag', (event) => {
+    .on('drag', (event: any) => {
       const [px, py] = d3.pointer(event, canvasRef.current);
       const [tx, ty] = transformRef.current.invert([px, py]);
       event.subject.fx = tx;
       event.subject.fy = ty;
     })
-    .on('end', (event) => {
+    .on('end', (event: any) => {
       const sim = simulationRef.current;
       if (!sim) return;
       if (!event.active) sim.alphaTarget(0);
@@ -678,10 +717,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
               newGhostEdges.push({
                 source: edgeData.data.source,
                 target: edgeData.data.target,
-                label: edgeData.data.label,
+                label: anonymizeLabel(edgeData.data.label ?? edgeData.data.id),
                 visible: true,
-                previewRemoval: true,
-              });
+                // marks that this preview indicates removal rather than addition
+                previewRemoval: true as any,
+              } as any);
             }
           }
         });
@@ -691,12 +731,12 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           if (!nodeData) return;
           newGhostNodes.push({
             id: nid,
-            label: nodeData.data.label,
+            label: anonymizeLabel(nodeData.data.label ?? nodeData.data.id),
             color: computeColorForId(nid),
             x: closest?.x,
             y: closest?.y,
-            ghost: true,
-          });
+            ghost: true as any,
+          } as any);
         });
         filteredExpansionEdges.forEach((edge) => {
           const key = `${edge.source}->${edge.target}`;
@@ -705,24 +745,24 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
             newGhostEdges.push({
               source: edge.source,
               target: edge.target,
-              label: edge.label,
+              label: anonymizeLabel(edge.label ?? edge.id),
               visible: true,
-              ghost: true,
-            });
+              ghost: true as any,
+            } as any);
           }
         });
       }
 
-      const hasRemovalEdges = newGhostEdges.some((e) => (e as any).previewRemoval);
-      const hasAdditionEdges = newGhostEdges.some((e) => !(e as any).previewRemoval);
+      const hasRemovalEdges = newGhostEdges.some((e: any) => e.previewRemoval);
+      const hasAdditionEdges = newGhostEdges.some((e: any) => !e.previewRemoval);
 
       if (newGhostNodes.length > 0 || hasRemovalEdges || hasAdditionEdges) {
         activePreviewRef.current = { mode, nodeId: closest.id };
         Object.values(nodeMapRef.current).forEach((n) => {
-          n.fx = n.x;
-          n.fy = n.y;
-          n.vx = 0;
-          n.vy = 0;
+          (n as any).fx = n.x;
+          (n as any).fy = n.y;
+          (n as any).vx = 0;
+          (n as any).vy = 0;
         });
         setGhostNodes(newGhostNodes);
         setGhostEdges(newGhostEdges);
@@ -744,6 +784,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       computeExpansion,
       computeAssociations,
       isIdBlacklisted,
+      anonymizeLabel,
     ],
   );
 
@@ -794,7 +835,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   }, [handleDrag, handleDoubleClick, zoomBehaviorRef, updateHoverPreview, clearPreview]);
 
   useEffect(() => {
-    if (ghostNodes.length === 0 && ghostEdges.some((e) => (e as any).previewRemoval)) {
+    if (ghostNodes.length === 0 && ghostEdges.some((e: any) => e.previewRemoval)) {
       const sim = simulationRef.current;
       if (sim) {
         sim.alpha(0.001);

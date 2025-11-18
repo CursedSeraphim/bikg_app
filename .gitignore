@@ -52,3 +52,14 @@ bikg_app/ttl*/
 /bikg_app/json*/
 /bikg_app/data*/
 /bikg_app/data/
+bikg_app/csv/study.csv
+bikg_app/json/exemplar_edge_count_dict.json
+bikg_app/json/exemplar_focus_node_dict.json
+bikg_app/json/focus_node_exemplar_dict.json
+bikg_app/json/violation_exemplar_dict.json
+bikg_app/json/violation_list.json
+bikg_app/ttl/omics_model_union_violation_exemplar.ttl
+bikg_app/ttl/omics_model.ttl
+bikg_app/ttl/study.ttl
+bikg_app/ttl/violation_report.ttl
+bikg_app/ttl/violations.ttl

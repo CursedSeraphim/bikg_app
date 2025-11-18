@@ -16,8 +16,8 @@ function BottomTabs() {
     () => [
       {
         id: 1,
-        tabTitle: 'Embedding View',
-        title: 'Embedding of Violating Shapes',
+        tabTitle: 'Projection View',
+        title: 'Projection of Violating Shapes',
         content: <MemoizedScatterPlot data={plotlyData} />,
       },
       {
@@ -29,7 +29,7 @@ function BottomTabs() {
       {
         id: 3,
         tabTitle: 'LangChain',
-        title: 'AI Chat',
+        title: 'LLM Chat',
         content: <MemoizedLangChain />,
       },
     ],

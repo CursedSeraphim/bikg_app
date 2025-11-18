@@ -29,7 +29,7 @@ export default function Sidebar() {
 
       {/* Sidebar bottom */}
       <Panel defaultSize={50} minSize={20} maxSize={80} style={{ display: 'flex', flexDirection: 'column' }}>
-        <Tabs defaultValue="embedding" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Tabs defaultValue="projection" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Tabs.List>
             <Tooltip
               multiline
@@ -37,13 +37,13 @@ export default function Sidebar() {
               opacity={0.7}
               withArrow
               transitionProps={{ duration: 300 }}
-              label="Displays an embedding of focus nodes. Each point is one focus node. Their 2-D proximity is driven by how similar the focus nodes are."
+              label="Displays a projection of focus nodes. Each point is one focus node. Their 2-D proximity is driven by how similar the focus nodes are."
             >
-              <Tabs.Tab value="embedding">Embedding</Tabs.Tab>
+              <Tabs.Tab value="projection">Projection View</Tabs.Tab>
             </Tooltip>
           </Tabs.List>
 
-          <Tabs.Panel value="embedding" pt="xs" style={{ flex: 1, overflow: 'auto' }}>
+          <Tabs.Panel value="projection" pt="xs" style={{ flex: 1, overflow: 'auto' }}>
             <InteractiveScatterPlot data={scatterData} />
           </Tabs.Panel>
         </Tabs>
