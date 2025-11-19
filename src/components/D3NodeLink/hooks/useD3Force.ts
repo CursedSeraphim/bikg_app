@@ -104,9 +104,12 @@ export function useD3Force(
         context.strokeStyle = 'rgba(255,0,0,0.6)';
       } else if (edge.ghost) {
         context.strokeStyle = 'rgba(170,170,170,0.5)';
+      } else if (edge.selected) {
+        context.strokeStyle = '#222';
       } else {
         context.strokeStyle = '#AAA';
       }
+      context.lineWidth = edge.selected ? 2 : 1;
       context.beginPath();
       context.moveTo(sx, sy);
       context.lineTo(tx, ty);
@@ -131,6 +134,8 @@ export function useD3Force(
           context.fillStyle = 'rgba(255,0,0,0.6)';
         } else if (edge.ghost) {
           context.fillStyle = 'rgba(170,170,170,0.5)';
+        } else if (edge.selected) {
+          context.fillStyle = '#222';
         } else {
           context.fillStyle = '#AAA';
         }
@@ -155,7 +160,7 @@ export function useD3Force(
     // Draw nodes
     allNodes.forEach((node) => {
       context.beginPath();
-      const radius = 6;
+      const radius = node.selected ? 7.5 : 6;
       if (node.ghost) {
         context.fillStyle = 'rgba(0,0,0,0.2)';
       } else {
@@ -164,8 +169,10 @@ export function useD3Force(
       context.arc(node.x ?? 0, node.y ?? 0, radius, 0, 2 * Math.PI);
       context.fill();
 
-      context.strokeStyle = '#FFF';
+      context.strokeStyle = node.selected ? '#222' : '#FFF';
+      context.lineWidth = node.selected ? 2.5 : 1;
       context.stroke();
+      context.lineWidth = 1;
 
       context.save();
       const label = mapNodeLabel(node.label);

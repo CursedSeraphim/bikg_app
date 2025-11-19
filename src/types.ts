@@ -74,6 +74,7 @@ export interface ICytoEdge {
     visible?: boolean;
     permanent?: boolean;
     namespace: string;
+    selected?: boolean;
   };
 }
 export interface ICytoData {
