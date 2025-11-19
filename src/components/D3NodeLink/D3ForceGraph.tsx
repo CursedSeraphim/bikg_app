@@ -4,6 +4,7 @@ import * as d3 from 'd3';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
+  clearAllSelections,
   selectCumulativeNumberViolationsPerNode,
   selectD3BoundingBox,
   selectExemplarMap,
@@ -493,6 +494,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
   const { resetView } = useD3ResetView(cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef, originRef, convertData);
 
+  const handleResetView = useCallback(() => {
+    // Clear all selections in the global store so every view resets
+    dispatch(clearAllSelections());
+    // Then perform the local NLD reset (visibility, positions, etc.)
+    resetView();
+  }, [dispatch, resetView]);
+
   const handleSelectConnected = useCallback(
     (node: CanvasNode | null) => {
       if (!node) return;
@@ -507,7 +515,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     [dispatch],
   );
 
-  const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef, centerView, resetView, handleSelectConnected);
+  const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef, centerView, handleResetView, handleSelectConnected);
 
   const { computeExpansion, showChildren, hideChildren, showParents, hideParents } = useNodeVisibility(
     cyDataNodes,

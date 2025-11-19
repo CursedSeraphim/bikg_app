@@ -4,7 +4,7 @@ import * as N3 from 'n3';
 import { NamedNode, Quad, Store } from 'n3';
 import { createSelector } from 'reselect';
 import { v4 as uuidv4 } from 'uuid';
-import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING } from '../../constants';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 import {
   D3BoundingBoxSetting,
   EdgeCountDict,
@@ -505,6 +505,12 @@ const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
+    clearAllSelections(state) {
+      state.selectedNodes = [];
+      state.selectedTypes = [];
+      state.selectedViolations = [];
+      state.selectedViolationExemplars = [];
+    },
     addHiddenLabels: (state, action: PayloadAction<string[]>) => {
       const deduplicated = Array.from(new Set([...state.hiddenLabels, ...action.payload]));
       state.hiddenLabels = deduplicated.sort();
@@ -1369,6 +1375,7 @@ export const selectCytoData = async (rdfString, getColorForNamespace, types, num
 };
 
 export const {
+  clearAllSelections,
   clearHiddenLabels,
   setSelectedViolations,
   setViolations,
