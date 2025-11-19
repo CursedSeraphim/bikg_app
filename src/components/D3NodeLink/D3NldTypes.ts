@@ -13,6 +13,12 @@ export interface CanvasNode {
   vy?: number;
   /** When true the node is only shown as a semi transparent preview */
   ghost?: boolean;
+  /** When true the node participates in the current coordinated selection */
+  selected?: boolean;
+  /** Convenience flags to mirror Cytoscape node metadata */
+  violation?: boolean;
+  exemplar?: boolean;
+  type?: boolean;
 }
 
 export interface CanvasEdge {
@@ -24,6 +30,8 @@ export interface CanvasEdge {
   ghost?: boolean;
   /** Highlight existing edge that would be removed on confirm */
   previewRemoval?: boolean;
+  /** Marks edges that connect currently selected nodes */
+  selected?: boolean;
 }
 
 export type D3NLDViewProps = {

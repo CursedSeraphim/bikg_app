@@ -2,19 +2,26 @@
 
 import * as d3 from 'd3';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   selectCumulativeNumberViolationsPerNode,
   selectD3BoundingBox,
   selectExemplarMap,
   selectFocusNodeMap,
   selectHiddenLabels,
+  selectSelectedNodes,
+  selectSelectedTypes,
+  selectSelectedViolationExemplars,
+  selectSelectedViolations,
   selectTypeMap,
   selectTypes,
   selectTypesViolationMap,
   selectViolationMap,
   selectViolations,
   selectViolationTypesMap,
+  setSelectedTypes,
+  setSelectedViolationExemplars,
+  setSelectedViolations,
 } from '../Store/CombinedSlice';
 import { useD3Data } from './useD3Data';
 
@@ -33,6 +40,7 @@ import { useNodeVisibility } from './hooks/useNodeVisibility';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering = true }: D3NLDViewProps) {
+  const dispatch = useDispatch();
   // Redux selectors
   const violations = useSelector(selectViolations);
   const types = useSelector(selectTypes);
@@ -45,6 +53,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const violationTypesMap = useSelector(selectViolationTypesMap);
   const typesViolationMap = useSelector(selectTypesViolationMap);
   const hiddenLabels = useSelector(selectHiddenLabels);
+  const selectedFocusNodes = useSelector(selectSelectedNodes);
+  const selectedViolationIds = useSelector(selectSelectedViolations);
+  const selectedTypeIds = useSelector(selectSelectedTypes);
+  const selectedExemplarIds = useSelector(selectSelectedViolationExemplars);
 
   // Fetch Cytoscape‐like data used by the D3 view
   const { loading, cyDataNodes, cyDataEdges } = useD3Data({
@@ -162,10 +174,18 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           color: computeColorForId(id),
           x: saved?.x,
           y: saved?.y,
+          selected: Boolean(n.data.selected),
+          violation: Boolean(n.data.violation),
+          exemplar: Boolean(n.data.exemplar),
+          type: Boolean(n.data.type),
         };
       } else {
         node.label = display;
         node.color = computeColorForId(id);
+        node.selected = Boolean(n.data.selected);
+        node.violation = Boolean(n.data.violation);
+        node.exemplar = Boolean(n.data.exemplar);
+        node.type = Boolean(n.data.type);
       }
       if (originRef.current[id] === undefined) {
         originRef.current[id] = null;
@@ -188,6 +208,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       target: e.data.target,
       label: anonymizeLabel(e.data.label ?? e.data.id), // sanitize
       visible: true,
+      selected: Boolean(e.data.selected),
     }));
 
     updateD3NodesGivenCounts(nextNodes, store.getState().combined.numberViolationsPerNode);
@@ -219,6 +240,125 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   }, [redraw, d3Nodes, d3Edges, ghostNodes, ghostEdges]);
 
   useD3CumulativeCounts(d3Nodes, setD3Nodes, redraw);
+
+  useEffect(() => {
+    if (loading || cyDataNodes.length === 0) {
+      return;
+    }
+
+    const idsToSelect = new Set<string>();
+    const addIds = (values?: Iterable<string>) => {
+      if (!values) return;
+      for (const value of values) {
+        if (value) {
+          idsToSelect.add(value);
+        }
+      }
+    };
+
+    addIds(selectedFocusNodes);
+    addIds(selectedTypeIds);
+    addIds(selectedViolationIds);
+    addIds(selectedExemplarIds);
+
+    selectedFocusNodes.forEach((focusId) => {
+      const entry = focusNodeMap[focusId];
+      if (!entry) return;
+      addIds(entry.types);
+      addIds(entry.violations);
+      addIds(entry.exemplars);
+    });
+
+    selectedTypeIds.forEach((typeId) => {
+      const entry = typeMap[typeId];
+      if (entry) {
+        addIds(entry.nodes);
+        addIds(entry.violations);
+        addIds(entry.exemplars);
+      }
+      addIds(typesViolationMap[typeId]);
+    });
+
+    selectedViolationIds.forEach((violationId) => {
+      const entry = violationMap[violationId];
+      if (entry) {
+        addIds(entry.nodes);
+        addIds(entry.types);
+        addIds(entry.exemplars);
+      }
+      addIds(violationTypesMap[violationId]);
+    });
+
+    selectedExemplarIds.forEach((exemplarId) => {
+      const entry = exemplarMap[exemplarId];
+      if (!entry) return;
+      addIds(entry.nodes);
+      addIds(entry.types);
+      addIds(entry.violations);
+    });
+
+    const selectedEdgeIds = new Set<string>();
+    cyDataEdges.forEach((edge) => {
+      const sourceId = edge.data.source;
+      const targetId = edge.data.target;
+      if (idsToSelect.has(sourceId) && idsToSelect.has(targetId)) {
+        selectedEdgeIds.add(edge.data.id);
+      }
+    });
+
+    let needsRefresh = false;
+
+    cyDataNodes.forEach((node) => {
+      const shouldSelect = idsToSelect.has(node.data.id);
+      if (node.data.selected !== shouldSelect) {
+        node.data.selected = shouldSelect;
+        needsRefresh = true;
+      }
+      if (shouldSelect && node.data.visible === false) {
+        node.data.visible = true;
+        needsRefresh = true;
+      }
+      if (shouldSelect) {
+        hiddenNodesRef.current.delete(node.data.id);
+      }
+    });
+
+    cyDataEdges.forEach((edge) => {
+      const shouldSelect = selectedEdgeIds.has(edge.data.id);
+      if (edge.data.selected !== shouldSelect) {
+        edge.data.selected = shouldSelect;
+        needsRefresh = true;
+      }
+      if (shouldSelect && edge.data.visible === false) {
+        edge.data.visible = true;
+        needsRefresh = true;
+      }
+      if (shouldSelect) {
+        hiddenEdgesRef.current.delete(edge.data.id);
+      }
+    });
+
+    if (needsRefresh) {
+      convertData();
+    }
+  }, [
+    loading,
+    cyDataNodes,
+    cyDataEdges,
+    selectedFocusNodes,
+    selectedTypeIds,
+    selectedViolationIds,
+    selectedExemplarIds,
+    focusNodeMap,
+    typeMap,
+    violationMap,
+    exemplarMap,
+    violationTypesMap,
+    typesViolationMap,
+    hiddenNodesRef,
+    hiddenEdgesRef,
+    convertData,
+  ]);
 
   const focusNodeTooltip = useExemplarHoverList(canvasRef, [...d3Nodes, ...ghostNodes], transformRef);
 
@@ -260,7 +400,28 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
   const { resetView } = useD3ResetView(cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef, originRef, convertData);
 
-  const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef, centerView, resetView);
+  const handleSelectConnected = useCallback(
+    (node: CanvasNode | null) => {
+      if (!node) return;
+      if (node.violation) {
+        dispatch(setSelectedViolations([node.id]));
+      } else if (node.exemplar) {
+        dispatch(setSelectedViolationExemplars([node.id]));
+      } else if (node.type) {
+        dispatch(setSelectedTypes([node.id]));
+      }
+    },
+    [dispatch],
+  );
+
+  const { menu: contextMenu } = useD3ContextMenu(
+    canvasRef,
+    d3Nodes,
+    transformRef,
+    centerView,
+    resetView,
+    handleSelectConnected,
+  );
 
   const { computeExpansion, showChildren, hideChildren, showParents, hideParents } = useNodeVisibility(
     cyDataNodes,

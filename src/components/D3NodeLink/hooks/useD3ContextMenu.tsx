@@ -16,6 +16,7 @@ export function useD3ContextMenu(
   transformRef: React.MutableRefObject<d3.ZoomTransform>,
   centerView: () => void,
   resetView: () => void,
+  onSelectConnected: (node: CanvasNode | null) => void,
 ) {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [state, setState] = useState<ContextMenuState>({
@@ -90,6 +91,10 @@ export function useD3ContextMenu(
     }
   }, [state]);
 
+  const canSelect = Boolean(
+    state.targetNode && (state.targetNode.violation || state.targetNode.exemplar || state.targetNode.type),
+  );
+
   const menu = state.visible ? (
     <div
       ref={menuRef}
@@ -114,6 +119,18 @@ export function useD3ContextMenu(
           </button> */}
         </>
       ) : null}
+      <button
+        type="button"
+        className="d3-context-menu-item"
+        disabled={!canSelect}
+        onClick={() => {
+          if (!canSelect) return;
+          onSelectConnected(state.targetNode);
+          hideMenu();
+        }}
+      >
+        Select connected focus nodes
+      </button>
       <button
         type="button"
         className="d3-context-menu-item"
