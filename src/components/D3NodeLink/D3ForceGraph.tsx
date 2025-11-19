@@ -88,6 +88,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const originRef = useRef<Record<string, string | null>>({});
   const nodeMapRef = useRef<Record<string, CanvasNode>>({});
   const savedPositionsRef = useRef<Record<string, { x?: number; y?: number }>>({});
+  const previousVisibleNodeIdsRef = useRef<Set<string>>(new Set());
 
   // --- Helpers --------------------------------------------------------------
 
@@ -240,6 +241,98 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   }, [redraw, d3Nodes, d3Edges, ghostNodes, ghostEdges]);
 
   useD3CumulativeCounts(d3Nodes, setD3Nodes, redraw);
+
+  const runIncrementalLayout = useCallback(
+    (options: { movableNodeIds?: string[]; pinAllExisting?: boolean; alphaTarget?: number; releaseAfter?: number | null }) => {
+      const sim = simulationRef.current;
+      if (!sim) return;
+
+      const { movableNodeIds, pinAllExisting = false, alphaTarget = 0.3, releaseAfter = 1000 } = options;
+
+      const movable = new Set(movableNodeIds ?? []);
+      const allNodes = Object.values(nodeMapRef.current);
+
+      allNodes.forEach((node) => {
+        const nAny = node as any;
+        const isMovable = movable.size > 0 && movable.has(node.id);
+
+        if (pinAllExisting) {
+          // Preview mode: pin everything in place
+          nAny.fx = node.x;
+          nAny.fy = node.y;
+        } else if (movable.size > 0) {
+          // Incremental layout: pin old nodes, let new ones move
+          if (isMovable) {
+            nAny.fx = null;
+            nAny.fy = null;
+          } else {
+            nAny.fx = node.x;
+            nAny.fy = node.y;
+          }
+        }
+
+        // Reset velocities so the simulation actually reacts
+        nAny.vx = 0;
+        nAny.vy = 0;
+      });
+
+      sim.alphaTarget(alphaTarget).restart();
+
+      // For “incremental layout” we want to eventually unpin everything again.
+      if (releaseAfter && releaseAfter > 0) {
+        setTimeout(() => {
+          const stillSim = simulationRef.current;
+          if (!stillSim) return;
+
+          Object.values(nodeMapRef.current).forEach((node) => {
+            const nAny = node as any;
+            nAny.fx = null;
+            nAny.fy = null;
+          });
+
+          stillSim.alphaTarget(0);
+        }, releaseAfter);
+      }
+    },
+    [simulationRef],
+  );
+
+  useEffect(() => {
+    if (loading || !simulationRef.current) {
+      return;
+    }
+
+    if (d3Nodes.length === 0) {
+      previousVisibleNodeIdsRef.current = new Set();
+      return;
+    }
+
+    const prev = previousVisibleNodeIdsRef.current;
+    const currentIds = new Set(d3Nodes.map((n) => n.id));
+
+    const newNodeIds: string[] = [];
+    currentIds.forEach((id) => {
+      if (!prev.has(id)) {
+        newNodeIds.push(id);
+      }
+    });
+
+    // Update snapshot for next comparison
+    previousVisibleNodeIdsRef.current = currentIds;
+
+    // Nothing newly visible → no incremental layout step
+    if (newNodeIds.length === 0) {
+      return;
+    }
+
+    // Incremental layout: freeze existing nodes, relax only the new ones
+    runIncrementalLayout({
+      movableNodeIds: newNodeIds,
+      pinAllExisting: false,
+      alphaTarget: 0.3,
+      releaseAfter: 1000,
+    });
+  }, [d3Nodes, loading, runIncrementalLayout]);
 
   useEffect(() => {
     if (loading || cyDataNodes.length === 0) {
@@ -414,14 +507,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     [dispatch],
   );
 
-  const { menu: contextMenu } = useD3ContextMenu(
-    canvasRef,
-    d3Nodes,
-    transformRef,
-    centerView,
-    resetView,
-    handleSelectConnected,
-  );
+  const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef, centerView, resetView, handleSelectConnected);
 
   const { computeExpansion, showChildren, hideChildren, showParents, hideParents } = useNodeVisibility(
     cyDataNodes,
@@ -919,15 +1005,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
       if (newGhostNodes.length > 0 || hasRemovalEdges || hasAdditionEdges) {
         activePreviewRef.current = { mode, nodeId: closest.id };
-        Object.values(nodeMapRef.current).forEach((n) => {
-          (n as any).fx = n.x;
-          (n as any).fy = n.y;
-          (n as any).vx = 0;
-          (n as any).vy = 0;
-        });
         setGhostNodes(newGhostNodes);
         setGhostEdges(newGhostEdges);
-        simulationRef.current?.alphaTarget(0.3).restart();
+
+        // Preview: pin all existing nodes and run a short simulation
+        runIncrementalLayout({
+          pinAllExisting: true,
+          alphaTarget: 0.3,
+          releaseAfter: null, // unpinned explicitly in clearPreview
+        });
       } else {
         clearPreview();
       }
@@ -940,12 +1026,12 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       cyDataNodes,
       cyDataEdges,
       hiddenEdgesRef,
-      simulationRef,
       clearPreview,
       computeExpansion,
       computeAssociations,
       isIdBlacklisted,
       anonymizeLabel,
+      runIncrementalLayout,
     ],
   );
 
