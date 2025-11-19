@@ -887,17 +887,21 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
       if (closest && minDist < NEAR_NODE_DIST_SQ) {
         const cid = closest.id;
+
         if (event.ctrlKey && event.shiftKey) {
+          // Same behavior as context menu: expand associated AND select connected
           toggleAssociated(cid);
+          handleSelectConnected(closest);
         } else if (event.ctrlKey) {
           toggleChildren(cid);
         } else if (event.shiftKey) {
           toggleParents(cid);
         }
+
         clearPreview();
       }
     },
-    [d3Nodes, ghostNodes, transformRef, simulationRef, toggleChildren, toggleParents, clearPreview, toggleAssociated],
+    [d3Nodes, ghostNodes, transformRef, simulationRef, toggleChildren, toggleParents, clearPreview, toggleAssociated, handleSelectConnected],
   );
 
   const updateHoverPreview = useCallback(
