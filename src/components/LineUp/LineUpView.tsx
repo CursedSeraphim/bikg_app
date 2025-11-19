@@ -238,14 +238,6 @@ export default function LineUpView() {
     const builder = LineUpJS.builder(data);
     builder.registerRenderer('upset', new ColoredUpSetCellRenderer());
 
-    // // exclude helper meta fields from appearing as columns
-    // // TEMPORARY: restrict visible columns to the four we need for figures
-    // const allowedCols = Object.keys(data[0]).filter(
-    //   (c) => c.includes('focus_node') || c.includes('type') || c.includes('has1Species') || c.includes('hasSpecies'),
-    // );
-
-    // // Apply hidden column filtering afterwards
-    // const columns = allowedCols.filter((c) => !hiddenLineupColumns.includes(c));
     const columns = Object.keys(data[0]);
 
     columns.forEach((column) => {
@@ -378,15 +370,27 @@ export default function LineUpView() {
   }
 
   function applyPrefixToCells(data: ICsvData[], hide: boolean): ICsvData[] {
-    if (!hide) return data.map((row) => ({ ...row }));
+    if (!hide) {
+      // no prefix stripping; return shallow copies
+      return data.map((row) => ({ ...row }));
+    }
+
     return data.map((row) => {
       const transformedRow: ICsvData = { ...row };
+
       Object.keys(row).forEach((k) => {
         const val = row[k];
+
+        // never touch coordination IDs
+        if (k === 'focus_node' || k === '__focus_node_original') {
+          return;
+        }
+
         if (typeof val === 'string') {
           transformedRow[k] = removePrefix(val);
         }
       });
+
       return transformedRow;
     });
   }
@@ -432,10 +436,11 @@ export default function LineUpView() {
   useEffect(() => {
     if (reduxCsvData && reduxCsvData.length > 0) {
       const booleanData = turnBooleanIntoFalseTrue(reduxCsvData);
-      const prefixedData = applyPrefixToCells(booleanData, hideCellPrefixes);
-      const anonymizedData = applyAnonymizationToCells(prefixedData);
-      setCsvData(anonymizedData);
-      preprocessColumnTypes(anonymizedData);
+      const anonymizedData = applyAnonymizationToCells(booleanData);
+      const prefixedData = applyPrefixToCells(anonymizedData, hideCellPrefixes);
+
+      setCsvData(prefixedData);
+      preprocessColumnTypes(prefixedData);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduxCsvData, hideCellPrefixes]);
