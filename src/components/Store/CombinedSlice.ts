@@ -397,7 +397,13 @@ function calculateNewNumberViolationsPerNode(
   };
 
   newSelectedNodes.forEach((node) => {
-    const { types, violations, exemplars } = focusNodeMap[node];
+    const focusNodeEntry = focusNodeMap[node];
+
+    if (!focusNodeEntry) {
+      return;
+    }
+
+    const { types, violations, exemplars } = focusNodeEntry;
     types.forEach((type: string) => {
       incrementMapValue(newSelectedTypesMap, type);
       addToSet(selectedNodeSets, type, node);

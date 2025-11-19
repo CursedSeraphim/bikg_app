@@ -50,6 +50,11 @@ export default function LineUpView() {
   // Local state to hold csvData
   const [csvData, setCsvData] = useState(reduxCsvData);
 
+  const getOriginalFocusNode = (row: ICsvData): string => {
+    const original = (row as any).__focus_node_original;
+    return typeof original === 'string' ? original : row.focus_node;
+  };
+
   /**
    * Set up a listener for selection changes in the lineup instance.
    * Uses the non-enumerable __focus_node_original when available to keep coordination intact.
@@ -57,8 +62,8 @@ export default function LineUpView() {
   const setupListener = (lineupInstanceRef): void => {
     lineupInstanceRef.current.on('selectionChanged', (selection) => {
       const selectedNodes = selection.map((index) => {
-        const row = csvData[index] as any;
-        return row && row.__focus_node_original ? row.__focus_node_original : csvData[index].focus_node;
+        const row = csvData[index];
+        return getOriginalFocusNode(row);
       });
       dispatch(setSelectedFocusNodes(selectedNodes));
     });
@@ -292,6 +297,10 @@ export default function LineUpView() {
   function filterColumns(csvFromFocusNodes: ICsvData[], allData: ICsvData[]): ICsvData[] {
     let filteredCsvData = [...allData];
 
+    if (!csvFromFocusNodes.length) {
+      return filteredCsvData;
+    }
+
     switch (filterType) {
       case 'unimodal': {
         const unimodalData = filterAllUniModalColumns(csvFromFocusNodes);
@@ -330,7 +339,7 @@ export default function LineUpView() {
 
   function createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, focusNodes, allData) {
     const focusNodesSet = new Set(focusNodes);
-    const csvDataFromFocusNodeSet = allData.filter((row) => focusNodesSet.has(row.focus_node));
+    const csvDataFromFocusNodeSet = allData.filter((row) => focusNodesSet.has(getOriginalFocusNode(row)));
 
     const filteredCsvData = filterColumns(csvDataFromFocusNodeSet, allData);
     const remainingCols = Object.keys(filteredCsvData[0]);
@@ -348,8 +357,10 @@ export default function LineUpView() {
       }
     }
 
-    const csvDataIndexMap = new Map(allData.map((row, index) => [row.focus_node, index]));
-    const filteredCsvDataIndices = csvDataFromFocusNodeSet.map((row) => csvDataIndexMap.get(row.focus_node));
+    const csvDataIndexMap = new Map(allData.map((row, index) => [getOriginalFocusNode(row), index]));
+    const filteredCsvDataIndices = csvDataFromFocusNodeSet
+      .map((row) => csvDataIndexMap.get(getOriginalFocusNode(row)))
+      .filter((value): value is number => typeof value === 'number');
     const filteredCsvDataIndicesSet = new Set(filteredCsvDataIndices);
     lineupInstanceRef.current.data.setFilter((row) => filteredCsvDataIndicesSet.has(row.i));
   }
@@ -457,7 +468,7 @@ export default function LineUpView() {
       if (selectedFocusNodes.length > 0) {
         createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, selectedFocusNodes, csvData);
       } else {
-        const allFocusNodes = csvData.map((row) => row.focus_node);
+        const allFocusNodes = csvData.map((row) => getOriginalFocusNode(row));
         createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, allFocusNodes, csvData);
       }
     }
