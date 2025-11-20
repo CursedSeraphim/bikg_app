@@ -1,1 +1,1 @@
-["http://data.boehringer.com/ontology/omics/violation2", "http://data.boehringer.com/ontology/omics/violation1"]
+["lotr:CharacterShape-hasHome", "lotr:CharacterShape-hasAncestry", "lotr:LocationShape-isInRegion", "lotr:RegionShape-isInContinent"]

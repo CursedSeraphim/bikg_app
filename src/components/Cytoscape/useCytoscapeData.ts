@@ -1,9 +1,9 @@
-// useCytoscapeData.ts
+// src/components/Cytoscape/useCytoscapeData.ts
 import { Core } from 'cytoscape';
 import React, { useEffect } from 'react';
+import { GetShapeForNamespaceFn, INumberViolationsPerNodeMap, SetCyFn } from '../../types';
 import { selectCytoData } from '../Store/CombinedSlice';
 import { createNewCytoscapeInstance, updateCytoscapeInstance } from './CytoscapeInstanceHelpers';
-import { GetShapeForNamespaceFn, INumberViolationsPerNodeMap, SetCyFn } from '../../types';
 
 interface CytoscapeDataProps {
   rdfOntology: string;

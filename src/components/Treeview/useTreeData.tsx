@@ -1,84 +1,66 @@
-// useTreeData.tsx
-import { useState, useEffect, useRef } from 'react';
-import _ from 'lodash';
-import { useDispatch } from 'react-redux';
-import store, { AppDispatch } from '../Store/Store';
+// src/components/Treeview/useTreeData.tsx
+
+import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+
+import { INumberViolationsPerNodeMap, IOntologyNode } from '../../types';
+import { RootState } from '../Store/Store';
+
 import { getTreeDataFromTuples } from './TreeviewGlue';
 import { updateTreeDataWithSelectedTypes } from './TreeViewHelpers';
 
-function sortEachLayerAlphabetically(tree) {
-  if (!tree) return;
-
-  const queue = [tree];
-
-  while (queue.length > 0) {
-    const node = queue.shift();
-
-    if (Array.isArray(node.children)) {
-      // Sort the children of the current node
-      node.children.sort((a, b) => a.name.localeCompare(b.name));
-
-      // Add children to the queue to sort their children later
-      queue.push(...node.children);
-    }
-  }
+export interface KnowledgeGraphNode {
+  id: string;
+  name: string;
+  children: KnowledgeGraphNode[];
 }
 
 export default function useTreeData() {
-  const [treeData, setTreeData] = useState(null);
-  const ontologyRef = useRef('');
-  const selectedTypesRef = useRef([]);
-  const subClassOfTriplesRef = useRef([]);
-  const numberViolationsPerNodeRef = useRef({});
-  const dispatch: AppDispatch = useDispatch();
+  const [treeData, setTreeData] = useState<KnowledgeGraphNode[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Redux data (including subClassOfTriples, etc.)
+  const { rdfString, selectedTypes, subClassOfTriples, numberViolationsPerNode } = useSelector((state: RootState) => state.combined);
 
   useEffect(() => {
-    const unsubscribe = store.subscribe(() => {
-      const currentState = store.getState();
-      const newOntology = currentState.combined.rdfString;
-      const newSelectedTypes = currentState.combined.selectedTypes;
-      const newSubClassOfTriples = currentState.combined.subClassOfTriples;
-      const newNumberViolationsPerNode = currentState.combined.numberViolationsPerNode;
+    if (rdfString && numberViolationsPerNode && Object.keys(numberViolationsPerNode).length > 0) {
+      const rootNode: IOntologyNode = getTreeDataFromTuples(subClassOfTriples, numberViolationsPerNode as INumberViolationsPerNodeMap);
 
-      let shouldUpdateTreeData = false;
-      if (ontologyRef.current !== newOntology) {
-        ontologyRef.current = newOntology;
-        shouldUpdateTreeData = true;
-      }
-
-      if (!_.isEqual(selectedTypesRef.current, newSelectedTypes)) {
-        selectedTypesRef.current = newSelectedTypes;
-        shouldUpdateTreeData = true;
-      }
-
-      if (!_.isEqual(subClassOfTriplesRef.current, newSubClassOfTriples)) {
-        subClassOfTriplesRef.current = newSubClassOfTriples;
-        shouldUpdateTreeData = true;
-      }
-
-      if (!_.isEqual(numberViolationsPerNodeRef.current, newNumberViolationsPerNode)) {
-        numberViolationsPerNodeRef.current = newNumberViolationsPerNode;
-        shouldUpdateTreeData = true;
-      }
-
-      if (shouldUpdateTreeData) {
-        let root;
-        if (newOntology && numberViolationsPerNodeRef.current && Object.keys(numberViolationsPerNodeRef.current).length > 0) {
-          // Call the function directly since it's not asynchronous anymore
-          root = getTreeDataFromTuples(subClassOfTriplesRef.current, numberViolationsPerNodeRef.current);
-          sortEachLayerAlphabetically(root);
-          if (Array.isArray(newSelectedTypes) && newSelectedTypes.length > 0) {
-            setTreeData(updateTreeDataWithSelectedTypes(root, newSelectedTypes));
-          } else {
-            setTreeData(root);
-          }
-        } else if (Array.isArray(newSelectedTypes) && newSelectedTypes.length > 0) {
-          setTreeData((oldTreeData) => updateTreeDataWithSelectedTypes(oldTreeData, newSelectedTypes));
+      let rootArray: KnowledgeGraphNode[] = [];
+      if (rootNode) {
+        const transformedRoot = transformIOntologyNode(rootNode);
+        if (transformedRoot) {
+          rootArray = [transformedRoot];
         }
       }
-    });
-    return () => unsubscribe();
-  }, [dispatch]);
 
-  return [treeData, setTreeData, selectedTypesRef];
+      // We call updateTreeDataWithSelectedTypes if you still want the "selected" boolean
+      // in the data for styling, but it is no longer used for direct dispatch triggers.
+      const updated = updateTreeDataWithSelectedTypes(rootArray, selectedTypes);
+      setTreeData(updated);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+  }, [rdfString, subClassOfTriples, numberViolationsPerNode, selectedTypes]);
+
+  return { treeData, loading };
+}
+
+function transformIOntologyNode(node: IOntologyNode): KnowledgeGraphNode | null {
+  if (!node || !node.name) return null;
+
+  const [idPart] = node.name.split(' ');
+  const nodeId = idPart || node.name;
+
+  let childArray: KnowledgeGraphNode[] = [];
+  if (Array.isArray(node.children)) {
+    childArray = node.children.map(transformIOntologyNode).filter(Boolean) as KnowledgeGraphNode[];
+  }
+
+  return {
+    id: nodeId,
+    name: node.name,
+    children: childArray,
+  };
 }

@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+// src/components/Cytoscape/useContextMenu.ts
 import { Core, NodeSingular } from 'cytoscape';
+import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
+import { ActionFunctionMap } from '../../types';
 import { addHiddenLabels, setSelectedTypes, setSelectedViolationExemplars, setSelectedViolations } from '../Store/CombinedSlice';
 import { getContextMenuOptions } from './CytoscapeContextMenu';
-import { ActionFunctionMap } from '../../types';
 
 const selectConnectedViolations = (node: NodeSingular, dispatch): void => {
   if (node.data('violation')) {

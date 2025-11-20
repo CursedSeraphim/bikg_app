@@ -1,4 +1,4 @@
-// CytoscopeView.tsx
+// src/components/Cytoscape/CytoscapeView.tsx
 import cytoscape, { Core } from 'cytoscape';
 import contextMenus from 'cytoscape-context-menus';
 import coseBilkent from 'cytoscape-cose-bilkent';
@@ -50,7 +50,7 @@ function CytoscapeView({ rdfOntology, onLoaded }) {
   useCytoscapeContextMenu(cy, viewHelpers, subScribeCytoscape);
   useCytoCumulativeCounts(cy);
 
-  return <div id="cy" />;
+  return <div id="cy" style={{ width: '95%', height: '95%' }} />;
 }
 
 export default CytoscapeView;

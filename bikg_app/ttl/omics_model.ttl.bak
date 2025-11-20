@@ -1,0 +1,1923 @@
+@prefix cns: <http://custom_node_shapes/> .
+@prefix ns1: <http://purl.org/dc/terms/> .
+@prefix ns2: <http://www.linkedmodel.org/1.2/schema/vaem#> .
+@prefix omics: <http://data.boehringer.com/ontology/omics#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+cns:NodeShape1 a sh:NodeShape ;
+    sh:property omics:349bea5c-e36e-46e3-a3ef-349f069f7b8a,
+        omics:aa7901e1-99f0-4b2f-9371-e10b8ce3179b,
+        omics:d0b10049-59f8-4cf7-8172-828185a761a8 ;
+    sh:targetClass omics:Analysis .
+
+cns:NodeShape10 a sh:NodeShape ;
+    sh:property omics:535fc05f-1a68-4574-917f-19fecd837fde,
+        omics:90cbabaf-6ac2-4fc2-ab64-621475413578,
+        omics:ccfe1d8b-b1b0-4b41-9555-211a28ea7aea ;
+    sh:targetClass omics:DiffExprAnalysis .
+
+cns:NodeShape11 a sh:NodeShape ;
+    sh:property omics:0bb3486e-c666-40b5-92a1-b6943191b7a9 ;
+    sh:targetClass omics:CDXSpecimen .
+
+cns:NodeShape12 a sh:NodeShape ;
+    sh:property omics:49dc6948-880d-41da-b81c-aebdebaa39c2,
+        omics:86cda368-ff69-46c8-93f1-242df4594253,
+        omics:93d4932f-8513-4a4b-b4b2-52f8703025a8,
+        omics:bfcaae04-b3e5-4459-b520-9fd41fa1c1f5,
+        omics:f77fb50c-8cf4-4c2a-ba47-269f730f863e,
+        omics:fb27b4c2-8d4f-4c89-8823-af23b783a083 ;
+    sh:targetClass omics:Thing .
+
+cns:NodeShape13 a sh:NodeShape ;
+    sh:property omics:38c0a1c7-1c92-489a-a22e-87f5335ccb1a,
+        omics:a5e1e582-1066-4547-a579-578721c92839,
+        omics:af998a22-f11b-43ea-b0ac-44e728baeafb ;
+    sh:targetClass omics:PrimaryCellSpecimen .
+
+cns:NodeShape14 a sh:NodeShape ;
+    sh:property omics:143dc455-bec0-4de1-8a84-c608250c1986,
+        omics:79cf3b0e-5cf2-4264-9e37-c37a416af475,
+        omics:85e3c9b0-3ef1-4d6c-9b50-6bc3d5bc98d5,
+        omics:8e349055-798a-4235-955f-2e2241529a13,
+        omics:9589ebf0-6f4f-4b80-9a5a-75aa25b5715f,
+        omics:9d092828-323f-4ff2-940a-d6796cf64b0b,
+        omics:c7e30945-e5f1-48cd-95a3-1a92a856e471,
+        omics:f9674438-5362-4072-89d2-f804799af748 ;
+    sh:targetClass omics:BiopsySpecimen .
+
+cns:NodeShape15 a sh:NodeShape ;
+    sh:property omics:1fe47912-9207-4d4d-98c1-e236c25c38ef,
+        omics:e565460c-c989-4fa3-9528-635f1932e3f0 ;
+    sh:targetClass omics:TranscriptOmicsDiffExprAnalysis .
+
+cns:NodeShape16 a sh:NodeShape ;
+    sh:property omics:e145df4a-5e6d-44bc-94d7-a58fe76823be ;
+    sh:targetClass omics:Visit .
+
+cns:NodeShape17 a sh:NodeShape ;
+    sh:property omics:003b7c7a-f8c2-4c44-b97b-0ce66af24837,
+        omics:b73d0533-4f2c-4a0d-b147-00f88b3bb822 ;
+    sh:targetClass omics:TranscriptOmicsDiffExprResult .
+
+cns:NodeShape18 a sh:NodeShape ;
+    sh:property omics:181d1617-85fb-4037-8768-1ca14ce58d1d,
+        omics:185e6c8c-cd62-4a92-b109-b12e898c82ac,
+        omics:31b46682-2b9e-408a-b493-dc26571207a9,
+        omics:91b1c78d-a840-47ce-8367-9131c9315151,
+        omics:cf755832-d673-42cf-bea9-e576b2749762 ;
+    sh:targetClass omics:Contrast .
+
+cns:NodeShape2 a sh:NodeShape ;
+    sh:property omics:0e319cb6-2de3-4608-a1c2-ea04678b5fcc,
+        omics:3162c231-fc4d-4094-8348-79fbb0b3e1f0,
+        omics:3d68f38a-7bf8-47ab-8378-60933daf51ca,
+        omics:4b6e1407-7ed8-4263-b14b-f0ba5e298db5,
+        omics:64058bbc-7d71-404b-9bff-56c0461cfe69,
+        omics:64433d1a-2e11-4e4f-a1d8-68ad39b1c214,
+        omics:7273419f-416d-44d9-babf-883cfb242e6f,
+        omics:7fc22b1b-82b5-4e3a-b5bd-a7673e6b2531,
+        omics:92119399-1872-448b-806e-7f1dd14c2a05,
+        omics:99c00dcb-84b0-44a9-924e-e389abac5f02,
+        omics:afb51f95-5b17-45a4-b62d-c58f4998f930,
+        omics:b40e5790-a9fc-4690-b841-cb7f9fbba3e5,
+        omics:c97b9e6d-b7e4-49a7-add1-8ebadc861dff,
+        omics:d10afca7-b9af-43b6-86c4-11f4ee8838a4 ;
+    sh:targetClass omics:Donor .
+
+cns:NodeShape3 a sh:NodeShape ;
+    sh:property omics:0828ce5c-afcd-4d87-99ca-99e821f64cb7,
+        omics:10ac05a1-680d-4ba8-a896-60d5f5903b11,
+        omics:571f859e-2246-490b-9e64-b684b523b191,
+        omics:5c93adab-14f2-436e-9dca-80f15c2ca66a,
+        omics:7cb1e5c8-6335-45d1-8430-8c1a29c5be92,
+        omics:801412e5-8eef-41a6-a32e-f71370212ce2 ;
+    sh:targetClass omics:Sample .
+
+cns:NodeShape4 a sh:NodeShape ;
+    sh:property omics:0c2600b5-30b2-40c7-917a-b402e73f55ae,
+        omics:221e1341-8ad4-412a-b850-10f823ad5d88,
+        omics:248e9792-8549-4e0d-8665-06c42aff8ffc,
+        omics:3320555d-1884-45ce-b5b8-754ed8064317,
+        omics:383e340b-f178-40ec-893d-3aec3b325d6d,
+        omics:4931c28f-8a7d-4dc5-bd02-f4d59057640f,
+        omics:4a82315a-a88e-4079-9797-63dd98167be6,
+        omics:b79406de-241e-434b-bee5-2c47b3ebf4ac,
+        omics:c890d5b3-b1a8-42f0-b20a-a992a4431d69,
+        omics:d6541348-853c-4ab7-99e6-0c23d3c12bd5,
+        omics:d9d3f742-3f5f-4c5e-bb38-4e73fea191ef ;
+    sh:targetClass omics:Specimen .
+
+cns:NodeShape5 a sh:NodeShape ;
+    sh:property omics:19a07159-db6c-420f-8961-10c2e39e5168 ;
+    sh:targetClass omics:Result .
+
+cns:NodeShape6 a sh:NodeShape ;
+    sh:property omics:5554e732-eb8b-4d5b-bf73-56225f6edf37,
+        omics:811342de-cacc-4e7d-b0de-d06e91dcfeea ;
+    sh:targetClass omics:CalculatedResult .
+
+cns:NodeShape7 a sh:NodeShape ;
+    sh:property omics:168ca29b-fe08-42c4-92a9-b297383f3af5,
+        omics:bb90f501-fcbf-4f2a-9a7a-a9cbb6ae0c46 ;
+    sh:targetClass omics:CellLineSpecimen .
+
+cns:NodeShape8 a sh:NodeShape ;
+    sh:property omics:bad2631d-f6d1-4d11-bfa0-3cf70d38a752 ;
+    sh:targetClass omics:PDXSpecimen .
+
+cns:NodeShape9 a sh:NodeShape ;
+    sh:property omics:87fb8bb0-8ab6-43ac-b113-8fa8c33f1553 ;
+    sh:targetClass omics:MeasuredResult .
+
+omics:Condition a owl:Class ;
+    rdfs:label "Condition" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:FileShape a sh:NodeShape ;
+    sh:property omics:FileShape-fileCreationDate,
+        omics:FileShape-fileCreationDateOdm,
+        omics:FileShape-fileLfrStatus,
+        omics:FileShape-fileLocation,
+        omics:FileShape-filePath,
+        omics:FileShape-fileSize,
+        omics:FileShape-has1FileMd5Checksum,
+        omics:FileShape-hasMax1FileRead,
+        omics:FileShape-isPartOfMax0Result ;
+    sh:targetClass omics:File .
+
+omics:KeyValueHolderShape a sh:NodeShape ;
+    sh:property omics:KeyValueHolderShape-hasKey,
+        omics:KeyValueHolderShape-hasValue ;
+    sh:targetClass omics:KeyValueHolder .
+
+omics:SequencingTechnology a owl:Class ;
+    rdfs:label "Sequencing Technology" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:StudyisSequencedForTherapeuticAreaTargetShape a sh:NodeShape ;
+    sh:property omics:OmicsStudyShape-externalStudyId,
+        omics:OmicsStudyShape-hasContactCompBio,
+        omics:OmicsStudyShape-hasContactScientist,
+        omics:OmicsStudyShape-hasContactTechnical,
+        omics:OmicsStudyShape-hasResponsibleSite,
+        omics:OmicsStudyShape-hasStudyType,
+        omics:OmicsStudyShape-isPartOfProject,
+        omics:OmicsStudyShape-isSequencedForIndication,
+        omics:OmicsStudyShape-isSequencedForTherapeuticArea,
+        omics:OmicsStudyShape-keywords,
+        omics:OmicsStudyShape-sequencingDate,
+        omics:OmicsStudyShape-studyDescription,
+        omics:OmicsStudyShape-technicalStudyTitle,
+        omics:StudyisSequencedForTherapeuticAreaTargetShape-hasMax0KeyValueHolder,
+        omics:StudyisSequencedForTherapeuticAreaTargetShape-hasMax0Person,
+        omics:gegvx ;
+    sh:targetClass omics:Study .
+
+omics:TranscriptOmicsCalculatedResultShape a sh:NodeShape ;
+    sh:property omics:TranscriptOmicsCalculatedResultShape-basedOnEnsemblVersion,
+        omics:TranscriptOmicsCalculatedResultShape-hasPipeline,
+        omics:TranscriptOmicsCalculatedResultShape-hasResultSpecies ;
+    sh:targetClass omics:TranscriptOmicsCalculatedResult .
+
+omics:TranscriptOmicsMeasuredResultShape a sh:NodeShape ;
+    sh:property omics:TranscriptOmicsMeasuredResultShape-barcode,
+        omics:TranscriptOmicsMeasuredResultShape-flowcell,
+        omics:TranscriptOmicsMeasuredResultShape-flowcellLane,
+        omics:TranscriptOmicsMeasuredResultShape-hasReadType,
+        omics:TranscriptOmicsMeasuredResultShape-libraryId,
+        omics:TranscriptOmicsMeasuredResultShape-ngsPlatePosition,
+        omics:TranscriptOmicsMeasuredResultShape-runID ;
+    sh:targetClass omics:TranscriptOmicsMeasuredResult .
+
+omics:TranscriptOmicsSampleShape a sh:NodeShape ;
+    sh:property omics:3f7b14c8-d5d4-4a77-b9a8-31c664cdb11c,
+        omics:TranscriptOmicsSampleShape-hasSequencingProtocol,
+        omics:TranscriptOmicsSampleShape-hasStrandedness,
+        omics:TranscriptOmicsSampleShape-isMeasuredOnPlatform,
+        omics:TranscriptOmicsSampleShape-isPreparedByLibrary,
+        omics:TranscriptOmicsSampleShape-isProcessedByMax1Organisation ;
+    sh:targetClass omics:TranscriptOmicsSample .
+
+omics:TreatmenthasTreatmentTypeTargetShape a sh:NodeShape ;
+    sh:property omics:TranscriptOmicsTreatmentShape-hasRouteOfAdministration,
+        omics:TranscriptOmicsTreatmentShape-hasTreatmentAgent,
+        omics:TranscriptOmicsTreatmentShape-hasTreatmentDoseUnit,
+        omics:TranscriptOmicsTreatmentShape-hasTreatmentFrequency,
+        omics:TranscriptOmicsTreatmentShape-hasTreatmentTimeUnit,
+        omics:TranscriptOmicsTreatmentShape-hasTreatmentType,
+        omics:TranscriptOmicsTreatmentShape-preTreatment,
+        omics:TranscriptOmicsTreatmentShape-treatmentAgent,
+        omics:TranscriptOmicsTreatmentShape-treatmentDose,
+        omics:TranscriptOmicsTreatmentShape-treatmentEndTimepoint,
+        omics:TranscriptOmicsTreatmentShape-treatmentStartTimepoint,
+        omics:TreatmenthasTreatmentTypeTargetShape-isTreatmentOfMax0Donor,
+        omics:TreatmenthasTreatmentTypeTargetShape-isTreatmentOfMax0Specimen ;
+    sh:targetClass omics:Treatment .
+
+omics:hasAnimalStrain a owl:ObjectProperty ;
+    rdfs:label "animal strain" ;
+    rdfs:comment "Strain of origin for non-human samples" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/Strain> .
+
+omics:hasCellline a owl:ObjectProperty ;
+    rdfs:label "cell line" ;
+    rdfs:comment "Name of cellline used within the sample." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/CellLine> .
+
+omics:hasGenotype a owl:ObjectProperty ;
+    rdfs:label "genotype" ;
+    rdfs:comment "The genotype summarieses the permanent changes of the genome. of a sample." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasKeyValueMapping a owl:AnnotationProperty ;
+    rdfs:label "Mapping to original Key/Value attribute" .
+
+omics:hasPreparationProtocol a owl:ObjectProperty ;
+    rdfs:label "preparation protocol" ;
+    rdfs:comment "The preparation protocol is a description of the process  or manner by which a material has been prepared." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasRecipientAgeUnit a owl:ObjectProperty ;
+    rdfs:label "recipient age unit" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasRecipientGender a owl:ObjectProperty ;
+    rdfs:label "recipient gender" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasRecipientGenotype a owl:ObjectProperty ;
+    rdfs:label "recipient genotype" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasRecipientSpecies a owl:ObjectProperty ;
+    rdfs:label "recipient species" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasRecipientStrain a owl:ObjectProperty ;
+    rdfs:label "recipient strain" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasSampleExclusionReason a owl:ObjectProperty ;
+    rdfs:label "sample exclusion reason" ;
+    rdfs:comment "Description of the reason for the exclusion of a specific sample from the subsequent analyses." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasSampleModulation a owl:ObjectProperty ;
+    rdfs:label "modulation type" ;
+    rdfs:comment """Transient changes.\r
+\r
+In cases where a gene, transcript or protein have been modulated, the type_of_modulation describes how the gene, transcript or protein has been modulated. In principle it is possible to activate, block, overexpress or reduce the expression. Activation and blocking do not alter the amount of the respective protein or mRNA, but increase or reduce their activity. In the case of overexpression or reduction of expression the actual amount of functional protein or mRNA is increased or decreased.""" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasSampleType a owl:ObjectProperty ;
+    rdfs:label "sample type" ;
+    rdfs:comment "Description of the kind of the biological sample that has been used. These types fall into categories like, e.g. tissue or cellline. It is important to know the sample_type in order to decide whether e.g. the attributes cellline or cell need to be filled." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:isFileOfResult a owl:ObjectProperty ;
+    rdfs:label "File <-> Result" ;
+    rdfs:isDefinedBy omics: .
+
+omics:isProvidedBy a owl:ObjectProperty ;
+    rdfs:label "sample provider" ;
+    rdfs:comment "A sample_provider is the BI-OPU, institution or collaboration partner that delivered the sample." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:isSequencedBySite a owl:ObjectProperty ;
+    rdfs:label "sequencing site" ;
+    rdfs:comment "The sequencing site is the location of laboratory which measured the samples and created the raw data. This site can be an operating unit of Boehringer Ingelheim as well as a consortium, CRO, collaboration partner or university group." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:isTreatmentOfSample a owl:ObjectProperty ;
+    rdfs:label "Sample <-> Treatment" ;
+    rdfs:comment "Relates one treatment to one or several samples." ;
+    rdfs:isDefinedBy omics: .
+
+omics:recipientAge a owl:DatatypeProperty ;
+    rdfs:label "recipient age" ;
+    rdfs:isDefinedBy omics: .
+
+omics:recipientId a owl:DatatypeProperty ;
+    rdfs:label "recipient ID" ;
+    rdfs:isDefinedBy omics: .
+
+omics:recipientName a owl:DatatypeProperty ;
+    rdfs:label "recipient name" ;
+    rdfs:isDefinedBy omics: .
+
+omics:003b7c7a-f8c2-4c44-b97b-0ce66af24837 a sh:PropertyShape ;
+    sh:class omics:Contrast ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:isResultOfContrast .
+
+omics:0828ce5c-afcd-4d87-99ca-99e821f64cb7 a sh:PropertyShape ;
+    sh:datatype xsd:dateTime ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:processingDate .
+
+omics:0bb3486e-c666-40b5-92a1-b6943191b7a9 a sh:PropertyShape ;
+    sh:class omics:Donor ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:hasGraftRecipient .
+
+omics:0c2600b5-30b2-40c7-917a-b402e73f55ae a sh:PropertyShape ;
+    sh:class omics:SampleType ;
+    sh:minCount 0 ;
+    sh:path omics:hasSpecimenType .
+
+omics:0e319cb6-2de3-4608-a1c2-ea04678b5fcc a sh:PropertyShape ;
+    sh:class omics:Strain ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:hasDonorStrain .
+
+omics:10ac05a1-680d-4ba8-a896-60d5f5903b11 a sh:PropertyShape ;
+    sh:class omics:SampleSet ;
+    sh:path omics:isPartOfSampleSet .
+
+omics:143dc455-bec0-4de1-8a84-c608250c1986 a sh:PropertyShape ;
+    sh:class omics:Visit ;
+    sh:path omics:acquiredDuringVisit .
+
+omics:168ca29b-fe08-42c4-92a9-b297383f3af5 a sh:PropertyShape ;
+    sh:class omics:Genotype ;
+    sh:minCount 0 ;
+    sh:path omics:hasCelllineGenotype .
+
+omics:181d1617-85fb-4037-8768-1ca14ce58d1d a sh:PropertyShape ;
+    sh:class omics:SampleSet ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:hasOtherLevel .
+
+omics:185e6c8c-cd62-4a92-b109-b12e898c82ac a sh:PropertyShape ;
+    sh:class omics:SampleSet ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:hasBaseLevel .
+
+omics:19a07159-db6c-420f-8961-10c2e39e5168 a sh:PropertyShape ;
+    sh:datatype xsd:dateTime ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:processingDate .
+
+omics:1fe47912-9207-4d4d-98c1-e236c25c38ef a sh:PropertyShape ;
+    sh:datatype xsd:boolean ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:removeOutliers .
+
+omics:221e1341-8ad4-412a-b850-10f823ad5d88 a sh:PropertyShape ;
+    sh:datatype xsd:double ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:samplingTimepoint .
+
+omics:248e9792-8549-4e0d-8665-06c42aff8ffc a sh:PropertyShape ;
+    sh:class omics:SamplePreparation ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:hasSpecimenPreparation .
+
+omics:3162c231-fc4d-4094-8348-79fbb0b3e1f0 a sh:PropertyShape ;
+    sh:datatype xsd:double ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:age .
+
+omics:31b46682-2b9e-408a-b493-dc26571207a9 a sh:PropertyShape ;
+    sh:class omics:DiffExprAnalysis ;
+    sh:minCount 1 ;
+    sh:path omics:isPartOfAnalysis .
+
+omics:3320555d-1884-45ce-b5b8-754ed8064317 a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:batchId .
+
+omics:349bea5c-e36e-46e3-a3ef-349f069f7b8a a sh:PropertyShape ;
+    sh:class omics:Sample ;
+    sh:path omics:containsSample .
+
+omics:383e340b-f178-40ec-893d-3aec3b325d6d a sh:PropertyShape ;
+    sh:datatype xsd:dateTime ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:processingDate .
+
+omics:38c0a1c7-1c92-489a-a22e-87f5335ccb1a a sh:PropertyShape ;
+    sh:class omics:Cell ;
+    sh:minCount 0 ;
+    sh:path omics:hasCellType .
+
+omics:3d68f38a-7bf8-47ab-8378-60933daf51ca a sh:PropertyShape ;
+    sh:class omics:Unit ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:hasSamplingTimepointUnit .
+
+omics:3f7b14c8-d5d4-4a77-b9a8-31c664cdb11c a sh:PropertyShape ;
+    sh:datatype xsd:double ;
+    sh:minCount 0 ;
+    sh:path omics:hasRIN .
+
+omics:4931c28f-8a7d-4dc5-bd02-f4d59057640f a sh:PropertyShape ;
+    sh:class omics:Organisation ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:isProvidedByOrganisation .
+
+omics:49dc6948-880d-41da-b81c-aebdebaa39c2 a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:id .
+
+omics:4a82315a-a88e-4079-9797-63dd98167be6 a sh:PropertyShape ;
+    sh:class omics:Unit ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:hasSamplingTimepointUnit .
+
+omics:4b6e1407-7ed8-4263-b14b-f0ba5e298db5 a sh:PropertyShape ;
+    sh:datatype xsd:double ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:samplingTimepoint .
+
+omics:535fc05f-1a68-4574-917f-19fecd837fde a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:modelFormula .
+
+omics:5554e732-eb8b-4d5b-bf73-56225f6edf37 a sh:PropertyShape ;
+    sh:class omics:Sample ;
+    sh:minCount 1 ;
+    sh:path omics:isPartOfSample .
+
+omics:571f859e-2246-490b-9e64-b684b523b191 a sh:PropertyShape ;
+    sh:class omics:Study ;
+    sh:minCount 1 ;
+    sh:path omics:isPartOfStudy .
+
+omics:5c93adab-14f2-436e-9dca-80f15c2ca66a a sh:PropertyShape ;
+    sh:class omics:Specimen ;
+    sh:minCount 1 ;
+    sh:path omics:isDerivedFromSpecimen .
+
+omics:64058bbc-7d71-404b-9bff-56c0461cfe69 a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:treatmentSetName .
+
+omics:64433d1a-2e11-4e4f-a1d8-68ad39b1c214 a sh:PropertyShape ;
+    sh:class omics:Gene ;
+    sh:minCount 0 ;
+    sh:path omics:hasTarget .
+
+omics:7273419f-416d-44d9-babf-883cfb242e6f a sh:PropertyShape ;
+    sh:class omics:KeyValueHolder ;
+    sh:minCount 0 ;
+    sh:path omics:hasKeyValue .
+
+omics:79cf3b0e-5cf2-4264-9e37-c37a416af475 a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:tumorStage .
+
+omics:7cb1e5c8-6335-45d1-8430-8c1a29c5be92 a sh:PropertyShape ;
+    sh:datatype xsd:integer ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:sampleOrder .
+
+omics:7fc22b1b-82b5-4e3a-b5bd-a7673e6b2531 a sh:PropertyShape ;
+    sh:class omics:Ethnicity ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:hasEthnicity .
+
+omics:801412e5-8eef-41a6-a32e-f71370212ce2 a sh:PropertyShape ;
+    sh:class omics:KeyValueHolder ;
+    sh:minCount 0 ;
+    sh:path omics:hasKeyValue .
+
+omics:811342de-cacc-4e7d-b0de-d06e91dcfeea a sh:PropertyShape ;
+    sh:class omics:Result ;
+    sh:path omics:isDerivedFromResult .
+
+omics:85e3c9b0-3ef1-4d6c-9b50-6bc3d5bc98d5 a sh:PropertyShape ;
+    sh:class omics:Tissue ;
+    sh:minCount 0 ;
+    sh:path omics:hasTissue .
+
+omics:86cda368-ff69-46c8-93f1-242df4594253 a sh:PropertyShape ;
+    sh:class omics:ExclusionReason ;
+    sh:minCount 0 ;
+    sh:path omics:hasExclusionReason .
+
+omics:87fb8bb0-8ab6-43ac-b113-8fa8c33f1553 a sh:PropertyShape ;
+    sh:class omics:Sample ;
+    sh:minCount 1 ;
+    sh:path omics:isPartOfSample .
+
+omics:8e349055-798a-4235-955f-2e2241529a13 a sh:PropertyShape ;
+    sh:class omics:Donor ;
+    sh:minCount 1 ;
+    sh:path omics:isDerivedFromDonor .
+
+omics:90cbabaf-6ac2-4fc2-ab64-621475413578 a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:algorithm .
+
+omics:91b1c78d-a840-47ce-8367-9131c9315151 a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:equation .
+
+omics:92119399-1872-448b-806e-7f1dd14c2a05 a sh:PropertyShape ;
+    sh:class omics:Genotype ;
+    sh:minCount 0 ;
+    sh:path omics:hasDonorGenotype .
+
+omics:93d4932f-8513-4a4b-b4b2-52f8703025a8 a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:comment .
+
+omics:9589ebf0-6f4f-4b80-9a5a-75aa25b5715f a sh:PropertyShape ;
+    sh:class omics:Disease ;
+    sh:path omics:hasDisease .
+
+omics:99c00dcb-84b0-44a9-924e-e389abac5f02 a sh:PropertyShape ;
+    sh:datatype xsd:dateTime ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:processingDate .
+
+omics:9d092828-323f-4ff2-940a-d6796cf64b0b a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:tumorGrade .
+
+omics:Agent a owl:Class ;
+    rdfs:label "Agent" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:CDXSpecimen a owl:Class ;
+    rdfs:label "Cell Line Xenograft Specimen" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:CellLineSpecimen .
+
+omics:CellLine a owl:Class ;
+    rdfs:label "Cell Line" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:EnsemblVersion a owl:Class ;
+    rdfs:label "Ensembl Version" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:Ethnicity a owl:Class ;
+    rdfs:label "Ethnicity" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:ExclusionReason a owl:Class ;
+    rdfs:label "Exclusion Reason" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:File a owl:Class ;
+    rdfs:label "File" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Thing .
+
+omics:FileRead a owl:Class ;
+    rdfs:label "File Read" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:FileShape-fileCreationDate a sh:PropertyShape ;
+    sh:datatype xsd:dateTime ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:fileCreationDate .
+
+omics:FileShape-fileCreationDateOdm a sh:PropertyShape ;
+    sh:datatype xsd:dateTime ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:fileCreationDateOdm .
+
+omics:FileShape-fileLfrStatus a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:fileLfrStatus .
+
+omics:FileShape-fileLocation a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:fileLocation .
+
+omics:FileShape-filePath a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:path omics:filePath .
+
+omics:FileShape-fileSize a sh:PropertyShape ;
+    sh:datatype xsd:integer ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:fileSize .
+
+omics:FileShape-has1FileMd5Checksum a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:fileMd5Checksum .
+
+omics:FileShape-hasMax1FileRead a sh:PropertyShape ;
+    sh:class omics:FileRead ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:hasFileRead .
+
+omics:FileShape-isPartOfMax0Result a sh:PropertyShape ;
+    sh:class omics:Result ;
+    sh:path omics:isPartOfResult .
+
+omics:Gender a owl:Class ;
+    rdfs:label "Gender" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:HistologyType a owl:Class ;
+    rdfs:label "Histology Type" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:KeyValueHolderShape-hasKey a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:hasKey .
+
+omics:KeyValueHolderShape-hasValue a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:hasValue .
+
+omics:LibraryPreparation a owl:Class ;
+    rdfs:label "Library Preparation" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:OmicsStudyShape-externalStudyId a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:path omics:externalStudyId .
+
+omics:OmicsStudyShape-hasContactCompBio a sh:PropertyShape ;
+    sh:class omics:Person ;
+    sh:message "Expected at minimum 1 and at maximum n value(s) for omics:hasContactCompBio for entity of type omics:Person" ;
+    sh:minCount 1 ;
+    sh:path omics:hasContactCompBio .
+
+omics:OmicsStudyShape-hasContactScientist a sh:PropertyShape ;
+    sh:class omics:Person ;
+    sh:message "Expected at minimum 1 and at maximum n value(s) for omics:hasContactScientist for entity of type omics:Person" ;
+    sh:minCount 1 ;
+    sh:path omics:hasContactScientist .
+
+omics:OmicsStudyShape-hasContactTechnical a sh:PropertyShape ;
+    sh:class omics:Person ;
+    sh:message "Expected at minimum 0 and at maximum n value(s) for omics:hasContactTechnical for entity of type omics:Person" ;
+    sh:path omics:hasContactTechnical .
+
+omics:OmicsStudyShape-hasResponsibleSite a sh:PropertyShape ;
+    sh:class omics:Organisation ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:hasResponsibleSite .
+
+omics:OmicsStudyShape-hasStudyType a sh:PropertyShape ;
+    sh:class omics:StudyType ;
+    sh:message "Expected at minimum 1 and at maximum n value(s) for omics:hasStudyType for entity of type omics:StudyType" ;
+    sh:minCount 1 ;
+    sh:path omics:hasStudyType .
+
+omics:OmicsStudyShape-isPartOfProject a sh:PropertyShape ;
+    sh:class omics:Project ;
+    sh:message "Expected at minimum 1 and at maximum n value(s) for omics:isPartOfProject for entity of type omics:Project" ;
+    sh:minCount 1 ;
+    sh:path omics:isPartOfProject .
+
+omics:OmicsStudyShape-isSequencedForIndication a sh:PropertyShape ;
+    sh:class omics:Disease ;
+    sh:message "Expected at minimum 1 and at maximum n value(s) for omics:isSequencedForIndication for entity of type omics:Disease" ;
+    sh:minCount 1 ;
+    sh:path omics:isSequencedForIndication .
+
+omics:OmicsStudyShape-isSequencedForTherapeuticArea a sh:PropertyShape ;
+    sh:class omics:TherapeuticArea ;
+    sh:message "Expected at minimum 1 and at maximum n value(s) for omics:isSequencedForTherapeuticArea for entity of type omics:TherapeuticArea" ;
+    sh:minCount 1 ;
+    sh:path omics:isSequencedForTherapeuticArea .
+
+omics:OmicsStudyShape-keywords a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:path omics:keywords .
+
+omics:OmicsStudyShape-sequencingDate a sh:PropertyShape ;
+    sh:datatype xsd:dateTime ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:sequencingDate .
+
+omics:OmicsStudyShape-studyDescription a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:studyDescription .
+
+omics:OmicsStudyShape-technicalStudyTitle a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:path omics:technicalStudyTitle .
+
+omics:PDXSpecimen a owl:Class ;
+    rdfs:label "Patient Xenograft Specimen" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:BiopsySpecimen .
+
+omics:Platform a owl:Class ;
+    rdfs:label "Platform" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:PrimaryCellSpecimen a owl:Class ;
+    rdfs:label "Primary Cell Specimen" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:BiopsySpecimen .
+
+omics:Project a owl:Class ;
+    rdfs:label "Project" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:ReadType a owl:Class ;
+    rdfs:label "Read Type" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:RouteOfAdministration a owl:Class ;
+    rdfs:label "Administration Route" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:SamplePreparation a owl:Class ;
+    rdfs:label "Sample Preparation" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:SampleType a owl:Class ;
+    rdfs:label "Sample Type" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:SequencingProtocol a owl:Class ;
+    rdfs:label "Sequencing Protocol" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:SpecimenCollection a owl:Class ;
+    rdfs:label "SpecimenCollection" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:Strain a owl:Class ;
+    rdfs:label "Strain" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:Strandedness a owl:Class ;
+    rdfs:label "Strandedness" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:StudyType a owl:Class ;
+    rdfs:label "Study Type" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:StudyisSequencedForTherapeuticAreaTargetShape-hasMax0KeyValueHolder a sh:PropertyShape ;
+    sh:class omics:KeyValueHolder ;
+    sh:path omics:hasKeyValue .
+
+omics:StudyisSequencedForTherapeuticAreaTargetShape-hasMax0Person a sh:PropertyShape ;
+    sh:class omics:Person ;
+    sh:path omics:hasContactTMCP .
+
+omics:TherapeuticArea a owl:Class ;
+    rdfs:label "Therapeutic Area" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:TranscriptOmicsCalculatedResult a owl:Class ;
+    rdfs:label "Transcriptomics Calculated Result" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:CalculatedResult .
+
+omics:TranscriptOmicsCalculatedResultShape-basedOnEnsemblVersion a sh:PropertyShape ;
+    sh:class omics:EnsemblVersion ;
+    sh:maxCount 1 ;
+    sh:message "Expected at minimum 0 and at maximum 1 value(s) for omics:basedOnEnsemblVersion for entity of type omics:EnsemblVersion" ;
+    sh:path omics:basedOnEnsemblVersion .
+
+omics:TranscriptOmicsCalculatedResultShape-hasPipeline a sh:PropertyShape ;
+    sh:class omics:PipelineVersion ;
+    sh:maxCount 1 ;
+    sh:message "Expected exactly 1 value(s) for omics:hasPipeline for entity of type omics:PipelineVersion" ;
+    sh:minCount 1 ;
+    sh:path omics:hasPipeline .
+
+omics:TranscriptOmicsCalculatedResultShape-hasResultSpecies a sh:PropertyShape ;
+    sh:class omics:Species ;
+    sh:maxCount 1 ;
+    sh:message "Expected exactly 1 value(s) for omics:hasResultSpecies for entity of type omics:Species" ;
+    sh:minCount 1 ;
+    sh:path omics:hasResultSpecies .
+
+omics:TranscriptOmicsDiffExprAnalysis a owl:Class ;
+    rdfs:label "Transcriptomics Differential Expression Analysis" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:DiffExprAnalysis .
+
+omics:TranscriptOmicsDiffExprResult a owl:Class ;
+    rdfs:label "Transcriptomics Differential Expression Result" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Result .
+
+omics:TranscriptOmicsMeasuredResult a owl:Class ;
+    rdfs:label "Transcriptomics Measured Result" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:MeasuredResult .
+
+omics:TranscriptOmicsMeasuredResultShape-barcode a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:path omics:barcode .
+
+omics:TranscriptOmicsMeasuredResultShape-flowcell a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:path omics:flowcell .
+
+omics:TranscriptOmicsMeasuredResultShape-flowcellLane a sh:PropertyShape ;
+    sh:datatype xsd:integer ;
+    sh:path omics:flowcellLane .
+
+omics:TranscriptOmicsMeasuredResultShape-hasReadType a sh:PropertyShape ;
+    sh:class omics:ReadType ;
+    sh:maxCount 1 ;
+    sh:message "Expected exactly 1 value(s) for omics:hasReadType for entity of type omics:ReadType" ;
+    sh:minCount 1 ;
+    sh:path omics:hasReadType .
+
+omics:TranscriptOmicsMeasuredResultShape-libraryId a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:path omics:libraryId .
+
+omics:TranscriptOmicsMeasuredResultShape-ngsPlatePosition a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:path omics:ngsPlatePosition .
+
+omics:TranscriptOmicsMeasuredResultShape-runID a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:path omics:runID .
+
+omics:TranscriptOmicsSample a owl:Class ;
+    rdfs:label "Transcriptomics Sample" ;
+    rdfs:comment "TODO: Missing description. To be provided by Karsten Q." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Sample .
+
+omics:TranscriptOmicsSampleShape-hasSequencingProtocol a sh:PropertyShape ;
+    sh:class omics:SequencingProtocol ;
+    sh:maxCount 1 ;
+    sh:message "Expected at minimum 0 and at maximum 1 value(s) for omics:hasSequencingProtocol for entity of type omics:SequencingProtocol" ;
+    sh:path omics:hasSequencingProtocol .
+
+omics:TranscriptOmicsSampleShape-hasStrandedness a sh:PropertyShape ;
+    sh:class omics:Strandedness ;
+    sh:maxCount 1 ;
+    sh:message "Expected exactly 1 value(s) for omics:hasStrandedness for entity of type omics:Strandedness" ;
+    sh:minCount 1 ;
+    sh:path omics:hasStrandedness .
+
+omics:TranscriptOmicsSampleShape-isMeasuredOnPlatform a sh:PropertyShape ;
+    sh:class omics:Platform ;
+    sh:maxCount 1 ;
+    sh:message "Expected exactly 1 value(s) for omics:isMeasuredOnPlatform for entity of type omics:Platform" ;
+    sh:minCount 1 ;
+    sh:path omics:isMeasuredOnPlatform .
+
+omics:TranscriptOmicsSampleShape-isPreparedByLibrary a sh:PropertyShape ;
+    sh:class omics:LibraryPreparation ;
+    sh:message "Expected exactly 1 value(s) for omics:isPreparedByLibrary for entity of type omics:LibraryPreparation" ;
+    sh:minCount 1 ;
+    sh:path omics:isPreparedByLibrary .
+
+omics:TranscriptOmicsSampleShape-isProcessedByMax1Organisation a sh:PropertyShape ;
+    sh:class omics:Organisation ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:isProcessedByOrganisation .
+
+omics:TranscriptOmicsTreatmentShape-hasRouteOfAdministration a sh:PropertyShape ;
+    sh:class omics:RouteOfAdministration ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:hasRouteOfAdministration .
+
+omics:TranscriptOmicsTreatmentShape-hasTreatmentAgent a sh:PropertyShape ;
+    sh:class omics:Agent ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:hasTreatmentAgent .
+
+omics:TranscriptOmicsTreatmentShape-hasTreatmentDoseUnit a sh:PropertyShape ;
+    sh:class omics:Unit ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:hasTreatmentDoseUnit .
+
+omics:TranscriptOmicsTreatmentShape-hasTreatmentFrequency a sh:PropertyShape ;
+    sh:class omics:TreatmentFrequency ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:hasTreatmentFrequency .
+
+omics:TranscriptOmicsTreatmentShape-hasTreatmentTimeUnit a sh:PropertyShape ;
+    sh:class omics:Unit ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:hasTreatmentTimeUnit .
+
+omics:TranscriptOmicsTreatmentShape-hasTreatmentType a sh:PropertyShape ;
+    sh:class omics:TreatmentType ;
+    sh:maxCount 1 ;
+    sh:message "Expected exactly 1 value(s) for omics:hasTreatmentType for entity of type omics:TreatmentType" ;
+    sh:minCount 1 ;
+    sh:path omics:hasTreatmentType .
+
+omics:TranscriptOmicsTreatmentShape-preTreatment a sh:PropertyShape ;
+    sh:datatype xsd:boolean ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:preTreatment .
+
+omics:TranscriptOmicsTreatmentShape-treatmentAgent a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:treatmentAgent .
+
+omics:TranscriptOmicsTreatmentShape-treatmentDose a sh:PropertyShape ;
+    sh:datatype xsd:double ;
+    sh:maxCount 1 ;
+    sh:path omics:treatmentDose .
+
+omics:TranscriptOmicsTreatmentShape-treatmentEndTimepoint a sh:PropertyShape ;
+    sh:datatype xsd:double ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:treatmentEndTimepoint .
+
+omics:TranscriptOmicsTreatmentShape-treatmentStartTimepoint a sh:PropertyShape ;
+    sh:datatype xsd:double ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:treatmentStartTimepoint .
+
+omics:Treatment a owl:Class ;
+    rdfs:label "Treatment" ;
+    rdfs:comment "TODO: Missing description. To be provided by Karsten Q." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Thing .
+
+omics:TreatmentFrequency a owl:Class ;
+    rdfs:label "Treatment Frequency" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:TreatmentType a owl:Class ;
+    rdfs:label "Treatment Type" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:TreatmenthasTreatmentTypeTargetShape-isTreatmentOfMax0Donor a sh:PropertyShape ;
+    sh:class omics:Donor ;
+    sh:minCount 0 ;
+    sh:path omics:isTreatmentOfDonor .
+
+omics:TreatmenthasTreatmentTypeTargetShape-isTreatmentOfMax0Specimen a sh:PropertyShape ;
+    sh:class omics:Specimen ;
+    sh:minCount 0 ;
+    sh:path omics:isTreatmentOfSpecimen .
+
+omics:a5e1e582-1066-4547-a579-578721c92839 a sh:PropertyShape ;
+    sh:class omics:Tissue ;
+    sh:path omics:hasSourceTissue .
+
+omics:aa7901e1-99f0-4b2f-9371-e10b8ce3179b a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:path omics:description .
+
+omics:acquiredDuringVisit a owl:ObjectProperty ;
+    rdfs:label "Specimen <-> Visit" ;
+    rdfs:isDefinedBy omics: .
+
+omics:af998a22-f11b-43ea-b0ac-44e728baeafb a sh:PropertyShape ;
+    sh:class omics:Cell ;
+    sh:path omics:hasSourceCellType .
+
+omics:afb51f95-5b17-45a4-b62d-c58f4998f930 a sh:PropertyShape ;
+    sh:class omics:Species ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:hasSpecies .
+
+omics:age a owl:DatatypeProperty ;
+    rdfs:label "age" ;
+    rdfs:isDefinedBy omics: .
+
+omics:algorithm a owl:DatatypeProperty ;
+    rdfs:label "algorithm" ;
+    rdfs:isDefinedBy omics: .
+
+omics:b40e5790-a9fc-4690-b841-cb7f9fbba3e5 a sh:PropertyShape ;
+    sh:class omics:Unit ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:hasAgeUnit .
+
+omics:b73d0533-4f2c-4a0d-b147-00f88b3bb822 a sh:PropertyShape ;
+    sh:class omics:PipelineVersion ;
+    sh:path omics:hasPipeline .
+
+omics:b79406de-241e-434b-bee5-2c47b3ebf4ac a sh:PropertyShape ;
+    sh:class omics:Modulation ;
+    sh:minCount 0 ;
+    sh:path omics:hasSpecimenModulation .
+
+omics:bad2631d-f6d1-4d11-bfa0-3cf70d38a752 a sh:PropertyShape ;
+    sh:class omics:Donor ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:hasGraftRecipient .
+
+omics:barcode a owl:DatatypeProperty ;
+    rdfs:label "barcode" ;
+    rdfs:isDefinedBy omics: .
+
+omics:basedOnEnsemblVersion a owl:ObjectProperty ;
+    rdfs:label "version (ensembl)" ;
+    rdfs:comment "Version of Ensembl means the version of the Ensembl database that has been used for mapping the sequencing reads and annotating the transcripts." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:batchId a owl:DatatypeProperty ;
+    rdfs:label "batch ID" ;
+    rdfs:isDefinedBy omics: .
+
+omics:bb90f501-fcbf-4f2a-9a7a-a9cbb6ae0c46 a sh:PropertyShape ;
+    sh:class omics:CellLine ;
+    sh:minCount 1 ;
+    sh:path omics:isDerivedFromCellLine .
+
+omics:bfcaae04-b3e5-4459-b520-9fd41fa1c1f5 a sh:PropertyShape ;
+    sh:datatype xsd:boolean ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:isExcluded .
+
+omics:c7e30945-e5f1-48cd-95a3-1a92a856e471 a sh:PropertyShape ;
+    sh:class omics:SpecimenCollection ;
+    sh:minCount 0 ;
+    sh:path omics:hasBiopsyType .
+
+omics:c890d5b3-b1a8-42f0-b20a-a992a4431d69 a sh:PropertyShape ;
+    sh:class omics:KeyValueHolder ;
+    sh:minCount 0 ;
+    sh:path omics:hasKeyValue .
+
+omics:c97b9e6d-b7e4-49a7-add1-8ebadc861dff a sh:PropertyShape ;
+    sh:class omics:Gender ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:hasGender .
+
+omics:ccfe1d8b-b1b0-4b41-9555-211a28ea7aea a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:modelCoef .
+
+omics:cf755832-d673-42cf-bea9-e576b2749762 a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:path omics:technicalName .
+
+omics:comment a owl:DatatypeProperty ;
+    rdfs:label "comment" ;
+    rdfs:isDefinedBy omics: .
+
+omics:containsSample a owl:ObjectProperty ;
+    rdfs:label "contains sample" ;
+    rdfs:isDefinedBy omics: .
+
+omics:d0b10049-59f8-4cf7-8172-828185a761a8 a sh:PropertyShape ;
+    sh:class omics:Study ;
+    sh:minCount 1 ;
+    sh:path omics:isAnalysisOfStudy .
+
+omics:d10afca7-b9af-43b6-86c4-11f4ee8838a4 a sh:PropertyShape ;
+    sh:class omics:Modulation ;
+    sh:path omics:hasModulation .
+
+omics:d6541348-853c-4ab7-99e6-0c23d3c12bd5 a sh:PropertyShape ;
+    sh:class omics:Gene ;
+    sh:minCount 0 ;
+    sh:path omics:hasTarget .
+
+omics:d9d3f742-3f5f-4c5e-bb38-4e73fea191ef a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:treatmentSetName .
+
+omics:description a owl:DatatypeProperty ;
+    rdfs:label "analysis description" ;
+    rdfs:isDefinedBy omics: .
+
+omics:e145df4a-5e6d-44bc-94d7-a58fe76823be a sh:PropertyShape ;
+    sh:datatype xsd:dateTime ;
+    sh:minCount 0 ;
+    sh:path omics:time .
+
+omics:e565460c-c989-4fa3-9528-635f1932e3f0 a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 0 ;
+    sh:path omics:geneFilter .
+
+omics:equation a owl:DatatypeProperty ;
+    rdfs:label "equation" ;
+    rdfs:isDefinedBy omics: .
+
+omics:externalStudyId a owl:DatatypeProperty ;
+    rdfs:label "external study ID" ;
+    rdfs:comment "The external study identifier is an identifier that refers to a study available in a public resource (e.g. Gene Expression Omnibus) or created by a consortium, a university or a collaboration partner. The external study identifier is not controlled by BI and therefore may be ambiguous." ;
+    rdfs:isDefinedBy omics: .
+
+omics:f77fb50c-8cf4-4c2a-ba47-269f730f863e a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:minCount 0 ;
+    sh:path omics:sourceId .
+
+omics:f9674438-5362-4072-89d2-f804799af748 a sh:PropertyShape ;
+    sh:class omics:HistologyType ;
+    sh:minCount 0 ;
+    sh:path omics:hasHistologyType .
+
+omics:fb27b4c2-8d4f-4c89-8823-af23b783a083 a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:minCount 1 ;
+    sh:path omics:name .
+
+omics:fileCreationDate a owl:DatatypeProperty ;
+    rdfs:label "creation date" ;
+    rdfs:comment "Creation date of the file in the initial system." ;
+    rdfs:isDefinedBy omics: .
+
+omics:fileCreationDateOdm a owl:DatatypeProperty ;
+    rdfs:label "creation date (gODM)" ;
+    rdfs:comment "Date at which the file has been registered in gODM." ;
+    rdfs:isDefinedBy omics: .
+
+omics:fileLfrStatus a owl:DatatypeProperty ;
+    rdfs:label "file status (LFR)" ;
+    rdfs:comment "Status information about the physical existence/status in the LFR repository. Only technical information for API transactions." ;
+    rdfs:isDefinedBy omics: .
+
+omics:fileLocation a owl:DatatypeProperty ;
+    rdfs:label "file location" ;
+    rdfs:comment "Geographical Region where the file is persisted, i.e. to comply with data protection laws etc." ;
+    rdfs:isDefinedBy omics: .
+
+omics:fileMd5Checksum a owl:DatatypeProperty ;
+    rdfs:label "file MD5 checksum" ;
+    rdfs:comment "MD5 Checksum for file integrity verification." ;
+    rdfs:isDefinedBy omics: .
+
+omics:filePath a owl:DatatypeProperty ;
+    rdfs:label "path" ;
+    rdfs:comment """Every result is associated with a virtual root directory. Sub-directories may be required to accommodate the need of specific pipelines. This field contains the relative path within this directory structure. By default it is filled with root.\r
+\r
+Should be validated at upload regarding some basic rules.""" ;
+    rdfs:isDefinedBy omics: .
+
+omics:fileSize a owl:DatatypeProperty ;
+    rdfs:label "file size" ;
+    rdfs:comment "Size of the file in bytes." ;
+    rdfs:isDefinedBy omics: .
+
+omics:flowcell a owl:DatatypeProperty ;
+    rdfs:label "flowcell" ;
+    rdfs:comment """The flowcell is the wafer that is used for sequencing samples in the context of next generation sequencing. It contains lanes that hold the samples to be sequenced.\r
+\r
+Does not exist for chip results, but always for NGS.""" ;
+    rdfs:isDefinedBy omics: .
+
+omics:flowcellLane a owl:DatatypeProperty ;
+    rdfs:label "lane" ;
+    rdfs:comment """The lane is the part of the flowcell that actually holds the sample to be sequenced.\r
+\r
+Does not exist for chip results, but always for NGS.""" ;
+    rdfs:isDefinedBy omics: .
+
+omics:gegvx a sh:PropertyShape ;
+    sh:class omics:Person ;
+    sh:path <https://data.boehringer.com/id/00000/R42jo9> .
+
+omics:geneFilter a owl:DatatypeProperty ;
+    rdfs:label "gene filter" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasAgeUnit a owl:ObjectProperty ;
+    rdfs:label "age unit" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasBaseLevel a owl:ObjectProperty ;
+    rdfs:label "base level" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasBiopsyType a owl:ObjectProperty ;
+    rdfs:label "biopsy type" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasCellType a owl:ObjectProperty ;
+    rdfs:label "cell type" ;
+    rdfs:comment "Name of cells (primary cells) that constitute the sample." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/CellType> .
+
+omics:hasCelllineGenotype a owl:ObjectProperty ;
+    rdfs:label "cell line genotype" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasContactCompBio a owl:ObjectProperty ;
+    rdfs:label "contact name (CompBio)" ;
+    rdfs:comment "The contact from the Computational Biology group is the name of the person responsible for defining the study detailed based on the scientific rationale. This happens in close collaboration with the TA contact. In addition it is responsible for analysing the study results and reporting the outcome to the TA contact and other interested parties. Usually it is a member of the Computational Biology group." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasContactScientist a owl:ObjectProperty ;
+    rdfs:label "contact name (TA)" ;
+    rdfs:comment "The TA contact is the name of a person  from a department that represents a therapeutic area (TA). This person provided the scientific rational behind the study and requested the measurement. Typically it is a head of laboratory." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasContactTMCP a owl:ObjectProperty ;
+    rdfs:label "contact name (TMCP)" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasContactTechnical a owl:ObjectProperty ;
+    rdfs:label "contact name (technical)" ;
+    rdfs:comment "The technical contact is the name of a person responsible for the preparation of the samples in a laboratory within a biological department before the sample is sent to a special laboratory for sequencing or other measurements. Usually it is a lab technician who hands over the samples." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasDisease a owl:ObjectProperty ;
+    rdfs:label "disease" ;
+    rdfs:comment "Disease identified or described for the specific sample, does not include the disease of a donor if this disease is not significant for the sample itself." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/TherapeuticArea> .
+
+omics:hasDonorGenotype a owl:ObjectProperty ;
+    rdfs:label "donor genotype" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasDonorStrain a owl:ObjectProperty ;
+    rdfs:label "donor strain" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasEthnicity a owl:ObjectProperty ;
+    rdfs:label "ethnicity" ;
+    rdfs:comment "Ethnicity of the person who donated the sample" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/Strain> .
+
+omics:hasExclusionReason a owl:ObjectProperty ;
+    rdfs:label "exclusion reason" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasFileRead a owl:ObjectProperty ;
+    rdfs:label "file read" ;
+    rdfs:comment """In the case of paired end sequencing (in contrast to single end), two fastq (and respective processed) files are generated one is marked with R1, the other with R2. Example filenames: BI-BIB-0000-0000-0003-0766_R1.fastq and BI-BIB-0000-0000-0003-0766_R2.fastq.\r
+\r
+In case of single read NGS runs, only the R1 files would exist.""" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasGender a owl:ObjectProperty ;
+    rdfs:label "gender" ;
+    rdfs:comment "Gender of origin from which the sample was taken" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasHistologyType a owl:ObjectProperty ;
+    rdfs:label "histology type" ;
+    rdfs:comment "The type of histology describes the histological evaluation of the sample." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasKey a owl:DatatypeProperty ;
+    rdfs:label "key" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasModulation a owl:ObjectProperty ;
+    rdfs:label "donor modulation" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasOtherLevel a owl:ObjectProperty ;
+    rdfs:label "other level" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasRIN a owl:DatatypeProperty ;
+    rdfs:label "rin" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasReadType a owl:ObjectProperty ;
+    rdfs:label "read type" ;
+    rdfs:comment "Paired-end sequencing allows users to sequence both ends of a fragment, i.e. term 'paired ends' refers to the two ends of the same DNA molecule. Paired end sequencing is useful in de-novo assembly projects and in projects aiming at identifying splicing variants. The alternative to paired end is single end." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasResponsibleSite a owl:ObjectProperty ;
+    rdfs:label "responsible site" ;
+    rdfs:comment "The site identifies the operating unit (OPU) of Boehringer Ingelheim that initially has been responsible for the study." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasResultSpecies a owl:ObjectProperty ;
+    rdfs:label "result species" ;
+    rdfs:comment "In case we have a xenograph we will end up with more than one fastq files that contain different species. This will result from splitting up the fastq file generated as measured result. If we do not have xenographs the species will be identical to the species of the sample." ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasRouteOfAdministration a owl:ObjectProperty ;
+    rdfs:label "administration route" ;
+    rdfs:comment "The route of administration of the agent. Examples are intratracheal (i.t.) and oral (p.o.)." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/CDISC> .
+
+omics:hasSequencingProtocol a owl:ObjectProperty ;
+    rdfs:label "sequencing protocol" ;
+    rdfs:comment "A sequencing protocol describeson the material that is used in the assay to generate the results and refers to a number of different protocols that utilise this kind of material. A protocol defines the procedure used to generate the results. Different protocols will have a different focus area and deliver different kinds of results." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasSourceCellType a owl:ObjectProperty ;
+    rdfs:label "source cell type" ;
+    rdfs:comment "Name of a (primary) cell from which the sample was derived (e.g. original source or a predecessor of cell or cellline) or from which a cell has been differentiated (e.g. Macrophage from Monocyte)." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/CellType> .
+
+omics:hasSourceTissue a owl:ObjectProperty ;
+    rdfs:label "source tissue" ;
+    rdfs:comment "Name of tissue from which the sample was derived  (e.g. original source of the cellline or cells)." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/Tissue> .
+
+omics:hasSpecies a owl:ObjectProperty ;
+    rdfs:label "species" ;
+    rdfs:comment "Name of (animal) species from which the samples was taken, in case of cell lines or cells the original species of cellline or cell." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/Strain> .
+
+omics:hasSpecimenModulation a owl:ObjectProperty ;
+    rdfs:label "specimen modulation" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasSpecimenPreparation a owl:ObjectProperty ;
+    rdfs:label "specimen preparation" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasSpecimenType a owl:ObjectProperty ;
+    rdfs:label "specimen type" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasStrandedness a owl:ObjectProperty ;
+    rdfs:label "strandedness" ;
+    rdfs:comment "The strandedness of the library describes the directionality of the reads." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasStudyType a owl:ObjectProperty ;
+    rdfs:label "study type" ;
+    rdfs:comment "The study type describes the kind of effect testing and/or observation of the overall effects for an experiment. Animal testing and clinical trials are major effects of in vivo experiments. In vitro studies are performed with cells or microorganisms outside their normal biological context." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasTissue a owl:ObjectProperty ;
+    rdfs:label "tissue" ;
+    rdfs:comment "Name of tissue from which the samples was taken." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/Tissue> .
+
+omics:hasTreatmentAgent a owl:ObjectProperty ;
+    rdfs:label "agent (IRI)" ;
+    rdfs:comment "Name/Identifier of the agent that has been used as a treatment in the study. Treatment may mean the actual treatment of a patient or an animal or applying the compound to an in-vitro or in-vivo assay." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasTreatmentDoseUnit a owl:ObjectProperty ;
+    rdfs:label "dose unit" ;
+    rdfs:comment "The unit of the treatment dose." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/CDISC> .
+
+omics:hasTreatmentFrequency a owl:ObjectProperty ;
+    rdfs:label "frequency" ;
+    rdfs:comment "The frequency of how often a treatment is applied. Examples are: q.d. (once daily), b.i.d. (twice daily). In cases that do not fit into that schema, the design will be captured in the treatment comment field." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/CDISC> .
+
+omics:hasTreatmentTimeUnit a owl:ObjectProperty ;
+    rdfs:label "timepoint unit" ;
+    rdfs:comment "The unit of the measurement time-point." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/CDISC> .
+
+omics:hasTreatmentType a owl:ObjectProperty ;
+    rdfs:label "treatment type" ;
+    rdfs:comment "The treatment type categorizes the different treatment options. Treatments can be categorized in different sub-types like compound, siRNA (maybe gene knockdown), stimulus, supplement. Categories are not disjunct. Depending on the experimental design, for example an siRNA can also be a considered a compound or a stimulus. It is the TA scientists responsibility to assign the appropriate treatment type." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:hasValue a owl:DatatypeProperty ;
+    rdfs:label "value" ;
+    rdfs:isDefinedBy omics: .
+
+omics:id a owl:DatatypeProperty ;
+    rdfs:label "id" ;
+    rdfs:isDefinedBy omics: .
+
+omics:isAnalysisOfStudy a owl:ObjectProperty ;
+    rdfs:label "Study <-> Analysis" ;
+    rdfs:isDefinedBy omics: .
+
+omics:isDerivedFromCellLine a owl:ObjectProperty ;
+    rdfs:label "Specimen <-> Cell Line" ;
+    rdfs:isDefinedBy omics: .
+
+omics:isDerivedFromDonor a owl:ObjectProperty ;
+    rdfs:label "Specimen <-> Donor" ;
+    rdfs:isDefinedBy omics: .
+
+omics:isDerivedFromResult a owl:ObjectProperty ;
+    rdfs:label "Calculated Result <-> Result" ;
+    rdfs:comment "Results can be generated by utilizing other results. An example would be the NGS result that delivers a fastq file. This fastq file can be used by, e.g., the CGET pipeline in order to generate the count matrix, etc." ;
+    rdfs:isDefinedBy omics: .
+
+omics:isDerivedFromSpecimen a owl:ObjectProperty ;
+    rdfs:label "Sample <-> Specimen" ;
+    rdfs:isDefinedBy omics: .
+
+omics:isExcluded a owl:DatatypeProperty ;
+    rdfs:label "is excluded" ;
+    rdfs:isDefinedBy omics: .
+
+omics:isMeasuredOnPlatform a owl:ObjectProperty ;
+    rdfs:label "platform" ;
+    rdfs:comment """A platform means any hardware and instrument used to measure a biological sample. Usually a hardware or instrument is bought from an external company.\r
+\r
+Has be structured as taxonomy in order to reflect subtypes.""" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:isPartOfAnalysis a owl:ObjectProperty ;
+    rdfs:label "Contrast <-> Analysis" ;
+    rdfs:isDefinedBy omics: .
+
+omics:isPartOfProject a owl:ObjectProperty ;
+    rdfs:label "Study <-> Project (BI)" ;
+    rdfs:comment "The bi_project is the overarching project, the study has been performed in. In general the bi_project is a drug development project containing numerous analyses. A bi_project may be identified by a project code defined by the Probase system. These codes are also used for the notation of working hours. Codes for research projects start with BDY (for Biberach), BEY (for Vienna) and BPY (for Ridgefield). If a study is dealing with target ID or animal model characterization, no project code will be available. In this case bi_project will be named according to the aim of the project." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/Project-LOV> .
+
+omics:isPartOfResult a owl:ObjectProperty ;
+    rdfs:label "File <-> Result" ;
+    rdfs:comment "Every file is connected to a result object." ;
+    rdfs:isDefinedBy omics: .
+
+omics:isPartOfSampleSet a owl:ObjectProperty ;
+    rdfs:label "Sample <-> SampleSet" ;
+    rdfs:comment "Reference to the sample set typically created out of annotations that are constant characteristics across the group of samples. This definition is based on the rational behind the project." ;
+    rdfs:isDefinedBy omics: .
+
+omics:isPartOfStudy a owl:ObjectProperty ;
+    rdfs:label "Sample <-> Study" ;
+    rdfs:comment "Relation to study." ;
+    rdfs:isDefinedBy omics: .
+
+omics:isPreparedByLibrary a owl:ObjectProperty ;
+    rdfs:label "library preparation type" ;
+    rdfs:comment "The preparation of the library means the protocol or commercial kit to prepare the biological material measured by a platform/instrument in a laboratory." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/OMICS> .
+
+omics:isProcessedByOrganisation a owl:ObjectProperty ;
+    rdfs:label "processed by organisation" ;
+    rdfs:isDefinedBy omics: .
+
+omics:isProvidedByOrganisation a owl:ObjectProperty ;
+    rdfs:label "provided by organisation" ;
+    rdfs:isDefinedBy omics: .
+
+omics:isResultOfContrast a owl:ObjectProperty ;
+    rdfs:label "Contrast <-> Result" ;
+    rdfs:isDefinedBy omics: .
+
+omics:isSequencedForIndication a owl:ObjectProperty ;
+    rdfs:label "study on indication" ;
+    rdfs:comment "Indication means any disease or condition, or sign or symptom of a disease or condition, or symptom associated with a disease or syndrome. An indication can be treated, prevented and cured by a drug." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/TherapeuticArea> .
+
+omics:isSequencedForTherapeuticArea a owl:ObjectProperty ;
+    rdfs:label "therapeutic area" ;
+    rdfs:comment "Therapeutic area means therapeutic grouping of indications as well as an area of medical practice that encompasses groupings of specific diseases and/or disorders generally treated by a specific medical specialty or based on similar biological processes. Within the company therapeutic areas are organized in departments. The departments use an abbreviation that is able to identify the therapeutic area." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/TherapeuticArea> .
+
+omics:isTreatmentOfDonor a owl:ObjectProperty ;
+    rdfs:label "Donor <-> Treatment" ;
+    rdfs:isDefinedBy omics: .
+
+omics:isTreatmentOfSpecimen a owl:ObjectProperty ;
+    rdfs:label "Specimen <-> Treatment" ;
+    rdfs:isDefinedBy omics: .
+
+omics:keywords a owl:DatatypeProperty ;
+    rdfs:label "keywords" ;
+    rdfs:comment "Keywords explain studies in more detail and can be used to group different studies." ;
+    rdfs:isDefinedBy omics: .
+
+omics:libraryId a owl:DatatypeProperty ;
+    rdfs:label "library ID" ;
+    rdfs:isDefinedBy omics: .
+
+omics:modelCoef a owl:DatatypeProperty ;
+    rdfs:label "model coefficient" ;
+    rdfs:isDefinedBy omics: .
+
+omics:modelFormula a owl:DatatypeProperty ;
+    rdfs:label "model formula" ;
+    rdfs:isDefinedBy omics: .
+
+omics:name a owl:DatatypeProperty ;
+    rdfs:label "name" ;
+    rdfs:isDefinedBy omics: .
+
+omics:ngsPlatePosition a owl:DatatypeProperty ;
+    rdfs:label "position NGS plate" ;
+    rdfs:comment """Sequencing samples are prepared in microtiter plates. These contain e.g. 96 wells that form a grid like structure. Wells can be identified by there position indicated alphanumerical in one dimension and numerical in the other dimension.\r
+\r
+Does not exist for chip results, but always for NGS.""" ;
+    rdfs:isDefinedBy omics: .
+
+omics:preTreatment a owl:DatatypeProperty ;
+    rdfs:label "is pretreatment" ;
+    rdfs:comment """Indicates whether or not the the treatment is a pretreatment. This comprises every treatment that is applied prior to the actual experiment. For example, if cells are treated with proteins/compounds in order to differentiate into specific celltypes, or if cells are grown under specific conditions like, for example, Air Liquid Interface (ALI) culture prior to initiating the actual treatment this is considered a pretreatment.\r
+\r
+In most of the cases, the end timepoint of the pre-treatment will be the start timepoint of the actual treatment. In order to keep the experimental design readable, the start timepoint for the actual treatment will be 0, even though the overall experiment has started prior to that with a pretreatment at start timepoint 0. Negative timepoints should be avoided.""" ;
+    rdfs:isDefinedBy omics: .
+
+omics:removeOutliers a owl:DatatypeProperty ;
+    rdfs:label "remove outliers" ;
+    rdfs:isDefinedBy omics: .
+
+omics:runID a owl:DatatypeProperty ;
+    rdfs:label "run ID" ;
+    rdfs:comment """Incrementing number given by sequencer.\r
+\r
+Run number on instrument.""" ;
+    rdfs:isDefinedBy omics: .
+
+omics:sampleOrder a owl:DatatypeProperty ;
+    rdfs:label "sampleOrder" ;
+    rdfs:isDefinedBy omics: .
+
+omics:sequencingDate a owl:DatatypeProperty ;
+    rdfs:label "study date" ;
+    rdfs:comment "The date of sequencing  is the date on which the sample were measured in the laboratory." ;
+    rdfs:isDefinedBy omics: .
+
+omics:sourceId a owl:DatatypeProperty ;
+    rdfs:label "source ID" ;
+    rdfs:comment "(Non-unique) Sample Identifier generated or provided by a source system, also called  external_sample_id. In principle this should be unique and might serve as a sample ID, in reality there are no internationally agreed on processes for generating this ID. It is just a reference for the respective data gathering system." ;
+    rdfs:isDefinedBy omics: .
+
+omics:studyDescription a owl:DatatypeProperty ;
+    rdfs:label "study description" ;
+    rdfs:comment "The description is a long multi line explanation of the study which includes the scientific question behind the study, the general experimental setup of this study and the author of a public study (if applicable)." ;
+    rdfs:isDefinedBy omics: .
+
+omics:technicalName a owl:DatatypeProperty ;
+    rdfs:label "technical name" ;
+    rdfs:isDefinedBy omics: .
+
+omics:technicalStudyTitle a owl:DatatypeProperty ;
+    rdfs:label "technical study title" ;
+    rdfs:comment "Human readable machine friendly name." ;
+    rdfs:isDefinedBy omics: .
+
+omics:time a owl:DatatypeProperty ;
+    rdfs:label "time" ;
+    rdfs:isDefinedBy omics: .
+
+omics:treatmentAgent a owl:DatatypeProperty ;
+    rdfs:label "agent name (free text)" ;
+    rdfs:comment """Offers on option to enter data in case it is not contained in the controlled vocabulary, yet. We need to implement a process that triggers are notification and allows e.g. data stewards to double-check and potentially move the treatment_agent to the controlled field.\r
+\r
+Is considered a workaround for the time being. In the end it would make sense to have a controlled vocabulary for everything. It could be an option to include some function to motivate people to use the controlled vocab in the entry masks.""" ;
+    rdfs:isDefinedBy omics: .
+
+omics:treatmentDose a owl:DatatypeProperty ;
+    rdfs:label "dose" ;
+    rdfs:comment "A number describing the dose of the treatment that has been applied." ;
+    rdfs:isDefinedBy omics: .
+
+omics:treatmentEndTimepoint a owl:DatatypeProperty ;
+    rdfs:label "end timepoint" ;
+    rdfs:comment "The time-point within the overall experiment at which the treated material has been harvested and the sample has been measured." ;
+    rdfs:isDefinedBy omics: .
+
+omics:treatmentStartTimepoint a owl:DatatypeProperty ;
+    rdfs:label "start timepoint" ;
+    rdfs:comment "The time-point within the overall experiment at which the respective treatment has been applied. This is the timepoint relative to experiment timepoint 0 at which the compound is added to the sample." ;
+    rdfs:isDefinedBy omics: .
+
+omics:tumorGrade a owl:DatatypeProperty ;
+    rdfs:label "tumor grade" ;
+    rdfs:comment "[Suggestion FD]:Determination of the grade (severity/stage) of a tumor sample, used in cancer biology to describe abnormalities/qualities of tumor cells or tissues. Values can be described by terms from NCI Thesaurus. [from EBO]" ;
+    rdfs:isDefinedBy omics: .
+
+omics:tumorStage a owl:DatatypeProperty ;
+    rdfs:label "tumor stage" ;
+    rdfs:comment "[Suggestion FD]: Tumor stage as classified by the TNM system. T describes the size of the tumor and whether it has invaded nearby tissue, N describes regional lymph nodes that are involved, M describes distant metastasis (spread of cancer from one body part to another). [from EBO]" ;
+    rdfs:isDefinedBy omics: .
+
+<https://data.boehringer.com/id/00000/R42jo9> a owl:ObjectProperty ;
+    rdfs:label "hasContactDDS" ;
+    rdfs:isDefinedBy omics: .
+
+omics:Analysis a owl:Class ;
+    rdfs:label "Analysis" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Thing .
+
+omics:CalculatedResult a owl:Class ;
+    rdfs:label "Calculated Result" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Result .
+
+omics:Cell a owl:Class ;
+    rdfs:label "Cell" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:CellLineSpecimen a owl:Class ;
+    rdfs:label "Cell Line Specimen" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Specimen .
+
+omics:Contrast a owl:Class ;
+    rdfs:label "Contrast" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Thing .
+
+omics:Disease a owl:Class ;
+    rdfs:label "Disease" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:Gene a owl:Class ;
+    rdfs:label "Gene" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:Genotype a owl:Class ;
+    rdfs:label "Genotype" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:MeasuredResult a owl:Class ;
+    rdfs:label "Measured Result" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Result .
+
+omics:Modulation a owl:Class ;
+    rdfs:label "Modulation" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:PipelineVersion a owl:Class ;
+    rdfs:label "Pipeline Version" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:Species a owl:Class ;
+    rdfs:label "Species" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:Tissue a owl:Class ;
+    rdfs:label "Tissue" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:Visit a owl:Class ;
+    rdfs:label "Visit" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Thing .
+
+omics:hasGraftRecipient a owl:ObjectProperty ;
+    rdfs:label "graft recipient" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasPipeline a owl:ObjectProperty ;
+    rdfs:label "pipeline used" ;
+    rdfs:comment """Name of the pipeline including the version.\r
+\r
+Pipeline that has been used to generate the result in case of calculated results.\r
+\r
+Version of pipeline means the version of the computational pipeline that has been used to process the raw data leading to pre-processed data.""" ;
+    rdfs:isDefinedBy omics: .
+
+omics:hasSamplingTimepointUnit a owl:ObjectProperty ;
+    rdfs:label "sampling timepoint unit" ;
+    rdfs:comment "The unit of the sampling time-point." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/CDISC> .
+
+omics:hasTarget a owl:ObjectProperty ;
+    rdfs:label "target" ;
+    rdfs:comment "The gene_symbol_of_target is the identifier of the target gene that has been modulated, or that codes for the transcript or protein that have been modulated in the sample. Different ways of modulation including both not limited to, siRNA treatment, viral overexpression, CRISPR/Cas9 treatment, compound treatment, KO (knock out) mouse are possible." ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:seeAlso <http://vocabulary.boehringer.com/genes> .
+
+omics:isPartOfSample a owl:ObjectProperty ;
+    rdfs:label "Result <-> Sample" ;
+    rdfs:comment "Inverse link to the sample out of which this result was produced." ;
+    rdfs:isDefinedBy omics: .
+
+omics:samplingTimepoint a owl:DatatypeProperty ;
+    rdfs:label "sampling timepoint" ;
+    rdfs:comment "A sampling time-point is the time-point at which the sample gets collected and the treatment of this sample is stopped by putting it on ice or adding reagents that dissolve the contained material. By this means, the biological processes that are under investigation are halted and the sample gets prepared for RNA extraction, etc.." ;
+    rdfs:isDefinedBy omics: .
+
+omics:treatmentSetName a owl:DatatypeProperty ;
+    rdfs:label "treatment set name" ;
+    rdfs:comment "Summarizes the details of the treatments that have been applied to the sample." ;
+    rdfs:isDefinedBy omics: .
+
+omics:BiopsySpecimen a owl:Class ;
+    rdfs:label "Biopsy Specimen" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Specimen .
+
+omics:DiffExprAnalysis a owl:Class ;
+    rdfs:label "Differential Expression Analysis" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Analysis .
+
+omics:Organisation a owl:Class ;
+    rdfs:label "Organisation" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:SampleSet a owl:Class ;
+    rdfs:label "Sample Set" ;
+    rdfs:comment """Group of samples typically created out of annotations that are constant across the group of samples.\r
+					The group can include samples from various projects.""" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Thing .
+
+omics:Study a owl:Class ;
+    rdfs:label "Study" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Thing .
+
+omics:hasKeyValue a owl:ObjectProperty ;
+    rdfs:label "key-value pair" ;
+    rdfs:comment "A key-value node is an artifical, reified node to capture pairs of arbitrary key - value strings." ;
+    rdfs:isDefinedBy omics: .
+
+omics:processingDate a owl:DatatypeProperty ;
+    rdfs:label "processing date" ;
+    rdfs:isDefinedBy omics: .
+
+omics:Donor a owl:Class ;
+    rdfs:label "Donor" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Thing .
+
+omics:KeyValueHolder a owl:Class ;
+    rdfs:label "Key Value Holder" ;
+    rdfs:comment "A Key Value Holder consisting of a Key and Value Pair" ;
+    rdfs:isDefinedBy omics: .
+
+omics:Person a owl:Class ;
+    rdfs:label "Person" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:Sample a owl:Class ;
+    rdfs:label "Sample" ;
+    rdfs:comment "Any research sample (biological sample, statistical sample...)." ;
+    rdfs:isDefinedBy omics:,
+        <http://data.boehringer.com/ontology/omics_results/>,
+        <http://data.boehringer.com/ontology/omics_sandbox/> ;
+    rdfs:subClassOf omics:Thing .
+
+omics:Specimen a owl:Class ;
+    rdfs:label "Specimen" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:Thing .
+
+omics:Unit a owl:Class ;
+    rdfs:label "Unit" ;
+    rdfs:isDefinedBy omics: ;
+    rdfs:subClassOf omics:ReferenceData .
+
+omics:Result a owl:Class ;
+    rdfs:label "Result" ;
+    rdfs:comment "The description and summary of a result or outcome of a study to a particular point in time." ;
+    rdfs:isDefinedBy omics:,
+        <http://data.boehringer.com/ontology/omics_results/>,
+        <http://data.boehringer.com/ontology/omics_sandbox/> ;
+    rdfs:subClassOf omics:Thing .
+
+omics:Thing a owl:Class ;
+    rdfs:label "Thing" ;
+    rdfs:isDefinedBy omics: .
+
+omics:ReferenceData a owl:Class ;
+    rdfs:label "ReferenceData" ;
+    rdfs:isDefinedBy omics: .
+
+omics: a owl:Ontology ;
+    rdfs:label "Boehringer OMICS Ontology"@en ;
+    ns1:created "2020-01-01T00:00:00+00:00"^^xsd:dateTime ;
+    ns1:creator "vitaly.sedlyarov@boehringer-ingelheim.com" ;
+    ns1:description "Schema Ontology describing data model for OMICS metadata"@en ;
+    ns1:title "Boehringer OMICS Ontology"@en ;
+    ns2:namespace <https://data.boehringer.com/id/00000/> ;
+    rdfs:comment "TODO: Missing description. To be provided by Karsten Q." ;
+    owl:versionInfo "1.0.0" .
+

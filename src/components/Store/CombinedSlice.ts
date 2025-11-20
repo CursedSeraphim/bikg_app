@@ -1,11 +1,12 @@
-// CombinedSlice.ts
+// src/store/slices/combined.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Quad, Store } from 'n3';
 import { createSelector } from 'reselect';
 import { v4 as uuidv4 } from 'uuid';
-import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 import {
+  D3BoundingBoxSetting,
   EdgeCountDict,
   ExemplarFocusNodeDict,
   FilterType,
@@ -27,10 +28,59 @@ import {
 } from '../../types';
 import { dataToScatterDataArray } from '../EmbeddingView/csvToScatterData';
 
+function loadMissingEdgeLabel(): string {
+  try {
+    const stored = localStorage.getItem('missingEdgeLabel');
+    return stored !== null ? stored : CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING;
+  } catch {
+    return CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING;
+  }
+}
+
+// Safely load any previously stored labels
+function loadFromLocalStorage(): string[] {
+  try {
+    const stored = localStorage.getItem('blacklistedLabels');
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    // If parsing fails, fall back to an empty array
+    return [];
+  }
+}
+
+function loadHiddenLineupColumns(): string[] {
+  try {
+    const stored = localStorage.getItem('hiddenLineupColumns');
+    return stored ? JSON.parse(stored) : ['x', 'y'];
+  } catch {
+    return ['x', 'y'];
+  }
+}
+
+function loadHideNamespacePrefixColumns(): boolean {
+  try {
+    const stored = localStorage.getItem('hideNamespacePrefixColumns');
+    return stored ? JSON.parse(stored) : false;
+  } catch {
+    return false;
+  }
+}
+
+function loadHideNamespacePrefixCells(): boolean {
+  try {
+    const stored = localStorage.getItem('hideNamespacePrefixCells');
+    return stored ? JSON.parse(stored) : false;
+  } catch {
+    return false;
+  }
+}
+
 const initialState: ICombinedState = {
   cumulativeNumberViolationsPerNode: {},
   samples: [],
   originalSamples: [],
+  originalInstanceData: '',
+  originalViolationReport: '',
   selectedNodes: [],
   selectedTypes: [],
   selectedViolations: [],
@@ -39,7 +89,9 @@ const initialState: ICombinedState = {
   violationTypesMap: {},
   typesViolationMap: {},
   filterType: 'none',
+  d3BoundingBox: 'off',
   missingEdgeOption: 'keep',
+  missingEdgeLabel: loadMissingEdgeLabel(),
   edgeCountDict: {},
   focusNodeExemplarDict: {},
   exemplarFocusNodeDict: {},
@@ -54,9 +106,12 @@ const initialState: ICombinedState = {
   typeMap: {},
   exemplarMap: {},
   ontologyTree: null,
-  hiddenLabels: [],
+  hiddenLabels: loadFromLocalStorage(),
+  hiddenLineupColumns: loadHiddenLineupColumns(),
   nodeLabels: [],
   edgeLabels: [],
+  hideNamespacePrefixColumns: loadHideNamespacePrefixColumns(),
+  hideNamespacePrefixCells: loadHideNamespacePrefixCells(),
 };
 
 export function createMaps(
@@ -227,6 +282,14 @@ const removeNanEdges = (data: ICsvData[]): ICsvData[] => {
   });
 };
 
+const renameMissingEdges = (data: ICsvData[], label: string): ICsvData[] => {
+  return data.map((sample: ICsvData): ICsvData => {
+    const { Id, ...rest } = sample;
+    const modifiedEntries = Object.entries(rest).map(([key, value]) => [key, value === CSV_EDGE_NOT_IN_ONTOLOGY_STRING ? label : value]);
+    return { Id, ...Object.fromEntries(modifiedEntries) };
+  });
+};
+
 // const renameNanEdges = (data: ICsvData[]): ICsvData[] => {
 //   return data.map((sample: ICsvData): ICsvData => {
 //     const { Id, ...rest } = sample;
@@ -298,48 +361,10 @@ const incrementMapValue = (map: Map<string, number>, key: string) => {
   map.set(key, (map.get(key) || 0) + 1);
 };
 
-/**
- * Helper function to update numberViolationsPerNode based on a map.
- */
-const updateViolationsPerNode = (sourceMap: Map<string, number>, numberViolationsPerNode: INumberViolationsPerNodeMap) => {
-  sourceMap.forEach((value, key) => {
-    if (Object.hasOwnProperty.call(numberViolationsPerNode, key)) {
-      // eslint-disable-next-line no-param-reassign
-      numberViolationsPerNode[key].selected = value;
-      // eslint-disable-next-line no-param-reassign
-      numberViolationsPerNode[key].cumulativeSelected = value;
-    }
-  });
-};
-
-/**
- * Function to update cumulative counts in the tree hierarchy.
- */
-const updateCumulativeCounts = (node: IServerTreeNode, numberViolationsPerNode: INumberViolationsPerNodeMap, knownTypes: Set<string>) => {
-  if (knownTypes.has(node.id)) {
-    let cumulativeCount = 0;
-
-    for (const child of node.children) {
-      updateCumulativeCounts(child, numberViolationsPerNode, knownTypes);
-      if (numberViolationsPerNode[child.id] && knownTypes.has(child.id)) {
-        cumulativeCount += numberViolationsPerNode[child.id].cumulativeSelected;
-      }
-    }
-
-    if (numberViolationsPerNode[node.id]) {
-      // eslint-disable-next-line no-param-reassign
-      numberViolationsPerNode[node.id].cumulativeSelected += cumulativeCount;
-    }
-  } else {
-    for (const child of node.children) {
-      updateCumulativeCounts(child, numberViolationsPerNode, knownTypes);
-    }
-  }
-};
-
-function resetTypesCounts(numberViolationsPerNode: INumberViolationsPerNodeMap, selectedTypesMap: Map<string, number>, knownTypes: Set<string>): void {
+function resetCounts(numberViolationsPerNode: INumberViolationsPerNodeMap, selectionMaps: Map<string, number>[]): void {
   Object.keys(numberViolationsPerNode).forEach((key) => {
-    if (knownTypes.has(key) && !selectedTypesMap.has(key)) {
+    const isSelected = selectionMaps.some((m) => m.has(key));
+    if (!isSelected) {
       // eslint-disable-next-line no-param-reassign
       numberViolationsPerNode[key].cumulativeSelected = 0;
       // eslint-disable-next-line no-param-reassign
@@ -362,19 +387,57 @@ function calculateNewNumberViolationsPerNode(
   const newSelectedViolationsMap = new Map<string, number>();
   const newSelectedExemplarsMap = new Map<string, number>();
 
+  const selectedNodeSets = new Map<string, Set<string>>();
+
+  const addToSet = (map: Map<string, Set<string>>, key: string, value: string) => {
+    if (!map.has(key)) {
+      map.set(key, new Set<string>());
+    }
+    map.get(key)?.add(value);
+  };
+
   newSelectedNodes.forEach((node) => {
     const { types, violations, exemplars } = focusNodeMap[node];
-    types.forEach((type: string) => incrementMapValue(newSelectedTypesMap, type));
-    violations.forEach((violation: string) => incrementMapValue(newSelectedViolationsMap, violation));
-    exemplars.forEach((exemplar: string) => incrementMapValue(newSelectedExemplarsMap, exemplar));
+    types.forEach((type: string) => {
+      incrementMapValue(newSelectedTypesMap, type);
+      addToSet(selectedNodeSets, type, node);
+    });
+    violations.forEach((violation: string) => {
+      incrementMapValue(newSelectedViolationsMap, violation);
+      addToSet(selectedNodeSets, violation, node);
+    });
+    exemplars.forEach((exemplar: string) => {
+      incrementMapValue(newSelectedExemplarsMap, exemplar);
+      addToSet(selectedNodeSets, exemplar, node);
+    });
   });
 
-  updateViolationsPerNode(newSelectedTypesMap, numberViolationsPerNode);
-  updateViolationsPerNode(newSelectedViolationsMap, numberViolationsPerNode);
-  updateViolationsPerNode(newSelectedExemplarsMap, numberViolationsPerNode);
+  // Update selected counts based on unique node sets
+  selectedNodeSets.forEach((set, key) => {
+    if (Object.hasOwnProperty.call(numberViolationsPerNode, key)) {
+      // eslint-disable-next-line no-param-reassign
+      numberViolationsPerNode[key].selected = set.size;
+      // eslint-disable-next-line no-param-reassign
+      numberViolationsPerNode[key].cumulativeSelected = set.size;
+    }
+  });
 
-  resetTypesCounts(numberViolationsPerNode, newSelectedTypesMap, knownTypes);
-  updateCumulativeCounts(ontologyTree, numberViolationsPerNode, knownTypes);
+  resetCounts(numberViolationsPerNode, [newSelectedTypesMap, newSelectedViolationsMap, newSelectedExemplarsMap]);
+
+  const accumulateSets = (node: IServerTreeNode): Set<string> => {
+    const currentSet = new Set<string>(selectedNodeSets.get(node.id) ?? []);
+    node.children.forEach((child) => {
+      const childSet = accumulateSets(child);
+      childSet.forEach((fn) => currentSet.add(fn));
+    });
+    if (knownTypes.has(node.id) && numberViolationsPerNode[node.id]) {
+      // eslint-disable-next-line no-param-reassign
+      numberViolationsPerNode[node.id].cumulativeSelected = currentSet.size;
+    }
+    return currentSet;
+  };
+
+  accumulateSets(ontologyTree);
 
   return numberViolationsPerNode;
 }
@@ -442,6 +505,46 @@ const combinedSlice = createSlice({
   name: 'combined',
   initialState,
   reducers: {
+    clearAllSelections(state) {
+      state.selectedNodes = [];
+      state.selectedTypes = [];
+      state.selectedViolations = [];
+      state.selectedViolationExemplars = [];
+    },
+    addHiddenLabels: (state, action: PayloadAction<string[]>) => {
+      const deduplicated = Array.from(new Set([...state.hiddenLabels, ...action.payload]));
+      state.hiddenLabels = deduplicated.sort();
+      localStorage.setItem('blacklistedLabels', JSON.stringify(state.hiddenLabels));
+    },
+    removeHiddenLabels: (state, action: PayloadAction<string[]>) => {
+      state.hiddenLabels = state.hiddenLabels.filter((label) => !action.payload.includes(label));
+      localStorage.setItem('blacklistedLabels', JSON.stringify(state.hiddenLabels));
+    },
+    clearHiddenLabels: (state) => {
+      state.hiddenLabels = [];
+      localStorage.setItem('blacklistedLabels', JSON.stringify([]));
+    },
+    addHiddenLineupColumns: (state, action: PayloadAction<string[]>) => {
+      const deduplicated = Array.from(new Set([...state.hiddenLineupColumns, ...action.payload]));
+      state.hiddenLineupColumns = deduplicated;
+      localStorage.setItem('hiddenLineupColumns', JSON.stringify(state.hiddenLineupColumns));
+    },
+    removeHiddenLineupColumns: (state, action: PayloadAction<string[]>) => {
+      state.hiddenLineupColumns = state.hiddenLineupColumns.filter((label) => !action.payload.includes(label));
+      localStorage.setItem('hiddenLineupColumns', JSON.stringify(state.hiddenLineupColumns));
+    },
+    clearHiddenLineupColumns: (state) => {
+      state.hiddenLineupColumns = [];
+      localStorage.setItem('hiddenLineupColumns', JSON.stringify([]));
+    },
+    setHideNamespacePrefixColumns: (state, action: PayloadAction<boolean>) => {
+      state.hideNamespacePrefixColumns = action.payload;
+      localStorage.setItem('hideNamespacePrefixColumns', JSON.stringify(action.payload));
+    },
+    setHideNamespacePrefixCells: (state, action: PayloadAction<boolean>) => {
+      state.hideNamespacePrefixCells = action.payload;
+      localStorage.setItem('hideNamespacePrefixCells', JSON.stringify(action.payload));
+    },
     setCumulativeNumberViolationsPerNode: (state, action: PayloadAction<INumberViolationsPerNodeMap>) => {
       state.cumulativeNumberViolationsPerNode = action.payload;
 
@@ -459,19 +562,6 @@ const combinedSlice = createSlice({
     },
     setEdgeLabels: (state, action: PayloadAction<string[]>) => {
       state.edgeLabels = action.payload;
-    },
-    setHiddenLabels: (state, action: PayloadAction<string[]>) => {
-      state.hiddenLabels = action.payload;
-    },
-    addHiddenLabels: (state, action: PayloadAction<string[]>) => {
-      action.payload.forEach((label) => {
-        if (!state.hiddenLabels.includes(label)) {
-          state.hiddenLabels.push(label);
-        }
-      });
-    },
-    removeHiddenLabels: (state, action: PayloadAction<string[]>) => {
-      state.hiddenLabels = state.hiddenLabels.filter((label) => !action.payload.includes(label));
     },
     setOntologyTree: (state, action: PayloadAction<ServerTree>) => {
       state.ontologyTree = action.payload;
@@ -532,7 +622,7 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
@@ -550,12 +640,23 @@ const combinedSlice = createSlice({
       if (state.missingEdgeOption === 'remove') {
         state.samples = removeNanEdges(state.originalSamples);
       } else if (state.missingEdgeOption === 'keep') {
-        state.samples = [...state.originalSamples];
+        state.samples = renameMissingEdges(state.originalSamples, state.missingEdgeLabel);
       }
       updateFocusNodeSampleMap(state);
     },
+    setMissingEdgeLabel: (state, action: PayloadAction<string>) => {
+      state.missingEdgeLabel = action.payload;
+      localStorage.setItem('missingEdgeLabel', state.missingEdgeLabel);
+      if (state.missingEdgeOption === 'keep') {
+        state.samples = renameMissingEdges(state.originalSamples, state.missingEdgeLabel);
+        updateFocusNodeSampleMap(state);
+      }
+    },
     setFilterType: (state, action: PayloadAction<FilterType>) => {
       state.filterType = action.payload;
+    },
+    setD3BoundingBox: (state, action: PayloadAction<D3BoundingBoxSetting>) => {
+      state.d3BoundingBox = action.payload;
     },
     setViolationTypesMap: (state, action) => {
       state.violationTypesMap = action.payload;
@@ -571,7 +672,7 @@ const combinedSlice = createSlice({
       if (state.missingEdgeOption === 'remove') {
         state.samples = removeNanEdges(action.payload);
       } else if (state.missingEdgeOption === 'keep') {
-        state.samples = action.payload;
+        state.samples = renameMissingEdges(action.payload, state.missingEdgeLabel);
       }
       // const newTypes = [...state.types];
       // state.samples.forEach((sample) => {
@@ -596,7 +697,7 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
     },
     setSelectedFocusNodes: (state, action) => {
@@ -668,7 +769,7 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
 
       updateSelectedViolationExemplars(state);
@@ -709,7 +810,7 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
@@ -739,7 +840,7 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
     },
     addSingleSelectedType: (state, action) => {
@@ -768,7 +869,7 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
@@ -823,7 +924,7 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
@@ -874,18 +975,26 @@ const combinedSlice = createSlice({
         state.focusNodeMap,
         state.numberViolationsPerNode,
         state.ontologyTree,
-        new Set(state.types),
+        new Set([...state.types, ...state.violations]),
       );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
     setRdfString: (state, action) => {
       state.rdfString = action.payload;
     },
+    setOriginalInstanceData: (state, action) => {
+      state.originalInstanceData = action.payload;
+    },
+    setOriginalViolationReport: (state, action) => {
+      state.originalViolationReport = action.payload;
+    },
   },
 });
 
 export const selectMissingEdgeOption = (state: { combined: ICombinedState }) => state.combined.missingEdgeOption;
+export const selectMissingEdgeLabel = (state: { combined: ICombinedState }) => state.combined.missingEdgeLabel;
 export const selectFilterType = (state: { combined: ICombinedState }) => state.combined.filterType;
+export const selectD3BoundingBox = (state: { combined: ICombinedState }) => state.combined.d3BoundingBox;
 export const selectViolationsTypeMap = (state: { combined: ICombinedState }) => state.combined.violationTypesMap;
 export const selectSelectedNodes = (state: { combined: ICombinedState }) => state.combined.selectedNodes;
 export const selectSamples = (state: { combined: ICombinedState }) => state.combined.samples;
@@ -899,14 +1008,23 @@ export const selectCsvData = (state: { combined: ICombinedState }) => state.comb
 export const selectSelectedFocusNodes = (state: { combined: ICombinedState }) => state.combined.selectedNodes;
 export const selectSelectedTypes = (state: { combined: ICombinedState }) => state.combined.selectedTypes;
 export const selectRdfData = (state: { combined: ICombinedState }) => state.combined.rdfString;
+export const selectOriginalInstanceData = (state: { combined: ICombinedState }) => state.combined.originalInstanceData;
+export const selectOriginalViolationReport = (state: { combined: ICombinedState }) => state.combined.originalViolationReport;
 export const selectSelectedViolationExemplars = (state: { combined: ICombinedState }) => state.combined.selectedViolationExemplars;
 export const selectNamespaces = (state: { combined: ICombinedState }) => state.combined.namespaces;
 export const selectTypes = (state: { combined: ICombinedState }) => state.combined.types;
+export const selectViolationMap = (state: { combined: ICombinedState }) => state.combined.violationMap;
+export const selectTypeMap = (state: { combined: ICombinedState }) => state.combined.typeMap;
+export const selectExemplarMap = (state: { combined: ICombinedState }) => state.combined.exemplarMap;
+export const selectFocusNodeMap = (state: { combined: ICombinedState }) => state.combined.focusNodeMap;
 export const selectSubClassOfTriples = (state: { combined: ICombinedState }) => state.combined.subClassOfTriples;
 export const selectCumulativeNumberViolationsPerNode = (state: { combined: ICombinedState }) => state.combined.cumulativeNumberViolationsPerNode;
 export const selectHiddenLabels = (state: { combined: ICombinedState }) => state.combined.hiddenLabels;
+export const selectHiddenLineupColumns = (state: { combined: ICombinedState }) => state.combined.hiddenLineupColumns;
 export const selectNodeLabels = (state: { combined: ICombinedState }) => state.combined.nodeLabels;
 export const selectEdgeLabels = (state: { combined: ICombinedState }) => state.combined.edgeLabels;
+export const selectHideNamespacePrefixColumns = (state: { combined: ICombinedState }) => state.combined.hideNamespacePrefixColumns;
+export const selectHideNamespacePrefixCells = (state: { combined: ICombinedState }) => state.combined.hideNamespacePrefixCells;
 
 // TODO investigate why we are returning everything here
 // create memoized selector
@@ -1097,7 +1215,8 @@ export const selectAllTriples = async (rdfString: string): Promise<{ visibleTrip
   });
 
   const subClassOfPredicate = new NamedNode(`${prefixes.rdfs}subClassOf`);
-  const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null);
+  // TODO should not be hardcoded ofc
+  const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null).filter((quad) => quad.object.id !== `${prefixes.omics}ReferenceData`);
   const allHiddenTuples = store.getQuads(null, null, null).filter((quad) => !allVisibleTuples.includes(quad));
 
   // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
@@ -1182,7 +1301,8 @@ const extractNamespace = (uri) => {
 
 // Helper function to find or add node
 const findOrAddNode = (id, label, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList) => {
-  const { cumulativeSelected = 0, cumulativeViolations = 0, violations = 0 } = numberViolationsPerNode[id] || numberViolationsPerNode[id.split(' ')[0]] || {};
+  const baseId = id.replace(/_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, '');
+  const { cumulativeSelected = 0, cumulativeViolations = 0, violations = 0 } = numberViolationsPerNode[id] || numberViolationsPerNode[baseId] || {};
 
   const hasCounts = cumulativeSelected !== 0 || cumulativeViolations !== 0;
   const labelSuffix = hasCounts ? ` (${cumulativeSelected}/${cumulativeViolations})` : '';
@@ -1255,6 +1375,8 @@ export const selectCytoData = async (rdfString, getColorForNamespace, types, num
 };
 
 export const {
+  clearAllSelections,
+  clearHiddenLabels,
   setSelectedViolations,
   setViolations,
   setCsvData,
@@ -1265,10 +1387,14 @@ export const {
   removeMultipleSelectedTypes,
   removeSingleSelectedType,
   setRdfString,
+  setOriginalInstanceData,
+  setOriginalViolationReport,
   setViolationTypesMap,
   setTypesViolationMap,
   setFilterType,
+  setD3BoundingBox,
   setMissingEdgeOption,
+  setMissingEdgeLabel,
   setEdgeCountDict,
   setFocusNodeExemplarDict,
   setExemplarFocusNodeDict,
@@ -1282,11 +1408,15 @@ export const {
   setExemplarMap,
   setOntologyTree,
   setCumulativeNumberViolationsPerNode,
-  setHiddenLabels,
   addHiddenLabels,
   removeHiddenLabels,
   setNodeLabels,
   setEdgeLabels,
+  addHiddenLineupColumns,
+  removeHiddenLineupColumns,
+  clearHiddenLineupColumns,
+  setHideNamespacePrefixColumns,
+  setHideNamespacePrefixCells,
 } = combinedSlice.actions;
 
 export default combinedSlice.reducer;

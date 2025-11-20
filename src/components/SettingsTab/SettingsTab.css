@@ -1,0 +1,72 @@
+.settings-tab-container {
+  max-width: 800px; /* Increased max-width for better spacing on larger screens */
+  margin: 20px auto; /* Added top/bottom margin */
+  padding: 1.5rem; /* Increased padding */
+  background-color: #f9fafb; /* Light background for the whole container */
+  border-radius: 12px; /* Rounded corners for the container */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Softer, more modern shadow */
+}
+
+.settings-accordion .mantine-Accordion-item {
+  margin-bottom: 1rem; /* Increased spacing between accordion items */
+  border-radius: 10px; /* Slightly more rounded corners for items */
+  overflow: hidden;
+  border: 1px solid #e5e7eb; /* Subtle border for items */
+  transition: box-shadow 0.3s ease;
+}
+
+.settings-accordion .mantine-Accordion-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); /* Hover effect for items */
+}
+
+.settings-accordion .mantine-Accordion-control {
+  background-color: #ffffff; /* White background for control */
+  padding: 1rem 1.25rem; /* Adjusted padding */
+  font-weight: 500; /* Slightly less bold font */
+  color: #374151; /* Darker text color for better contrast */
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #e5e7eb; /* Separator line */
+}
+
+.settings-accordion .mantine-Accordion-control:hover {
+  background-color: #f3f4f6; /* Lighter hover for control */
+}
+
+.settings-accordion .mantine-Accordion-control[data-active] {
+  background-color: #eff6ff; /* Distinct background for active control */
+  color: #1d4ed8; /* Accent color for active control text */
+}
+
+
+.settings-accordion .mantine-Accordion-panel {
+  padding: 1.25rem; /* Increased padding in panel */
+  background-color: #ffffff; /* White background for panel */
+  border-top: 1px solid #e5e7eb; /* Separator for panel content */
+}
+
+/* Styling for nested accordions to differentiate them */
+.settings-accordion .mantine-Accordion-item .mantine-Accordion-item {
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #f3f4f6; /* Lighter border for nested items */
+}
+
+.settings-accordion .mantine-Accordion-item .mantine-Accordion-control {
+  background-color: #f9fafb; /* Slightly different bg for nested controls */
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+}
+
+.settings-accordion .mantine-Accordion-item .mantine-Accordion-control:hover {
+  background-color: #f0f1f3;
+}
+
+.settings-accordion .mantine-Accordion-item .mantine-Accordion-control[data-active] {
+  background-color: #e0e7ff; 
+  color: #3730a3;
+}
+
+.settings-accordion .mantine-Accordion-item .mantine-Accordion-panel {
+  padding: 1rem;
+  background-color: #ffffff;
+}

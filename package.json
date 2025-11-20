@@ -49,7 +49,9 @@
     "webpack:prod": "visyn_scripts build --mode production --env workspace_mode=single"
   },
   "dependencies": {
+    "@comunica/query-sparql": "^4.3.0",
     "@material-ui/core": "^4.12.4",
+    "@material-ui/icons": "^4.11.3",
     "@material-ui/lab": "^4.0.0-alpha.61",
     "@mui/material": "^5.2.1",
     "@mui/utils": "^5.2.1",
@@ -67,7 +69,7 @@
     "jsonld-streaming-parser": "^3.2.0",
     "langchain": "^0.0.153",
     "lineupjs": "^4.7.0",
-    "n3": "^1.16.3",
+    "n3": "^1.26.0",
     "openai": "^4.11.1",
     "papaparse": "^5.4.0",
     "plotly.js-dist": "^2.20.0",
@@ -77,9 +79,11 @@
     "rdf-ext": "^2.2.0",
     "rdf-js": "^4.0.2",
     "rdflib": "^2.2.26",
+    "react-grid-layout": "^1.5.0",
     "react-new-window": "^1.0.1",
     "react-plotly.js": "^2.6.0",
     "react-redux": "^8.0.5",
+    "react-resizable-panels": "^2.1.7",
     "react-resize-detector": "^9.1.0",
     "react-spinners": "^0.13.8",
     "react-tabs": "^6.0.2",
@@ -96,6 +100,7 @@
     "visyn_scripts": "^7.0.1"
   },
   "devDependencies": {
+    "@types/d3": "^7.4.3",
     "cypress": "^12.0.1"
   },
   "resolutions": {

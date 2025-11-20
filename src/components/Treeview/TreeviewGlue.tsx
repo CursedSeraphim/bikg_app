@@ -14,18 +14,13 @@ function formatNodeName(node: IOntologyNode): string {
 
 /**
  * Creates an IOntologyNode object
- *
- * @param name - Node name
- * @param cumulativeNumberViolationsPerType - Mapping of cumulative number of violations per type
- * @param children - Array of child IOntologyNode objects
- * @returns An IOntologyNode object
+ * ...
  */
 export const createIOntologyNode = (
   name: string,
   cumulativeNumberViolationsPerType: INumberViolationsPerNodeMap,
   children: IOntologyNode[] = [],
 ): IOntologyNode => {
-  // Safely access properties using optional chaining and nullish coalescing
   const { selected = 0, violations = 0, cumulativeSelected = 0, cumulativeViolations = 0 } = cumulativeNumberViolationsPerType[name] ?? {};
 
   return {

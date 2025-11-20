@@ -1,23 +1,227 @@
-@prefix rut:   <http://rdfunit.aksw.org/ns/core#> .
-@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix lotr: <http://example.org/lotr#> .
+@prefix rut: <http://rdfunit.aksw.org/ns/core#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-<urn:uuid:1>
-        a                             rut:TestCaseResult , sh:ValidationResult ;
-        sh:focusNode                  <http://example.org/person/Mark_Twain> ;
-        sh:sourceShape                <http://data.boehringer.com/ontology/omics/violation1> .
+<urn:uuid:violation-Aragorn-hasHome> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T09:40:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:Aragorn ;
+    sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasHome ;
+    sh:value lotr:MinasTirith .
 
-<urn:uuid:2>
-        a                             rut:TestCaseResult , sh:ValidationResult ;
-        sh:focusNode                  <http://example.org/books/Huckleberry_Finn> ;
-        sh:sourceShape                <http://data.boehringer.com/ontology/omics/violation1> .
+<urn:uuid:violation-Arathorn-hasHome> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T09:50:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:Arathorn ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasHome for entity of type lotr:Character" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasHome .
 
-<urn:uuid:3>
-        a                             rut:TestCaseResult , sh:ValidationResult ;
-        sh:focusNode                  <http://example.org/person/JRR_Tolkien> ;
-        sh:sourceShape                <http://data.boehringer.com/ontology/omics/violation2> .
+<urn:uuid:violation-BilboBaggins-hasAncestry> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T10:00:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:BilboBaggins ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Character" ;
+    sh:resultPath lotr:hasAncestry ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasAncestry .
 
-<urn:uuid:4>
-        a                             rut:TestCaseResult , sh:ValidationResult ;
-        sh:focusNode                  <http://example.org/books/LOTR> ;
-        sh:sourceShape                <http://data.boehringer.com/ontology/omics/violation2> .
-        
+<urn:uuid:violation-BilboBaggins-hasHome> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T10:10:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:BilboBaggins ;
+    sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasHome ;
+    sh:value lotr:TheShire .
+
+<urn:uuid:violation-Boromir-hasHome> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T09:35:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:Boromir ;
+    sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasHome ;
+    sh:value lotr:MinasTirith .
+
+<urn:uuid:violation-Edoras-isInRegion> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T09:25:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:Edoras ;
+    sh:resultMessage "Expected value for lotr:isInRegion to conform to RegionShape" ;
+    sh:resultPath lotr:isInRegion ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:LocationShape-isInRegion ;
+    sh:value lotr:Rohan .
+
+<urn:uuid:violation-Eriador-isInContinent> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T09:00:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:Eriador ;
+    sh:resultMessage "Expected value for lotr:isInContinent to conform to ContinentShape" ;
+    sh:resultPath lotr:isInContinent ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:RegionShape-isInContinent ;
+    sh:value lotr:MiddleEarth .
+
+<urn:uuid:violation-FrodoBaggins-hasAncestry> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T09:50:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:FrodoBaggins ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Character" ;
+    sh:resultPath lotr:hasAncestry ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasAncestry .
+
+<urn:uuid:violation-FrodoBaggins-hasHome> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T09:30:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:FrodoBaggins ;
+    sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasHome ;
+    sh:value lotr:TheShire .
+
+<urn:uuid:violation-Gilraen-hasHome> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T09:55:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:Gilraen ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasHome for entity of type lotr:Character" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasHome .
+
+<urn:uuid:violation-Gondor-isInContinent> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T09:05:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:Gondor ;
+    sh:resultMessage "Expected value for lotr:isInContinent to conform to ContinentShape" ;
+    sh:resultPath lotr:isInContinent ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:RegionShape-isInContinent ;
+    sh:value lotr:MiddleEarth .
+
+<urn:uuid:violation-MeriadocBrandybuck-hasAncestry> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T10:05:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:MeriadocBrandybuck ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Character" ;
+    sh:resultPath lotr:hasAncestry ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasAncestry .
+
+<urn:uuid:violation-MeriadocBrandybuck-hasHome> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T10:20:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:MeriadocBrandybuck ;
+    sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasHome ;
+    sh:value lotr:TheShire .
+
+<urn:uuid:violation-MinasTirith-isInRegion> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T09:20:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:MinasTirith ;
+    sh:resultMessage "Expected value for lotr:isInRegion to conform to RegionShape" ;
+    sh:resultPath lotr:isInRegion ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:LocationShape-isInRegion ;
+    sh:value lotr:Gondor .
+
+<urn:uuid:violation-Morwen-hasHome> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T10:00:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:Morwen ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasHome for entity of type lotr:Character" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasHome .
+
+<urn:uuid:violation-PeregrinTook-hasAncestry> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T10:10:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:PeregrinTook ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Character" ;
+    sh:resultPath lotr:hasAncestry ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasAncestry .
+
+<urn:uuid:violation-PeregrinTook-hasHome> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T10:25:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:PeregrinTook ;
+    sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasHome ;
+    sh:value lotr:TheShire .
+
+<urn:uuid:violation-Rohan-IsInContinent> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T09:10:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:Rohan ;
+    sh:resultMessage "Expected value for lotr:isInContinent to conform to ContinentShape" ;
+    sh:resultPath lotr:isInContinent ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:RegionShape-isInContinent ;
+    sh:value lotr:MiddleEarth .
+
+<urn:uuid:violation-SamwiseGamgee-hasAncestry> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T09:55:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:SamwiseGamgee ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Character" ;
+    sh:resultPath lotr:hasAncestry ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasAncestry .
+
+<urn:uuid:violation-SamwiseGamgee-hasHome> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T10:15:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:SamwiseGamgee ;
+    sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasHome ;
+    sh:value lotr:TheShire .
+
+<urn:uuid:violation-TheShire-isInRegion> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T09:15:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:TheShire ;
+    sh:resultMessage "Expected value for lotr:isInRegion to conform to RegionShape" ;
+    sh:resultPath lotr:isInRegion ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:LocationShape-isInRegion ;
+    sh:value lotr:Eriador .
+
+<urn:uuid:violation-Thengel-hasHome> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T10:05:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:Thengel ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasHome for entity of type lotr:Character" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasHome .
+
+<urn:uuid:violation-Theoden-hasHome> a rut:TestCaseResult,
+        sh:ValidationResult ;
+    dcterms:date "2025-06-02T09:45:00+02:00"^^xsd:dateTime ;
+    sh:focusNode lotr:Theoden ;
+    sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:sourceShape lotr:CharacterShape-hasHome ;
+    sh:value lotr:Edoras .
+

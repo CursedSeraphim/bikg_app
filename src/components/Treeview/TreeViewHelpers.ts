@@ -1,42 +1,19 @@
-// TreeViewHelpers.ts
+import { KnowledgeGraphNode } from './useTreeData';
 
-// Toggle the path to a node in the tree data
-export function togglePathToNode(node, targetName) {
-  if (node.name.split(' ')[0] === targetName) {
-    node.toggled = true;
-    node.selected = true;
-    return true;
-  }
-  if (node.children) {
-    for (const child of node.children) {
-      if (togglePathToNode(child, targetName)) {
-        node.toggled = true;
-        return true;
-      }
-    }
-  }
-  return false;
-}
+export function updateTreeDataWithSelectedTypes(nodes: KnowledgeGraphNode[] | null, selectedTypes: string[] = []): KnowledgeGraphNode[] {
+  if (!Array.isArray(nodes)) return [];
 
-// Reset all nodes in the tree data
-export function resetAllNodes(node) {
-  if (node) {
-    node.toggled = false;
-    node.selected = false;
-    if (node.children) {
-      for (const child of node.children) {
-        resetAllNodes(child);
-      }
-    }
-  }
-}
+  return nodes.map((node) => {
+    if (!node || !node.name) return node;
+    const isSelected = selectedTypes.includes(node.id);
 
-export function updateTreeDataWithSelectedTypes(oldTreeData, selectedTypes) {
-  const newTreeData = JSON.parse(JSON.stringify(oldTreeData));
-  resetAllNodes(newTreeData);
+    const updatedChildren = updateTreeDataWithSelectedTypes(node.children, selectedTypes);
 
-  for (const selectedType of selectedTypes) {
-    togglePathToNode(newTreeData, selectedType);
-  }
-  return newTreeData;
+    return {
+      ...node,
+      children: updatedChildren,
+      // Optionally store a custom property if you want custom styling
+      // selected: isSelected,
+    };
+  });
 }

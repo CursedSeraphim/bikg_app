@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+// src/components/Cytoscape/CytoscapeEventHandlers.ts
 import { Core } from 'cytoscape';
+import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { ActionFunctionMap } from '../../types';
 

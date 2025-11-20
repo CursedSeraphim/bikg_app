@@ -1,0 +1,156 @@
+@prefix ex: <http://example.com/group#> .
+@prefix lotr: <http://example.org/lotr#> .
+@prefix ns1: <http://customnamespace.com/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rut: <http://rdfunit.aksw.org/ns/core#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+lotr:Ancestry a owl:Class ;
+    rdfs:subClassOf lotr:Thing .
+
+lotr:Continent a owl:Class ;
+    rdfs:subClassOf lotr:Thing .
+
+ex:CharacterShape-hasAncestry_group_3 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasAncestry for entity of type lotr:Character" ;
+    sh:resultPath lotr:hasAncestry ;
+    sh:severity sh:Violation .
+
+ex:CharacterShape-hasHome_group_1 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:value lotr:MinasTirith .
+
+ex:CharacterShape-hasHome_group_2 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected at minimum 1 value(s) for lotr:hasHome for entity of type lotr:Character" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation .
+
+ex:CharacterShape-hasHome_group_4 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:value lotr:TheShire .
+
+ex:CharacterShape-hasHome_group_9 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected value for lotr:hasHome to conform to LocationShape" ;
+    sh:resultPath lotr:hasHome ;
+    sh:severity sh:Violation ;
+    sh:value lotr:Edoras .
+
+ex:LocationShape-isInRegion_group_5 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected value for lotr:isInRegion to conform to RegionShape" ;
+    sh:resultPath lotr:isInRegion ;
+    sh:severity sh:Violation ;
+    sh:value lotr:Rohan .
+
+ex:LocationShape-isInRegion_group_7 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected value for lotr:isInRegion to conform to RegionShape" ;
+    sh:resultPath lotr:isInRegion ;
+    sh:severity sh:Violation ;
+    sh:value lotr:Gondor .
+
+ex:LocationShape-isInRegion_group_8 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected value for lotr:isInRegion to conform to RegionShape" ;
+    sh:resultPath lotr:isInRegion ;
+    sh:severity sh:Violation ;
+    sh:value lotr:Eriador .
+
+ex:RegionShape-isInContinent_group_6 a rut:TestCaseResult,
+        sh:PropertyShape,
+        sh:ValidationResult ;
+    sh:resultMessage "Expected value for lotr:isInContinent to conform to ContinentShape" ;
+    sh:resultPath lotr:isInContinent ;
+    sh:severity sh:Violation ;
+    sh:value lotr:MiddleEarth .
+
+lotr:Character a owl:Class ;
+    rdfs:subClassOf lotr:Thing .
+
+lotr:CharacterShape a sh:NodeShape ;
+    sh:property lotr:CharacterShape-hasAncestry,
+        lotr:CharacterShape-hasHome ;
+    sh:targetClass lotr:Character .
+
+lotr:CharacterShape-hasAncestry a sh:PropertyShape ;
+    ns1:hasExemplar ex:CharacterShape-hasAncestry_group_3 ;
+    sh:minCount 1 ;
+    sh:node lotr:CharacterShape ;
+    sh:path lotr:hasAncestry .
+
+lotr:CharacterShape-hasHome a sh:PropertyShape ;
+    ns1:hasExemplar ex:CharacterShape-hasHome_group_1,
+        ex:CharacterShape-hasHome_group_2,
+        ex:CharacterShape-hasHome_group_4,
+        ex:CharacterShape-hasHome_group_9 ;
+    sh:minCount 1 ;
+    sh:node lotr:LocationShape ;
+    sh:path lotr:hasHome .
+
+lotr:Edoras a lotr:Location ;
+    lotr:isInRegion lotr:Rohan .
+
+lotr:LocationShape a sh:NodeShape ;
+    sh:property lotr:LocationShape-isInRegion ;
+    sh:targetClass lotr:Location .
+
+lotr:LocationShape-isInRegion a sh:PropertyShape ;
+    ns1:hasExemplar ex:LocationShape-isInRegion_group_5,
+        ex:LocationShape-isInRegion_group_7,
+        ex:LocationShape-isInRegion_group_8 ;
+    sh:minCount 1 ;
+    sh:node lotr:RegionShape ;
+    sh:path lotr:isInRegion .
+
+lotr:MinasTirith a lotr:Location ;
+    lotr:isInRegion lotr:Gondor .
+
+lotr:RegionShape a sh:NodeShape ;
+    sh:property lotr:RegionShape-isInContinent ;
+    sh:targetClass lotr:Region .
+
+lotr:RegionShape-isInContinent a sh:PropertyShape ;
+    ns1:hasExemplar ex:RegionShape-isInContinent_group_6 ;
+    sh:minCount 1 ;
+    sh:node lotr:ContinentShape ;
+    sh:path lotr:isInContinent .
+
+lotr:TheShire a lotr:Location ;
+    lotr:isInRegion lotr:Eriador .
+
+lotr:Eriador a lotr:Region ;
+    lotr:isInContinent lotr:MiddleEarth .
+
+lotr:Gondor a lotr:Region ;
+    lotr:isInContinent lotr:MiddleEarth .
+
+lotr:Rohan a lotr:Region ;
+    lotr:isInContinent lotr:MiddleEarth .
+
+lotr:Location a owl:Class ;
+    rdfs:subClassOf lotr:Thing .
+
+lotr:Region a owl:Class ;
+    rdfs:subClassOf lotr:Thing .
+
+lotr:Thing a owl:Class .
+

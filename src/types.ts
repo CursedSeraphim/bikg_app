@@ -1,4 +1,4 @@
-import { Core, NodeSingular, EventObject } from 'cytoscape';
+import { Core, EventObject, NodeSingular } from 'cytoscape';
 
 export type Position = { x: number; y: number };
 
@@ -74,6 +74,7 @@ export interface ICytoEdge {
     visible?: boolean;
     permanent?: boolean;
     namespace: string;
+    selected?: boolean;
   };
 }
 export interface ICytoData {
@@ -100,6 +101,8 @@ export type ExemplarFocusNodeDict = {
 };
 
 export type FilterType = 'none' | 'unimodal' | 'nan';
+
+export type D3BoundingBoxSetting = 'off' | 'on';
 
 export type MissingEdgeOptionType = 'remove' | 'keep';
 
@@ -177,6 +180,8 @@ export interface IExemplarMap {
 export interface ICombinedState {
   samples: ICsvData[];
   originalSamples: ICsvData[];
+  originalInstanceData: string;
+  originalViolationReport: string;
   selectedNodes: string[];
   selectedTypes: string[];
   selectedViolations: string[];
@@ -185,7 +190,10 @@ export interface ICombinedState {
   violationTypesMap: { [key: string]: string[] }; // map of violation sh:PropertyShapes to their corresponding owl:Class and the sh:NodeShapes in between
   typesViolationMap: { [key: string]: string[] }; // map of owl:Classes to their corresponding sh:PropertyShapes and the sh:NodeShapes in between
   filterType: FilterType;
+  d3BoundingBox: D3BoundingBoxSetting;
   missingEdgeOption: MissingEdgeOptionType;
+  /** Label shown for edges that are not present in the data */
+  missingEdgeLabel: string;
   edgeCountDict: EdgeCountDict;
   focusNodeExemplarDict: FocusNodeExemplarDict;
   exemplarFocusNodeDict: ExemplarFocusNodeDict;
@@ -202,8 +210,13 @@ export interface ICombinedState {
   ontologyTree: ServerTree;
   cumulativeNumberViolationsPerNode: INumberViolationsPerNodeMap;
   hiddenLabels: string[];
+  hiddenLineupColumns: string[];
   nodeLabels: string[];
   edgeLabels: string[];
+  /** Hide namespace prefixes from column labels */
+  hideNamespacePrefixColumns: boolean;
+  /** Hide namespace prefixes from cell values */
+  hideNamespacePrefixCells: boolean;
 }
 
 export interface ITriple {

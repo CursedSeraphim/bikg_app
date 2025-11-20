@@ -25,6 +25,12 @@ OWL = Namespace("http://www.w3.org/2002/07/owl#")
 RDFS = Namespace("http://www.w3.org/2000/01/rdf-schema#")
 
 # File paths
+# input files, original RDF for ontology and shacl, instance data, and violation report
+ORIGINAL_ONTOLOGY_FILE_PATH = "bikg_app/ttl/omics_model.ttl"
+ORIGINAL_INSTANCE_DATA_FILE_PATH = "bikg_app/ttl/study.ttl"
+ORIGINAL_VIOLATION_REPORT_FILE_PATH = "bikg_app/ttl/violation_report.ttl"
+
+
 VIOLATIONS_FILE_PATH = os.path.join("bikg_app/json", "violation_list.json")
 STUDY_CSV_FILE_PATH = "bikg_app/csv/study.csv"
 ONTOLOGY_TTL_FILE_PATH = "bikg_app/ttl/omics_model_union_violation_exemplar.ttl"
@@ -319,7 +325,6 @@ async def get_classes():
     # Now that 'rdf:type' contains actual lists, explode can be used
     unique_types = df.explode("rdf:type")["rdf:type"].unique().tolist()
 
-    # Assuming 'g' is your graph and has been defined elsewhere
     classes_from_ontology_graph_list = [str(g.namespace_manager.qname(c)) for c in g.subjects(predicate=RDF.type, object=OWL.Class)]  # type: ignore
 
     final_set = set(unique_types + classes_from_ontology_graph_list + ["missing"])
@@ -737,6 +742,24 @@ def get_ttl_file(response: Response):
     """
     response.headers["Content-Disposition"] = "attachment; filename=omics_model.ttl"
     return Response(content=ttl_data, media_type="text/turtle")
+
+
+@router.get("/file/original_instance_data")
+def get_original_instance_data(response: Response):
+    """Return the original instance data ttl."""
+    with open(ORIGINAL_INSTANCE_DATA_FILE_PATH, "r", encoding="utf-8") as f:
+        data = f.read()
+    response.headers["Content-Disposition"] = "attachment; filename=study.ttl"
+    return Response(content=data, media_type="text/turtle")
+
+
+@router.get("/file/original_violation_report")
+def get_original_violation_report(response: Response):
+    """Return the original violation report ttl."""
+    with open(ORIGINAL_VIOLATION_REPORT_FILE_PATH, "r", encoding="utf-8") as f:
+        data = f.read()
+    response.headers["Content-Disposition"] = "attachment; filename=violation_report.ttl"
+    return Response(content=data, media_type="text/turtle")
 
 
 def uri_to_qname(graph, uri):

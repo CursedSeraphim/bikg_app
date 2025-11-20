@@ -112,6 +112,20 @@ export async function fetchOntology() {
   return data;
 }
 
+export async function fetchOriginalInstanceData() {
+  const endpoint = `/api/bikg/file/original_instance_data`;
+  const response = await fetch(endpoint);
+  const data = await response.text();
+  return data;
+}
+
+export async function fetchOriginalViolationReport() {
+  const endpoint = `/api/bikg/file/original_violation_report`;
+  const response = await fetch(endpoint);
+  const data = await response.text();
+  return data;
+}
+
 export async function fetchEdgeCountDict() {
   const endpoint = `/api/bikg/file/edge_count_dict`;
   const response = await fetch(endpoint);

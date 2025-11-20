@@ -1,7 +1,78 @@
-<http://example.org/person/Mark_Twain>
-   <http://example.org/relation/author>
-   <http://example.org/books/Huckleberry_Finn> .
+@prefix lotr: <http://example.org/lotr#> .
 
-<http://example.org/person/JRR_Tolkien>
-   <http://example.org/relation/author>
-   <http://example.org/books/LOTR> .
+lotr:Aragorn a lotr:Character ;
+    lotr:childOf lotr:Arathorn,
+        lotr:Gilraen ;
+    lotr:hasAncestry lotr:Dunedain ;
+    lotr:hasHome lotr:MinasTirith,
+        lotr:Rivendell .
+
+lotr:BilboBaggins a lotr:Character ;
+    lotr:hasAncestry lotr:Hobbits ;
+    lotr:hasHome lotr:TheShire .
+
+lotr:Boromir a lotr:Character ;
+    lotr:hasAncestry lotr:MenOfGondor ;
+    lotr:hasHome lotr:MinasTirith .
+
+lotr:FrodoBaggins a lotr:Character ;
+    lotr:hasAncestry lotr:Hobbits ;
+    lotr:hasHome lotr:TheShire .
+
+lotr:MeriadocBrandybuck a lotr:Character ;
+    lotr:hasAncestry lotr:Hobbits ;
+    lotr:hasHome lotr:TheShire .
+
+lotr:PeregrinTook a lotr:Character ;
+    lotr:hasAncestry lotr:Hobbits ;
+    lotr:hasHome lotr:TheShire .
+
+lotr:SamwiseGamgee a lotr:Character ;
+    lotr:hasAncestry lotr:Hobbits ;
+    lotr:hasHome lotr:TheShire .
+
+lotr:Theoden a lotr:Character ;
+    lotr:childOf lotr:Morwen,
+        lotr:Thengel ;
+    lotr:hasAncestry lotr:Rohirrim ;
+    lotr:hasHome lotr:Edoras .
+
+lotr:Arathorn a lotr:Character ;
+    lotr:hasAncestry lotr:Dunedain .
+
+lotr:Edoras a lotr:Location ;
+    lotr:isInRegion lotr:Rohan .
+
+lotr:Gilraen a lotr:Character ;
+    lotr:hasAncestry lotr:Dunedain .
+
+lotr:Gondor a lotr:Region ;
+    lotr:isInContinent lotr:MiddleEarth .
+
+lotr:MenOfGondor a lotr:Ancestry .
+
+lotr:Morwen a lotr:Character ;
+    lotr:hasAncestry lotr:Rohirrim .
+
+lotr:Rivendell a lotr:Location ;
+    lotr:isInRegion lotr:Eriador .
+
+lotr:Rohan a lotr:Region ;
+    lotr:isInContinent lotr:MiddleEarth .
+
+lotr:Thengel a lotr:Character ;
+    lotr:hasAncestry lotr:Rohirrim .
+
+lotr:Eriador a lotr:Region ;
+    lotr:isInContinent lotr:MiddleEarth .
+
+lotr:MinasTirith a lotr:Location ;
+    lotr:isInRegion lotr:Gondor .
+
+lotr:Dunedain a lotr:Ancestry .
+
+lotr:Rohirrim a lotr:Ancestry .
+
+lotr:TheShire a lotr:Location ;
+    lotr:isInRegion lotr:Eriador .
+

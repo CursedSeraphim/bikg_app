@@ -18,6 +18,8 @@ __pycache__/
 *.pyc
 *.swp
 *.lock
+# don’t ignore our yarn.lock
+!yarn.lock
 # due to using tox and pytest
 .tox
 .cache
@@ -41,12 +43,12 @@ node_modules/
 /pip*/
 
 # data
-/bikg_app/csv*/
-bikg_app/csv*/
-/bikg_app/rdf*/
-bikg_app/rdf*/
-/bikg_app/ttl*/
-bikg_app/ttl*/
-/bikg_app/json*/
+# /bikg_app/csv*/
+# bikg_app/csv*/
+# /bikg_app/rdf*/
+# bikg_app/rdf*/
+# /bikg_app/ttl*/
+# bikg_app/ttl*/
+# /bikg_app/json*/
 /bikg_app/data*/
 /bikg_app/data/
