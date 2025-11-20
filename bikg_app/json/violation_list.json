@@ -1,1 +1,1 @@
-["lotr:LocationShape-isInRegion", "lotr:CharacterShape-hasHome", "lotr:RegionShape-isInContinent", "lotr:CharacterShape-hasAncestry"]
+["lotr:CharacterShape-hasHome", "lotr:CharacterShape-hasAncestry", "lotr:LocationShape-isInRegion", "lotr:RegionShape-isInContinent"]
