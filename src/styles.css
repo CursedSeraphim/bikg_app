@@ -97,8 +97,3 @@ body,
   background-color: var(--mantine-header-color);
   color: #ffffff;
 }
-
-.cytoscape_container {
-  height: 100%;
-  width: 500px;
-}

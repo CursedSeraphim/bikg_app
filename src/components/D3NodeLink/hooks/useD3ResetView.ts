@@ -13,18 +13,9 @@ export function useD3ResetView(
   const initialVisibleEdges = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (
-      initialVisibleNodes.current.size === 0 &&
-      initialVisibleEdges.current.size === 0 &&
-      cyDataNodes.length > 0 &&
-      cyDataEdges.length > 0
-    ) {
-      initialVisibleNodes.current = new Set(
-        cyDataNodes.filter((n) => n.data.visible !== false).map((n) => n.data.id),
-      );
-      initialVisibleEdges.current = new Set(
-        cyDataEdges.filter((e) => e.data.visible !== false).map((e) => e.data.id),
-      );
+    if (initialVisibleNodes.current.size === 0 && initialVisibleEdges.current.size === 0 && cyDataNodes.length > 0 && cyDataEdges.length > 0) {
+      initialVisibleNodes.current = new Set(cyDataNodes.filter((n) => n.data.visible !== false).map((n) => n.data.id));
+      initialVisibleEdges.current = new Set(cyDataEdges.filter((e) => e.data.visible !== false).map((e) => e.data.id));
     }
   }, [cyDataNodes, cyDataEdges]);
 
@@ -42,18 +33,10 @@ export function useD3ResetView(
     });
 
     // Recompute edge visibility based on the restored node set
-    const visibleNodes = new Set(
-      cyDataNodes
-        .filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id))
-        .map((n) => n.data.id),
-    );
+    const visibleNodes = new Set(cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
     cyDataEdges.forEach((edge) => {
       const hidden = hiddenEdgesRef.current.has(edge.data.id);
-      edge.data.visible =
-        !hidden &&
-        visibleNodes.has(edge.data.source) &&
-        visibleNodes.has(edge.data.target) &&
-        initialVisibleEdges.current.has(edge.data.id);
+      edge.data.visible = !hidden && visibleNodes.has(edge.data.source) && visibleNodes.has(edge.data.target) && initialVisibleEdges.current.has(edge.data.id);
     });
 
     refresh();

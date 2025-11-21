@@ -22,13 +22,12 @@ Below is a short overview of the main features and their relevant files. This sh
     - `thunks.ts` – asynchronous thunks to fetch initial data (CSV, violations, etc.).
 
 - **Views / Features**
-  - `src/components/Cytoscape` – graph view built with Cytoscape.
+  - `src/components/D3NodeLink/` – graph view built with d3.
   - `src/components/LineUp` – table visualization using lineupjs.
   - `src/components/Treeview` – ontology tree explorer.
   - `src/components/FeatureDistributionView` – bar plots of feature distributions.
   - `src/components/EmbeddingView` – scatter plot of embeddings.
   - `src/components/LangChain` – chat interface using the LangChain library.
-  - `src/useCytoCumulativeCounts.ts` – helper to update Cytoscape node labels based on Redux counts.
 
 - **Styling & Constants**
   - `src/constants.ts` – color and layout constants.
