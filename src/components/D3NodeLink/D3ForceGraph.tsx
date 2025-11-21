@@ -26,20 +26,18 @@ import {
 } from '../Store/CombinedSlice';
 import { useD3Data } from './useD3Data';
 
+import store from '../Store/Store';
 import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
 import { computeColorForId } from './D3NldUtils';
 import { getNearNodeThreshold } from './hooks/hoverRadius';
 import { useAdjacency } from './hooks/useAdjacency';
 import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3ContextMenu } from './hooks/useD3ContextMenu';
-import useD3CumulativeCounts from './hooks/useD3CumulativeCounts';
+import useD3CumulativeCounts, { updateD3NodesGivenCounts } from './hooks/useD3CumulativeCounts';
 import { useD3Force } from './hooks/useD3Force';
 import { useD3ResetView } from './hooks/useD3ResetView';
 import useExemplarHoverList from './hooks/useExemplarHoverList';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
-import { useGraphConversion } from './hooks/useGraphConversion';
-import { useCanvasAnonymizer, useLabelSanitizer } from './hooks/useLabelSanitizer';
-import { useSelectionSync } from './hooks/useSelectionSync';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering = true }: D3NLDViewProps) {
@@ -68,6 +66,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     cumulativeNumberViolationsPerType,
     onLoaded,
   });
+
+  const [d3Nodes, setD3Nodes] = useState<CanvasNode[]>([]);
+  const [d3Edges, setD3Edges] = useState<CanvasEdge[]>([]);
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { dimensions } = useCanvasDimensions(canvasRef);
   const dpi = window.devicePixelRatio ?? 1;
@@ -88,41 +90,141 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const savedPositionsRef = useRef<Record<string, { x?: number; y?: number }>>({});
   const previousVisibleNodeIdsRef = useRef<Set<string>>(new Set());
 
-  useCanvasAnonymizer();
+  // --- Helpers --------------------------------------------------------------
 
-  const { anonymizeLabel, isIdBlacklisted, isLabelBlacklisted } = useLabelSanitizer({ hiddenLabels, cyDataNodes });
+  const stripDecorations = useCallback((label: string | undefined) => {
+    if (!label) return '';
+    // remove a trailing " (…)" count suffix and a trailing "*"
+    return label.replace(/\s*\([^)]*\)\s*$/, '').replace(/\*$/, '');
+  }, []);
 
-  const { convertData, d3Edges, d3Nodes, setD3Nodes } = useGraphConversion({
-    cyDataNodes,
-    cyDataEdges,
-    loading,
-    hiddenLabels,
-    anonymizeLabel,
-    isLabelBlacklisted,
-    hiddenNodesRef,
-    originRef,
-    nodeMapRef,
-    savedPositionsRef,
-  });
+  // TEMP (figure-only): anonymize any occurrence of "boehringer" for display strings
+  const anonymizeLabel = useCallback((value: string | undefined): string => {
+    if (!value) return '';
+    return value.replace(/boehringer/gi, 'anonymized');
+  }, []);
 
-  useSelectionSync({
-    loading,
-    cyDataNodes,
-    cyDataEdges,
-    selectedFocusNodes,
-    selectedTypeIds,
-    selectedViolationIds,
-    selectedExemplarIds,
-    focusNodeMap,
-    typeMap,
-    violationMap,
-    exemplarMap,
-    violationTypesMap,
-    typesViolationMap,
-    hiddenNodesRef,
-    hiddenEdgesRef,
-    convertData,
-  });
+  // Figure-only: force anonymization at the canvas API level as a last line of defense.
+  // This guarantees that any text drawn anywhere on any canvas will be sanitized.
+  useEffect(() => {
+    const proto = CanvasRenderingContext2D.prototype as any;
+    if (proto.__biAnonymizePatched) return;
+
+    const re = /boehringer/gi;
+    const sanitize = (t: unknown) => String(t ?? '').replace(re, 'anonymized');
+
+    const origFill = proto.fillText;
+    const origStroke = proto.strokeText;
+    const origMeasure = proto.measureText;
+
+    proto.fillText = function (text: any, x: number, y: number, maxWidth?: number) {
+      const s = sanitize(text);
+      return maxWidth !== undefined ? origFill.call(this, s, x, y, maxWidth) : origFill.call(this, s, x, y);
+    };
+    proto.strokeText = function (text: any, x: number, y: number, maxWidth?: number) {
+      const s = sanitize(text);
+      return maxWidth !== undefined ? origStroke.call(this, s, x, y, maxWidth) : origStroke.call(this, s, x, y);
+    };
+    proto.measureText = function (text: any) {
+      const s = sanitize(text);
+      return origMeasure.call(this, s);
+    };
+
+    proto.__biAnonymizePatched = true;
+  }, []);
+
+  const isLabelBlacklisted = useCallback(
+    (label: string | undefined) => {
+      if (!hiddenLabels || hiddenLabels.length === 0) return false;
+      const base = stripDecorations(label);
+      return hiddenLabels.includes(base);
+    },
+    [hiddenLabels, stripDecorations],
+  );
+
+  const isIdBlacklisted = useCallback(
+    (id: string) => {
+      // prefer matching by base label; fall back to id match
+      const n = cyDataNodes.find((x) => x.data.id === id);
+      return (n ? isLabelBlacklisted(n.data.label) : false) || hiddenLabels.includes(id);
+    },
+    [cyDataNodes, hiddenLabels, isLabelBlacklisted],
+  );
+
+  // -------------------------------------------------------------------------
+
+  const convertData = useCallback(() => {
+    // filter nodes: must be visible, not in hiddenNodesRef, and not blacklisted
+    const visibleNodeData = cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label));
+    const visibleIds = new Set(visibleNodeData.map((n) => n.data.id));
+
+    // edges: visible flag + both ends in visibleIds (which already excludes blacklisted nodes)
+    const visibleEdgeData = cyDataEdges.filter((e) => e.data.visible && visibleIds.has(e.data.source) && visibleIds.has(e.data.target));
+
+    const nextNodes: CanvasNode[] = [];
+
+    visibleNodeData.forEach((n) => {
+      const { id } = n.data;
+      const display = anonymizeLabel(n.data.label ?? n.data.id); // sanitize (fallback to id)
+      let node = nodeMapRef.current[id];
+      if (!node) {
+        const saved = savedPositionsRef.current[id];
+        node = {
+          id,
+          label: display,
+          color: computeColorForId(id),
+          x: saved?.x,
+          y: saved?.y,
+          selected: Boolean(n.data.selected),
+          violation: Boolean(n.data.violation),
+          exemplar: Boolean(n.data.exemplar),
+          type: Boolean(n.data.type),
+        };
+      } else {
+        node.label = display;
+        node.color = computeColorForId(id);
+        node.selected = Boolean(n.data.selected);
+        node.violation = Boolean(n.data.violation);
+        node.exemplar = Boolean(n.data.exemplar);
+        node.type = Boolean(n.data.type);
+      }
+      if (originRef.current[id] === undefined) {
+        originRef.current[id] = null;
+      }
+      nodeMapRef.current[id] = node;
+      nextNodes.push(node);
+    });
+
+    // Save positions for nodes that became hidden
+    Object.keys(nodeMapRef.current).forEach((id) => {
+      if (!visibleIds.has(id)) {
+        const node = nodeMapRef.current[id];
+        savedPositionsRef.current[id] = { x: node.x, y: node.y };
+        delete nodeMapRef.current[id];
+      }
+    });
+
+    const newEdges: CanvasEdge[] = visibleEdgeData.map((e) => ({
+      source: e.data.source,
+      target: e.data.target,
+      label: anonymizeLabel(e.data.label ?? e.data.id), // sanitize
+      visible: true,
+      selected: Boolean(e.data.selected),
+    }));
+
+    updateD3NodesGivenCounts(nextNodes, store.getState().combined.numberViolationsPerNode);
+    setD3Nodes(nextNodes);
+    setD3Edges(newEdges);
+  }, [cyDataNodes, cyDataEdges, isLabelBlacklisted, anonymizeLabel]);
+
+  useEffect(() => {
+    if (!loading) {
+      // also sanitize the source data in place so any other consumer reads anonymized labels
+      cyDataNodes.forEach((n) => (n.data.label = anonymizeLabel(n.data.label ?? n.data.id)));
+      cyDataEdges.forEach((e) => (e.data.label = anonymizeLabel(e.data.label ?? e.data.id)));
+      convertData();
+    }
+  }, [loading, convertData, hiddenLabels, cyDataNodes, cyDataEdges, anonymizeLabel]);
 
   const { transformRef, simulationRef, zoomBehaviorRef, redraw } = useD3Force(
     canvasRef,
