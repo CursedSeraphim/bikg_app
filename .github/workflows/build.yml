@@ -21,7 +21,7 @@ permissions: write-all
 
 jobs:
   build:
-    uses: datavisyn/github-workflows/.github/workflows/build-node-python.yml@new_deployment
+    uses: datavisyn/github-workflows/.github/workflows/build-node-python.yml@main
     secrets: inherit
     with:
       cypress_enable: true
