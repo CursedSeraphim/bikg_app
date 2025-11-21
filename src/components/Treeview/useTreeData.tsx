@@ -8,11 +8,24 @@ import { RootState } from '../Store/Store';
 
 import { getTreeDataFromTuples } from './TreeviewGlue';
 import { updateTreeDataWithSelectedTypes } from './TreeViewHelpers';
+import { KnowledgeGraphNode } from './TreeViewTypes';
 
-export interface KnowledgeGraphNode {
-  id: string;
-  name: string;
-  children: KnowledgeGraphNode[];
+function transformIOntologyNode(node: IOntologyNode): KnowledgeGraphNode | null {
+  if (!node || !node.name) return null;
+
+  const [idPart] = node.name.split(' ');
+  const nodeId = idPart || node.name;
+
+  let childArray: KnowledgeGraphNode[] = [];
+  if (Array.isArray(node.children)) {
+    childArray = node.children.map(transformIOntologyNode).filter(Boolean) as KnowledgeGraphNode[];
+  }
+
+  return {
+    id: nodeId,
+    name: node.name,
+    children: childArray,
+  };
 }
 
 export default function useTreeData() {
@@ -45,22 +58,4 @@ export default function useTreeData() {
   }, [rdfString, subClassOfTriples, numberViolationsPerNode, selectedTypes]);
 
   return { treeData, loading };
-}
-
-function transformIOntologyNode(node: IOntologyNode): KnowledgeGraphNode | null {
-  if (!node || !node.name) return null;
-
-  const [idPart] = node.name.split(' ');
-  const nodeId = idPart || node.name;
-
-  let childArray: KnowledgeGraphNode[] = [];
-  if (Array.isArray(node.children)) {
-    childArray = node.children.map(transformIOntologyNode).filter(Boolean) as KnowledgeGraphNode[];
-  }
-
-  return {
-    id: nodeId,
-    name: node.name,
-    children: childArray,
-  };
 }
