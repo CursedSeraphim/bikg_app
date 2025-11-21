@@ -20,14 +20,12 @@ export function useD3ResetView(
   }, [cyDataNodes, cyDataEdges]);
 
   const resetView = useCallback(() => {
-    // Alias to avoid no-param-reassign on originRef
     const origin = originRef;
     origin.current = {};
 
     hiddenNodesRef.current.clear();
     hiddenEdgesRef.current.clear();
 
-    // Rebuild nodes with restored visibility (immutable objects)
     const nextNodes = cyDataNodes.map((node) => {
       const shouldBeVisible = initialVisibleNodes.current.has(node.data.id);
 
@@ -44,10 +42,8 @@ export function useD3ResetView(
       };
     });
 
-    // Visible node ids after reset (still respect hiddenNodesRef in case it’s reused later)
     const visibleNodeIds = new Set(nextNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
 
-    // Rebuild edges with restored visibility (immutable objects)
     const nextEdges = cyDataEdges.map((edge) => {
       const hidden = hiddenEdgesRef.current.has(edge.data.id);
       const shouldBeVisible =
@@ -66,8 +62,6 @@ export function useD3ResetView(
       };
     });
 
-    // Update the underlying arrays in place so any D3 simulation / refs
-    // that hold onto the array identity see the new contents.
     cyDataNodes.splice(0, cyDataNodes.length, ...nextNodes);
     cyDataEdges.splice(0, cyDataEdges.length, ...nextEdges);
 
