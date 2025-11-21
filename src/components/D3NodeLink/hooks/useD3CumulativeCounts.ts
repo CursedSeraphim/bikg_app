@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
 import _ from 'lodash';
-import store from '../../Store/Store';
+import { useEffect, useRef } from 'react';
 import { INumberViolationsPerNodeMap } from '../../../types';
+import store from '../../Store/Store';
 import { CanvasNode } from '../D3NldTypes';
 
 /**
@@ -19,6 +19,7 @@ export const updateD3NodesGivenCounts = (nodes: CanvasNode[], numberViolationsPe
     const { cumulativeViolations = 0, cumulativeSelected = 0, violations = 0 } = numberViolationsPerNode[node.id] ?? numberViolationsPerNode[baseId] ?? {};
     const labelSuffix = cumulativeSelected !== 0 || cumulativeViolations !== 0 ? ` (${cumulativeSelected}/${cumulativeViolations})` : '';
     const marker = cumulativeSelected !== 0 || cumulativeViolations !== 0 ? (violations === 0 ? '*' : '') : '';
+    // eslint-disable-next-line no-param-reassign
     node.label = `${baseId}${labelSuffix}${marker}`;
   });
 };
