@@ -1,73 +1,140 @@
 name: build
 
 on:
+  push:
+    branches:
+      - master
+
+  schedule:
+    - cron: '15 1 * * *'
+
   workflow_dispatch:
     inputs:
       cypress:
-        description: 'Run cypress'
+        description: 'Run Cypress end-to-end tests'
         required: false
         type: boolean
         default: false
       build_docker_image:
-        description: 'Build docker image'
+        description: 'When manually triggered, also build & push Docker image'
         required: false
         type: boolean
         default: false
-  push:
-  schedule:
-    - cron: '15 1 * * *'
 
 permissions: write-all
 
 jobs:
-  build:
-    uses: datavisyn/github-workflows/.github/workflows/build-node-python.yml@new_deployment
-    secrets: inherit
-    with:
-      cypress_enable: true
-      cypress_run_because_flag: ${{ inputs.cypress == true }}
+  build-and-docker:
+    runs-on: ubuntu-latest
 
-  build-docker:
-    # needs: [build]
-    if: inputs.build_docker_image == true
-    runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up node version
-        uses: actions/setup-node@v3
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
         with:
-          node-version: '16.16'
-      - name: Show node and npm version
+          node-version: '22.16.0'
+          cache: 'yarn'
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.10.0'
+          cache: 'pip'
+
+      - name: Show Node, npm and Python versions
         run: |
           corepack enable
           node -v
           npm -v
-        shell: bash
-      - name: Git config
-        run: |
-          git config --global url."https://github.com/".insteadOf ssh://git@github.com/
-          git config --add --global url."https://github.com/".insteadOf git@github.com:
-      - name: Install dependencies
+          python --version
+
+      - name: Install Node dependencies
         run: yarn install --no-immutable --inline-builds
-        shell: bash
-      - name: Webpack build
-        run: yarn run webpack:prod
-        shell: bash
-      - name: Log in to the Container registry
-        uses: docker/login-action@v2
+
+      - name: Show installed Node dependencies
+        run: yarn info --name-only
+
+      - name: Install Python dependencies (if requirements.txt exists)
+        if: hashFiles('requirements.txt') != ''
+        run: pip install -r requirements.txt
+
+      # Same kind of "code checks" as before: build & bundle
+      - name: Build frontend (npm run dist)
+        run: npm run dist
+
+      - name: Webpack production build
+        run: npm run bundle:prod || npm run webpack:prod
+
+      # --- Docker only when we actually want to push an image ---
+      # - on push to master
+      # - on nightly schedule
+      # - on manual run with build_docker_image = true
+
+      - name: Set up Docker Buildx
+        if: github.event_name == 'push' || github.event_name == 'schedule' || inputs.build_docker_image == true
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push' || github.event_name == 'schedule' || inputs.build_docker_image == true
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Extract metadata (tags, labels) for Docker
+
+      - name: Extract Docker metadata
+        if: github.event_name == 'push' || github.event_name == 'schedule' || inputs.build_docker_image == true
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: ghcr.io/CursedSeraphim/bikg_app
+
       - name: Build and push Docker image
-        uses: docker/build-push-action@v3
+        if: github.event_name == 'push' || github.event_name == 'schedule' || inputs.build_docker_image == true
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  cypress:
+    needs: build-and-docker
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && inputs.cypress == true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22.16.0'
+          cache: 'yarn'
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.10.0'
+          cache: 'pip'
+
+      - name: Install Node dependencies
+        run: yarn install --no-immutable --inline-builds
+
+      - name: Install Python dependencies (if requirements.txt exists)
+        if: hashFiles('requirements.txt') != ''
+        run: pip install -r requirements.txt
+
+      - name: Run Cypress end-to-end tests
+        uses: cypress-io/github-action@v6
+        with:
+          install: false
+          browser: chrome
+          start: |
+            python bikg_app &
+            npm start
+          # adjust if your dev server runs on a different port
+          wait-on: 'http://localhost:8080'
