@@ -31,6 +31,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Git config for GitHub dependencies
+        run: |
+          TOKEN="${{ github.event.repository.private == true && secrets.DATAVISYN_BOT_REPO_TOKEN || secrets.GITHUB_TOKEN }}"
+          if [ -n "$TOKEN" ]; then
+            git config --global url."https://$TOKEN@github.com/".insteadOf ssh://git@github.com/
+            git config --global url."https://$TOKEN@github.com/".insteadOf git@github.com:
+            git config --global url."https://$TOKEN@github.com/".insteadOf https://github.com/
+          fi
+
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
@@ -40,7 +49,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'   # was 3.10.0
+          python-version: '3.10'
           cache: 'pip'
 
       - name: Show Node, npm and Python versions
@@ -60,7 +69,7 @@ jobs:
         if: hashFiles('requirements.txt') != ''
         run: pip install -r requirements.txt
 
-      # "Code checks" via the same builds as before
+      # "Code checks" via the builds you already use
       - name: Build frontend (npm run dist)
         run: npm run dist
 
@@ -109,6 +118,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Git config for GitHub dependencies
+        run: |
+          TOKEN="${{ github.event.repository.private == true && secrets.DATAVISYN_BOT_REPO_TOKEN || secrets.GITHUB_TOKEN }}"
+          if [ -n "$TOKEN" ]; then
+            git config --global url."https://$TOKEN@github.com/".insteadOf ssh://git@github.com/
+            git config --global url."https://$TOKEN@github.com/".insteadOf git@github.com:
+            git config --global url."https://$TOKEN@github.com/".insteadOf https://github.com/
+          fi
+
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
@@ -118,7 +136,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'   # was 3.10.0
+          python-version: '3.10'
           cache: 'pip'
 
       - name: Install Node dependencies
