@@ -20,24 +20,56 @@ export function useD3ResetView(
   }, [cyDataNodes, cyDataEdges]);
 
   const resetView = useCallback(() => {
+    // Alias to avoid no-param-reassign on originRef
+    const origin = originRef;
+    origin.current = {};
+
     hiddenNodesRef.current.clear();
     hiddenEdgesRef.current.clear();
-    originRef.current = {};
 
-    cyDataNodes.forEach((node) => {
-      node.data.visible = initialVisibleNodes.current.has(node.data.id);
+    // Rebuild nodes with restored visibility (immutable objects)
+    const nextNodes = cyDataNodes.map((node) => {
+      const shouldBeVisible = initialVisibleNodes.current.has(node.data.id);
+
+      if (node.data.visible === shouldBeVisible) {
+        return node;
+      }
+
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          visible: shouldBeVisible,
+        },
+      };
     });
 
-    cyDataEdges.forEach((edge) => {
-      edge.data.visible = initialVisibleEdges.current.has(edge.data.id);
-    });
+    // Visible node ids after reset (still respect hiddenNodesRef in case it’s reused later)
+    const visibleNodeIds = new Set(nextNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
 
-    // Recompute edge visibility based on the restored node set
-    const visibleNodes = new Set(cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id)).map((n) => n.data.id));
-    cyDataEdges.forEach((edge) => {
+    // Rebuild edges with restored visibility (immutable objects)
+    const nextEdges = cyDataEdges.map((edge) => {
       const hidden = hiddenEdgesRef.current.has(edge.data.id);
-      edge.data.visible = !hidden && visibleNodes.has(edge.data.source) && visibleNodes.has(edge.data.target) && initialVisibleEdges.current.has(edge.data.id);
+      const shouldBeVisible =
+        !hidden && visibleNodeIds.has(edge.data.source) && visibleNodeIds.has(edge.data.target) && initialVisibleEdges.current.has(edge.data.id);
+
+      if (edge.data.visible === shouldBeVisible) {
+        return edge;
+      }
+
+      return {
+        ...edge,
+        data: {
+          ...edge.data,
+          visible: shouldBeVisible,
+        },
+      };
     });
+
+    // Update the underlying arrays in place so any D3 simulation / refs
+    // that hold onto the array identity see the new contents.
+    cyDataNodes.splice(0, cyDataNodes.length, ...nextNodes);
+    cyDataEdges.splice(0, cyDataEdges.length, ...nextEdges);
 
     refresh();
   }, [cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef, originRef, refresh]);
