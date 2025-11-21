@@ -27,7 +27,6 @@ import {
 import { useD3Data } from './useD3Data';
 
 import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
-import { computeColorForId } from './D3NldUtils';
 import { getNearNodeThreshold } from './hooks/hoverRadius';
 import { useAdjacency } from './hooks/useAdjacency';
 import { useCanvasDimensions } from './hooks/useCanvasDimensions';
@@ -39,6 +38,7 @@ import useExemplarHoverList from './hooks/useExemplarHoverList';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 import { useGraphConversion } from './hooks/useGraphConversion';
 import { useCanvasAnonymizer, useLabelSanitizer } from './hooks/useLabelSanitizer';
+import { usePreviewInteractions } from './hooks/usePreviewInteractions';
 import { useSelectionSync } from './hooks/useSelectionSync';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
@@ -72,8 +72,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const { dimensions } = useCanvasDimensions(canvasRef);
   const dpi = window.devicePixelRatio ?? 1;
 
-  const [ghostNodes, setGhostNodes] = useState<CanvasNode[]>([]);
-  const [ghostEdges, setGhostEdges] = useState<CanvasEdge[]>([]);
+  const [ghostNodesState, setGhostNodes] = useState<CanvasNode[]>([]);
+  const [ghostEdgesState, setGhostEdges] = useState<CanvasEdge[]>([]);
   const activePreviewRef = useRef<{ mode: 'children' | 'parents' | 'associated' | null; nodeId: string | null }>({
     mode: null,
     nodeId: null,
@@ -92,7 +92,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
   const { anonymizeLabel, isIdBlacklisted, isLabelBlacklisted } = useLabelSanitizer({ hiddenLabels, cyDataNodes });
 
-  const { convertData, d3Edges, d3Nodes, setD3Nodes } = useGraphConversion({
+  const { convertData, d3Edges, d3Nodes, setD3Nodes, setD3Edges } = useGraphConversion({
     cyDataNodes,
     cyDataEdges,
     loading,
@@ -124,10 +124,150 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     convertData,
   });
 
+  const recomputeEdgeVisibility = useCallback(() => {
+    const visible = new Set(
+      cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label)).map((n) => n.data.id),
+    );
+
+    cyDataEdges.forEach((edge) => {
+      const hidden = hiddenEdgesRef.current.has(edge.data.id);
+      edge.data.visible = !hidden && visible.has(edge.data.source) && visible.has(edge.data.target);
+    });
+  }, [cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef, isLabelBlacklisted]);
+
+  const computeAssociations = useCallback(
+    (nodeId: string) => {
+      const assoc = new Set<string>();
+
+      if (focusNodeMap[nodeId]) {
+        focusNodeMap[nodeId].types.forEach((t: string) => assoc.add(t));
+        focusNodeMap[nodeId].violations.forEach((v: string) => assoc.add(v));
+        focusNodeMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
+      }
+
+      if (typeMap[nodeId]) {
+        typeMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
+        typeMap[nodeId].violations.forEach((v: string) => assoc.add(v));
+        typeMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
+        const extra = typesViolationMap[nodeId] || [];
+        extra.forEach((n: string) => assoc.add(n));
+      }
+
+      if (violationMap[nodeId]) {
+        violationMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
+        violationMap[nodeId].types.forEach((t: string) => assoc.add(t));
+        violationMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
+      }
+
+      if (exemplarMap[nodeId]) {
+        exemplarMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
+        exemplarMap[nodeId].types.forEach((t: string) => assoc.add(t));
+        exemplarMap[nodeId].violations.forEach((v: string) => assoc.add(v));
+      }
+
+      if (violationTypesMap[nodeId]) {
+        violationTypesMap[nodeId].forEach((n: string) => assoc.add(n));
+      }
+
+      const allIds = new Set<string>([nodeId, ...Array.from(assoc)]);
+
+      const visibleSet = new Set(
+        cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label)).map((n) => n.data.id),
+      );
+
+      const nodeIds: string[] = [];
+      allIds.forEach((nid) => {
+        if (isIdBlacklisted(nid)) return;
+        const nodeData = cyDataNodes.find((n) => n.data.id === nid);
+        if (nodeData && !visibleSet.has(nid)) {
+          nodeIds.push(nid);
+        }
+      });
+
+      const edges: { id: string; source: string; target: string; label?: string }[] = [];
+      const added = new Set<string>();
+
+      cyDataEdges.forEach((edge) => {
+        const { source, target } = edge.data;
+        if (isIdBlacklisted(source) || isIdBlacklisted(target)) return;
+
+        const sourceIn = allIds.has(source);
+        const targetIn = allIds.has(target);
+        const sourceVisible = visibleSet.has(source);
+        const targetVisible = visibleSet.has(target);
+
+        if (
+          (sourceIn && targetIn) ||
+          (sourceIn && targetVisible) ||
+          (targetIn && sourceVisible) ||
+          (hiddenEdgesRef.current.has(edge.data.id) && (sourceIn || targetIn))
+        ) {
+          const sourceExists = cyDataNodes.some((n) => n.data.id === source);
+          const targetExists = cyDataNodes.some((n) => n.data.id === target);
+          if (sourceExists && targetExists) {
+            const key = `${source}->${target}`;
+            if (!added.has(key)) {
+              added.add(key);
+              edges.push({ id: edge.data.id, source, target, label: edge.data.label });
+            }
+          }
+        }
+      });
+
+      return { nodeIds, allIds: Array.from(allIds), edges };
+    },
+    [focusNodeMap, typeMap, violationMap, exemplarMap, violationTypesMap, typesViolationMap, cyDataNodes, cyDataEdges, isLabelBlacklisted, isIdBlacklisted],
+  );
+
+  const showAssociated = useCallback(
+    (nodeId: string) => {
+      const { allIds, edges } = computeAssociations(nodeId);
+
+      cyDataNodes.forEach((node) => {
+        if (allIds.includes(node.data.id) && !isIdBlacklisted(node.data.id)) {
+          if (!node.data.visible && originRef.current[node.data.id] === undefined) {
+            originRef.current[node.data.id] = nodeId;
+          }
+          node.data.visible = true;
+          hiddenNodesRef.current.delete(node.data.id);
+        }
+      });
+
+      edges.forEach((edge) => {
+        if (!isIdBlacklisted(edge.source) && !isIdBlacklisted(edge.target)) {
+          hiddenEdgesRef.current.delete(edge.id);
+        }
+      });
+
+      recomputeEdgeVisibility();
+      convertData();
+    },
+    [computeAssociations, cyDataNodes, recomputeEdgeVisibility, convertData, isIdBlacklisted],
+  );
+
+  const hideAssociated = useCallback(
+    (nodeId: string) => {
+      const { allIds, edges } = computeAssociations(nodeId);
+      allIds.forEach((nid) => {
+        if (nid !== nodeId && originRef.current[nid] === nodeId) {
+          hiddenNodesRef.current.add(nid);
+        }
+      });
+
+      edges.forEach((edge) => {
+        hiddenEdgesRef.current.add(edge.id);
+      });
+
+      recomputeEdgeVisibility();
+      convertData();
+    },
+    [computeAssociations, recomputeEdgeVisibility, convertData],
+  );
+
   const { transformRef, simulationRef, zoomBehaviorRef, redraw } = useD3Force(
     canvasRef,
-    [...d3Nodes, ...ghostNodes],
-    [...d3Edges, ...ghostEdges],
+    [...d3Nodes, ...ghostNodesState],
+    [...d3Edges, ...ghostEdgesState],
     d3BoundingBox,
     dimensions,
     false,
@@ -136,7 +276,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
   useEffect(() => {
     redraw();
-  }, [redraw, d3Nodes, d3Edges, ghostNodes, ghostEdges]);
+  }, [redraw, d3Nodes, d3Edges, ghostNodesState, ghostEdgesState]);
 
   useD3CumulativeCounts(d3Nodes, setD3Nodes, redraw);
 
@@ -231,6 +371,49 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       releaseAfter: 1000,
     });
   }, [d3Nodes, loading, runIncrementalLayout]);
+
+  const {
+    updateHoverPreview,
+    clearPreview,
+    toggleChildren,
+    toggleParents,
+    toggleAssociated,
+    ghostNodes,
+    ghostEdges,
+    activePreviewRef,
+  } = usePreviewInteractions({
+    d3Nodes,
+    ghostNodes: ghostNodesState,
+    setGhostNodes,
+    ghostEdges: ghostEdgesState,
+    setGhostEdges,
+    cyDataNodes,
+    cyDataEdges,
+    adjacencyRef,
+    revAdjRef,
+    hiddenNodesRef,
+    hiddenEdgesRef,
+    nodeMapRef,
+    originRef,
+    savedPositionsRef,
+    computeExpansion,
+    computeAssociations,
+    showChildren,
+    hideChildren,
+    showParents,
+    hideParents,
+    showAssociated,
+    hideAssociated,
+    anonymizeLabel,
+    isIdBlacklisted,
+    isLabelBlacklisted,
+    runIncrementalLayout,
+    simulationRef,
+    canvasRef,
+    transformRef,
+    setD3Edges,
+    activePreviewRef,
+  });
 
   useEffect(() => {
     if (loading || cyDataNodes.length === 0) {
@@ -425,306 +608,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     convertData,
   );
 
-  // Freeze nodes for a short period…
-  const freezeNode = useCallback(
-    (id: string, otherDuration = 500, triggerDuration = 1000, alphaTarget = 0.1) => {
-      const sim = simulationRef.current;
-      if (!sim) return;
-
-      const allNodes = Object.values(nodeMapRef.current);
-      allNodes.forEach((node) => {
-        if (otherDuration > 0 || node.id === id) {
-          (node as any).fx = node.x;
-          (node as any).fy = node.y;
-        }
-      });
-
-      sim.alphaTarget(alphaTarget).restart();
-
-      if (otherDuration > 0) {
-        setTimeout(() => {
-          allNodes.forEach((node) => {
-            if (node.id !== id) {
-              (node as any).fx = null;
-              (node as any).fy = null;
-            }
-          });
-        }, otherDuration);
-      }
-
-      setTimeout(() => {
-        const triggerNode = nodeMapRef.current[id];
-        if (triggerNode) {
-          (triggerNode as any).fx = null;
-          (triggerNode as any).fy = null;
-        }
-        sim.alphaTarget(0);
-      }, triggerDuration);
-    },
-    [simulationRef],
-  );
-
-  const clearPreview = useCallback(() => {
-    if (activePreviewRef.current.nodeId === null) {
-      return;
-    }
-    setGhostNodes([]);
-    setGhostEdges([]);
-    setD3Edges((edges) =>
-      edges.map((e) => ({
-        ...e,
-        source: typeof e.source === 'object' ? (e.source as any).id : e.source,
-        target: typeof e.target === 'object' ? (e.target as any).id : e.target,
-      })),
-    );
-    Object.values(nodeMapRef.current).forEach((n) => {
-      (n as any).fx = null;
-      (n as any).fy = null;
-      (n as any).vx = 0;
-      (n as any).vy = 0;
-    });
-    const sim = simulationRef.current;
-    if (sim) {
-      sim.alpha(0);
-      sim.alphaTarget(0);
-    }
-    activePreviewRef.current = { mode: null, nodeId: null };
-  }, [simulationRef]);
-
-  const toggleChildren = useCallback(
-    (id: string) => {
-      if (activePreviewRef.current.mode === 'children' && activePreviewRef.current.nodeId === id) {
-        ghostNodes.forEach((gn) => {
-          savedPositionsRef.current[gn.id] = { x: gn.x, y: gn.y };
-        });
-      }
-      const childIds = (adjacencyRef.current[id] || []).filter((cid) => !isIdBlacklisted(cid));
-      const allVisible =
-        childIds.length > 0 &&
-        childIds.every((childId) => {
-          const node = cyDataNodes.find((n) => n.data.id === childId);
-          if (!node || !node.data.visible || hiddenNodesRef.current.has(childId)) {
-            return false;
-          }
-
-          return cyDataEdges.some(
-            (e) =>
-              !hiddenEdgesRef.current.has(e.data.id) &&
-              ((e.data.source === id && e.data.target === childId) || (e.data.source === childId && e.data.target === id)),
-          );
-        });
-
-      if (allVisible) {
-        hideChildren(id);
-      } else {
-        showChildren(id);
-        freezeNode(id, 500, 1000, 0.3);
-      }
-    },
-    [freezeNode, showChildren, hideChildren, cyDataNodes, cyDataEdges, adjacencyRef, ghostNodes, isIdBlacklisted],
-  );
-
-  const toggleParents = useCallback(
-    (id: string) => {
-      if (activePreviewRef.current.mode === 'parents' && activePreviewRef.current.nodeId === id) {
-        ghostNodes.forEach((gn) => {
-          savedPositionsRef.current[gn.id] = { x: gn.x, y: gn.y };
-        });
-      }
-      const parentIds = (revAdjRef.current[id] || []).filter((pid) => !isIdBlacklisted(pid));
-      const allVisible =
-        parentIds.length > 0 &&
-        parentIds.every((parentId) => {
-          const node = cyDataNodes.find((n) => n.data.id === parentId);
-          if (!node || !node.data.visible || hiddenNodesRef.current.has(parentId)) {
-            return false;
-          }
-
-          return cyDataEdges.some(
-            (e) =>
-              !hiddenEdgesRef.current.has(e.data.id) &&
-              ((e.data.source === parentId && e.data.target === id) || (e.data.source === id && e.data.target === parentId)),
-          );
-        });
-
-      if (allVisible) {
-        hideParents(id);
-      } else {
-        showParents(id);
-        freezeNode(id, 500, 1000, 0.3);
-      }
-    },
-    [freezeNode, showParents, hideParents, cyDataNodes, cyDataEdges, revAdjRef, ghostNodes, isIdBlacklisted],
-  );
-
-  const recomputeEdgeVisibility = useCallback(() => {
-    const visible = new Set(
-      cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label)).map((n) => n.data.id),
-    );
-
-    cyDataEdges.forEach((edge) => {
-      const hidden = hiddenEdgesRef.current.has(edge.data.id);
-      edge.data.visible = !hidden && visible.has(edge.data.source) && visible.has(edge.data.target);
-    });
-  }, [cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef, isLabelBlacklisted]);
-
-  const computeAssociations = useCallback(
-    (nodeId: string) => {
-      const assoc = new Set<string>();
-
-      if (focusNodeMap[nodeId]) {
-        focusNodeMap[nodeId].types.forEach((t: string) => assoc.add(t));
-        focusNodeMap[nodeId].violations.forEach((v: string) => assoc.add(v));
-        focusNodeMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
-      }
-
-      if (typeMap[nodeId]) {
-        typeMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
-        typeMap[nodeId].violations.forEach((v: string) => assoc.add(v));
-        typeMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
-        const extra = typesViolationMap[nodeId] || [];
-        extra.forEach((n: string) => assoc.add(n));
-      }
-
-      if (violationMap[nodeId]) {
-        violationMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
-        violationMap[nodeId].types.forEach((t: string) => assoc.add(t));
-        violationMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
-      }
-
-      if (exemplarMap[nodeId]) {
-        exemplarMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
-        exemplarMap[nodeId].types.forEach((t: string) => assoc.add(t));
-        exemplarMap[nodeId].violations.forEach((v: string) => assoc.add(v));
-      }
-
-      if (violationTypesMap[nodeId]) {
-        violationTypesMap[nodeId].forEach((n: string) => assoc.add(n));
-      }
-
-      const allIds = new Set<string>([nodeId, ...Array.from(assoc)]);
-
-      // Only treat as visible if not blacklisted as well
-      const visibleSet = new Set(
-        cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label)).map((n) => n.data.id),
-      );
-
-      const nodeIds: string[] = [];
-      allIds.forEach((nid) => {
-        if (isIdBlacklisted(nid)) return;
-        const nodeData = cyDataNodes.find((n) => n.data.id === nid);
-        if (nodeData && !visibleSet.has(nid)) {
-          nodeIds.push(nid);
-        }
-      });
-
-      const edges: { id: string; source: string; target: string; label?: string }[] = [];
-      const added = new Set<string>();
-
-      cyDataEdges.forEach((edge) => {
-        const { source, target } = edge.data;
-        if (isIdBlacklisted(source) || isIdBlacklisted(target)) return;
-
-        const sourceIn = allIds.has(source);
-        const targetIn = allIds.has(target);
-        const sourceVisible = visibleSet.has(source);
-        const targetVisible = visibleSet.has(target);
-
-        if (
-          (sourceIn && targetIn) ||
-          (sourceIn && targetVisible) ||
-          (targetIn && sourceVisible) ||
-          (hiddenEdgesRef.current.has(edge.data.id) && (sourceIn || targetIn))
-        ) {
-          const sourceExists = cyDataNodes.some((n) => n.data.id === source);
-          const targetExists = cyDataNodes.some((n) => n.data.id === target);
-          if (sourceExists && targetExists) {
-            const key = `${source}->${target}`;
-            if (!added.has(key)) {
-              added.add(key);
-              edges.push({ id: edge.data.id, source, target, label: edge.data.label });
-            }
-          }
-        }
-      });
-
-      return { nodeIds, allIds: Array.from(allIds), edges };
-    },
-    [focusNodeMap, typeMap, violationMap, exemplarMap, violationTypesMap, typesViolationMap, cyDataNodes, cyDataEdges, isLabelBlacklisted, isIdBlacklisted],
-  );
-
-  const showAssociated = useCallback(
-    (nodeId: string) => {
-      const { allIds, edges } = computeAssociations(nodeId);
-
-      cyDataNodes.forEach((node) => {
-        if (allIds.includes(node.data.id) && !isIdBlacklisted(node.data.id)) {
-          if (!node.data.visible && originRef.current[node.data.id] === undefined) {
-            originRef.current[node.data.id] = nodeId;
-          }
-          node.data.visible = true;
-          hiddenNodesRef.current.delete(node.data.id);
-        }
-      });
-
-      edges.forEach((edge) => {
-        if (!isIdBlacklisted(edge.source) && !isIdBlacklisted(edge.target)) {
-          hiddenEdgesRef.current.delete(edge.id);
-        }
-      });
-
-      recomputeEdgeVisibility();
-      convertData();
-    },
-    [computeAssociations, cyDataNodes, recomputeEdgeVisibility, convertData, isIdBlacklisted],
-  );
-
-  const hideAssociated = useCallback(
-    (nodeId: string) => {
-      const { allIds, edges } = computeAssociations(nodeId);
-      allIds.forEach((nid) => {
-        if (nid !== nodeId && originRef.current[nid] === nodeId) {
-          hiddenNodesRef.current.add(nid);
-        }
-      });
-
-      edges.forEach((edge) => {
-        hiddenEdgesRef.current.add(edge.id);
-      });
-
-      recomputeEdgeVisibility();
-      convertData();
-    },
-    [computeAssociations, recomputeEdgeVisibility, convertData],
-  );
-
-  const toggleAssociated = useCallback(
-    (id: string) => {
-      if (activePreviewRef.current.mode === 'associated' && activePreviewRef.current.nodeId === id) {
-        ghostNodes.forEach((gn) => {
-          savedPositionsRef.current[gn.id] = { x: gn.x, y: gn.y };
-        });
-      }
-      const { allIds, edges } = computeAssociations(id);
-      const nodesVisible = allIds.every((nid) => {
-        if (isIdBlacklisted(nid)) return false;
-        const node = cyDataNodes.find((n) => n.data.id === nid);
-        return node && node.data.visible && !hiddenNodesRef.current.has(nid);
-      });
-
-      const edgesVisible = edges.every((e) => !hiddenEdgesRef.current.has(e.id));
-
-      const allVisible = nodesVisible && edgesVisible;
-
-      if (allVisible) {
-        hideAssociated(id);
-      } else {
-        showAssociated(id);
-        freezeNode(id, 500, 1000, 0.3);
-      }
-    },
-    [computeAssociations, showAssociated, hideAssociated, freezeNode, cyDataNodes, ghostNodes, isIdBlacklisted],
-  );
 
   const rightDraggingRef = useRef(false);
   const rightMouseDownRef = useRef<{ x: number; y: number } | null>(null);
@@ -809,141 +692,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     [d3Nodes, ghostNodes, transformRef, simulationRef, toggleChildren, toggleParents, clearPreview, toggleAssociated, handleSelectConnected],
   );
 
-  const updateHoverPreview = useCallback(
-    (event: MouseEvent) => {
-      if (!event.ctrlKey && !event.shiftKey) {
-        clearPreview();
-        return;
-      }
-      const [pxRaw, pyRaw] = d3.pointer(event, canvasRef.current);
-      const transform = transformRef.current;
-      const [px, py] = transform.invert([pxRaw, pyRaw]);
-
-      const NEAR_NODE_DIST_SQ = getNearNodeThreshold(transform);
-
-      let closest: CanvasNode | null = null;
-      let minDist = Infinity;
-
-      d3Nodes.forEach((node) => {
-        const dx = (node.x ?? 0) - px;
-        const dy = (node.y ?? 0) - py;
-        const dist2 = dx * dx + dy * dy;
-        if (dist2 < minDist) {
-          minDist = dist2;
-          closest = node;
-        }
-      });
-
-      if (!closest || minDist >= NEAR_NODE_DIST_SQ) {
-        clearPreview();
-        return;
-      }
-
-      const mode: 'children' | 'parents' | 'associated' = event.ctrlKey && event.shiftKey ? 'associated' : event.ctrlKey ? 'children' : 'parents';
-      if (activePreviewRef.current.mode === mode && activePreviewRef.current.nodeId === closest.id) {
-        return;
-      }
-      const { nodeIds, edges: expansionEdges } = mode === 'associated' ? computeAssociations(closest.id) : computeExpansion(closest.id, mode);
-
-      // apply blacklist to preview targets
-      const filteredNodeIds = nodeIds.filter((nid) => !isIdBlacklisted(nid));
-      const filteredExpansionEdges = expansionEdges.filter((e) => !isIdBlacklisted(e.source) && !isIdBlacklisted(e.target));
-
-      const hasHiddenEdges = filteredExpansionEdges.some((e) => hiddenEdgesRef.current.has(e.id));
-      const allVisible = filteredNodeIds.length === 0 && !hasHiddenEdges;
-
-      const newGhostNodes: CanvasNode[] = [];
-      const newGhostEdges: CanvasEdge[] = [];
-      const addedEdgeKeys = new Set<string>();
-
-      if (allVisible) {
-        const visibleIds =
-          mode === 'children'
-            ? (adjacencyRef.current[closest.id] || []).filter((nid) => !isIdBlacklisted(nid))
-            : (revAdjRef.current[closest.id] || []).filter((nid) => !isIdBlacklisted(nid));
-
-        visibleIds.forEach((nid) => {
-          const edgeData = cyDataEdges.find(
-            (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
-          );
-          if (edgeData && !isIdBlacklisted(edgeData.data.source) && !isIdBlacklisted(edgeData.data.target)) {
-            const key = `${edgeData.data.source}->${edgeData.data.target}`;
-            if (!addedEdgeKeys.has(key)) {
-              addedEdgeKeys.add(key);
-              newGhostEdges.push({
-                source: edgeData.data.source,
-                target: edgeData.data.target,
-                label: anonymizeLabel(edgeData.data.label ?? edgeData.data.id),
-                visible: true,
-                // marks that this preview indicates removal rather than addition
-                previewRemoval: true as any,
-              } as any);
-            }
-          }
-        });
-      } else {
-        filteredNodeIds.forEach((nid) => {
-          const nodeData = cyDataNodes.find((n) => n.data.id === nid);
-          if (!nodeData) return;
-          newGhostNodes.push({
-            id: nid,
-            label: anonymizeLabel(nodeData.data.label ?? nodeData.data.id),
-            color: computeColorForId(nid),
-            x: closest?.x,
-            y: closest?.y,
-            ghost: true as any,
-          } as any);
-        });
-        filteredExpansionEdges.forEach((edge) => {
-          const key = `${edge.source}->${edge.target}`;
-          if (!addedEdgeKeys.has(key)) {
-            addedEdgeKeys.add(key);
-            newGhostEdges.push({
-              source: edge.source,
-              target: edge.target,
-              label: anonymizeLabel(edge.label ?? edge.id),
-              visible: true,
-              ghost: true as any,
-            } as any);
-          }
-        });
-      }
-
-      const hasRemovalEdges = newGhostEdges.some((e: any) => e.previewRemoval);
-      const hasAdditionEdges = newGhostEdges.some((e: any) => !e.previewRemoval);
-
-      if (newGhostNodes.length > 0 || hasRemovalEdges || hasAdditionEdges) {
-        activePreviewRef.current = { mode, nodeId: closest.id };
-        setGhostNodes(newGhostNodes);
-        setGhostEdges(newGhostEdges);
-
-        // Preview: pin all existing nodes and run a short simulation
-        runIncrementalLayout({
-          pinAllExisting: true,
-          alphaTarget: 0.3,
-          releaseAfter: null, // unpinned explicitly in clearPreview
-        });
-      } else {
-        clearPreview();
-      }
-    },
-    [
-      d3Nodes,
-      transformRef,
-      adjacencyRef,
-      revAdjRef,
-      cyDataNodes,
-      cyDataEdges,
-      hiddenEdgesRef,
-      clearPreview,
-      computeExpansion,
-      computeAssociations,
-      isIdBlacklisted,
-      anonymizeLabel,
-      runIncrementalLayout,
-    ],
-  );
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -989,26 +737,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       canvas.removeEventListener('dblclick', handleDoubleClick);
     };
   }, [handleDrag, handleDoubleClick, zoomBehaviorRef, updateHoverPreview, clearPreview]);
-
-  useEffect(() => {
-    if (ghostNodes.length === 0 && ghostEdges.some((e: any) => e.previewRemoval)) {
-      const sim = simulationRef.current;
-      if (sim) {
-        sim.alpha(0.001);
-        sim.alphaTarget(0).restart();
-      }
-    }
-  }, [ghostNodes.length, ghostEdges, simulationRef]);
-
-  useEffect(() => {
-    if (ghostNodes.length === 0 && ghostEdges.length === 0) {
-      const sim = simulationRef.current;
-      if (sim) {
-        sim.alphaTarget(0);
-        sim.alpha(0);
-      }
-    }
-  }, [ghostNodes.length, ghostEdges.length, simulationRef]);
 
   useEffect(() => {
     window.addEventListener('keyup', clearPreview);

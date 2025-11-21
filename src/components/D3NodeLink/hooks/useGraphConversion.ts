@@ -102,5 +102,5 @@ export function useGraphConversion({
     }
   }, [loading, convertData, hiddenLabels, cyDataNodes, cyDataEdges, anonymizeLabel]);
 
-  return { convertData, d3Edges, d3Nodes, setD3Nodes };
+  return { convertData, d3Edges, d3Nodes, setD3Nodes, setD3Edges };
 }
