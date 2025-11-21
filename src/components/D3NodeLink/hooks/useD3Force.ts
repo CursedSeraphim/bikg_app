@@ -18,7 +18,7 @@ import { useLabelTransform } from './useLabelTransform';
  * @param dimensions  The { width, height } of the canvas (CSS pixels).
  * @param initialCentering When true or a number, applies a temporary centering
  *                         force on initialization. The force is removed once
- *                         after the given timeout (defaults to ~1000 ms).
+ *                         after the given timeout (defaults to ~1000 ms).
  *
  * Returns refs that can be shared with the parent component:
  * - simulationRef: reference to the D3 forceSimulation instance.
@@ -256,7 +256,9 @@ export function useD3Force(
     sim.on('tick', () => {
       if (boundingBox === 'on') {
         nodes.forEach((node) => {
+          // eslint-disable-next-line no-param-reassign
           node.x = Math.max(nodeRadius, Math.min(width - nodeRadius, node.x ?? 0));
+          // eslint-disable-next-line no-param-reassign
           node.y = Math.max(nodeRadius, Math.min(height - nodeRadius, node.y ?? 0));
         });
       }
@@ -267,9 +269,6 @@ export function useD3Force(
       sim.alpha(0.5).restart();
     }
 
-    return () => {
-      // Do not stop the simulation between updates to keep smooth transitions.
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges, dimensions.width, dimensions.height, boundingBox]);
 
@@ -294,12 +293,14 @@ export function useD3Force(
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
-      return;
+      return undefined;
     }
     const selection = d3.select(canvas);
 
     const zoomBehavior = d3
       .zoom<HTMLCanvasElement, unknown>()
+      // d3 events really are typed as any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter((event: any) => {
         // allow wheel for zoom, or left-click (button 0) for pan, but skip if Ctrl or Alt is held
         return event.type === 'wheel' || (event.type === 'mousedown' && event.button === 0 && !event.ctrlKey && !event.altKey);
@@ -312,7 +313,7 @@ export function useD3Force(
       });
 
     zoomBehaviorRef.current = zoomBehavior;
-    selection.call(zoomBehavior as any);
+    selection.call(zoomBehavior);
     selection.on('dblclick.zoom', null); // disable default double‐click zoom
 
     return () => {
