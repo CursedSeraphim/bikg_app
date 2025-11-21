@@ -26,7 +26,7 @@ export function useD3ContextMenu(
     targetNode: null,
   });
 
-  const hideMenu = () => setState((s) => ({ ...s, visible: false }));
+  const hideMenu = useCallback(() => setState((s) => ({ ...s, visible: false })), []);
 
   const handleContextMenu = useCallback(
     (event: MouseEvent) => {
@@ -91,9 +91,7 @@ export function useD3ContextMenu(
     }
   }, [state]);
 
-  const canSelect = Boolean(
-    state.targetNode && (state.targetNode.violation || state.targetNode.exemplar || state.targetNode.type),
-  );
+  const canSelect = Boolean(state.targetNode && (state.targetNode.violation || state.targetNode.exemplar || state.targetNode.type));
 
   const menu = state.visible ? (
     <div
