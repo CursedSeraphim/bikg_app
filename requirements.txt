@@ -1,4 +1,4 @@
-visyn_core@git+https://github.com/datavisyn/visyn_core.git@develop#egg=visyn_core
+visyn_core==8.0.1.dev0
 rdflib==6.2.0
 pandas==1.5.3
 scipy==1.10.1
