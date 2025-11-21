@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { ICytoEdge, ICytoNode } from '../../../types';
+import { IGraphEdge, IGraphNode } from '../../../types';
 
 export function useD3ResetView(
-  cyDataNodes: ICytoNode[],
-  cyDataEdges: ICytoEdge[],
+  cyDataNodes: IGraphNode[],
+  cyDataEdges: IGraphEdge[],
   hiddenNodesRef: React.MutableRefObject<Set<string>>,
   hiddenEdgesRef: React.MutableRefObject<Set<string>>,
   originRef: React.MutableRefObject<Record<string, string | null>>,

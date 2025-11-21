@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ICytoEdge, ICytoNode } from '../../../types';
+import { IGraphEdge, IGraphNode } from '../../../types';
 
 export const visibilityId = {
   node: (id: string) => id,
@@ -12,8 +12,8 @@ export interface Visibility {
 }
 
 export interface UseVisibilityProps {
-  nodes: ICytoNode[];
-  edges: ICytoEdge[];
+  nodes: IGraphNode[];
+  edges: IGraphEdge[];
   loading: boolean;
 }
 

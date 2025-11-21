@@ -15,7 +15,7 @@ export interface CanvasNode {
   ghost?: boolean;
   /** When true the node participates in the current coordinated selection */
   selected?: boolean;
-  /** Convenience flags to mirror Cytoscape node metadata */
+  /** Convenience flags for node metadata */
   violation?: boolean;
   exemplar?: boolean;
   type?: boolean;

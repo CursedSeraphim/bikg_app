@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react';
 
-interface CytoscapeEdge {
+interface GraphEdge {
   data: { source: string; target: string };
 }
 
 /**
  * Build adjacency and reverse adjacency maps from a list of edges.
  */
-export function useAdjacency(edges: CytoscapeEdge[]) {
+export function useAdjacency(edges: GraphEdge[]) {
   const adjacencyRef = useRef<Record<string, string[]>>({});
   const revAdjRef = useRef<Record<string, string[]>>({});
 

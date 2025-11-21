@@ -3,10 +3,10 @@ import { INumberViolationsPerNodeMap } from '../../types';
 import { selectCytoData } from '../Store/CombinedSlice';
 
 /**
- * The props we need in order to compute the old "Cytoscape" data,
+ * The props we need in order to compute graph data,
  * which we now feed into our D3 usage.
  */
-interface CytoscapeDataProps {
+interface GraphscapeDataProps {
   rdfOntology: string;
   violations: string[];
   types: string[];
@@ -15,11 +15,10 @@ interface CytoscapeDataProps {
 }
 
 /**
- * A custom hook that retrieves the same node/edge data that the Cytoscape version
- * used, but we feed it into our D3-based MVP. We filter out hidden nodes/edges in
- * the main component, so we just pass everything here.
+ * A custom hook that retrieves node/edge data. We filter out hidden nodes/edges in
+ * the main component, so we pass everything here.
  */
-export function useD3Data({ rdfOntology, violations, types, cumulativeNumberViolationsPerType, onLoaded }: CytoscapeDataProps) {
+export function useD3Data({ rdfOntology, violations, types, cumulativeNumberViolationsPerType, onLoaded }: GraphscapeDataProps) {
   const [loading, setLoading] = useState(true);
   const [cyDataNodes, setCyDataNodes] = useState<any[]>([]);
   const [cyDataEdges, setCyDataEdges] = useState<any[]>([]);
@@ -44,7 +43,7 @@ export function useD3Data({ rdfOntology, violations, types, cumulativeNumberViol
           }
         }
       } catch (error) {
-        console.error('Failed to load data for D3/Cytoscape:', error);
+        console.error('Failed to load data for D3 Graph:', error);
         setLoading(false);
       }
     })();

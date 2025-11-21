@@ -1,5 +1,3 @@
-import { Core, EventObject, NodeSingular } from 'cytoscape';
-
 export type Position = { x: number; y: number };
 
 export interface IOntologyNode {
@@ -43,7 +41,7 @@ export interface ICsvData {
   [key: string]: CsvCell;
 }
 
-export interface ICytoNode {
+export interface IGraphNode {
   data: {
     id: string;
     label?: string;
@@ -65,7 +63,7 @@ export interface ICytoNode {
   grabbable?: boolean;
   locked?: boolean;
 }
-export interface ICytoEdge {
+export interface IGraphEdge {
   data: {
     id: string;
     source: string;
@@ -77,9 +75,9 @@ export interface ICytoEdge {
     selected?: boolean;
   };
 }
-export interface ICytoData {
-  nodes: ICytoNode[];
-  edges: ICytoEdge[];
+export interface IGraphData {
+  nodes: IGraphNode[];
+  edges: IGraphEdge[];
 }
 
 export interface IRdfState {
@@ -224,37 +222,54 @@ export interface ITriple {
   p: string;
   o: string;
 }
-// Type for ActionFunction
-export type ActionFunction = (target: NodeSingular | EventObject) => void;
+export interface ITriple {
+  s: string;
+  p: string;
+  o: string;
+}
 
-// Type for ActionWithArgs
+export type GraphElement = {
+  id?: string;
+  [key: string]: unknown;
+};
+
+export type GraphEvent = {
+  target?: GraphElement;
+  [key: string]: unknown;
+};
+
+// Type for ActionFunction – operates on a graph element or an event.
+export type ActionFunction = (target: GraphElement | GraphEvent) => void;
+
 export type ActionWithArgs = {
   action: ActionFunction;
   args: unknown[];
   coreAsWell: boolean;
 };
 
-// Type for ActionFunctionMap
 export type ActionFunctionMap = Record<string, ActionFunction>;
 
-// Type for MenuItem
 export type MenuItem = {
   id: string;
   content: string;
   selector: string;
   coreAsWell: boolean;
-  onClickFunction: (event: EventObject) => void;
+  onClickFunction: (event: GraphEvent) => void;
 };
 
-// Type for ContextMenuOptions
 export type ContextMenuOptions = {
   menuItems: MenuItem[];
 };
 
-// Type for ContextMenuActions
 export type ContextMenuActions = Record<string, ActionFunction | ActionWithArgs>;
 
-export type SetCyFn = React.Dispatch<React.SetStateAction<Core | null>>;
+/**
+ * Setter for whatever graph / node-link instance the view uses (D3, WebGL, …).
+ */
+export type SetGraphInstanceFn = React.Dispatch<React.SetStateAction<unknown>>;
+
+/** @deprecated Use SetGraphInstanceFn instead. Kept temporarily for compatibility. */
+export type SetCyFn = SetGraphInstanceFn;
 
 export type SetLoadingFn = React.Dispatch<React.SetStateAction<boolean>>;
 

@@ -59,7 +59,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const selectedTypeIds = useSelector(selectSelectedTypes);
   const selectedExemplarIds = useSelector(selectSelectedViolationExemplars);
 
-  // Fetch Cytoscape‐like data used by the D3 view
   const { loading, cyDataNodes, cyDataEdges } = useD3Data({
     rdfOntology,
     violations,
