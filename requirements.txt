@@ -1,4 +1,4 @@
-visyn_core==8.0.1.dev0
+visyn_core==8.0.1
 rdflib==6.2.0
 pandas==1.5.3
 scipy==1.10.1
