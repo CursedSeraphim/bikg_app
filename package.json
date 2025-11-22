@@ -42,7 +42,6 @@
     "lint:fix": "visyn_scripts lint --fix",
     "lint": "visyn_scripts lint",
     "prepack": "yarn run build",
-    "predist": "yarn run lint && yarn run test && yarn run build",
     "start": "visyn_scripts start --env workspace_mode=single",
     "test": "visyn_scripts test",
     "webpack:dev": "visyn_scripts build --mode development --env workspace_mode=single",
