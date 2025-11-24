@@ -1,6 +1,6 @@
 // Legend.tsx
 import React from 'react';
-import { SELECTED_EXEMPLAR_NODE_COLOR, SELECTED_TYPE_NODE_COLOR, SELECTED_VIOLATION_NODE_COLOR } from '../../constants';
+import { SELECTED_EXEMPLAR_NODE_COLOR, SELECTED_TYPE_NODE_COLOR, SELECTED_VIOLATION_NODE_COLOR } from '../../constants/constants';
 import './Legend.css';
 
 const SHAPES = {

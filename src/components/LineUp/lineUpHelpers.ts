@@ -1,6 +1,6 @@
 // LineUpHelpers.tsx
 
-import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
+import { CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants/constants';
 import { CsvCell, ICsvData } from '../../types';
 
 /**

@@ -6,9 +6,9 @@ import 'regenerator-runtime/runtime';
 import { VisynApp, VisynAppProvider, VisynHeader } from 'visyn_core/app';
 import { App } from './App';
 import { AppNameElement } from './components/AppName';
-import { BILogo } from './components/BILogo';
+import { PartnerLogosRow } from './components/branding';
 import store from './components/Store/Store';
-import { MANTINE_HEADER_COLOR } from './constants';
+import { MANTINE_HEADER_COLOR } from './constants/constants';
 
 ReactDOM.render(
   // <React.StrictMode> TODO doesn't work with treebeard due to depreacted finddomnode
@@ -37,7 +37,7 @@ ReactDOM.render(
                     <AppNameElement />
                   </Title>
                 ),
-                logo: <BILogo color="white" />,
+                logo: <PartnerLogosRow theme="dark" />,
               }}
             />
           }

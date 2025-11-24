@@ -7,7 +7,7 @@ import {
     UNSELECTED_CUMULATIVE_NODE_COLOR,
     UNSELECTED_EXEMPLAR_NODE_COLOR,
     UNSELECTED_TYPE_NODE_COLOR,
-} from '../../constants';
+} from '../../constants/constants';
 
 interface CustomHeaderProps {
   onSelect: () => void;
