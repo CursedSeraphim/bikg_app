@@ -1080,20 +1080,19 @@ export const selectSubClassesAndViolations = async (state: { combined: ICombined
   const namedNode = new NamedNode(`${prefixes.omics}Donor`);
 
   // Start querying the store
-  const initialQuads = store.getQuads(null, null, propertyShapeNode);
+  const initialQuads = store.getQuads(null, null, propertyShapeNode, null);
   const initialSubjects = [...new Set(initialQuads.map((quad) => quad.subject))];
 
   // Get quads where subject is from initialSubjects and object is namedNode
-  const intermediateQuads = initialSubjects.flatMap((subject) => store.getQuads(subject, classNode, namedNode));
+  const intermediateQuads = initialSubjects.flatMap((subject) => store.getQuads(subject, classNode, namedNode, null));
   const intermediateSubjects = [...new Set(intermediateQuads.map((quad) => quad.subject))];
 
   // Get all quads where subject is from intermediateSubjects
-  const finalQuads = intermediateSubjects.flatMap((subject) => store.getQuads(subject, null, null));
-
+  const finalQuads = intermediateSubjects.flatMap((subject) => store.getQuads(subject, null, null, null));
   // Process and combine results
   const results = [];
   predicates.forEach((predicate) => {
-    const tuples = store.getQuads(null, predicate, null).map((quad) => mapQuadToShortenedResult(quad, prefixes));
+    const tuples = store.getQuads(null, predicate, null, null).map((quad) => mapQuadToShortenedResult(quad, prefixes));
     results.push(...tuples);
   });
 
@@ -1124,7 +1123,7 @@ export const selectSubClassOfTuples = async (state: { rdf: IRdfState }): Promise
     });
   });
   const subClassOfPredicate = new NamedNode(`${prefixes.rdfs}subClassOf`);
-  const subClassOfTuples = store.getQuads(null, subClassOfPredicate, null);
+  const subClassOfTuples = store.getQuads(null, subClassOfPredicate, null, null);
   // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
   // In selectSubClassOfTuples and selectSubClassOrObjectPropertyTuples functions
   return subClassOfTuples.map((quad) => {
@@ -1158,12 +1157,12 @@ export const selectAllClassesAndViolations = async (state: { combined: ICombined
   const subClassOfPredicate = new NamedNode(`${prefixes.rdfs}subClassOf`);
   const shaclPropertyPredicate = new NamedNode(`${prefixes.sh}property`);
 
-  const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null);
-  const targetClassTuples = store.getQuads(null, `${prefixes.sh}targetClass`, null);
+  const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null, null);
+  const targetClassTuples = store.getQuads(null, `${prefixes.sh}targetClass`, null, null);
 
   for (const tuple of targetClassTuples) {
-    const childrenPropertyPredicate = store.getQuads(tuple.subject, shaclPropertyPredicate, null);
-    const children = store.getQuads(tuple.subject, null, null);
+    const childrenPropertyPredicate = store.getQuads(tuple.subject, shaclPropertyPredicate, null, null);
+    const children = store.getQuads(tuple.subject, null, null, null);
     //  if one of the objects is `${prefixes.omics}TranscriptOmicsSamplee` then add all children to `allVisibleTuples
     for (const childTuple of children) {
       if (childTuple.object === new NamedNode(`${prefixes.omics}Sample`)) {
@@ -1176,7 +1175,7 @@ export const selectAllClassesAndViolations = async (state: { combined: ICombined
   // append shaclPropertyTuples to allVisibleTuples
   // allVisibleTuples.push(...targetClassTuples);
 
-  const allHiddenTuples = store.getQuads(null, null, null).filter((quad) => !allVisibleTuples.includes(quad));
+  const allHiddenTuples = store.getQuads(null, null, null, null).filter((quad) => !allVisibleTuples.includes(quad));
 
   // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
   const visibleTriples = allVisibleTuples.map((quad) => {
@@ -1216,8 +1215,8 @@ export const selectAllTriples = async (rdfString: string): Promise<{ visibleTrip
 
   const subClassOfPredicate = new NamedNode(`${prefixes.rdfs}subClassOf`);
   // TODO should not be hardcoded ofc
-  const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null).filter((quad) => quad.object.id !== `${prefixes.omics}ReferenceData`);
-  const allHiddenTuples = store.getQuads(null, null, null).filter((quad) => !allVisibleTuples.includes(quad));
+  const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null, null).filter((quad) => quad.object.id !== `${prefixes.omics}ReferenceData`);
+  const allHiddenTuples = store.getQuads(null, null, null, null).filter((quad) => !allVisibleTuples.includes(quad));
 
   // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
   const visibleTriples = allVisibleTuples.map((quad) => {
@@ -1257,7 +1256,9 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: IRdfSta
 
   const subClassOfPredicate = new NamedNode('http://www.w3.org/2000/01/rdf-schema#subClassOf');
   const objectPropertyPredicate = new NamedNode('http://www.w3.org/2002/07/owl#ObjectProperty');
-  const subClassOrObjectPropertyTuples = store.getQuads(null, subClassOfPredicate, null).concat(store.getQuads(null, null, objectPropertyPredicate));
+  const subClassOrObjectPropertyTuples = store
+    .getQuads(null, subClassOfPredicate, null, null)
+    .concat(store.getQuads(null, null, objectPropertyPredicate, null));
   return subClassOrObjectPropertyTuples.map((quad) => {
     return {
       s: quad.subject.id,
