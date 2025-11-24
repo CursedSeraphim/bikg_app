@@ -15,11 +15,6 @@ on:
         required: false
         type: boolean
         default: false
-      build_docker_image:
-        description: 'Build & push Docker image (manual trigger only)'
-        required: false
-        type: boolean
-        default: false
 
 permissions: write-all
 
@@ -57,7 +52,6 @@ jobs:
         run: yarn install --no-immutable --inline-builds
 
       - name: Install Python dev dependencies (editable)
-        # This matches what the datavisyn workflow was doing: `pip install -e .[develop]`
         if: hashFiles('setup.cfg', 'pyproject.toml') != ''
         run: pip install -e .[develop]
 
@@ -68,12 +62,11 @@ jobs:
         run: npm run bundle:prod || npm run webpack:prod
 
   # =========================
-  # 2) Docker image build & push (manual only)
+  # 2) Docker image build & push (always if build succeeds)
   # =========================
   build-docker:
     needs: build
     runs-on: ubuntu-22.04
-    if: github.event_name == 'workflow_dispatch' && inputs.build_docker_image == true
 
     steps:
       - name: Checkout repository
