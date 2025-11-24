@@ -194,6 +194,3 @@ export const processTriples = (triples, visible, nodes, edges, objectProperties,
     });
   });
 };
-
-// …this file is also the right home for calculateObjectProperties, extractNamespace,
-// findOrAddNode, processTriples, and the function that currently builds cytoscape data.
