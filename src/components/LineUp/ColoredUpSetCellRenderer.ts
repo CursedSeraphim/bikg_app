@@ -1,8 +1,17 @@
-import type { Column, IDataRow, IOrderedGroup, ISetColumn } from 'lineupjs';
-import { isCategoricalColumn, isSetColumn } from 'lineupjs';
-import { CANVAS_HEIGHT, cssClass, UPSET } from 'lineupjs/build/src/styles';
-import type { ICellRendererFactory, IRenderContext, ISummaryRenderer, IGroupCellRenderer, ICellRenderer } from 'lineupjs/build/src/renderer/interfaces';
-import { renderMissingCanvas, renderMissingDOM } from 'lineupjs/build/src/renderer/missing';
+import type {
+  Column,
+  ICellRenderer,
+  ICellRendererFactory,
+  IDataRow,
+  IGroupCellRenderer,
+  IOrderedGroup,
+  IRenderContext,
+  ISetColumn,
+  ISummaryRenderer,
+} from 'lineupjs';
+import { isCategoricalColumn, isSetColumn, renderMissingCanvas, renderMissingDOM } from 'lineupjs';
+import { getLineUpCssClass, UPSET_STYLE } from './lineupCss';
+import { getLineUpCanvasHeight } from './lineUpRendering';
 
 export default class ColoredUpSetCellRenderer implements ICellRendererFactory {
   readonly title = 'UpSet';
@@ -23,21 +32,21 @@ export default class ColoredUpSetCellRenderer implements ICellRendererFactory {
     const { categories } = col;
     let templateRows = '';
     for (const cat of categories) {
-      templateRows += `<div class="${cssClass('upset-dot')}" title="${sanitize(cat.label)}"></div>`;
+      templateRows += `<div class="${getLineUpCssClass('upset-dot')}" title="${sanitize(cat.label)}"></div>`;
     }
     return {
-      template: `<div><div class="${cssClass('upset-line')}"></div>${templateRows}</div>`,
+      template: `<div><div class="${getLineUpCssClass('upset-line')}"></div>${templateRows}</div>`,
       render: (n: HTMLElement, value: boolean[]) => {
         const cats = col.categories;
-        const isOverview = Boolean(n.closest(`.${cssClass('low')}`));
+        const isOverview = Boolean(n.closest(`.${getLineUpCssClass('low')}`));
         Array.from(n.children)
           .slice(1)
           .forEach((d, i) => {
             const v = value[i];
-            d.classList.toggle(cssClass('enabled'), v);
+            d.classList.toggle(getLineUpCssClass('enabled'), v);
             if (isOverview) {
-              (d as HTMLElement).style.backgroundColor = cats[i]?.color ?? UPSET.color;
-              (d as HTMLElement).style.opacity = v ? '1' : String(UPSET.inactive);
+              (d as HTMLElement).style.backgroundColor = cats[i]?.color ?? UPSET_STYLE.color;
+              (d as HTMLElement).style.opacity = v ? '1' : String(UPSET_STYLE.inactiveOpacity);
             } else {
               (d as HTMLElement).style.backgroundColor = '';
               (d as HTMLElement).style.opacity = '';
@@ -61,7 +70,7 @@ export default class ColoredUpSetCellRenderer implements ICellRendererFactory {
         line.style.display = '';
         line.style.left = `${Math.round((100 * (left + 0.5)) / value.length)}%`;
         line.style.width = `${Math.round((100 * (right - left)) / value.length)}%`;
-        line.style.backgroundColor = isOverview ? UPSET.color : '';
+        line.style.backgroundColor = isOverview ? UPSET_STYLE.color : '';
       },
     };
   }
@@ -85,24 +94,24 @@ export default class ColoredUpSetCellRenderer implements ICellRendererFactory {
         }
         const data = col.getValues(d);
         const hasTrueValues = data.some((v) => v);
-        const isOverview = Boolean(ctx.canvas.closest(`.${cssClass('low')}`));
+        const isOverview = Boolean(ctx.canvas.closest(`.${getLineUpCssClass('low')}`));
 
         ctx.save();
-        ctx.strokeStyle = UPSET.color;
+        ctx.strokeStyle = UPSET_STYLE.color;
         if (hasTrueValues) {
           const { left, right } = ColoredUpSetCellRenderer.calculateSetPath(data, cellDimension);
           ctx.beginPath();
-          ctx.moveTo(left, CANVAS_HEIGHT / 2);
-          ctx.lineTo(right, CANVAS_HEIGHT / 2);
+          ctx.moveTo(left, getLineUpCanvasHeight(ctx) / 2);
+          ctx.lineTo(right, getLineUpCanvasHeight(ctx) / 2);
           ctx.stroke();
         }
 
         const cats = col.categories;
         data.forEach((val, j) => {
           const posX = j * cellDimension;
-          ctx.fillStyle = isOverview ? cats[j]?.color ?? UPSET.color : UPSET.color;
-          ctx.globalAlpha = val ? 1 : UPSET.inactive;
-          ctx.fillRect(posX, 0, cellDimension, CANVAS_HEIGHT);
+          ctx.fillStyle = isOverview ? (cats[j]?.color ?? UPSET_STYLE.color) : UPSET_STYLE.color;
+          ctx.globalAlpha = val ? 1 : UPSET_STYLE.inactiveOpacity;
+          ctx.fillRect(posX, 0, cellDimension, getLineUpCanvasHeight(ctx));
         });
 
         ctx.restore();
