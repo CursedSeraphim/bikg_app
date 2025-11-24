@@ -1,4 +1,3 @@
-// LineUpView.tsx
 import * as LineUpJS from 'lineupjs';
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -18,58 +17,14 @@ import {
   setSelectedFocusNodes,
 } from '../Store/CombinedSlice';
 import ColoredUpSetCellRenderer from './ColoredUpSetCellRenderer';
-import { filterAllNanColumns, filterAllUniModalColumns } from './LineUpHelpers';
+import { anonymizeLabel, applyAnonymizationToCells, applyPrefixToCells, FocusRow, getOriginalFocusNodeId, removePrefix } from './focusNodeLabels';
+import { filterAllNanColumns, filterAllUniModalColumns } from './lineUpHelpers';
 
-const columnTypes = {};
+const columnTypes: { [key: string]: string } = {};
 
-/**
- * Temporary anonymization for figure creation:
- * Replace any substring "boehringer" (case-insensitive) with "anonymized"
- * in all visible labels, headers, and cell values.
- */
-const ANON_RE = /boehringer/gi;
-function anonymizeString(text: string): string {
-  return text.replace(ANON_RE, 'anonymized');
-}
-const anonymizeLabel = (s: string) => anonymizeString(s);
-
-type DataType = { [key: string]: number | string | boolean | null | Array<string> };
-
-/**
- * Internal key used to store the original focus node id on each row.
- * This is kept non-enumerable so it does not appear as a visible column.
- */
-const ORIGINAL_FOCUS_NODE_KEY = '__focus_node_original';
-
-type FocusRow = ICsvData & {
-  [ORIGINAL_FOCUS_NODE_KEY]?: string;
+type DataType = {
+  [key: string]: number | string | boolean | null | string[];
 };
-
-/**
- * Returns the original focus node id for a row.
- * Falls back to the current focus_node if no original id was stored.
- */
-function getOriginalFocusNodeId(row: FocusRow): string {
-  const original = (row as any)[ORIGINAL_FOCUS_NODE_KEY];
-  return typeof original === 'string' ? original : row.focus_node;
-}
-
-function setOriginalFocusNodeId(row: FocusRow, id: string): void {
-  Object.defineProperty(row, ORIGINAL_FOCUS_NODE_KEY, {
-    value: id,
-    enumerable: false,
-    configurable: true,
-    writable: false,
-  });
-}
-
-function getRenderedFocusNodeLabel(row: FocusRow): string {
-  return row.focus_node;
-}
-
-function setRenderedFocusNodeLabel(row: FocusRow, label: string): void {
-  row.focus_node = label;
-}
 
 export default function LineUpView() {
   const dispatch = useDispatch();
@@ -84,14 +39,14 @@ export default function LineUpView() {
   const initialColumnsRef = useRef<any[] | null>(null);
 
   // Local state to hold csvData used for rendering in LineUp
-  const [csvData, setCsvData] = useState(reduxCsvData);
+  const [csvData, setCsvData] = useState<ICsvData[]>(reduxCsvData);
 
   /**
    * Set up a listener for selection changes in the lineup instance.
    * Uses the original focus node id for coordination with the store.
    */
-  const setupListener = (lineupInstanceRef): void => {
-    lineupInstanceRef.current.on('selectionChanged', (selection) => {
+  const setupListener = (lineupInstanceRef: React.MutableRefObject<LineUpJS.Taggle | null>): void => {
+    lineupInstanceRef.current?.on('selectionChanged', (selection: number[]) => {
       const selectedNodes = selection.map((index) => {
         const row = csvData[index] as FocusRow;
         return getOriginalFocusNodeId(row);
@@ -100,13 +55,7 @@ export default function LineUpView() {
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  function createLineUpAsTaggle(lineupInstanceRef, lineupRef, data) {
-    // eslint-disable-next-line no-param-reassign
-    lineupInstanceRef.current = LineUpJS.asTaggle(lineupRef.current, data);
-  }
-
-  function inferType(data, column) {
+  function inferType(data: DataType[], column: string) {
     const columnValues = data.map((row) => row[column]);
     const uniqueValues = [...new Set(columnValues)];
 
@@ -126,7 +75,16 @@ export default function LineUpView() {
     const allNumbers = columnValues.every((value) => value === missingEdgeLabel || !Number.isNaN(Number(value)));
     if (allNumbers && uniqueValues.length > 2) return 'number';
 
-    const allDates = columnValues.every((value) => value === missingEdgeLabel || !Number.isNaN(new Date(value).getTime()));
+    const allDates = columnValues.every((value) => {
+      if (value === missingEdgeLabel || value == null) {
+        return true;
+      }
+      if (typeof value === 'string' || typeof value === 'number') {
+        const d = new Date(value);
+        return !Number.isNaN(d.getTime());
+      }
+      return false;
+    });
     if (allDates) return 'date';
 
     if (uniqueValues.length <= 10) return 'categorical';
@@ -145,25 +103,12 @@ export default function LineUpView() {
     return metrics.width;
   }
 
-  function calculatePixelWidthFromLabel(column) {
+  function calculatePixelWidthFromLabel(column: string) {
     const padding = 50;
     return getTextWidthFromCanvas(column, '16px Roboto') + padding;
   }
 
-  function removePrefix(text: string) {
-    if (text.includes('://')) {
-      return text;
-    }
-
-    const colonIndex = text.indexOf(':');
-    if (colonIndex !== -1) {
-      return text.slice(colonIndex + 1).trim();
-    }
-
-    return text;
-  }
-
-  function safelyParseStringifiedArray(value: string): Array<string> | null {
+  function safelyParseStringifiedArray(value: string): string[] | null {
     try {
       if (value.startsWith('[') && value.endsWith(']')) {
         const elements = value.substring(1, value.length - 1).split(',');
@@ -180,15 +125,18 @@ export default function LineUpView() {
   function buildBooleanColumnWithSettings(column: string, _data: DataType[], width: number): LineUpJS.ColumnBuilder {
     return buildBooleanColumn(column).trueMarker('1').falseMarker('0').width(width);
   }
+
   function buildNumberColumnWithSettings(column: string, _data: DataType[], width: number): LineUpJS.ColumnBuilder {
     return buildNumberColumn(column).width(width);
   }
+
   function buildDateColumnWithSettings(column: string, _data: DataType[], width: number): LineUpJS.ColumnBuilder {
     return buildDateColumn(column).width(width);
   }
 
   function buildCategoricalColumnWithSettings(column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }): LineUpJS.ColumnBuilder {
-    const uniqueCategories = data.reduce<Set<string>>((acc, row) => acc.add(String(row[column])), new Set());
+    const uniqueCategories = data.reduce<Set<string>>((acc, row) => acc.add(String(row[column])), new Set<string>());
+
     const categories = Array.from(uniqueCategories).map((cat) => {
       const entry: { name: string; color?: string } = { name: cat };
       if (cat === missingEdgeLabel || cat === CSV_EDGE_NOT_IN_ONTOLOGY_STRING) {
@@ -219,7 +167,7 @@ export default function LineUpView() {
   function buildSetColumnWithSettings(column: string, data: DataType[], width: number, colorMap?: { [key: string]: string }): LineUpJS.ColumnBuilder {
     const uniqueCategories = new Set<string>();
     data.forEach((row) => {
-      const values = (row as any)[column];
+      const values = row[column];
       if (typeof values === 'string') {
         const parsedValues = safelyParseStringifiedArray(values);
         if (parsedValues) {
@@ -303,13 +251,21 @@ export default function LineUpView() {
     return builder;
   }
 
-  function createLineUpWithBuilder(lineupInstanceRef, lineupRef, data) {
-    const builder = buildColumns(data);
+  function createLineUpWithBuilder(
+    lineupInstanceRef: React.MutableRefObject<LineUpJS.Taggle | null>,
+    lineupRef: React.RefObject<HTMLDivElement>,
+    data: ICsvData[],
+  ) {
+    const builder = buildColumns(data as unknown as DataType[]);
     // eslint-disable-next-line no-param-reassign
     lineupInstanceRef.current = builder.buildTaggle(lineupRef.current);
   }
 
-  function createLineUpWithListener(lineupInstanceRef, lineupRef, data) {
+  function createLineUpWithListener(
+    lineupInstanceRef: React.MutableRefObject<LineUpJS.Taggle | null>,
+    lineupRef: React.RefObject<HTMLDivElement>,
+    data: ICsvData[],
+  ) {
     if (lineupInstanceRef.current) {
       lineupInstanceRef.current.destroy();
     }
@@ -356,33 +312,48 @@ export default function LineUpView() {
     return filteredCsvData;
   }
 
-  function createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, focusNodes, allData) {
+  function createLineUpFromColumnAndFocusNodeFiltering(
+    lineupInstanceRef: React.MutableRefObject<LineUpJS.Taggle | null>,
+    focusNodes: string[],
+    allData: ICsvData[],
+  ) {
     const focusNodesSet = new Set(focusNodes);
     const csvDataFromFocusNodeSet = allData.filter((row) => focusNodesSet.has(getOriginalFocusNodeId(row as FocusRow)));
 
     const filteredCsvData = filterColumns(csvDataFromFocusNodeSet, allData);
     const remainingCols = Object.keys(filteredCsvData[0]);
 
-    const initialColumns = initialColumnsRef.current!;
-    const ranking = lineupInstanceRef.current.data.getFirstRanking();
+    const ranking = lineupInstanceRef.current!.data.getFirstRanking();
+    const rankingColumns = ranking.children; // public accessor
 
-    for (let i = 3; i < initialColumns.length; i++) {
-      ranking.columns[i].hide();
+    // Hide all columns starting from index 3
+    for (let i = 3; i < rankingColumns.length; i += 1) {
+      rankingColumns[i].hide();
     }
 
-    for (let i = 3; i < initialColumns.length; i++) {
-      if (remainingCols.includes(initialColumns[i].desc.column)) {
-        ranking.columns[i].show();
+    // Show only those columns whose original column name is still present
+    for (let i = 3; i < rankingColumns.length; i += 1) {
+      const columnDesc = rankingColumns[i].desc as { column?: string };
+      if (columnDesc.column && remainingCols.includes(columnDesc.column)) {
+        rankingColumns[i].show();
       }
     }
 
-    const csvDataIndexMap = new Map(allData.map((row, index) => [getOriginalFocusNodeId(row as FocusRow), index]));
+    const csvDataIndexMap = new Map<string, number>(allData.map((row, index) => [getOriginalFocusNodeId(row as FocusRow), index]));
     const filteredCsvDataIndices = csvDataFromFocusNodeSet.map((row) => csvDataIndexMap.get(getOriginalFocusNodeId(row as FocusRow)));
     const filteredCsvDataIndicesSet = new Set(filteredCsvDataIndices);
-    lineupInstanceRef.current.data.setFilter((row) => filteredCsvDataIndicesSet.has(row.i));
+
+    // Narrow the data provider to something that has setFilter
+    interface FilterableDataProvider {
+      setFilter(predicate: (row: { i: number }) => boolean): void;
+    }
+
+    const dataProvider = lineupInstanceRef.current!.data as unknown as FilterableDataProvider;
+
+    dataProvider.setFilter((row) => filteredCsvDataIndicesSet.has(row.i));
   }
 
-  function preprocessColumnTypes(data) {
+  function preprocessColumnTypes(data: DataType[]) {
     const firstRow = data[0];
     const columns = Object.keys(firstRow);
     columns.forEach((column) => {
@@ -405,83 +376,6 @@ export default function LineUpView() {
     });
   }
 
-  function applyPrefixToCells(data: ICsvData[], hide: boolean): ICsvData[] {
-    return data.map((row) => {
-      const originalId = getOriginalFocusNodeId(row as FocusRow);
-
-      // Never mutate the original row; clone shallowly
-      const transformed = { ...row };
-
-      // Restore reattached hidden property
-      Object.defineProperty(transformed, ORIGINAL_FOCUS_NODE_KEY, {
-        value: originalId,
-        enumerable: false,
-        configurable: true,
-      });
-
-      // Update rendered label only
-      const rendered = hide ? removePrefix(getRenderedFocusNodeLabel(row as FocusRow)) : getRenderedFocusNodeLabel(row as FocusRow);
-
-      transformed.focus_node = rendered;
-
-      // Apply to all other string values
-      Object.keys(transformed).forEach((k) => {
-        if (k === 'focus_node') return;
-        const val = transformed[k];
-        if (typeof val === 'string') {
-          transformed[k] = hide ? removePrefix(val) : val;
-        }
-      });
-
-      return transformed;
-    });
-  }
-
-  /**
-   * Apply anonymization to all fields.
-   * Keeps the original focus_node id in a dedicated hidden property and
-   * uses an anonymized label for rendering.
-   */
-  function applyAnonymizationToCells(data: ICsvData[]): ICsvData[] {
-    return data.map((row) => {
-      // Important: DO NOT spread row first — that removes the hidden original property
-      const transformedRow = Object.create(row) as FocusRow;
-
-      const realId = row.focus_node; // always the original
-
-      // Ensure the original id is stored exactly once
-      setOriginalFocusNodeId(transformedRow, realId);
-
-      // Replace only the rendering label
-      setRenderedFocusNodeLabel(transformedRow, anonymizeLabel(realId));
-
-      // Copy all **enumerable** fields into a new object for mutation
-      const visibleCopy: any = { ...row };
-      Object.keys(visibleCopy).forEach((k) => {
-        if (k !== 'focus_node') {
-          const v = visibleCopy[k];
-          if (typeof v === 'string') {
-            visibleCopy[k] = anonymizeString(v);
-          } else if (Array.isArray(v)) {
-            visibleCopy[k] = v.map((x) => (typeof x === 'string' ? anonymizeString(x) : x));
-          }
-        }
-      });
-
-      // Reattach hidden original focus node id
-      Object.defineProperty(visibleCopy, ORIGINAL_FOCUS_NODE_KEY, {
-        value: realId,
-        enumerable: false,
-        configurable: true,
-      });
-
-      // Ensure rendered label is correct
-      visibleCopy.focus_node = anonymizeLabel(realId);
-
-      return visibleCopy;
-    });
-  }
-
   useEffect(() => {
     if (reduxCsvData && reduxCsvData.length > 0) {
       const booleanData = turnBooleanIntoFalseTrue(reduxCsvData);
@@ -489,7 +383,7 @@ export default function LineUpView() {
       const prefixedData = applyPrefixToCells(anonymizedData, hideCellPrefixes);
 
       setCsvData(prefixedData);
-      preprocessColumnTypes(prefixedData);
+      preprocessColumnTypes(prefixedData as unknown as DataType[]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduxCsvData, hideCellPrefixes]);
@@ -500,7 +394,7 @@ export default function LineUpView() {
   useEffect(() => {
     if (lineupRef.current && csvData.length > 0) {
       createLineUpWithListener(lineupInstanceRef, lineupRef, csvData);
-      const initialColumns = lineupInstanceRef.current.data.getFirstRanking().children.map((col) => col);
+      const initialColumns = lineupInstanceRef.current!.data.getFirstRanking().children.map((col) => col);
       initialColumnsRef.current = initialColumns;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -509,10 +403,10 @@ export default function LineUpView() {
   useEffect(() => {
     if (lineupInstanceRef.current) {
       if (selectedFocusNodes.length > 0) {
-        createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, selectedFocusNodes, csvData);
+        createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, selectedFocusNodes, csvData);
       } else {
         const allFocusNodes = csvData.map((row) => getOriginalFocusNodeId(row as FocusRow));
-        createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, allFocusNodes, csvData);
+        createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, allFocusNodes, csvData);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
