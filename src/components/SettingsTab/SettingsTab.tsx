@@ -3,7 +3,6 @@ import { Accordion, Stack } from '@mantine/core';
 import React from 'react';
 import BlacklistManager from '../LabelBlacklist/BlacklistManager';
 import Legend from '../Legend/Legend';
-import D3BoundingBoxToggle from './D3BoundingBoxToggle';
 import FilterSettings from './FilterSettings';
 import LineUpColumnFilter from './LineUpColumnFilter';
 import MissingEdgeSettings from './MissingEdgeSettings';
@@ -31,12 +30,6 @@ function SettingsTab() {
                   <Accordion.Control>Node Label Blacklist</Accordion.Control>
                   <Accordion.Panel>
                     <BlacklistManager />
-                  </Accordion.Panel>
-                </Accordion.Item>
-                <Accordion.Item value="d3-bounding-box">
-                  <Accordion.Control>D3 Bounding Box</Accordion.Control>
-                  <Accordion.Panel>
-                    <D3BoundingBoxToggle />
                   </Accordion.Panel>
                 </Accordion.Item>
               </Accordion>
