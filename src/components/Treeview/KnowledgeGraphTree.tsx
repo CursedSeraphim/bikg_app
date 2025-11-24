@@ -7,8 +7,8 @@ import { BarLoader } from 'react-spinners';
 
 import { addSingleSelectedType, removeMultipleSelectedTypes } from '../Store/CombinedSlice';
 import { RootState } from '../Store/Store';
-
-import useTreeData, { KnowledgeGraphNode } from './useTreeData';
+import { KnowledgeGraphNode } from './TreeViewTypes';
+import useTreeData from './useTreeData';
 
 const useStyles = makeStyles((theme) => ({
   container: {
