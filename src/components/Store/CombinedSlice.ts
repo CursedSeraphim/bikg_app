@@ -26,7 +26,7 @@ import {
   MissingEdgeOptionType,
   ServerTree,
 } from '../../types';
-import { calculateObjectProperties, processTriples } from '../../utils/rdf/rdfGraphHelpers';
+import { calculateObjectProperties, parseRdfToStore, processTriples } from '../../utils/rdf/rdfGraphHelpers';
 import { dataToScatterDataArray } from '../EmbeddingView/csvToScatterData';
 
 function loadMissingEdgeLabel(): string {
@@ -1058,21 +1058,7 @@ export const selectCsvDataForPlotly = createSelector(selectCombinedSamples, (sam
 
 export const selectSubClassesAndViolations = async (state: { combined: ICombinedState }): Promise<Quad[]> => {
   const { rdfString } = state.combined;
-  const store: Store = new Store();
-  const parser: N3.Parser = new N3.Parser();
-
-  // Extract the prefixes from the rdfString
-  const prefixes: { [key: string]: string } = await new Promise((resolve, reject) => {
-    parser.parse(rdfString, (error, quad, pref) => {
-      if (quad) {
-        store.addQuad(quad);
-      } else if (error) {
-        reject(error);
-      } else {
-        resolve(pref);
-      }
-    });
-  });
+  const { store, prefixes } = await parseRdfToStore(rdfString);
 
   // Define some common nodes using the extracted prefixes
   const predicates = [new NamedNode(`${prefixes.rdfs}subClassOf`)];
