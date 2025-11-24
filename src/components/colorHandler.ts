@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
 import colorbrewer from 'colorbrewer';
+import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { INamespaces, INamespaceInfo } from '../../types';
-import { selectNamespaces } from '../Store/CombinedSlice';
+import { INamespaceInfo, INamespaces } from '../types';
+import { selectNamespaces } from './Store/CombinedSlice';
 
 const DEFAULT_COLOR = '#000000';
 const MAX_DISPLAY_NAMESPACES = 6;
