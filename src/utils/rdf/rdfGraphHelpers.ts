@@ -6,7 +6,7 @@ import { ICombinedState, IRdfState, ITriple } from '../../types';
 
 type PrefixMap = Record<string, string>;
 
-const normalizePrefixes = (raw: N3.Prefixes<NamedNode<string>>): PrefixMap => {
+export const normalizePrefixes = (raw: N3.Prefixes<NamedNode<string>>): PrefixMap => {
   const result: PrefixMap = {};
   for (const [prefix, value] of Object.entries(raw)) {
     result[prefix] = typeof value === 'string' ? value : value.value;
@@ -14,7 +14,7 @@ const normalizePrefixes = (raw: N3.Prefixes<NamedNode<string>>): PrefixMap => {
   return result;
 };
 
-const shortenURI = (uri: string, prefixes: PrefixMap): string => {
+export const shortenURI = (uri: string, prefixes: PrefixMap): string => {
   for (const [prefix, iri] of Object.entries(prefixes)) {
     if (uri.startsWith(iri)) {
       return uri.replace(iri, `${prefix}:`);
@@ -23,7 +23,7 @@ const shortenURI = (uri: string, prefixes: PrefixMap): string => {
   return uri;
 };
 
-const mapQuadToShortenedResult = (quad: Quad, prefixes: PrefixMap): ITriple => ({
+export const mapQuadToShortenedResult = (quad: Quad, prefixes: PrefixMap): ITriple => ({
   s: shortenURI(quad.subject.id, prefixes),
   p: shortenURI(quad.predicate.id, prefixes),
   o: shortenURI(quad.object.id, prefixes),

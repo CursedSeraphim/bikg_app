@@ -29,8 +29,6 @@ export function useD3Data({ rdfOntology, violations, types, cumulativeNumberViol
     (async () => {
       setLoading(true);
       try {
-        // Use the real color function from the slice if you prefer,
-        // but for now we pass a placeholder (we do actual coloring on the final side).
         const fakeColorFn = () => '#000';
         const { nodes, edges } = await selectCytoData(rdfOntology, fakeColorFn, types, cumulativeNumberViolationsPerType, violations);
 

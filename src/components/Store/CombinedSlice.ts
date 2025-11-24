@@ -1,7 +1,7 @@
 // src/store/slices/combined.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
-import { NamedNode, Quad, Store } from 'n3';
+import { NamedNode, Store } from 'n3';
 import { createSelector } from 'reselect';
 
 import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
@@ -26,7 +26,7 @@ import {
   MissingEdgeOptionType,
   ServerTree,
 } from '../../types';
-import { calculateObjectProperties, parseRdfToStore, processTriples } from '../../utils/rdf/rdfGraphHelpers';
+import { calculateObjectProperties, processTriples, shortenURI } from '../../utils/rdf/rdfGraphHelpers';
 import { dataToScatterDataArray } from '../EmbeddingView/csvToScatterData';
 
 function loadMissingEdgeLabel(): string {
@@ -256,22 +256,6 @@ export function createMaps(
 
   return { violationMap, typeMap, exemplarMap, focusNodeMap };
 }
-
-function shortenURI(uri: string, prefixes: { [key: string]: string }): string {
-  for (const [prefix, prefixURI] of Object.entries(prefixes)) {
-    if (uri.startsWith(prefixURI)) {
-      return uri.replace(prefixURI, `${prefix}:`);
-    }
-  }
-  return uri;
-}
-const mapQuadToShortenedResult = (quad, prefixes: { [key: string]: string }) => {
-  return {
-    s: shortenURI(quad.subject.id, prefixes),
-    p: shortenURI(quad.predicate.id, prefixes),
-    o: shortenURI(quad.object.id, prefixes),
-  };
-};
 
 const removeNanEdges = (data: ICsvData[]): ICsvData[] => {
   return data.map((sample: ICsvData): ICsvData => {
@@ -1055,132 +1039,6 @@ export const selectBarPlotData = createSelector(
 export const selectCsvDataForPlotly = createSelector(selectCombinedSamples, (samples) => {
   return dataToScatterDataArray(samples);
 });
-
-export const selectSubClassesAndViolations = async (state: { combined: ICombinedState }): Promise<Quad[]> => {
-  const { rdfString } = state.combined;
-  const { store, prefixes } = await parseRdfToStore(rdfString);
-
-  // Define some common nodes using the extracted prefixes
-  const predicates = [new NamedNode(`${prefixes.rdfs}subClassOf`)];
-  const propertyShapeNode = new NamedNode(`${prefixes.sh}PropertyShape`);
-  const classNode = new NamedNode(`${prefixes.sh}class`);
-  const namedNode = new NamedNode(`${prefixes.omics}Donor`);
-
-  // Start querying the store
-  const initialQuads = store.getQuads(null, null, propertyShapeNode, null);
-  const initialSubjects = [...new Set(initialQuads.map((quad) => quad.subject))];
-
-  // Get quads where subject is from initialSubjects and object is namedNode
-  const intermediateQuads = initialSubjects.flatMap((subject) => store.getQuads(subject, classNode, namedNode, null));
-  const intermediateSubjects = [...new Set(intermediateQuads.map((quad) => quad.subject))];
-
-  // Get all quads where subject is from intermediateSubjects
-  const finalQuads = intermediateSubjects.flatMap((subject) => store.getQuads(subject, null, null, null));
-  // Process and combine results
-  const results = [];
-  predicates.forEach((predicate) => {
-    const tuples = store.getQuads(null, predicate, null, null).map((quad) => mapQuadToShortenedResult(quad, prefixes));
-    results.push(...tuples);
-  });
-
-  const shortenedIntermediateQuads = intermediateQuads.map((quad) => mapQuadToShortenedResult(quad, prefixes));
-  const shortenedFinalQuads = finalQuads.map((quad) => mapQuadToShortenedResult(quad, prefixes));
-
-  results.push(...shortenedIntermediateQuads, ...shortenedFinalQuads);
-
-  return results;
-};
-
-export const selectSubClassOfTuples = async (state: { rdf: IRdfState }): Promise<ITriple[]> => {
-  const { rdfString } = state.rdf;
-  const store: Store = new Store();
-  const parser: N3.Parser = new N3.Parser();
-  let prefixes: { [key: string]: string } = {};
-
-  await new Promise<void>((resolve, reject) => {
-    parser.parse(rdfString, (error, quad, _prefixes) => {
-      if (quad) {
-        store.addQuad(quad);
-      } else if (error) {
-        reject(error);
-      } else {
-        prefixes = _prefixes;
-        resolve();
-      }
-    });
-  });
-  const subClassOfPredicate = new NamedNode(`${prefixes.rdfs}subClassOf`);
-  const subClassOfTuples = store.getQuads(null, subClassOfPredicate, null, null);
-  // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
-  // In selectSubClassOfTuples and selectSubClassOrObjectPropertyTuples functions
-  return subClassOfTuples.map((quad) => {
-    return {
-      s: shortenURI(quad.subject.id, prefixes),
-      p: shortenURI(quad.predicate.id, prefixes),
-      o: shortenURI(quad.object.id, prefixes),
-    };
-  });
-};
-
-export const selectAllClassesAndViolations = async (state: { combined: ICombinedState }): Promise<{ visibleTriples: ITriple[]; hiddenTriples: ITriple[] }> => {
-  const { rdfString } = state.combined;
-  const store: Store = new Store();
-  const parser: N3.Parser = new N3.Parser();
-  let prefixes: { [key: string]: string } = {};
-
-  await new Promise<void>((resolve, reject) => {
-    parser.parse(rdfString, (error, quad, _prefixes) => {
-      if (quad) {
-        store.addQuad(quad);
-      } else if (error) {
-        reject(error);
-      } else {
-        prefixes = _prefixes;
-        resolve();
-      }
-    });
-  });
-
-  const subClassOfPredicate = new NamedNode(`${prefixes.rdfs}subClassOf`);
-  const shaclPropertyPredicate = new NamedNode(`${prefixes.sh}property`);
-
-  const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null, null);
-  const targetClassTuples = store.getQuads(null, `${prefixes.sh}targetClass`, null, null);
-
-  for (const tuple of targetClassTuples) {
-    const childrenPropertyPredicate = store.getQuads(tuple.subject, shaclPropertyPredicate, null, null);
-    const children = store.getQuads(tuple.subject, null, null, null);
-    //  if one of the objects is `${prefixes.omics}TranscriptOmicsSamplee` then add all children to `allVisibleTuples
-    for (const childTuple of children) {
-      if (childTuple.object === new NamedNode(`${prefixes.omics}Sample`)) {
-        allVisibleTuples.push(...childrenPropertyPredicate);
-        break;
-      }
-    }
-  }
-
-  // append shaclPropertyTuples to allVisibleTuples
-  // allVisibleTuples.push(...targetClassTuples);
-
-  const allHiddenTuples = store.getQuads(null, null, null, null).filter((quad) => !allVisibleTuples.includes(quad));
-
-  // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
-  const visibleTriples = allVisibleTuples.map((quad) => {
-    return {
-      s: shortenURI(quad.subject.id, prefixes),
-      p: shortenURI(quad.predicate.id, prefixes),
-      o: shortenURI(quad.object.id, prefixes),
-    };
-  });
-  const hiddenTriples = allHiddenTuples.map((quad) => {
-    return {
-      s: shortenURI(quad.subject.id, prefixes),
-      p: shortenURI(quad.predicate.id, prefixes),
-      o: shortenURI(quad.object.id, prefixes),
-    };
-  });
-  return { visibleTriples, hiddenTriples };
-};
 
 export const selectAllTriples = async (rdfString: string): Promise<{ visibleTriples: ITriple[]; hiddenTriples: ITriple[] }> => {
   const store: Store = new Store();
