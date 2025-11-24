@@ -1,14 +1,16 @@
 // src/components/LangChain/useInitializeAgentExecutor.ts
-import { initializeAgentExecutorWithOptions } from 'langchain/agents';
+import { initializeAgentExecutorWithOptions, type AgentExecutor } from 'langchain/agents';
 import { BufferMemory } from 'langchain/memory';
+import type { MutableRefObject } from 'react';
 import { useEffect } from 'react';
 
-export function useInitializeAgentExecutor(tools, model, executorRef) {
+export function useInitializeAgentExecutor(tools: any[], model: any, executorRef: MutableRefObject<AgentExecutor | null>) {
   useEffect(() => {
     if (!model || !tools || tools.length === 0) {
       executorRef.current = null;
-      return;
+      return undefined;
     }
+
     let cancelled = false;
 
     (async () => {
@@ -20,9 +22,10 @@ export function useInitializeAgentExecutor(tools, model, executorRef) {
         });
 
         const exec = await initializeAgentExecutorWithOptions(tools, model, {
-          agentType: 'zero-shot-react-description',
+          // required valid agent type
+          agentType: 'chat-conversational-react-description',
           verbose: true,
-          memory, // <- enable chat memory
+          memory,
           agentArgs: {
             // Only variables: input, agent_scratchpad, chat_history
             prefix: `You are a precise, data-driven assistant.
@@ -43,7 +46,6 @@ export function useInitializeAgentExecutor(tools, model, executorRef) {
         1. use tools to get the information about what is selected
         2. look up the original RDF data to get the information about the selected data
         3. tell the user about what is selected with some context from the original RDF data.`,
-                  
             suffix: `Chat history:
 {chat_history}
 
@@ -53,17 +55,21 @@ Question: {input}
 {agent_scratchpad}`,
             // Some LangChain versions need explicit input variables:
             inputVariables: ['input', 'agent_scratchpad', 'chat_history'],
-          },
+          } as any,
         });
 
-        if (!cancelled) executorRef.current = exec;
+        if (!cancelled) {
+          executorRef.current = exec;
+        }
       } catch (err) {
         console.error('Agent initialization failed:', err);
         executorRef.current = null;
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tools, model]);
 }
