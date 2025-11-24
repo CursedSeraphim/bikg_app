@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { ParsedEdge, ParsedGraph, ParsedNode } from '../utils/parseRdfOntology';
+import type { ParsedEdge, ParsedGraph, ParsedNode } from '../utils/rdf/parseRdfOntology';
 
 export function useGraphData(parsedGraph: ParsedGraph) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());

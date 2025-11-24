@@ -3,7 +3,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Quad, Store } from 'n3';
 import { createSelector } from 'reselect';
-import { v4 as uuidv4 } from 'uuid';
+
 import { CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING, CSV_EDGE_NOT_IN_ONTOLOGY_STRING } from '../../constants';
 import {
   D3BoundingBoxSetting,
@@ -26,6 +26,7 @@ import {
   MissingEdgeOptionType,
   ServerTree,
 } from '../../types';
+import { calculateObjectProperties, processTriples } from '../../utils/rdf/rdfGraphHelpers';
 import { dataToScatterDataArray } from '../EmbeddingView/csvToScatterData';
 
 function loadMissingEdgeLabel(): string {
@@ -1265,100 +1266,6 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: IRdfSta
       p: quad.predicate.id,
       o: quad.object.id,
     };
-  });
-};
-
-/**
- * Calculate object properties from the visible and hidden triples.
- *
- * @param {Array} visibleTriples - Array of visible triples.
- * @param {Array} hiddenTriples - Array of hidden triples.
- * @returns {Map} objectProperties - Returns a map containing object properties.
- */
-const calculateObjectProperties = (visibleTriples, hiddenTriples) => {
-  const objectProperties = new Map();
-  const typesToInclude = new Set(['owl:ObjectProperty', 'owl:Class', 'sh:PropertyShape', 'owl:Ontology']);
-  const predicatesToInclude = new Set(['sh:value']);
-
-  [...visibleTriples, ...hiddenTriples].forEach((t) => {
-    // If the object type is in typesToInclude, or if the predicate is in predicatesToInclude
-    // then consider the object as an object property.
-    if (typesToInclude.has(t.o)) {
-      objectProperties.set(t.s, t.o);
-    }
-    if (predicatesToInclude.has(t.p)) {
-      objectProperties.set(t.o, true); // Just indicate that this URI should be treated as an object property.
-    }
-  });
-
-  return objectProperties;
-};
-
-// Helper function to extract namespace from a URI
-const extractNamespace = (uri) => {
-  const match = uri.match(/^([^:]+):/);
-  return match ? match[1] : '';
-};
-
-// Helper function to find or add node
-const findOrAddNode = (id, label, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList) => {
-  const baseId = id.replace(/_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, '');
-  const { cumulativeSelected = 0, cumulativeViolations = 0, violations = 0 } = numberViolationsPerNode[id] || numberViolationsPerNode[baseId] || {};
-
-  const hasCounts = cumulativeSelected !== 0 || cumulativeViolations !== 0;
-  const labelSuffix = hasCounts ? ` (${cumulativeSelected}/${cumulativeViolations})` : '';
-  const marker = hasCounts && violations === 0 ? '*' : '';
-  const computedLabel = `${label}${labelSuffix}${marker}`;
-
-  let node = nodes.find((n) => n.data.id === id);
-  if (!node) {
-    const namespace = extractNamespace(id);
-    const defaultColor = getColorForNamespace(namespace, false);
-    const selectedColor = getColorForNamespace(namespace, true);
-    node = {
-      data: {
-        id,
-        label: computedLabel,
-        visible,
-        permanent: visible,
-        namespace,
-        defaultColor,
-        selectedColor,
-        violation: violationList.includes(id),
-        exemplar: namespace === 'ex',
-        type: types.includes(id),
-      },
-    };
-    nodes.push(node);
-  } else if (visible) {
-    node.data.visible = visible;
-    node.data.permanent = visible;
-  }
-};
-
-// Main function to process triples
-const processTriples = (triples, visible, nodes, edges, objectProperties, getColorForNamespace, types, numberViolationsPerNode, violationList) => {
-  triples.forEach((t) => {
-    findOrAddNode(t.s, t.s, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList);
-
-    if (objectProperties.has(t.o)) {
-      findOrAddNode(t.o, t.o, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList);
-    }
-
-    const uniqueId = objectProperties.has(t.o) ? t.o : `${t.o}_${uuidv4()}`;
-    findOrAddNode(uniqueId, t.o, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList);
-
-    edges.push({
-      data: {
-        id: `${t.s}_${t.p}_${uniqueId}`,
-        source: t.s,
-        target: uniqueId,
-        label: t.p,
-        visible,
-        permanent: visible,
-        namespace: extractNamespace(t.p),
-      },
-    });
   });
 };
 
