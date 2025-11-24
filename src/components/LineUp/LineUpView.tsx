@@ -35,6 +35,42 @@ const anonymizeLabel = (s: string) => anonymizeString(s);
 
 type DataType = { [key: string]: number | string | boolean | null | Array<string> };
 
+/**
+ * Internal key used to store the original focus node id on each row.
+ * This is kept non-enumerable so it does not appear as a visible column.
+ */
+const ORIGINAL_FOCUS_NODE_KEY = '__focus_node_original';
+
+type FocusRow = ICsvData & {
+  [ORIGINAL_FOCUS_NODE_KEY]?: string;
+};
+
+/**
+ * Returns the original focus node id for a row.
+ * Falls back to the current focus_node if no original id was stored.
+ */
+function getOriginalFocusNodeId(row: FocusRow): string {
+  const original = (row as any)[ORIGINAL_FOCUS_NODE_KEY];
+  return typeof original === 'string' ? original : row.focus_node;
+}
+
+function setOriginalFocusNodeId(row: FocusRow, id: string): void {
+  Object.defineProperty(row, ORIGINAL_FOCUS_NODE_KEY, {
+    value: id,
+    enumerable: false,
+    configurable: true,
+    writable: false,
+  });
+}
+
+function getRenderedFocusNodeLabel(row: FocusRow): string {
+  return row.focus_node;
+}
+
+function setRenderedFocusNodeLabel(row: FocusRow, label: string): void {
+  row.focus_node = label;
+}
+
 export default function LineUpView() {
   const dispatch = useDispatch();
   const selectedFocusNodes = useSelector(selectSelectedFocusNodes);
@@ -47,18 +83,18 @@ export default function LineUpView() {
   const hideCellPrefixes = useSelector(selectHideNamespacePrefixCells);
   const initialColumnsRef = useRef<any[] | null>(null);
 
-  // Local state to hold csvData
+  // Local state to hold csvData used for rendering in LineUp
   const [csvData, setCsvData] = useState(reduxCsvData);
 
   /**
    * Set up a listener for selection changes in the lineup instance.
-   * Uses the non-enumerable __focus_node_original when available to keep coordination intact.
+   * Uses the original focus node id for coordination with the store.
    */
   const setupListener = (lineupInstanceRef): void => {
     lineupInstanceRef.current.on('selectionChanged', (selection) => {
       const selectedNodes = selection.map((index) => {
-        const row = csvData[index] as any;
-        return row && row.__focus_node_original ? row.__focus_node_original : csvData[index].focus_node;
+        const row = csvData[index] as FocusRow;
+        return getOriginalFocusNodeId(row);
       });
       dispatch(setSelectedFocusNodes(selectedNodes));
     });
@@ -243,7 +279,7 @@ export default function LineUpView() {
     columns.forEach((column) => {
       const type = inferType(data, column);
       const rawLabel = hideColumnPrefixes ? removePrefix(column) : column;
-      const label = anonymizeLabel(rawLabel); // anonymize headers
+      const label = anonymizeLabel(rawLabel);
       const width = calculatePixelWidthFromLabel(label);
 
       if (type === 'boolean') {
@@ -322,7 +358,7 @@ export default function LineUpView() {
 
   function createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, focusNodes, allData) {
     const focusNodesSet = new Set(focusNodes);
-    const csvDataFromFocusNodeSet = allData.filter((row) => focusNodesSet.has(row.focus_node));
+    const csvDataFromFocusNodeSet = allData.filter((row) => focusNodesSet.has(getOriginalFocusNodeId(row as FocusRow)));
 
     const filteredCsvData = filterColumns(csvDataFromFocusNodeSet, allData);
     const remainingCols = Object.keys(filteredCsvData[0]);
@@ -340,8 +376,8 @@ export default function LineUpView() {
       }
     }
 
-    const csvDataIndexMap = new Map(allData.map((row, index) => [row.focus_node, index]));
-    const filteredCsvDataIndices = csvDataFromFocusNodeSet.map((row) => csvDataIndexMap.get(row.focus_node));
+    const csvDataIndexMap = new Map(allData.map((row, index) => [getOriginalFocusNodeId(row as FocusRow), index]));
+    const filteredCsvDataIndices = csvDataFromFocusNodeSet.map((row) => csvDataIndexMap.get(getOriginalFocusNodeId(row as FocusRow)));
     const filteredCsvDataIndicesSet = new Set(filteredCsvDataIndices);
     lineupInstanceRef.current.data.setFilter((row) => filteredCsvDataIndicesSet.has(row.i));
   }
@@ -370,66 +406,79 @@ export default function LineUpView() {
   }
 
   function applyPrefixToCells(data: ICsvData[], hide: boolean): ICsvData[] {
-    if (!hide) {
-      // no prefix stripping; return shallow copies
-      return data.map((row) => ({ ...row }));
-    }
-
     return data.map((row) => {
-      const transformedRow: ICsvData = { ...row };
+      const originalId = getOriginalFocusNodeId(row as FocusRow);
 
-      Object.keys(row).forEach((k) => {
-        const val = row[k];
+      // Never mutate the original row; clone shallowly
+      const transformed = { ...row };
 
-        // never touch coordination IDs
-        if (k === 'focus_node' || k === '__focus_node_original') {
-          return;
-        }
+      // Restore reattached hidden property
+      Object.defineProperty(transformed, ORIGINAL_FOCUS_NODE_KEY, {
+        value: originalId,
+        enumerable: false,
+        configurable: true,
+      });
 
+      // Update rendered label only
+      const rendered = hide ? removePrefix(getRenderedFocusNodeLabel(row as FocusRow)) : getRenderedFocusNodeLabel(row as FocusRow);
+
+      transformed.focus_node = rendered;
+
+      // Apply to all other string values
+      Object.keys(transformed).forEach((k) => {
+        if (k === 'focus_node') return;
+        const val = transformed[k];
         if (typeof val === 'string') {
-          transformedRow[k] = removePrefix(val);
+          transformed[k] = hide ? removePrefix(val) : val;
         }
       });
 
-      return transformedRow;
+      return transformed;
     });
   }
 
   /**
-   * Apply anonymization to all fields (including focus_node).
-   * Stores the original focus_node as a non-enumerable property __focus_node_original
-   * so coordination across views can keep using the real id.
+   * Apply anonymization to all fields.
+   * Keeps the original focus_node id in a dedicated hidden property and
+   * uses an anonymized label for rendering.
    */
   function applyAnonymizationToCells(data: ICsvData[]): ICsvData[] {
     return data.map((row) => {
-      const transformedRow: ICsvData = { ...row };
+      // Important: DO NOT spread row first — that removes the hidden original property
+      const transformedRow = Object.create(row) as FocusRow;
 
-      // keep original focus_node (non-enumerable so it won't show as a column)
-      if (typeof row.focus_node === 'string') {
-        try {
-          Object.defineProperty(transformedRow as any, '__focus_node_original', {
-            value: row.focus_node,
-            enumerable: false,
-            configurable: true,
-            writable: false,
-          });
-        } catch {
-          // fallback: if defineProperty fails for some reason, add enumerable but we filter __* columns later
-          (transformedRow as any).__focus_node_original = row.focus_node;
-        }
-      }
+      const realId = row.focus_node; // always the original
 
-      // anonymize every string or string[] field
-      Object.keys(row).forEach((k) => {
-        const v = row[k] as any;
-        if (typeof v === 'string') {
-          transformedRow[k] = anonymizeString(v);
-        } else if (Array.isArray(v)) {
-          transformedRow[k] = v.map((x) => (typeof x === 'string' ? anonymizeString(x) : x)) as any;
+      // Ensure the original id is stored exactly once
+      setOriginalFocusNodeId(transformedRow, realId);
+
+      // Replace only the rendering label
+      setRenderedFocusNodeLabel(transformedRow, anonymizeLabel(realId));
+
+      // Copy all **enumerable** fields into a new object for mutation
+      const visibleCopy: any = { ...row };
+      Object.keys(visibleCopy).forEach((k) => {
+        if (k !== 'focus_node') {
+          const v = visibleCopy[k];
+          if (typeof v === 'string') {
+            visibleCopy[k] = anonymizeString(v);
+          } else if (Array.isArray(v)) {
+            visibleCopy[k] = v.map((x) => (typeof x === 'string' ? anonymizeString(x) : x));
+          }
         }
       });
 
-      return transformedRow;
+      // Reattach hidden original focus node id
+      Object.defineProperty(visibleCopy, ORIGINAL_FOCUS_NODE_KEY, {
+        value: realId,
+        enumerable: false,
+        configurable: true,
+      });
+
+      // Ensure rendered label is correct
+      visibleCopy.focus_node = anonymizeLabel(realId);
+
+      return visibleCopy;
     });
   }
 
@@ -462,7 +511,7 @@ export default function LineUpView() {
       if (selectedFocusNodes.length > 0) {
         createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, selectedFocusNodes, csvData);
       } else {
-        const allFocusNodes = csvData.map((row) => row.focus_node);
+        const allFocusNodes = csvData.map((row) => getOriginalFocusNodeId(row as FocusRow));
         createLineUpFromColumnAndFocusNodeFiltering(lineupInstanceRef, lineupRef, allFocusNodes, csvData);
       }
     }
