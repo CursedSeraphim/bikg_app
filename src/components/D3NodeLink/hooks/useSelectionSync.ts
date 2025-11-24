@@ -1,6 +1,6 @@
 import type { MutableRefObject } from 'react';
 import { useEffect } from 'react';
-import { IFocusNodeMap } from '../D3NldTypes';
+import { IFocusNodeMap } from '../../../types';
 
 interface UseSelectionSyncParams {
   loading: boolean;

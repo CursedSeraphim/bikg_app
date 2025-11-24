@@ -199,7 +199,9 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
 
     const result: Proj[] = [];
 
-    function isLeaf(node: d3.QuadtreeNode<Proj>): node is d3.QuadtreeLeaf<Proj> {
+    type QTNode<T> = d3.QuadtreeInternalNode<T> | d3.QuadtreeLeaf<T>;
+
+    function isLeaf(node: QTNode<Proj>): node is d3.QuadtreeLeaf<Proj> {
       return (node as d3.QuadtreeLeaf<Proj>).data !== undefined;
     }
 
@@ -314,7 +316,7 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
       .append('text')
       .attr('class', 'static-label')
       .attr('pointer-events', 'none')
-      .merge(labels as d3.Selection<SVGTextElement, LabelDatum, SVGGElement, unknown>)
+      .merge(labels)
       .attr('paint-order', 'stroke')
       .attr('stroke', 'white')
       .attr('stroke-width', LABEL_STROKE_WIDTH)
@@ -348,7 +350,7 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
       .append('text')
       .attr('class', 'hover-label')
       .attr('pointer-events', 'none')
-      .merge(hoverSel as d3.Selection<SVGTextElement, HoverDatum, SVGGElement, unknown>)
+      .merge(hoverSel)
       .attr('paint-order', 'stroke')
       .attr('stroke-width', LABEL_STROKE_WIDTH)
       .attr('stroke', 'white')
@@ -472,7 +474,13 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
       if (brushGRef.current && brushRef.current) {
         brushRef.current.move(brushGRef.current as d3.Selection<SVGGElement, unknown, null, undefined>, null);
       }
-      svgOverlay.transition().duration(200).call(zoomBehavior.transform, d3.zoomIdentity);
+      svgOverlay
+        .transition()
+        .duration(200)
+        // wrap transform so TS knows this .call receives a Transition, not a Selection
+        .call((tr: d3.Transition<SVGSVGElement, undefined, null, undefined>) => {
+          zoomBehavior.transform(tr, d3.zoomIdentity);
+        });
       draw();
     };
 

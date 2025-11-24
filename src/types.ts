@@ -222,11 +222,6 @@ export interface ITriple {
   p: string;
   o: string;
 }
-export interface ITriple {
-  s: string;
-  p: string;
-  o: string;
-}
 
 export type GraphElement = {
   id?: string;
