@@ -194,3 +194,29 @@ export const processTriples = (triples, visible, nodes, edges, objectProperties,
     });
   });
 };
+
+export const selectAllTriples = async (rdfString: string): Promise<{ visibleTriples: ITriple[]; hiddenTriples: ITriple[] }> => {
+  const { store, prefixes } = await parseRdfToStore(rdfString);
+
+  const subClassOfPredicate = new NamedNode(`${prefixes.rdfs}subClassOf`);
+  // TODO should not be hardcoded ofc
+  const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null, null).filter((quad) => quad.object.id !== `${prefixes.omics}ReferenceData`);
+  const allHiddenTuples = store.getQuads(null, null, null, null).filter((quad) => !allVisibleTuples.includes(quad));
+
+  // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
+  const visibleTriples = allVisibleTuples.map((quad) => {
+    return {
+      s: shortenURI(quad.subject.id, prefixes),
+      p: shortenURI(quad.predicate.id, prefixes),
+      o: shortenURI(quad.object.id, prefixes),
+    };
+  });
+  const hiddenTriples = allHiddenTuples.map((quad) => {
+    return {
+      s: shortenURI(quad.subject.id, prefixes),
+      p: shortenURI(quad.predicate.id, prefixes),
+      o: shortenURI(quad.object.id, prefixes),
+    };
+  });
+  return { visibleTriples, hiddenTriples };
+};

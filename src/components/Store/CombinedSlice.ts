@@ -26,7 +26,7 @@ import {
   MissingEdgeOptionType,
   ServerTree,
 } from '../../types';
-import { calculateObjectProperties, processTriples, shortenURI } from '../../utils/rdf/rdfGraphHelpers';
+import { calculateObjectProperties, processTriples, selectAllTriples } from '../../utils/rdf/rdfGraphHelpers';
 import { dataToScatterDataArray } from '../EmbeddingView/csvToScatterData';
 
 function loadMissingEdgeLabel(): string {
@@ -742,7 +742,9 @@ const combinedSlice = createSlice({
 
       // Set state.selectedViolations to the keys of the map with value > 0
       const newSelectedViolations = Array.from(violationMap.entries())
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .filter(([_, value]) => value > 0)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .map(([key, _]) => key);
 
       // Now, we assign new values to the state variables.
@@ -1039,47 +1041,6 @@ export const selectBarPlotData = createSelector(
 export const selectCsvDataForPlotly = createSelector(selectCombinedSamples, (samples) => {
   return dataToScatterDataArray(samples);
 });
-
-export const selectAllTriples = async (rdfString: string): Promise<{ visibleTriples: ITriple[]; hiddenTriples: ITriple[] }> => {
-  const store: Store = new Store();
-  const parser: N3.Parser = new N3.Parser();
-  let prefixes: { [key: string]: string } = {};
-
-  await new Promise<void>((resolve, reject) => {
-    parser.parse(rdfString, (error, quad, _prefixes) => {
-      if (quad) {
-        store.addQuad(quad);
-      } else if (error) {
-        reject(error);
-      } else {
-        prefixes = _prefixes;
-        resolve();
-      }
-    });
-  });
-
-  const subClassOfPredicate = new NamedNode(`${prefixes.rdfs}subClassOf`);
-  // TODO should not be hardcoded ofc
-  const allVisibleTuples = store.getQuads(null, subClassOfPredicate, null, null).filter((quad) => quad.object.id !== `${prefixes.omics}ReferenceData`);
-  const allHiddenTuples = store.getQuads(null, null, null, null).filter((quad) => !allVisibleTuples.includes(quad));
-
-  // map each quad to a tuple of subject, predicate, object in a named way (subject, predicate, object)
-  const visibleTriples = allVisibleTuples.map((quad) => {
-    return {
-      s: shortenURI(quad.subject.id, prefixes),
-      p: shortenURI(quad.predicate.id, prefixes),
-      o: shortenURI(quad.object.id, prefixes),
-    };
-  });
-  const hiddenTriples = allHiddenTuples.map((quad) => {
-    return {
-      s: shortenURI(quad.subject.id, prefixes),
-      p: shortenURI(quad.predicate.id, prefixes),
-      o: shortenURI(quad.object.id, prefixes),
-    };
-  });
-  return { visibleTriples, hiddenTriples };
-};
 
 // TODO, if this is needed again add the prefix logic from selectSubClassOfTuples
 export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: IRdfState }): Promise<ITriple[]> => {
