@@ -12,5 +12,5 @@ export interface BrandingConfig {
  * Can be toggled per deployment or overridden by environment variables.
  */
 export const BRANDING_CONFIG: BrandingConfig = {
-  anonymizeLogos: true,
+  anonymizeLogos: false,
 };
