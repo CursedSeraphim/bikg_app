@@ -13,4 +13,4 @@
 
 ## LLM Chat
 
-To utilize the LLM chat, you can enter an API key in the tob right corner of the LLM Chat view.
+To utilize the LLM chat, you can enter an OpenAI API key in the tob right corner of the LLM Chat view.
