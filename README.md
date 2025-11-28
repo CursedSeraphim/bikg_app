@@ -11,6 +11,6 @@
 
 [![Screenshot of SHACLens](https://raw.githubusercontent.com/jku-vds-lab/shaclens-redirect/main/unvex-teaser.png)](https://shaclens.jku-vds-lab.at/)
 
-### LLM Chat
+## LLM Chat
 
 To utilize the LLM chat, you can enter an API key in the tob right corner of the LLM Chat view.
