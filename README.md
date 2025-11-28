@@ -1,4 +1,4 @@
-# bikg_app
+# SHACLens
 
 ## Public deployment
 
