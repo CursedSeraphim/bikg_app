@@ -98,7 +98,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     return label.replace(/\s*\([^)]*\)\s*$/, '').replace(/\*$/, '');
   }, []);
 
-  // TEMP (figure-only): anonymize any occurrence of "boehringer" for display strings
+  // for figure purposes: anonymize any occurrence of "boehringer" for display strings
   const anonymizeLabel = useCallback((value: string | undefined): string => {
     if (!value) return '';
     return value.replace(/boehringer/gi, 'anonymized');
