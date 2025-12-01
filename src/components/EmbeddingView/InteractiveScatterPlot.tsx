@@ -3,6 +3,8 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { useSelector, useStore } from 'react-redux';
 import { IRootState } from '../../types';
 import { setSelectedFocusNodes } from '../Store/CombinedSlice';
+import { useOnSelectionCleared } from './hooks/useOnSelectionCleared';
+import { useSelectionResetEffects } from './hooks/useSelectionResetEffects';
 
 interface IScatterNode {
   text: string;
@@ -65,7 +67,11 @@ class SpatialHash {
     const x2 = Math.floor(r.x2 / cs);
     const y2 = Math.floor(r.y2 / cs);
     const cells: Array<[number, number]> = [];
-    for (let ix = x1; ix <= x2; ix += 1) for (let iy = y1; iy <= y2; iy += 1) cells.push([ix, iy]);
+    for (let ix = x1; ix <= x2; ix += 1) {
+      for (let iy = y1; iy <= y2; iy += 1) {
+        cells.push([ix, iy]);
+      }
+    }
     return cells;
   }
 
@@ -98,9 +104,20 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
   const [hoveredProj, setHoveredProj] = useState<Proj | null>(null);
   const rafIdRef = useRef<number | null>(null);
 
-  // Brush refs to clear selection on zoom/resize
+  const suppressNextSelectionResetRef = useRef(false);
+
   const brushRef = useRef<d3.BrushBehavior<unknown> | null>(null);
   const brushGRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
+
+  const clearHover = useCallback(() => {
+    setHoveredProj(null);
+  }, []);
+
+  const { resetSelectionEffects, clearBrushSelection } = useSelectionResetEffects({
+    clearHover,
+    brushRef,
+    brushGRef,
+  });
 
   // Offscreen canvas for accurate text measurement
   const measureCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -122,9 +139,29 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
 
   const selectedNodes = useSelector((state: IRootState) => state.combined.selectedNodes);
   const selectedSet = useMemo(() => new Set<string>(selectedNodes), [selectedNodes]);
+  const selectedCount = selectedNodes.length;
 
   const store = useStore<IRootState>();
   const { dispatch } = store;
+
+  const setScatterSelection = useCallback(
+    (ids: string[]) => {
+      if (ids.length === 0) {
+        suppressNextSelectionResetRef.current = true;
+      }
+      dispatch(setSelectedFocusNodes(ids));
+    },
+    [dispatch],
+  );
+
+  useOnSelectionCleared(selectedCount, () => {
+    if (suppressNextSelectionResetRef.current) {
+      suppressNextSelectionResetRef.current = false;
+      return;
+    }
+
+    resetSelectionEffects();
+  });
 
   /** Precompute label widths once at the base font size. */
   const widthCacheRef = useRef<Map<string, number>>(new Map());
@@ -393,7 +430,9 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
     setHoveredProj(found);
   }, []);
 
-  const handleMouseLeave = useCallback((): void => setHoveredProj(null), []);
+  const handleMouseLeave = useCallback((): void => {
+    setHoveredProj(null);
+  }, []);
 
   // Brush (screen-space); selection rectangle cleared on zoom/resize to avoid desync
   useEffect(() => {
@@ -424,7 +463,7 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
           })
           .map((p) => p.node.text);
 
-        dispatch(setSelectedFocusNodes(newlySelected));
+        setScatterSelection(newlySelected);
       });
 
     brushRef.current = brush;
@@ -435,7 +474,7 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
       brushRef.current = null;
       brushG.remove();
     };
-  }, [dimensions, dispatch, margins]);
+  }, [dimensions, margins, setScatterSelection]);
 
   // Zoom: clear brush (screen-space) and rAF redraw
   useEffect(() => {
@@ -444,9 +483,7 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
 
     const zoomed = (event: d3.D3ZoomEvent<SVGSVGElement, undefined>): void => {
       transformRef.current = event.transform;
-      if (brushGRef.current && brushRef.current) {
-        brushRef.current.move(brushGRef.current as d3.Selection<SVGGElement, unknown, null, undefined>, null);
-      }
+      clearBrushSelection();
       draw();
     };
 
@@ -470,10 +507,6 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
     svgOverlay.call(zoomBehavior);
 
     const handleDoubleClick = (): void => {
-      transformRef.current = d3.zoomIdentity;
-      if (brushGRef.current && brushRef.current) {
-        brushRef.current.move(brushGRef.current as d3.Selection<SVGGElement, unknown, null, undefined>, null);
-      }
       svgOverlay
         .transition()
         .duration(200)
@@ -481,7 +514,6 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
         .call((tr: d3.Transition<SVGSVGElement, undefined, null, undefined>) => {
           zoomBehavior.transform(tr, d3.zoomIdentity);
         });
-      draw();
     };
 
     svgOverlay.on('dblclick.zoom', handleDoubleClick);
@@ -489,14 +521,12 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
       svgOverlay.on('.zoom', null);
       svgOverlay.on('dblclick.zoom', null);
     };
-  }, [dimensions, draw]);
+  }, [dimensions, draw, clearBrushSelection]);
 
   // Clear any lingering brush on resize (view changes in screen space)
   useEffect(() => {
-    if (brushGRef.current && brushRef.current) {
-      brushRef.current.move(brushGRef.current as d3.Selection<SVGGElement, unknown, null, undefined>, null);
-    }
-  }, [dimensions]);
+    clearBrushSelection();
+  }, [dimensions, clearBrushSelection]);
 
   // In case other deps change, ensure a redraw
   useEffect(() => {

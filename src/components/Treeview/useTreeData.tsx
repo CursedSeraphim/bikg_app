@@ -47,8 +47,6 @@ export default function useTreeData() {
         }
       }
 
-      // We call updateTreeDataWithSelectedTypes if you still want the "selected" boolean
-      // in the data for styling, but it is no longer used for direct dispatch triggers.
       const updated = updateTreeDataWithSelectedTypes(rootArray, selectedTypes);
       setTreeData(updated);
       setLoading(false);
