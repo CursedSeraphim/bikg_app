@@ -495,6 +495,23 @@ const combinedSlice = createSlice({
       state.selectedTypes = [];
       state.selectedViolations = [];
       state.selectedViolationExemplars = [];
+
+      if (state.ontologyTree) {
+        state.numberViolationsPerNode = calculateNewNumberViolationsPerNode(
+          state.selectedNodes,
+          state.focusNodeMap,
+          state.numberViolationsPerNode,
+          state.ontologyTree,
+          new Set([...state.types, ...state.violations]),
+        );
+      } else {
+        Object.values(state.numberViolationsPerNode).forEach((entry) => {
+          // eslint-disable-next-line no-param-reassign
+          entry.selected = 0;
+          // eslint-disable-next-line no-param-reassign
+          entry.cumulativeSelected = 0;
+        });
+      }
     },
     addHiddenLabels: (state, action: PayloadAction<string[]>) => {
       const deduplicated = Array.from(new Set([...state.hiddenLabels, ...action.payload]));

@@ -11,8 +11,6 @@ export function updateTreeDataWithSelectedTypes(nodes: KnowledgeGraphNode[] | nu
     return {
       ...node,
       children: updatedChildren,
-      // Optionally store a custom property if you want custom styling
-      // selected: isSelected,
     };
   });
 }
