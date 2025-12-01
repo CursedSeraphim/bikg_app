@@ -413,9 +413,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     selectedExemplarIds.forEach((id) => highlightableIds.add(id));
 
     const selectedEdgeIds = new Set<string>();
+    const visibleEdgeIds = new Set<string>();
     cyDataEdges.forEach((edge) => {
       const sourceId = edge.data.source;
       const targetId = edge.data.target;
+      if (idsToSelect.has(sourceId) && idsToSelect.has(targetId)) {
+        visibleEdgeIds.add(edge.data.id);
+      }
       if (highlightableIds.has(sourceId) && highlightableIds.has(targetId)) {
         selectedEdgeIds.add(edge.data.id);
       }
@@ -425,30 +429,32 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
     cyDataNodes.forEach((node) => {
       const shouldSelect = highlightableIds.has(node.data.id);
+      const shouldShow = idsToSelect.has(node.data.id);
       if (node.data.selected !== shouldSelect) {
         node.data.selected = shouldSelect;
         needsRefresh = true;
       }
-      if (shouldSelect && node.data.visible === false) {
+      if (shouldShow && node.data.visible === false) {
         node.data.visible = true;
         needsRefresh = true;
       }
-      if (shouldSelect) {
+      if (shouldShow) {
         hiddenNodesRef.current.delete(node.data.id);
       }
     });
 
     cyDataEdges.forEach((edge) => {
       const shouldSelect = selectedEdgeIds.has(edge.data.id);
+      const shouldShow = visibleEdgeIds.has(edge.data.id);
       if (edge.data.selected !== shouldSelect) {
         edge.data.selected = shouldSelect;
         needsRefresh = true;
       }
-      if (shouldSelect && edge.data.visible === false) {
+      if (shouldShow && edge.data.visible === false) {
         edge.data.visible = true;
         needsRefresh = true;
       }
-      if (shouldSelect) {
+      if (shouldShow) {
         hiddenEdgesRef.current.delete(edge.data.id);
       }
     });
