@@ -344,6 +344,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       return;
     }
 
+    // 1) Selection scope: everything that should be unfolded / made visible
     const idsToSelect = new Set<string>();
     const addIds = (values?: Iterable<string>) => {
       if (!values) return;
@@ -354,11 +355,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       }
     };
 
+    // Direct selections
     addIds(selectedFocusNodes);
     addIds(selectedTypeIds);
     addIds(selectedViolationIds);
     addIds(selectedExemplarIds);
 
+    // Associated selections (same as original code)
     selectedFocusNodes.forEach((focusId) => {
       const entry = focusNodeMap[focusId];
       if (!entry) return;
@@ -395,6 +398,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       addIds(entry.violations);
     });
 
+    // 2) DoI-based branch seeds: nodes that actually have selected violations
     const getSelectedCount = (id: string) => {
       const baseId = getBaseId(id);
       const entry = numberViolationsPerNode[id] ?? numberViolationsPerNode[baseId];
@@ -408,34 +412,97 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       }
     });
 
+    // Always highlight directly selected focus nodes / violations / exemplars
     selectedFocusNodes.forEach((id) => highlightableIds.add(id));
     selectedViolationIds.forEach((id) => highlightableIds.add(id));
     selectedExemplarIds.forEach((id) => highlightableIds.add(id));
 
+    // 3) Ancestor expansion, restricted to the current selection scope
+    const expandHighlightToAncestors = (sourceIds: Set<string>, allowedScope: Set<string>): Set<string> => {
+      const result = new Set<string>(sourceIds);
+      const queue: string[] = Array.from(sourceIds);
+      const visited = new Set<string>(queue);
+
+      while (queue.length > 0) {
+        const current = queue.shift() as string;
+        const parents = (revAdjRef.current[current] || []).filter((pid) => {
+          if (isIdBlacklisted(pid)) return false;
+          // Only pull in parents that are actually part of the selection scope
+          return allowedScope.has(pid);
+        });
+
+        parents.forEach((pid) => {
+          if (!visited.has(pid)) {
+            visited.add(pid);
+            result.add(pid);
+            queue.push(pid);
+          }
+        });
+      }
+
+      return result;
+    };
+
+    const highlightIdsWithAncestors = expandHighlightToAncestors(highlightableIds, idsToSelect);
+
+    // 4) Edges: visible vs highlighted
     const selectedEdgeIds = new Set<string>();
+    const visibleEdgeIds = new Set<string>();
+
     cyDataEdges.forEach((edge) => {
       const sourceId = edge.data.source;
       const targetId = edge.data.target;
-      if (highlightableIds.has(sourceId) && highlightableIds.has(targetId)) {
+
+      // Visibility: any edge connecting unfolded nodes
+      if (idsToSelect.has(sourceId) && idsToSelect.has(targetId)) {
+        visibleEdgeIds.add(edge.data.id);
+      }
+
+      // Highlighting: only edges fully inside the highlighted branch+ancestors
+      if (highlightIdsWithAncestors.has(sourceId) && highlightIdsWithAncestors.has(targetId)) {
         selectedEdgeIds.add(edge.data.id);
       }
     });
 
     let needsRefresh = false;
 
+    // 5) Nodes: decouple show vs highlight
     cyDataNodes.forEach((node) => {
-      const shouldSelect = highlightableIds.has(node.data.id);
-      if (node.data.selected !== shouldSelect) {
-        node.data.selected = shouldSelect;
+      const { id } = node.data;
+      const shouldHighlight = highlightIdsWithAncestors.has(id);
+      const shouldShow = idsToSelect.has(id);
+
+      if (node.data.selected !== shouldHighlight) {
+        node.data.selected = shouldHighlight;
         needsRefresh = true;
+      }
+
+      if (shouldShow && node.data.visible === false) {
+        node.data.visible = true;
+        needsRefresh = true;
+      }
+      if (shouldShow) {
+        hiddenNodesRef.current.delete(id);
       }
     });
 
+    // 6) Edges: same split
     cyDataEdges.forEach((edge) => {
-      const shouldSelect = selectedEdgeIds.has(edge.data.id);
-      if (edge.data.selected !== shouldSelect) {
-        edge.data.selected = shouldSelect;
+      const { id } = edge.data;
+      const shouldHighlight = selectedEdgeIds.has(id);
+      const shouldShow = visibleEdgeIds.has(id);
+
+      if (edge.data.selected !== shouldHighlight) {
+        edge.data.selected = shouldHighlight;
         needsRefresh = true;
+      }
+
+      if (shouldShow && edge.data.visible === false) {
+        edge.data.visible = true;
+        needsRefresh = true;
+      }
+      if (shouldShow) {
+        hiddenEdgesRef.current.delete(id);
       }
     });
 
@@ -458,7 +525,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     typesViolationMap,
     numberViolationsPerNode,
     getBaseId,
+    hiddenNodesRef,
+    hiddenEdgesRef,
     convertData,
+    revAdjRef,
+    isIdBlacklisted,
   ]);
 
   const focusNodeTooltip = useExemplarHoverList(canvasRef, [...d3Nodes, ...ghostNodes], transformRef);
