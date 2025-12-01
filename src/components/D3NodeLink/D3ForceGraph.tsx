@@ -51,6 +51,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const typeMap = useSelector(selectTypeMap);
   const exemplarMap = useSelector(selectExemplarMap);
   const focusNodeMap = useSelector(selectFocusNodeMap);
+  const numberViolationsPerNode = useSelector((state: any) => state.combined.numberViolationsPerNode);
   const violationTypesMap = useSelector(selectViolationTypesMap);
   const typesViolationMap = useSelector(selectTypesViolationMap);
   const hiddenLabels = useSelector(selectHiddenLabels);
@@ -96,6 +97,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     if (!label) return '';
     // remove a trailing " (…)" count suffix and a trailing "*"
     return label.replace(/\s*\([^)]*\)\s*$/, '').replace(/\*$/, '');
+  }, []);
+
+  const getBaseId = useCallback((id: string) => {
+    return id.replace(/_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, '');
   }, []);
 
   // for figure purposes: anonymize any occurrence of "boehringer" for display strings
@@ -390,11 +395,28 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       addIds(entry.violations);
     });
 
+    const getSelectedCount = (id: string) => {
+      const baseId = getBaseId(id);
+      const entry = numberViolationsPerNode[id] ?? numberViolationsPerNode[baseId];
+      return entry?.cumulativeSelected ?? 0;
+    };
+
+    const highlightableIds = new Set<string>();
+    idsToSelect.forEach((id) => {
+      if (getSelectedCount(id) > 0) {
+        highlightableIds.add(id);
+      }
+    });
+
+    selectedFocusNodes.forEach((id) => highlightableIds.add(id));
+    selectedViolationIds.forEach((id) => highlightableIds.add(id));
+    selectedExemplarIds.forEach((id) => highlightableIds.add(id));
+
     const selectedEdgeIds = new Set<string>();
     cyDataEdges.forEach((edge) => {
       const sourceId = edge.data.source;
       const targetId = edge.data.target;
-      if (idsToSelect.has(sourceId) && idsToSelect.has(targetId)) {
+      if (highlightableIds.has(sourceId) && highlightableIds.has(targetId)) {
         selectedEdgeIds.add(edge.data.id);
       }
     });
@@ -402,7 +424,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     let needsRefresh = false;
 
     cyDataNodes.forEach((node) => {
-      const shouldSelect = idsToSelect.has(node.data.id);
+      const shouldSelect = highlightableIds.has(node.data.id);
       if (node.data.selected !== shouldSelect) {
         node.data.selected = shouldSelect;
         needsRefresh = true;
@@ -448,6 +470,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     exemplarMap,
     violationTypesMap,
     typesViolationMap,
+    numberViolationsPerNode,
+    getBaseId,
     hiddenNodesRef,
     hiddenEdgesRef,
     convertData,
