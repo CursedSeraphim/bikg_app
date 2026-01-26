@@ -276,14 +276,21 @@ export function useD3Force(
       const dx = tx - control.x;
       const dy = ty - control.y;
       const length = Math.sqrt(dx * dx + dy * dy);
-      if (length > 0) {
+      if (length > 1) {
+        const targetCount = getViolationCountsForNode(target.id).cumulativeViolations;
+        const targetRadius = getNodeRadiusPx(targetCount, target.shape) * semanticScale;
+        const targetOutline = 2.5 * semanticScale;
+        const arrowPadding = 2 * semanticScale;
         const arrowSize = 8 * semanticScale;
         const arrowWidth = 4 * semanticScale;
-        const backx = tx - (arrowSize * dx) / length;
-        const backy = ty - (arrowSize * dy) / length;
+        const tipOffset = Math.min(targetRadius + targetOutline + arrowPadding, length - 1);
+        const tipx = tx - (dx * tipOffset) / length;
+        const tipy = ty - (dy * tipOffset) / length;
+        const backx = tipx - (arrowSize * dx) / length;
+        const backy = tipy - (arrowSize * dy) / length;
 
         context.beginPath();
-        context.moveTo(tx, ty);
+        context.moveTo(tipx, tipy);
         context.lineTo(backx + (arrowWidth * -dy) / length, backy + (arrowWidth * dx) / length);
         context.lineTo(backx - (arrowWidth * -dy) / length, backy - (arrowWidth * dx) / length);
         context.closePath();
