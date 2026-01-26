@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchNodeClasses } from '../../api';
+import { fetchNodeClasses, fetchNodeSources } from '../../api';
 import { INumberViolationsPerNodeMap } from '../../types';
 import { selectCytoData } from '../Store/CombinedSlice';
 
@@ -34,19 +34,30 @@ export function useD3Data({ rdfOntology, violations, types, cumulativeNumberViol
         const { nodes, edges } = await selectCytoData(rdfOntology, fakeColorFn, types, cumulativeNumberViolationsPerType, violations);
 
         let nextNodes = nodes;
+        const nodeIds = Array.from(new Set(nodes.map((node) => node.data.id)));
+        let classMap: Record<string, string | null> = {};
+        let sourceMap: Record<string, string[]> = {};
+
         try {
-          const nodeIds = Array.from(new Set(nodes.map((node) => node.data.id)));
-          const classMap = await fetchNodeClasses(nodeIds);
-          nextNodes = nodes.map((node) => ({
-            ...node,
-            data: {
-              ...node.data,
-              isAClass: classMap[node.data.id] ?? null,
-            },
-          }));
+          classMap = await fetchNodeClasses(nodeIds);
         } catch (classError) {
           console.error('Failed to fetch node classes:', classError);
         }
+
+        try {
+          sourceMap = await fetchNodeSources(nodeIds);
+        } catch (sourceError) {
+          console.error('Failed to fetch node sources:', sourceError);
+        }
+
+        nextNodes = nodes.map((node) => ({
+          ...node,
+          data: {
+            ...node.data,
+            isAClass: classMap[node.data.id] ?? null,
+            sources: sourceMap[node.data.id] ?? ['unknown'],
+          },
+        }));
 
         if (isMounted) {
           setCyDataNodes(nextNodes);

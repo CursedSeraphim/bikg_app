@@ -13,6 +13,12 @@ from rdflib.term import URIRef, Literal
 from rdflib.namespace import split_uri
 from scipy.stats import chi2_contingency
 
+from bikg_app.node_sources import (
+    ORIGINAL_INSTANCE_DATA_FILE_PATH,
+    ORIGINAL_ONTOLOGY_FILE_PATH,
+    ORIGINAL_VIOLATION_REPORT_FILE_PATH,
+    get_node_source_resolver,
+)
 from bikg_app.routers.utils import (
     load_lists_dict,
     load_nested_counts_dict_json,
@@ -23,13 +29,6 @@ from bikg_app.routers.utils import (
 SH = Namespace("http://www.w3.org/ns/shacl#")
 OWL = Namespace("http://www.w3.org/2002/07/owl#")
 RDFS = Namespace("http://www.w3.org/2000/01/rdf-schema#")
-
-# File paths
-# input files, original RDF for ontology and shacl, instance data, and violation report
-ORIGINAL_ONTOLOGY_FILE_PATH = "bikg_app/ttl/omics_model.ttl"
-ORIGINAL_INSTANCE_DATA_FILE_PATH = "bikg_app/ttl/study.ttl"
-ORIGINAL_VIOLATION_REPORT_FILE_PATH = "bikg_app/ttl/violation_report.ttl"
-
 
 VIOLATIONS_FILE_PATH = os.path.join("bikg_app/json", "violation_list.json")
 STUDY_CSV_FILE_PATH = "bikg_app/csv/study.csv"
@@ -815,6 +814,7 @@ def build_node_class_map(graph: Graph) -> dict[str, list[str]]:
 
 
 node_class_map = build_node_class_map(g)
+node_source_resolver = get_node_source_resolver()
 
 
 @router.get("/node-class")
@@ -829,6 +829,29 @@ async def get_node_class(node_id: str):
         "classes": classes,
         "class": classes[0] if classes else None,
     }
+
+
+@router.get("/node-source")
+async def get_node_source(node_id: str):
+    """
+    Retrieve the original TTL source(s) for a node identifier.
+    """
+    source_info = node_source_resolver.get_sources(node_id)
+    return {
+        "id": source_info.node_id,
+        "sources": [source.value for source in source_info.sources],
+    }
+
+
+@router.post("/node-sources")
+async def get_node_sources(request: Request):
+    """
+    Retrieve original TTL source(s) for multiple node identifiers.
+    """
+    payload = await request.json()
+    node_ids = payload.get("node_ids", [])
+    sources_map = node_source_resolver.get_sources_for_nodes(node_ids)
+    return {"sources": {node_id: [source.value for source in sources] for node_id, sources in sources_map.items()}}
 
 
 @router.post("/node-classes")
