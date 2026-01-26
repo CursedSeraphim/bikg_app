@@ -30,6 +30,8 @@ export const NAMESPACE_SHAPE_MAP: Record<string, NodeShape> = {
 
 const DEFAULT_NODE_SHAPE: NodeShape = 'triangle';
 
+export const D3_FORCE_LABEL_FONT_SIZE_PX = 12;
+
 /**
  * Maps a namespace prefix to its node color.
  */

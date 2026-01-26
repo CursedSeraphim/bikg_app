@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../Store/Store';
 import { CanvasNode } from '../D3NldTypes';
+import { D3_FORCE_LABEL_FONT_SIZE_PX } from '../D3NldUtils';
 import { getNearNodeThreshold } from './hoverRadius';
 
 interface HoverState {
@@ -135,7 +136,7 @@ export default function useExemplarHoverList(
         boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
         padding: '4px 8px',
         zIndex: 2000,
-        fontSize: '12px',
+        fontSize: `${D3_FORCE_LABEL_FONT_SIZE_PX}px`,
       }}
     >
       <strong>Focus Nodes</strong>
