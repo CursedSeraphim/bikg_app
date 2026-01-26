@@ -239,7 +239,7 @@ export function useD3Force(
       linkForce = d3
         .forceLink<CanvasNode, CanvasEdge>(edgesForSim)
         .id((d) => d.id)
-        .distance(150)
+        // .distance(0)
         .strength(1);
       sim.force('link', linkForce);
     } else {
