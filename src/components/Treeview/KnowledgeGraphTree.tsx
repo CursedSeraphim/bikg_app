@@ -25,6 +25,9 @@ const useStyles = makeStyles((theme) => ({
   },
   treeRoot: {
     flexGrow: 1,
+    '& .MuiTreeItem-label': {
+      fontSize: '14px',
+    },
   },
 }));
 
