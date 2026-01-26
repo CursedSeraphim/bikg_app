@@ -158,7 +158,7 @@ export function useD3Force(
       } else {
         context.strokeStyle = edge.color ?? '#AAA';
       }
-      context.lineWidth = edge.selected ? 2 : 1;
+      context.lineWidth = edge.selected ? 4 : 2;
       context.beginPath();
       context.moveTo(sx, sy);
       context.lineTo(tx, ty);

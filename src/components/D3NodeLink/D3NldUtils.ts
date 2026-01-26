@@ -48,7 +48,7 @@ const D3_NODE_SHAPE_RADIUS_MODIFIERS_PX: Record<NodeShape, number> = {
 };
 
 export function getNodeRadiusPx(violationCount: number, shape: NodeShape): number {
-  const baseRadius = Math.max(D3_NODE_MIN_RADIUS_PX, violationCount + D3_NODE_VIOLATION_RADIUS_OFFSET_PX);
+  const baseRadius = D3_NODE_MIN_RADIUS_PX + violationCount + D3_NODE_VIOLATION_RADIUS_OFFSET_PX;
   return baseRadius + (D3_NODE_SHAPE_RADIUS_MODIFIERS_PX[shape] ?? 0);
 }
 
