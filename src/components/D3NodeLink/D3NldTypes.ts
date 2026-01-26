@@ -2,11 +2,14 @@
 
 import type { NodeShape } from './D3NldUtils';
 
+export type NodeSource = 'ontology' | 'instance' | 'violation' | 'unknown';
+
 export interface CanvasNode {
   id: string;
   label: string;
   color: string;
   shape: NodeShape;
+  sources?: NodeSource[];
   x?: number;
   y?: number;
   fx?: number | null;

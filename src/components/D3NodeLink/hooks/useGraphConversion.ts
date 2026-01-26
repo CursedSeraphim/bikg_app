@@ -52,6 +52,7 @@ export function useGraphConversion({
           label: display,
           color: getNodeColorForId(id),
           shape: getNodeShapeForId(id),
+          sources: n.data.sources ?? ['unknown'],
           x: saved?.x,
           y: saved?.y,
           selected: Boolean(n.data.selected),
@@ -64,6 +65,7 @@ export function useGraphConversion({
         node.label = display;
         node.color = getNodeColorForId(id);
         node.shape = getNodeShapeForId(id);
+        node.sources = n.data.sources ?? ['unknown'];
         node.selected = Boolean(n.data.selected);
         node.violation = Boolean(n.data.violation);
         node.exemplar = Boolean(n.data.exemplar);
