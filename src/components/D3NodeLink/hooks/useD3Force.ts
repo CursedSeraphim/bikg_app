@@ -223,7 +223,7 @@ export function useD3Force(
       context.fill();
 
       context.strokeStyle = node.selected ? '#222' : '#FFF';
-      context.lineWidth = node.selected ? 2.5 : 1;
+      context.lineWidth = node.selected ? 2.5 : 2.5;
       context.stroke();
       context.lineWidth = 1;
 
