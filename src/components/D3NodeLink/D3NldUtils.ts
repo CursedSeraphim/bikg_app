@@ -35,6 +35,22 @@ export const NAMESPACE_SHAPE_MAP: Record<string, NodeShape> = {
 const DEFAULT_NODE_SHAPE: NodeShape = 'triangle';
 
 export const D3_FORCE_LABEL_FONT_SIZE_PX = 12;
+export const D3_NODE_MIN_RADIUS_PX = 6;
+export const D3_NODE_VIOLATION_RADIUS_OFFSET_PX = 3;
+
+const D3_NODE_SHAPE_RADIUS_MODIFIERS_PX: Record<NodeShape, number> = {
+  circle: 0,
+  rectangle: 0,
+  diamond: 0,
+  pentagon: 0,
+  hexagon: 0,
+  triangle: 3,
+};
+
+export function getNodeRadiusPx(violationCount: number, shape: NodeShape): number {
+  const baseRadius = Math.max(D3_NODE_MIN_RADIUS_PX, violationCount + D3_NODE_VIOLATION_RADIUS_OFFSET_PX);
+  return baseRadius + (D3_NODE_SHAPE_RADIUS_MODIFIERS_PX[shape] ?? 0);
+}
 
 /**
  * Maps node sources and class metadata to its node color.

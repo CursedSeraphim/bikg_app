@@ -4,7 +4,7 @@ import * as d3 from 'd3';
 import { useEffect, useRef } from 'react';
 import { getViolationCountsForNode } from '../../../utils/violations';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
-import { D3_FORCE_LABEL_FONT_SIZE_PX } from '../D3NldUtils';
+import { D3_FORCE_LABEL_FONT_SIZE_PX, getNodeRadiusPx } from '../D3NldUtils';
 import { useLabelTransform } from './useLabelTransform';
 
 /**
@@ -82,7 +82,7 @@ export function useD3Force(
         drawPolygon(context, x, y, radius, 4, Math.PI / 4);
         break;
       case 'triangle':
-        drawPolygon(context, x, y, radius + 3, 3);
+        drawPolygon(context, x, y, radius, 3);
         break;
       case 'pentagon':
         drawPolygon(context, x, y, radius, 5);
@@ -214,8 +214,8 @@ export function useD3Force(
     // Draw nodes
     allNodes.forEach((node) => {
       const count = getViolationCountsForNode(node.id).cumulativeViolations;
-      console.log(node);
-      drawNodeShape(context, node, count + 3);
+      const radius = getNodeRadiusPx(count, node.shape);
+      drawNodeShape(context, node, radius);
       if (node.ghost) {
         context.fillStyle = 'rgba(0,0,0,0.2)';
       } else {
@@ -270,7 +270,6 @@ export function useD3Force(
     }
 
     const { width, height } = dimensions;
-    const nodeRadius = 12;
     const labelPadding = 20;
 
     let sim = simulationRef.current;
@@ -306,7 +305,13 @@ export function useD3Force(
     }
 
     sim.force('charge', d3.forceManyBody().strength(-9999).distanceMax(9999));
-    sim.force('collision', d3.forceCollide(nodeRadius + labelPadding));
+    sim.force(
+      'collision',
+      d3.forceCollide((node) => {
+        const count = getViolationCountsForNode(node.id).cumulativeViolations;
+        return getNodeRadiusPx(count, node.shape) + labelPadding;
+      }),
+    );
 
     // Draw only edges that are valid for the current node set
     drawRef.current = () => drawCanvas(nodes, edgesForSim);
@@ -316,6 +321,8 @@ export function useD3Force(
       if (boundingBox === 'on') {
         nodes.forEach((node) => {
           // eslint-disable-next-line no-param-reassign
+          const count = getViolationCountsForNode(node.id).cumulativeViolations;
+          const nodeRadius = getNodeRadiusPx(count, node.shape);
           node.x = Math.max(nodeRadius, Math.min(width - nodeRadius, node.x ?? 0));
           // eslint-disable-next-line no-param-reassign
           node.y = Math.max(nodeRadius, Math.min(height - nodeRadius, node.y ?? 0));
