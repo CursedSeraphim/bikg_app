@@ -55,3 +55,11 @@ export function getScaledNodeRadius(totalViolations: number | undefined): number
   const scaledRadius = Math.min(D3_FORCE_NODE_MAX_RADIUS, violations);
   return Math.max(D3_FORCE_NODE_MIN_RADIUS, scaledRadius);
 }
+
+export function parseTotalViolationsFromLabel(label?: string): number | undefined {
+  if (!label) return undefined;
+  const match = label.match(/\(\s*\d+\s*\/\s*(\d+)\s*\)/);
+  if (!match) return undefined;
+  const parsed = Number(match[1]);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
