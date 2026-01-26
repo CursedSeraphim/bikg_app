@@ -786,6 +786,67 @@ def uri_to_qname(graph, uri):
         return uri
 
 
+def normalize_node_id(graph: Graph, node_id: str) -> str:
+    """
+    Normalize a node identifier to a QName when possible.
+    """
+    if has_namespace(node_id):
+        return str(uri_to_qname(graph, URIRef(node_id)))
+    if ":" in node_id:
+        try:
+            expanded = graph.namespace_manager.expand_curie(node_id)
+            return str(uri_to_qname(graph, URIRef(str(expanded))))
+        except ValueError:
+            return node_id
+    return node_id
+
+
+def build_node_class_map(graph: Graph) -> dict[str, list[str]]:
+    """
+    Build a mapping from node QName to its rdf:type QNames.
+    """
+    node_class_map: dict[str, set[str]] = defaultdict(set)
+    for subject, obj in graph.subject_objects(RDF.type):
+        subject_q = str(uri_to_qname(graph, subject))
+        obj_q = str(uri_to_qname(graph, obj))
+        node_class_map[subject_q].add(obj_q)
+
+    return {key: sorted(values) for key, values in node_class_map.items()}
+
+
+node_class_map = build_node_class_map(g)
+
+
+@router.get("/node-class")
+async def get_node_class(node_id: str):
+    """
+    Retrieve rdf:type classes for a node, returning the normalized id and classes.
+    """
+    normalized_id = normalize_node_id(g, node_id)
+    classes = node_class_map.get(normalized_id, [])
+    return {
+        "id": normalized_id,
+        "classes": classes,
+        "class": classes[0] if classes else None,
+    }
+
+
+@router.post("/node-classes")
+async def get_node_classes(request: Request):
+    """
+    Retrieve rdf:type classes for multiple nodes in one request.
+    """
+    payload = await request.json()
+    node_ids = payload.get("node_ids", [])
+    class_map = {}
+    for node_id in node_ids:
+        normalized_id = normalize_node_id(g, node_id)
+        classes = node_class_map.get(normalized_id, [])
+        class_map[node_id] = classes[0] if classes else None
+
+    return {"classes": class_map}
+
+
 @router.get("/violation_path_nodes_dict")
 def get_violation_path_nodes_dict():
     """
