@@ -23,9 +23,9 @@ export const NAMESPACE_SHAPE_MAP: Record<string, NodeShape> = {
   sh: 'rectangle',
   owl: 'diamond',
   cns: 'pentagon',
-  xsd: 'hexagon',
+  // xsd: 'hexagon',
   ex: 'triangle',
-  other: 'triangle',
+  other: 'hexagon',
 };
 
 const DEFAULT_NODE_SHAPE: NodeShape = 'triangle';
