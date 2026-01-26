@@ -2,7 +2,7 @@
 
 import type { NodeShape } from './D3NldUtils';
 
-export type NodeSource = 'ontology' | 'instance' | 'violation' | 'unknown';
+export type NodeSource = 'ontology' | 'instance' | 'violation' | 'unknown' | 'report';
 
 export interface CanvasNode {
   id: string;
@@ -34,6 +34,7 @@ export interface CanvasEdge {
   target: string | CanvasNode;
   label?: string;
   visible: boolean;
+  color?: string;
   /** Preview edges used for ghost nodes */
   ghost?: boolean;
   /** Highlight existing edge that would be removed on confirm */
