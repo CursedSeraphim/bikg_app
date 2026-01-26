@@ -54,6 +54,121 @@ export function useD3Force(
   const edgeLabelFont = `${D3_FORCE_EDGE_LABEL_FONT_SIZE_PX}px sans-serif`;
   const nodeLabelOffsetPx = D3_FORCE_LABEL_FONT_SIZE_PX;
   const edgeLabelOffsetPx = D3_FORCE_EDGE_LABEL_FONT_SIZE_PX / 2;
+  const edgeBundlingCompatibilityThreshold = 0.4;
+  const edgeBundlingStiffness = 60;
+  const edgeBundlingStepSize = 0.2;
+
+  type EdgeLayout = {
+    edge: CanvasEdge;
+    source: CanvasNode;
+    target: CanvasNode;
+    control: { x: number; y: number };
+    label: { x: number; y: number };
+  };
+
+  function quadraticPoint(p0: number, p1: number, p2: number, t: number) {
+    const oneMinusT = 1 - t;
+    return oneMinusT * oneMinusT * p0 + 2 * oneMinusT * t * p1 + t * t * p2;
+  }
+
+  function computeBundledEdges(allNodes: CanvasNode[], allEdges: CanvasEdge[]): EdgeLayout[] {
+    const edgeEntries = allEdges
+      .map((edge) => {
+        const sourceNode =
+          allNodes.find((n) => n.id === (typeof edge.source === 'object' ? edge.source.id : edge.source)) ||
+          (typeof edge.source === 'object' ? edge.source : undefined);
+        const targetNode =
+          allNodes.find((n) => n.id === (typeof edge.target === 'object' ? edge.target.id : edge.target)) ||
+          (typeof edge.target === 'object' ? edge.target : undefined);
+        if (!sourceNode || !targetNode) {
+          return null;
+        }
+        const sx = sourceNode.x ?? 0;
+        const sy = sourceNode.y ?? 0;
+        const tx = targetNode.x ?? 0;
+        const ty = targetNode.y ?? 0;
+        const dx = tx - sx;
+        const dy = ty - sy;
+        const length = Math.hypot(dx, dy);
+        const mid = { x: (sx + tx) / 2, y: (sy + ty) / 2 };
+
+        return {
+          edge,
+          source: sourceNode,
+          target: targetNode,
+          sx,
+          sy,
+          tx,
+          ty,
+          dx,
+          dy,
+          length,
+          mid,
+        };
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+
+    const compatMidpoints: { x: number; y: number }[] = edgeEntries.map((entry) => entry.mid);
+    if (edgeEntries.length <= 1) {
+      return edgeEntries.map((entry) => {
+        const control = entry.mid;
+        const label = {
+          x: quadraticPoint(entry.sx, control.x, entry.tx, 0.5),
+          y: quadraticPoint(entry.sy, control.y, entry.ty, 0.5),
+        };
+        return { edge: entry.edge, source: entry.source, target: entry.target, control, label };
+      });
+    }
+
+    edgeEntries.forEach((entry, index) => {
+      const { length, dx, dy } = entry;
+      if (length === 0) {
+        compatMidpoints[index] = entry.mid;
+        return;
+      }
+      const dirx = dx / length;
+      const diry = dy / length;
+      let sumX = entry.mid.x;
+      let sumY = entry.mid.y;
+      let count = 1;
+
+      edgeEntries.forEach((other, otherIndex) => {
+        if (otherIndex === index) return;
+        if (other.length === 0) return;
+        const otherDirx = other.dx / other.length;
+        const otherDiry = other.dy / other.length;
+        const angleCompatibility = Math.abs(dirx * otherDirx + diry * otherDiry);
+        if (angleCompatibility >= edgeBundlingCompatibilityThreshold) {
+          sumX += other.mid.x;
+          sumY += other.mid.y;
+          count += 1;
+        }
+      });
+
+      const avgMid = { x: sumX / count, y: sumY / count };
+      const vx = avgMid.x - entry.mid.x;
+      const vy = avgMid.y - entry.mid.y;
+      const dot = vx * dirx + vy * diry;
+      const perpX = vx - dot * dirx;
+      const perpY = vy - dot * diry;
+      const scale = edgeBundlingStepSize * (edgeBundlingStiffness / 60);
+      const maxOffset = length * 0.35;
+      const offsetMagnitude = Math.min(maxOffset, Math.hypot(perpX, perpY) * scale);
+      const perpLength = Math.hypot(perpX, perpY) || 1;
+      const offsetX = (perpX / perpLength) * offsetMagnitude;
+      const offsetY = (perpY / perpLength) * offsetMagnitude;
+      compatMidpoints[index] = { x: entry.mid.x + offsetX, y: entry.mid.y + offsetY };
+    });
+
+    return edgeEntries.map((entry, index) => {
+      const control = compatMidpoints[index];
+      const label = {
+        x: quadraticPoint(entry.sx, control.x, entry.tx, 0.5),
+        y: quadraticPoint(entry.sy, control.y, entry.ty, 0.5),
+      };
+      return { edge: entry.edge, source: entry.source, target: entry.target, control, label };
+    });
+  }
 
   function drawPolygon(context: CanvasRenderingContext2D, x: number, y: number, radius: number, sides: number, rotation = -Math.PI / 2) {
     context.beginPath();
@@ -131,26 +246,16 @@ export function useD3Force(
     context.textAlign = 'center';
     context.textBaseline = 'middle';
 
+    const bundledEdges = computeBundledEdges(allNodes, allEdges);
+
     // Draw edges
-    allEdges.forEach((edge) => {
-      // Prefer lookup by id to avoid stale object references (e.g. from ghost nodes)
-      const sourceNode =
-        allNodes.find((n) => n.id === (typeof edge.source === 'object' ? edge.source.id : edge.source)) ||
-        (typeof edge.source === 'object' ? edge.source : undefined);
-      const targetNode =
-        allNodes.find((n) => n.id === (typeof edge.target === 'object' ? edge.target.id : edge.target)) ||
-        (typeof edge.target === 'object' ? edge.target : undefined);
+    bundledEdges.forEach(({ edge, source, target, control, label }) => {
+      const sx = source.x ?? 0;
+      const sy = source.y ?? 0;
+      const tx = target.x ?? 0;
+      const ty = target.y ?? 0;
 
-      if (!sourceNode || !targetNode) {
-        return;
-      }
-
-      const sx = sourceNode.x ?? 0;
-      const sy = sourceNode.y ?? 0;
-      const tx = targetNode.x ?? 0;
-      const ty = targetNode.y ?? 0;
-
-      // Draw line
+      // Draw curve
       if (edge.previewRemoval) {
         context.strokeStyle = 'rgba(255,0,0,0.6)';
       } else if (edge.ghost) {
@@ -164,12 +269,12 @@ export function useD3Force(
       context.lineWidth = baseEdgeWidth * semanticScale;
       context.beginPath();
       context.moveTo(sx, sy);
-      context.lineTo(tx, ty);
+      context.quadraticCurveTo(control.x, control.y, tx, ty);
       context.stroke();
 
       // Draw arrowhead
-      const dx = tx - sx;
-      const dy = ty - sy;
+      const dx = tx - control.x;
+      const dy = ty - control.y;
       const length = Math.sqrt(dx * dx + dy * dy);
       if (length > 0) {
         const arrowSize = 8 * semanticScale;
@@ -196,20 +301,18 @@ export function useD3Force(
 
       // Draw edge label (if present)
       if (edge.label) {
-        const midX = (sx + tx) / 2;
-        const midY = (sy + ty) / 2;
-        const label = mapEdgeLabel(edge.label);
+        const labelText = mapEdgeLabel(edge.label);
         context.save();
         const t = transformRef.current;
-        const screenX = midX * t.k;
-        const screenY = midY * t.k - edgeLabelOffsetPx;
+        const screenX = label.x * t.k;
+        const screenY = label.y * t.k - edgeLabelOffsetPx;
         context.scale(1 / t.k, 1 / t.k);
         context.font = edgeLabelFont;
         context.lineWidth = 3;
         context.strokeStyle = '#fff';
-        context.strokeText(label, screenX, screenY);
+        context.strokeText(labelText, screenX, screenY);
         context.fillStyle = '#858585';
-        context.fillText(label, screenX, screenY);
+        context.fillText(labelText, screenX, screenY);
         context.restore();
       }
     });
