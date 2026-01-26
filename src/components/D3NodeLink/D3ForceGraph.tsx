@@ -28,7 +28,7 @@ import { useD3Data } from './useD3Data';
 
 import store from '../Store/Store';
 import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
-import { computeColorForId } from './D3NldUtils';
+import { getNodeColorForId, getNodeShapeForId } from './D3NldUtils';
 import { getNearNodeThreshold } from './hooks/hoverRadius';
 import { useAdjacency } from './hooks/useAdjacency';
 import { useCanvasDimensions } from './hooks/useCanvasDimensions';
@@ -177,7 +177,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         node = {
           id,
           label: display,
-          color: computeColorForId(id),
+          color: getNodeColorForId(id),
+          shape: getNodeShapeForId(id),
           x: saved?.x,
           y: saved?.y,
           selected: Boolean(n.data.selected),
@@ -187,7 +188,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         };
       } else {
         node.label = display;
-        node.color = computeColorForId(id);
+        node.color = getNodeColorForId(id);
+        node.shape = getNodeShapeForId(id);
         node.selected = Boolean(n.data.selected);
         node.violation = Boolean(n.data.violation);
         node.exemplar = Boolean(n.data.exemplar);
@@ -1069,7 +1071,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           newGhostNodes.push({
             id: nid,
             label: anonymizeLabel(nodeData.data.label ?? nodeData.data.id),
-            color: computeColorForId(nid),
+            color: getNodeColorForId(nid),
+            shape: getNodeShapeForId(nid),
             x: closest?.x,
             y: closest?.y,
             ghost: true as any,

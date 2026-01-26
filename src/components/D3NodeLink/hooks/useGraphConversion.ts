@@ -2,7 +2,7 @@ import type { MutableRefObject } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import store from '../../Store/Store';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
-import { computeColorForId } from '../D3NldUtils';
+import { getNodeColorForId, getNodeShapeForId } from '../D3NldUtils';
 import { updateD3NodesGivenCounts } from './useD3CumulativeCounts';
 
 interface UseGraphConversionParams {
@@ -50,7 +50,8 @@ export function useGraphConversion({
         node = {
           id,
           label: display,
-          color: computeColorForId(id),
+          color: getNodeColorForId(id),
+          shape: getNodeShapeForId(id),
           x: saved?.x,
           y: saved?.y,
           selected: Boolean(n.data.selected),
@@ -60,7 +61,8 @@ export function useGraphConversion({
         };
       } else {
         node.label = display;
-        node.color = computeColorForId(id);
+        node.color = getNodeColorForId(id);
+        node.shape = getNodeShapeForId(id);
         node.selected = Boolean(n.data.selected);
         node.violation = Boolean(n.data.violation);
         node.exemplar = Boolean(n.data.exemplar);

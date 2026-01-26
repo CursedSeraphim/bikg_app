@@ -8,19 +8,40 @@ export function extractNamespace(uri: string): string {
   return match ? match[1] : '';
 }
 
+export type NodeShape = 'circle' | 'rectangle' | 'diamond' | 'pentagon' | 'hexagon' | 'triangle';
+
+const NAMESPACE_COLOR_MAP: Record<string, string> = {
+  sh: '#669900',
+  ex: '#DA5700',
+};
+
+const DEFAULT_NODE_COLOR = '#007C45';
+
+export const NAMESPACE_SHAPE_MAP: Record<string, NodeShape> = {
+  omics: 'circle',
+  lotr: 'circle',
+  sh: 'rectangle',
+  owl: 'diamond',
+  cns: 'pentagon',
+  xsd: 'hexagon',
+  ex: 'triangle',
+  other: 'triangle',
+};
+
+const DEFAULT_NODE_SHAPE: NodeShape = 'triangle';
+
 /**
- * Computes a color based on the namespace prefix.
- * - "sh" → #669900
- * - "ex" → #DA5700
- * - otherwise → #007C45
+ * Maps a namespace prefix to its node color.
  */
-export function computeColorForId(id: string): string {
+export function getNodeColorForId(id: string): string {
   const ns = extractNamespace(id).toLowerCase();
-  if (ns === 'sh') {
-    return '#669900';
-  }
-  if (ns === 'ex') {
-    return '#DA5700';
-  }
-  return '#007C45';
+  return NAMESPACE_COLOR_MAP[ns] ?? DEFAULT_NODE_COLOR;
+}
+
+/**
+ * Maps a namespace prefix to its node shape.
+ */
+export function getNodeShapeForId(id: string): NodeShape {
+  const ns = extractNamespace(id).toLowerCase();
+  return NAMESPACE_SHAPE_MAP[ns] ?? DEFAULT_NODE_SHAPE;
 }
