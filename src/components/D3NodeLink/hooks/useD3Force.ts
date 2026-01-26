@@ -279,20 +279,25 @@ export function useD3Force(
       if (length > 1) {
         const targetCount = getViolationCountsForNode(target.id).cumulativeViolations;
         const targetRadius = getNodeRadiusPx(targetCount, target.shape) * semanticScale;
-        const targetOutline = 2.5 * semanticScale;
-        const arrowPadding = 2 * semanticScale;
-        const arrowSize = 8 * semanticScale;
-        const arrowWidth = 4 * semanticScale;
+        const targetOutline = 1.25 * semanticScale;
+        const arrowPadding = 1 * semanticScale;
+        const arrowSize = 10 * semanticScale;
+        const arrowWidth = 5 * semanticScale;
         const tipOffset = Math.min(targetRadius + targetOutline + arrowPadding, length - 1);
-        const tipx = tx - (dx * tipOffset) / length;
-        const tipy = ty - (dy * tipOffset) / length;
-        const backx = tipx - (arrowSize * dx) / length;
-        const backy = tipy - (arrowSize * dy) / length;
+        const tOffset = Math.min(0.4, tipOffset / length);
+        const tArrow = 1 - tOffset;
+        const tipx = quadraticPoint(sx, control.x, tx, tArrow);
+        const tipy = quadraticPoint(sy, control.y, ty, tArrow);
+        const tangentDx = 2 * (1 - tArrow) * (control.x - sx) + 2 * tArrow * (tx - control.x);
+        const tangentDy = 2 * (1 - tArrow) * (control.y - sy) + 2 * tArrow * (ty - control.y);
+        const tangentLength = Math.hypot(tangentDx, tangentDy) || 1;
+        const backx = tipx - (arrowSize * tangentDx) / tangentLength;
+        const backy = tipy - (arrowSize * tangentDy) / tangentLength;
 
         context.beginPath();
         context.moveTo(tipx, tipy);
-        context.lineTo(backx + (arrowWidth * -dy) / length, backy + (arrowWidth * dx) / length);
-        context.lineTo(backx - (arrowWidth * -dy) / length, backy - (arrowWidth * dx) / length);
+        context.lineTo(backx + (arrowWidth * -tangentDy) / tangentLength, backy + (arrowWidth * tangentDx) / tangentLength);
+        context.lineTo(backx - (arrowWidth * -tangentDy) / tangentLength, backy - (arrowWidth * tangentDx) / tangentLength);
         context.closePath();
         if (edge.previewRemoval) {
           context.fillStyle = 'rgba(255,0,0,0.6)';
