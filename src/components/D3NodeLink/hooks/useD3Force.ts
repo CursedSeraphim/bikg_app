@@ -82,7 +82,7 @@ export function useD3Force(
         drawPolygon(context, x, y, radius, 4, Math.PI / 4);
         break;
       case 'triangle':
-        drawPolygon(context, x, y, radius, 3);
+        drawPolygon(context, x, y, radius + 3, 3);
         break;
       case 'pentagon':
         drawPolygon(context, x, y, radius, 5);
@@ -214,6 +214,7 @@ export function useD3Force(
     // Draw nodes
     allNodes.forEach((node) => {
       const count = getViolationCountsForNode(node.id).cumulativeViolations;
+      console.log(node);
       drawNodeShape(context, node, count + 3);
       if (node.ghost) {
         context.fillStyle = 'rgba(0,0,0,0.2)';
