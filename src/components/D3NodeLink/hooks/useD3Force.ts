@@ -4,7 +4,7 @@ import * as d3 from 'd3';
 import { useEffect, useRef } from 'react';
 import { getViolationCountsForNode } from '../../../utils/violations';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
-import { D3_FORCE_LABEL_FONT_SIZE_PX, getNodeRadiusPx } from '../D3NldUtils';
+import { D3_FORCE_EDGE_LABEL_FONT_SIZE_PX, D3_FORCE_LABEL_FONT_SIZE_PX, getNodeRadiusPx } from '../D3NldUtils';
 import { useLabelTransform } from './useLabelTransform';
 
 /**
@@ -50,9 +50,10 @@ export function useD3Force(
 
   const dpi = window.devicePixelRatio ?? 1;
   const { mapNodeLabel, mapEdgeLabel } = useLabelTransform();
-  const labelFont = `${D3_FORCE_LABEL_FONT_SIZE_PX}px sans-serif`;
+  const nodeLabelFont = `${D3_FORCE_LABEL_FONT_SIZE_PX}px sans-serif`;
+  const edgeLabelFont = `${D3_FORCE_EDGE_LABEL_FONT_SIZE_PX}px sans-serif`;
   const nodeLabelOffsetPx = D3_FORCE_LABEL_FONT_SIZE_PX;
-  const edgeLabelOffsetPx = D3_FORCE_LABEL_FONT_SIZE_PX / 2;
+  const edgeLabelOffsetPx = D3_FORCE_EDGE_LABEL_FONT_SIZE_PX / 2;
 
   function drawPolygon(context: CanvasRenderingContext2D, x: number, y: number, radius: number, sides: number, rotation = -Math.PI / 2) {
     context.beginPath();
@@ -125,7 +126,7 @@ export function useD3Force(
     // Common styles for edges
     context.strokeStyle = '#AAA';
     context.fillStyle = '#000';
-    context.font = labelFont;
+    context.font = nodeLabelFont;
     context.textAlign = 'center';
     context.textBaseline = 'middle';
 
@@ -201,7 +202,7 @@ export function useD3Force(
         const screenX = midX * t.k;
         const screenY = midY * t.k - edgeLabelOffsetPx;
         context.scale(1 / t.k, 1 / t.k);
-        context.font = labelFont;
+        context.font = edgeLabelFont;
         context.lineWidth = 3;
         context.strokeStyle = '#fff';
         context.strokeText(label, screenX, screenY);
@@ -234,7 +235,7 @@ export function useD3Force(
       const screenX = (node.x ?? 0) * t.k;
       const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
       context.scale(1 / t.k, 1 / t.k);
-      context.font = labelFont;
+      context.font = nodeLabelFont;
       context.lineWidth = 3;
       context.strokeStyle = '#fff';
       context.strokeText(label, screenX, screenY);

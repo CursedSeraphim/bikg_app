@@ -35,6 +35,7 @@ export const NAMESPACE_SHAPE_MAP: Record<string, NodeShape> = {
 const DEFAULT_NODE_SHAPE: NodeShape = 'triangle';
 
 export const D3_FORCE_LABEL_FONT_SIZE_PX = 14;
+export const D3_FORCE_EDGE_LABEL_FONT_SIZE_PX = 12;
 export const D3_NODE_MIN_RADIUS_PX = 4;
 export const D3_NODE_VIOLATION_RADIUS_OFFSET_PX = 3;
 
