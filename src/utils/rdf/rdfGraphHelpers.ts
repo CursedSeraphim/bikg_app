@@ -3,6 +3,7 @@ import * as N3 from 'n3';
 import { NamedNode, Quad, Store } from 'n3';
 import { v4 as uuidv4 } from 'uuid';
 import { ICombinedState, IRdfState, ITriple } from '../../types';
+import { getViolationCountsForNode } from '../violations';
 
 type PrefixMap = Record<string, string>;
 
@@ -135,8 +136,7 @@ export const extractNamespace = (uri) => {
 };
 // Helper function to find or add node
 export const findOrAddNode = (id, label, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList) => {
-  const baseId = id.replace(/_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, '');
-  const { cumulativeSelected = 0, cumulativeViolations = 0, violations = 0 } = numberViolationsPerNode[id] || numberViolationsPerNode[baseId] || {};
+  const { cumulativeSelected, cumulativeViolations, violations } = getViolationCountsForNode(id, numberViolationsPerNode);
 
   const hasCounts = cumulativeSelected !== 0 || cumulativeViolations !== 0;
   const labelSuffix = hasCounts ? ` (${cumulativeSelected}/${cumulativeViolations})` : '';

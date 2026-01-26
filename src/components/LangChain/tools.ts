@@ -2,6 +2,7 @@
 import { DynamicTool } from 'langchain/tools';
 import { useDispatch, useStore } from 'react-redux';
 import { IRootState } from '../../types';
+import { getTotalViolationsForNode } from '../../utils/violations';
 import { setSelectedTypes, setSelectedViolationExemplars, setSelectedViolations } from '../Store/CombinedSlice';
 import { grepAround } from './rdfGrepEngine';
 
@@ -104,7 +105,7 @@ const useTools = () => {
     const { numberViolationsPerNode } = state.combined;
     let ret = '';
     Object.keys(numberViolationsPerNode).forEach((key) => {
-      ret += `${key}: ${numberViolationsPerNode[key].violations}\n`;
+      ret += `${key}: ${getTotalViolationsForNode(key, numberViolationsPerNode)}\n`;
     });
     return ret;
   };
