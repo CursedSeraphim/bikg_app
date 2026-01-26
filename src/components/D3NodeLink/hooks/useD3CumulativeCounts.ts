@@ -21,6 +21,8 @@ export const updateD3NodesGivenCounts = (nodes: CanvasNode[], numberViolationsPe
     const marker = cumulativeSelected !== 0 || cumulativeViolations !== 0 ? (violations === 0 ? '*' : '') : '';
     // eslint-disable-next-line no-param-reassign
     node.label = `${baseId}${labelSuffix}${marker}`;
+    // eslint-disable-next-line no-param-reassign
+    node.totalViolations = cumulativeViolations;
   });
 };
 

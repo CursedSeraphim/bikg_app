@@ -3,7 +3,12 @@
 import * as d3 from 'd3';
 import { useEffect, useRef } from 'react';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
-import { D3_FORCE_LABEL_FONT_SIZE_PX } from '../D3NldUtils';
+import {
+  D3_FORCE_LABEL_FONT_SIZE_PX,
+  D3_FORCE_NODE_MAX_RADIUS,
+  D3_FORCE_NODE_SELECTED_RADIUS_BOOST,
+  getScaledNodeRadius,
+} from '../D3NldUtils';
 import { useLabelTransform } from './useLabelTransform';
 
 /**
@@ -212,7 +217,7 @@ export function useD3Force(
 
     // Draw nodes
     allNodes.forEach((node) => {
-      const radius = node.selected ? 7.5 : 6;
+      const radius = getScaledNodeRadius(node.totalViolations, Boolean(node.selected));
       drawNodeShape(context, node, radius);
       if (node.ghost) {
         context.fillStyle = 'rgba(0,0,0,0.2)';
@@ -268,7 +273,7 @@ export function useD3Force(
     }
 
     const { width, height } = dimensions;
-    const nodeRadius = 12;
+    const maxNodeRadius = D3_FORCE_NODE_MAX_RADIUS + D3_FORCE_NODE_SELECTED_RADIUS_BOOST;
     const labelPadding = 20;
 
     let sim = simulationRef.current;
@@ -304,7 +309,7 @@ export function useD3Force(
     }
 
     sim.force('charge', d3.forceManyBody().strength(-9999).distanceMax(9999));
-    sim.force('collision', d3.forceCollide(nodeRadius + labelPadding));
+    sim.force('collision', d3.forceCollide<CanvasNode>().radius((node) => getScaledNodeRadius(node.totalViolations, Boolean(node.selected)) + labelPadding));
 
     // Draw only edges that are valid for the current node set
     drawRef.current = () => drawCanvas(nodes, edgesForSim);
@@ -314,9 +319,9 @@ export function useD3Force(
       if (boundingBox === 'on') {
         nodes.forEach((node) => {
           // eslint-disable-next-line no-param-reassign
-          node.x = Math.max(nodeRadius, Math.min(width - nodeRadius, node.x ?? 0));
+          node.x = Math.max(maxNodeRadius, Math.min(width - maxNodeRadius, node.x ?? 0));
           // eslint-disable-next-line no-param-reassign
-          node.y = Math.max(nodeRadius, Math.min(height - nodeRadius, node.y ?? 0));
+          node.y = Math.max(maxNodeRadius, Math.min(height - maxNodeRadius, node.y ?? 0));
         });
       }
       drawCanvas(nodes, edgesForSim);

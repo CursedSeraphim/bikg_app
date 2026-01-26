@@ -22,6 +22,8 @@ export interface CanvasNode {
   violation?: boolean;
   exemplar?: boolean;
   type?: boolean;
+  /** Total violations for sizing (matches the count after the slash in labels) */
+  totalViolations?: number;
 }
 
 export interface CanvasEdge {
