@@ -3,6 +3,7 @@
 import * as d3 from 'd3';
 import { useEffect, useRef } from 'react';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
+import { D3_FORCE_LABEL_FONT_SIZE_PX } from '../D3NldUtils';
 import { useLabelTransform } from './useLabelTransform';
 
 /**
@@ -48,6 +49,9 @@ export function useD3Force(
 
   const dpi = window.devicePixelRatio ?? 1;
   const { mapNodeLabel, mapEdgeLabel } = useLabelTransform();
+  const labelFont = `${D3_FORCE_LABEL_FONT_SIZE_PX}px sans-serif`;
+  const nodeLabelOffsetPx = D3_FORCE_LABEL_FONT_SIZE_PX;
+  const edgeLabelOffsetPx = D3_FORCE_LABEL_FONT_SIZE_PX / 2;
 
   function drawPolygon(context: CanvasRenderingContext2D, x: number, y: number, radius: number, sides: number, rotation = -Math.PI / 2) {
     context.beginPath();
@@ -120,7 +124,7 @@ export function useD3Force(
     // Common styles for edges
     context.strokeStyle = '#AAA';
     context.fillStyle = '#000';
-    context.font = '12px sans-serif';
+    context.font = labelFont;
     context.textAlign = 'center';
     context.textBaseline = 'middle';
 
@@ -189,14 +193,19 @@ export function useD3Force(
       // Draw edge label (if present)
       if (edge.label) {
         const midX = (sx + tx) / 2;
-        const midY = (sy + ty) / 2 - 5;
+        const midY = (sy + ty) / 2;
         const label = mapEdgeLabel(edge.label);
         context.save();
+        const t = transformRef.current;
+        const screenX = midX * t.k;
+        const screenY = midY * t.k - edgeLabelOffsetPx;
+        context.scale(1 / t.k, 1 / t.k);
+        context.font = labelFont;
         context.lineWidth = 3;
         context.strokeStyle = '#fff';
-        context.strokeText(label, midX, midY);
+        context.strokeText(label, screenX, screenY);
         context.fillStyle = '#333';
-        context.fillText(label, midX, midY);
+        context.fillText(label, screenX, screenY);
         context.restore();
       }
     });
@@ -219,11 +228,16 @@ export function useD3Force(
 
       context.save();
       const label = mapNodeLabel(node.label);
+      const t = transformRef.current;
+      const screenX = (node.x ?? 0) * t.k;
+      const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
+      context.scale(1 / t.k, 1 / t.k);
+      context.font = labelFont;
       context.lineWidth = 3;
       context.strokeStyle = '#fff';
-      context.strokeText(label, node.x ?? 0, (node.y ?? 0) - 12);
+      context.strokeText(label, screenX, screenY);
       context.fillStyle = '#000';
-      context.fillText(label, node.x ?? 0, (node.y ?? 0) - 12);
+      context.fillText(label, screenX, screenY);
       context.restore();
     });
 
