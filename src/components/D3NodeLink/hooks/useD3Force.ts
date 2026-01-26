@@ -156,7 +156,7 @@ export function useD3Force(
       } else if (edge.selected) {
         context.strokeStyle = '#222';
       } else {
-        context.strokeStyle = '#AAA';
+        context.strokeStyle = edge.color ?? '#AAA';
       }
       context.lineWidth = edge.selected ? 2 : 1;
       context.beginPath();
@@ -186,7 +186,7 @@ export function useD3Force(
         } else if (edge.selected) {
           context.fillStyle = '#222';
         } else {
-          context.fillStyle = '#AAA';
+          context.fillStyle = edge.color ?? '#AAA';
         }
         context.fill();
       }

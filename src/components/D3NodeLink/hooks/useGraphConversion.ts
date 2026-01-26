@@ -40,6 +40,7 @@ export function useGraphConversion({
     const visibleEdgeData = cyDataEdges.filter((e) => e.data.visible && visibleIds.has(e.data.source) && visibleIds.has(e.data.target));
 
     const nextNodes: CanvasNode[] = [];
+    const nodeInfoMap = new Map<string, { sources: string[]; isAClass: string | null }>();
 
     visibleNodeData.forEach((n) => {
       const { id } = n.data;
@@ -63,6 +64,7 @@ export function useGraphConversion({
           type: Boolean(n.data.type),
           isAClass,
         };
+        nodeInfoMap.set(id, { sources, isAClass });
       } else {
         node.label = display;
         node.shape = getNodeShapeForId(id);
@@ -73,6 +75,7 @@ export function useGraphConversion({
         node.type = Boolean(n.data.type);
         node.isAClass = n.data.isAClass ?? null;
         node.color = getNodeColorForNode({ sources: node.sources, isAClass: node.isAClass });
+        nodeInfoMap.set(id, { sources: node.sources ?? ['unknown'], isAClass: node.isAClass ?? null });
       }
       if (originRef.current[id] === undefined) {
         originRef.current[id] = null;
@@ -89,13 +92,17 @@ export function useGraphConversion({
       }
     });
 
-    const newEdges: CanvasEdge[] = visibleEdgeData.map((e) => ({
-      source: e.data.source,
-      target: e.data.target,
-      label: anonymizeLabel(e.data.label ?? e.data.id),
-      visible: true,
-      selected: Boolean(e.data.selected),
-    }));
+    const newEdges: CanvasEdge[] = visibleEdgeData.map((e) => {
+      const sourceInfo = nodeInfoMap.get(e.data.source);
+      return {
+        source: e.data.source,
+        target: e.data.target,
+        label: anonymizeLabel(e.data.label ?? e.data.id),
+        visible: true,
+        selected: Boolean(e.data.selected),
+        color: getNodeColorForNode({ sources: sourceInfo?.sources ?? ['unknown'], isAClass: sourceInfo?.isAClass ?? null }),
+      };
+    });
 
     updateD3NodesGivenCounts(nextNodes);
     setD3Nodes(nextNodes);

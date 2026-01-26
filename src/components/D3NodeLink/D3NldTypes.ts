@@ -34,6 +34,7 @@ export interface CanvasEdge {
   target: string | CanvasNode;
   label?: string;
   visible: boolean;
+  color?: string;
   /** Preview edges used for ghost nodes */
   ghost?: boolean;
   /** Highlight existing edge that would be removed on confirm */

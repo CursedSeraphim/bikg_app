@@ -164,6 +164,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     const visibleEdgeData = cyDataEdges.filter((e) => e.data.visible && visibleIds.has(e.data.source) && visibleIds.has(e.data.target));
 
     const nextNodes: CanvasNode[] = [];
+    const nodeInfoMap = new Map<string, { sources: string[]; isAClass: string | null }>();
 
     visibleNodeData.forEach((n) => {
       const { id } = n.data;
@@ -187,6 +188,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           type: Boolean(n.data.type),
           isAClass,
         };
+        nodeInfoMap.set(id, { sources, isAClass });
       } else {
         node.label = display;
         node.shape = getNodeShapeForId(id);
@@ -197,6 +199,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         node.type = Boolean(n.data.type);
         node.isAClass = n.data.isAClass ?? null;
         node.color = getNodeColorForNode({ sources: node.sources, isAClass: node.isAClass });
+        nodeInfoMap.set(id, { sources: node.sources ?? ['unknown'], isAClass: node.isAClass ?? null });
       }
       if (originRef.current[id] === undefined) {
         originRef.current[id] = null;
@@ -214,13 +217,17 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       }
     });
 
-    const newEdges: CanvasEdge[] = visibleEdgeData.map((e) => ({
-      source: e.data.source,
-      target: e.data.target,
-      label: anonymizeLabel(e.data.label ?? e.data.id), // sanitize
-      visible: true,
-      selected: Boolean(e.data.selected),
-    }));
+    const newEdges: CanvasEdge[] = visibleEdgeData.map((e) => {
+      const sourceInfo = nodeInfoMap.get(e.data.source);
+      return {
+        source: e.data.source,
+        target: e.data.target,
+        label: anonymizeLabel(e.data.label ?? e.data.id), // sanitize
+        visible: true,
+        selected: Boolean(e.data.selected),
+        color: getNodeColorForNode({ sources: sourceInfo?.sources ?? ['unknown'], isAClass: sourceInfo?.isAClass ?? null }),
+      };
+    });
 
     updateD3NodesGivenCounts(nextNodes);
     setD3Nodes(nextNodes);
@@ -1038,6 +1045,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       const newGhostNodes: CanvasNode[] = [];
       const newGhostEdges: CanvasEdge[] = [];
       const addedEdgeKeys = new Set<string>();
+      const getEdgeColorForSource = (sourceId: string) => {
+        const nodeData = cyDataNodes.find((n) => n.data.id === sourceId);
+        return getNodeColorForNode({ sources: nodeData?.data.sources ?? ['unknown'], isAClass: nodeData?.data.isAClass ?? null });
+      };
 
       if (allVisible) {
         const visibleIds =
@@ -1058,6 +1069,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
                 target: edgeData.data.target,
                 label: anonymizeLabel(edgeData.data.label ?? edgeData.data.id),
                 visible: true,
+                color: getEdgeColorForSource(edgeData.data.source),
                 // marks that this preview indicates removal rather than addition
                 previewRemoval: true as any,
               } as any);
@@ -1087,6 +1099,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
               target: edge.target,
               label: anonymizeLabel(edge.label ?? edge.id),
               visible: true,
+              color: getEdgeColorForSource(edge.source),
               ghost: true as any,
             } as any);
           }
