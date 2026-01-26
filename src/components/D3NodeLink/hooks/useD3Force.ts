@@ -3,12 +3,7 @@
 import * as d3 from 'd3';
 import { useEffect, useRef } from 'react';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
-import {
-  D3_FORCE_LABEL_FONT_SIZE_PX,
-  D3_FORCE_NODE_MAX_RADIUS,
-  D3_FORCE_NODE_SELECTED_RADIUS_BOOST,
-  getScaledNodeRadius,
-} from '../D3NldUtils';
+import { D3_FORCE_LABEL_FONT_SIZE_PX, D3_FORCE_NODE_MAX_RADIUS, getScaledNodeRadius } from '../D3NldUtils';
 import { useLabelTransform } from './useLabelTransform';
 
 /**
@@ -217,7 +212,7 @@ export function useD3Force(
 
     // Draw nodes
     allNodes.forEach((node) => {
-      const radius = getScaledNodeRadius(node.totalViolations, Boolean(node.selected));
+      const radius = getScaledNodeRadius(node.totalViolations);
       drawNodeShape(context, node, radius);
       if (node.ghost) {
         context.fillStyle = 'rgba(0,0,0,0.2)';
@@ -273,7 +268,7 @@ export function useD3Force(
     }
 
     const { width, height } = dimensions;
-    const maxNodeRadius = D3_FORCE_NODE_MAX_RADIUS + D3_FORCE_NODE_SELECTED_RADIUS_BOOST;
+    const maxNodeRadius = D3_FORCE_NODE_MAX_RADIUS;
     const labelPadding = 20;
 
     let sim = simulationRef.current;
@@ -309,7 +304,7 @@ export function useD3Force(
     }
 
     sim.force('charge', d3.forceManyBody().strength(-9999).distanceMax(9999));
-    sim.force('collision', d3.forceCollide<CanvasNode>().radius((node) => getScaledNodeRadius(node.totalViolations, Boolean(node.selected)) + labelPadding));
+    sim.force('collision', d3.forceCollide<CanvasNode>().radius((node) => getScaledNodeRadius(node.totalViolations) + labelPadding));
 
     // Draw only edges that are valid for the current node set
     drawRef.current = () => drawCanvas(nodes, edgesForSim);
