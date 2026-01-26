@@ -38,6 +38,7 @@ export const D3_FORCE_LABEL_FONT_SIZE_PX = 14;
 export const D3_FORCE_EDGE_LABEL_FONT_SIZE_PX = 12;
 export const D3_NODE_MIN_RADIUS_PX = 4;
 export const D3_NODE_VIOLATION_RADIUS_OFFSET_PX = 3;
+export const D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES = true;
 
 const D3_NODE_SHAPE_RADIUS_MODIFIERS_PX: Record<NodeShape, number> = {
   circle: 0,

@@ -1,4 +1,5 @@
 import type { ZoomTransform } from 'd3';
+import { D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES } from '../D3NldUtils';
 
 export const NODE_RADIUS_PX = 50;
 export const HOVER_RADIUS_MULTIPLIER = 2;
@@ -9,6 +10,7 @@ export const HOVER_RADIUS_MULTIPLIER = 2;
  * diagram.
  */
 export function getNearNodeThreshold(transform?: ZoomTransform): number {
-  const effectiveRadius = (NODE_RADIUS_PX * HOVER_RADIUS_MULTIPLIER) / (transform?.k ?? 1);
+  const semanticScale = D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES ? 1 / (transform?.k ?? 1) : 1;
+  const effectiveRadius = NODE_RADIUS_PX * HOVER_RADIUS_MULTIPLIER * semanticScale;
   return effectiveRadius * effectiveRadius;
 }

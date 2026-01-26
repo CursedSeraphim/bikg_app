@@ -4,7 +4,7 @@ import * as d3 from 'd3';
 import { useEffect, useRef } from 'react';
 import { getViolationCountsForNode } from '../../../utils/violations';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
-import { D3_FORCE_EDGE_LABEL_FONT_SIZE_PX, D3_FORCE_LABEL_FONT_SIZE_PX, getNodeRadiusPx } from '../D3NldUtils';
+import { D3_FORCE_EDGE_LABEL_FONT_SIZE_PX, D3_FORCE_LABEL_FONT_SIZE_PX, D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES, getNodeRadiusPx } from '../D3NldUtils';
 import { useLabelTransform } from './useLabelTransform';
 
 /**
@@ -119,6 +119,7 @@ export function useD3Force(
     const t = transformRef.current;
     context.translate(t.x, t.y);
     context.scale(t.k, t.k);
+    const semanticScale = D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES ? 1 / t.k : 1;
 
     // Clear entire viewport (transformed)
     context.clearRect(-t.x / t.k, -t.y / t.k, dimensions.width / t.k, dimensions.height / t.k);
@@ -159,7 +160,8 @@ export function useD3Force(
       } else {
         context.strokeStyle = edge.color ?? '#AAA';
       }
-      context.lineWidth = edge.selected ? 4 : 2;
+      const baseEdgeWidth = edge.selected ? 4 : 2;
+      context.lineWidth = baseEdgeWidth * semanticScale;
       context.beginPath();
       context.moveTo(sx, sy);
       context.lineTo(tx, ty);
@@ -170,8 +172,8 @@ export function useD3Force(
       const dy = ty - sy;
       const length = Math.sqrt(dx * dx + dy * dy);
       if (length > 0) {
-        const arrowSize = 8;
-        const arrowWidth = 4;
+        const arrowSize = 8 * semanticScale;
+        const arrowWidth = 4 * semanticScale;
         const backx = tx - (arrowSize * dx) / length;
         const backy = ty - (arrowSize * dy) / length;
 
@@ -215,7 +217,7 @@ export function useD3Force(
     // Draw nodes
     allNodes.forEach((node) => {
       const count = getViolationCountsForNode(node.id).cumulativeViolations;
-      const radius = getNodeRadiusPx(count, node.shape);
+      const radius = getNodeRadiusPx(count, node.shape) * semanticScale;
       drawNodeShape(context, node, radius);
       if (node.ghost) {
         context.fillStyle = 'rgba(0,0,0,0.2)';
@@ -225,7 +227,8 @@ export function useD3Force(
       context.fill();
 
       context.strokeStyle = node.selected ? '#222' : '#FFF';
-      context.lineWidth = node.selected ? 2.5 : 2.5;
+      const baseNodeStrokeWidth = node.selected ? 2.5 : 2.5;
+      context.lineWidth = baseNodeStrokeWidth * semanticScale;
       context.stroke();
       context.lineWidth = 1;
 
