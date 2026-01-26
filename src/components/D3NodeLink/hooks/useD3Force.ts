@@ -283,10 +283,6 @@ export function useD3Force(
         const arrowPadding = 1 * semanticScale;
         const arrowSize = 10 * semanticScale;
         const arrowWidth = 5 * semanticScale;
-        const targetOutline = 1.25 * semanticScale;
-        const arrowPadding = 1 * semanticScale;
-        const arrowSize = 10 * semanticScale;
-        const arrowWidth = 5 * semanticScale;
         const tipOffset = Math.min(targetRadius + targetOutline + arrowPadding, length - 1);
         const tOffset = Math.min(0.15, tipOffset / length);
         const tArrow = 1 - tOffset;
@@ -300,8 +296,6 @@ export function useD3Force(
 
         context.beginPath();
         context.moveTo(tipx, tipy);
-        context.lineTo(backx + (arrowWidth * -tangentDy) / tangentLength, backy + (arrowWidth * tangentDx) / tangentLength);
-        context.lineTo(backx - (arrowWidth * -tangentDy) / tangentLength, backy - (arrowWidth * tangentDx) / tangentLength);
         context.lineTo(backx + (arrowWidth * -tangentDy) / tangentLength, backy + (arrowWidth * tangentDx) / tangentLength);
         context.lineTo(backx - (arrowWidth * -tangentDy) / tangentLength, backy - (arrowWidth * tangentDx) / tangentLength);
         context.closePath();
