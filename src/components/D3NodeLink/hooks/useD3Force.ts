@@ -205,7 +205,7 @@ export function useD3Force(
         context.lineWidth = 3;
         context.strokeStyle = '#fff';
         context.strokeText(label, screenX, screenY);
-        context.fillStyle = '#333';
+        context.fillStyle = '#858585';
         context.fillText(label, screenX, screenY);
         context.restore();
       }
