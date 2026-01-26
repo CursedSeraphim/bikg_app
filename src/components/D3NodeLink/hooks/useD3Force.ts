@@ -248,24 +248,28 @@ export function useD3Force(
 
     const bundledEdges = computeBundledEdges(allNodes, allEdges);
 
+    const hasSelection = allNodes.some((node) => node.selected) || allEdges.some((edge) => edge.selected);
+
     // Draw edges
     bundledEdges.forEach(({ edge, source, target, control, label }) => {
       const sx = source.x ?? 0;
       const sy = source.y ?? 0;
       const tx = target.x ?? 0;
       const ty = target.y ?? 0;
+      const dimNonSelected = hasSelection && !edge.selected;
+
+      context.save();
+      context.globalAlpha = dimNonSelected ? 0.5 : 1;
 
       // Draw curve
       if (edge.previewRemoval) {
         context.strokeStyle = 'rgba(255,0,0,0.6)';
       } else if (edge.ghost) {
         context.strokeStyle = 'rgba(170,170,170,0.5)';
-      } else if (edge.selected) {
-        context.strokeStyle = '#222';
       } else {
         context.strokeStyle = edge.color ?? '#AAA';
       }
-      const baseEdgeWidth = edge.selected ? 4 : 2;
+      const baseEdgeWidth = 2;
       context.lineWidth = baseEdgeWidth * semanticScale;
       context.beginPath();
       context.moveTo(sx, sy);
@@ -303,8 +307,6 @@ export function useD3Force(
           context.fillStyle = 'rgba(255,0,0,0.6)';
         } else if (edge.ghost) {
           context.fillStyle = 'rgba(170,170,170,0.5)';
-        } else if (edge.selected) {
-          context.fillStyle = '#222';
         } else {
           context.fillStyle = edge.color ?? '#AAA';
         }
@@ -327,12 +329,17 @@ export function useD3Force(
         context.fillText(labelText, screenX, screenY);
         context.restore();
       }
+
+      context.restore();
     });
 
     // Draw nodes
     allNodes.forEach((node) => {
       const count = getViolationCountsForNode(node.id).cumulativeViolations;
       const radius = getNodeRadiusPx(count, node.shape) * semanticScale;
+      const dimNonSelected = hasSelection && !node.selected;
+      context.save();
+      context.globalAlpha = dimNonSelected ? 0.5 : 1;
       drawNodeShape(context, node, radius);
       if (node.ghost) {
         context.fillStyle = 'rgba(0,0,0,0.2)';
@@ -341,8 +348,8 @@ export function useD3Force(
       }
       context.fill();
 
-      context.strokeStyle = node.selected ? '#222' : '#FFF';
-      const baseNodeStrokeWidth = node.selected ? 2.5 : 2.5;
+      context.strokeStyle = '#FFF';
+      const baseNodeStrokeWidth = 2.5;
       context.lineWidth = baseNodeStrokeWidth * semanticScale;
       context.stroke();
       context.lineWidth = 1;
@@ -359,6 +366,8 @@ export function useD3Force(
       context.strokeText(label, screenX, screenY);
       context.fillStyle = '#000';
       context.fillText(label, screenX, screenY);
+      context.restore();
+
       context.restore();
     });
 
