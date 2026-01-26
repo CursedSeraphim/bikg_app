@@ -2,6 +2,7 @@
 
 import * as d3 from 'd3';
 import { useEffect, useRef } from 'react';
+import { getViolationCountsForNode } from '../../../utils/violations';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
 import { D3_FORCE_LABEL_FONT_SIZE_PX } from '../D3NldUtils';
 import { useLabelTransform } from './useLabelTransform';
@@ -212,8 +213,8 @@ export function useD3Force(
 
     // Draw nodes
     allNodes.forEach((node) => {
-      const radius = node.selected ? 7.5 : 6;
-      drawNodeShape(context, node, radius);
+      const count = getViolationCountsForNode(node.id).cumulativeViolations;
+      drawNodeShape(context, node, count + 3);
       if (node.ghost) {
         context.fillStyle = 'rgba(0,0,0,0.2)';
       } else {
