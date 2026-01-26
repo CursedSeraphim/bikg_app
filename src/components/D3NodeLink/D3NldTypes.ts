@@ -1,9 +1,12 @@
 // File: src/components/D3NodeLink/D3NldTypes.ts
 
+import type { NodeShape } from './D3NldUtils';
+
 export interface CanvasNode {
   id: string;
   label: string;
   color: string;
+  shape: NodeShape;
   x?: number;
   y?: number;
   fx?: number | null;

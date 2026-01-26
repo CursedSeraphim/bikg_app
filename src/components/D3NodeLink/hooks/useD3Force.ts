@@ -49,6 +49,50 @@ export function useD3Force(
   const dpi = window.devicePixelRatio ?? 1;
   const { mapNodeLabel, mapEdgeLabel } = useLabelTransform();
 
+  function drawPolygon(context: CanvasRenderingContext2D, x: number, y: number, radius: number, sides: number, rotation = -Math.PI / 2) {
+    context.beginPath();
+    for (let i = 0; i < sides; i += 1) {
+      const angle = rotation + (i * 2 * Math.PI) / sides;
+      const px = x + radius * Math.cos(angle);
+      const py = y + radius * Math.sin(angle);
+      if (i === 0) {
+        context.moveTo(px, py);
+      } else {
+        context.lineTo(px, py);
+      }
+    }
+    context.closePath();
+  }
+
+  function drawNodeShape(context: CanvasRenderingContext2D, node: CanvasNode, radius: number) {
+    const x = node.x ?? 0;
+    const y = node.y ?? 0;
+
+    switch (node.shape) {
+      case 'rectangle':
+        context.beginPath();
+        context.rect(x - radius, y - radius, radius * 2, radius * 2);
+        break;
+      case 'diamond':
+        drawPolygon(context, x, y, radius, 4, Math.PI / 4);
+        break;
+      case 'triangle':
+        drawPolygon(context, x, y, radius, 3);
+        break;
+      case 'pentagon':
+        drawPolygon(context, x, y, radius, 5);
+        break;
+      case 'hexagon':
+        drawPolygon(context, x, y, radius, 6, Math.PI / 6);
+        break;
+      case 'circle':
+      default:
+        context.beginPath();
+        context.arc(x, y, radius, 0, 2 * Math.PI);
+        break;
+    }
+  }
+
   /**
    * Renders all nodes and edges onto the canvas, using the latest transformRef.
    */
@@ -159,14 +203,13 @@ export function useD3Force(
 
     // Draw nodes
     allNodes.forEach((node) => {
-      context.beginPath();
       const radius = node.selected ? 7.5 : 6;
+      drawNodeShape(context, node, radius);
       if (node.ghost) {
         context.fillStyle = 'rgba(0,0,0,0.2)';
       } else {
         context.fillStyle = node.color;
       }
-      context.arc(node.x ?? 0, node.y ?? 0, radius, 0, 2 * Math.PI);
       context.fill();
 
       context.strokeStyle = node.selected ? '#222' : '#FFF';
