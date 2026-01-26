@@ -23,7 +23,7 @@ const BI_PREFIX = 'http://data.boehringer.com/';
 const MIN_ZOOM = 0.02;
 const MAX_ZOOM = 1000;
 
-const BASE_LABEL_FONT_PX = 20; // constant screen-space size (semantic zoom)
+const BASE_LABEL_FONT_PX = 12; // constant screen-space size (semantic zoom)
 const LABEL_PADDING_PX = 2;
 const LABEL_Y_OFFSET_PX = 6;
 const LABEL_STROKE_WIDTH = 3;
