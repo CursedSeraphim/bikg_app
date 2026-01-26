@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { fetchNodeClasses } from '../../api';
 import { INumberViolationsPerNodeMap } from '../../types';
 import { selectCytoData } from '../Store/CombinedSlice';
 
@@ -32,8 +33,23 @@ export function useD3Data({ rdfOntology, violations, types, cumulativeNumberViol
         const fakeColorFn = () => '#000';
         const { nodes, edges } = await selectCytoData(rdfOntology, fakeColorFn, types, cumulativeNumberViolationsPerType, violations);
 
+        let nextNodes = nodes;
+        try {
+          const nodeIds = Array.from(new Set(nodes.map((node) => node.data.id)));
+          const classMap = await fetchNodeClasses(nodeIds);
+          nextNodes = nodes.map((node) => ({
+            ...node,
+            data: {
+              ...node.data,
+              isAClass: classMap[node.data.id] ?? null,
+            },
+          }));
+        } catch (classError) {
+          console.error('Failed to fetch node classes:', classError);
+        }
+
         if (isMounted) {
-          setCyDataNodes(nodes);
+          setCyDataNodes(nextNodes);
           setCyDataEdges(edges);
           setLoading(false);
           if (onLoaded) {

@@ -58,6 +58,7 @@ export function useGraphConversion({
           violation: Boolean(n.data.violation),
           exemplar: Boolean(n.data.exemplar),
           type: Boolean(n.data.type),
+          isAClass: n.data.isAClass ?? null,
         };
       } else {
         node.label = display;
@@ -67,6 +68,7 @@ export function useGraphConversion({
         node.violation = Boolean(n.data.violation);
         node.exemplar = Boolean(n.data.exemplar);
         node.type = Boolean(n.data.type);
+        node.isAClass = n.data.isAClass ?? null;
       }
       if (originRef.current[id] === undefined) {
         originRef.current[id] = null;

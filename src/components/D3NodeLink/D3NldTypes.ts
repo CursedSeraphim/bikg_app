@@ -22,6 +22,8 @@ export interface CanvasNode {
   violation?: boolean;
   exemplar?: boolean;
   type?: boolean;
+  /** rdf:type class for the node if known */
+  isAClass?: string | null;
 }
 
 export interface CanvasEdge {
