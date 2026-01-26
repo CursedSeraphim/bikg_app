@@ -259,7 +259,7 @@ export function useD3Force(
       const dimNonSelected = hasSelection && !edge.selected;
 
       context.save();
-      context.globalAlpha = dimNonSelected ? 0.5 : 1;
+      context.globalAlpha = dimNonSelected ? 0.1 : 1;
 
       // Draw curve
       if (edge.previewRemoval) {
@@ -339,7 +339,7 @@ export function useD3Force(
       const radius = getNodeRadiusPx(count, node.shape) * semanticScale;
       const dimNonSelected = hasSelection && !node.selected;
       context.save();
-      context.globalAlpha = dimNonSelected ? 0.5 : 1;
+      context.globalAlpha = dimNonSelected ? 0.1 : 1;
       drawNodeShape(context, node, radius);
       if (node.ghost) {
         context.fillStyle = 'rgba(0,0,0,0.2)';
