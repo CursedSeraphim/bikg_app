@@ -38,6 +38,7 @@ import { useD3Force } from './hooks/useD3Force';
 import { useD3ResetView } from './hooks/useD3ResetView';
 import useExemplarHoverList from './hooks/useExemplarHoverList';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
+import { getViolationCountsForNode } from '../../utils/violations';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering = true }: D3NLDViewProps) {
@@ -97,10 +98,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     if (!label) return '';
     // remove a trailing " (…)" count suffix and a trailing "*"
     return label.replace(/\s*\([^)]*\)\s*$/, '').replace(/\*$/, '');
-  }, []);
-
-  const getBaseId = useCallback((id: string) => {
-    return id.replace(/_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, '');
   }, []);
 
   // for figure purposes: anonymize any occurrence of "boehringer" for display strings
@@ -219,7 +216,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       selected: Boolean(e.data.selected),
     }));
 
-    updateD3NodesGivenCounts(nextNodes, store.getState().combined.numberViolationsPerNode);
+    updateD3NodesGivenCounts(nextNodes);
     setD3Nodes(nextNodes);
     setD3Edges(newEdges);
   }, [cyDataNodes, cyDataEdges, isLabelBlacklisted, anonymizeLabel]);
@@ -402,9 +399,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
     // 2) DoI-based branch seeds: nodes that actually have selected violations
     const getSelectedCount = (id: string) => {
-      const baseId = getBaseId(id);
-      const entry = numberViolationsPerNode[id] ?? numberViolationsPerNode[baseId];
-      return entry?.cumulativeSelected ?? 0;
+      return getViolationCountsForNode(id).cumulativeSelected;
     };
 
     const highlightableIds = new Set<string>();
@@ -526,7 +521,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     violationTypesMap,
     typesViolationMap,
     numberViolationsPerNode,
-    getBaseId,
     hiddenNodesRef,
     hiddenEdgesRef,
     convertData,
