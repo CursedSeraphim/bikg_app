@@ -57,14 +57,12 @@ def _to_qname(namespace_manager, uri: URIRef) -> str:
         return str(uri)
 
 
-def _collect_graph_nodes(graph: Graph, namespace_manager) -> set[str]:
-    nodes: set[str] = set()
-    for subject, _predicate, obj in graph:
+def _collect_graph_subjects(graph: Graph, namespace_manager) -> set[str]:
+    subjects: set[str] = set()
+    for subject in graph.subjects():
         if isinstance(subject, URIRef):
-            nodes.add(_to_qname(namespace_manager, subject))
-        if isinstance(obj, URIRef):
-            nodes.add(_to_qname(namespace_manager, obj))
-    return nodes
+            subjects.add(_to_qname(namespace_manager, subject))
+    return subjects
 
 
 def _normalize_node_id(namespace_manager, node_id: str) -> str:
@@ -120,7 +118,7 @@ def get_node_source_resolver() -> NodeSourceResolver:
     )
 
     for source, graph in graph_sources:
-        for node_id in _collect_graph_nodes(graph, namespace_manager):
+        for node_id in _collect_graph_subjects(graph, namespace_manager):
             node_sources.setdefault(node_id, set()).add(source)
 
     return NodeSourceResolver(namespace_manager, node_sources)
