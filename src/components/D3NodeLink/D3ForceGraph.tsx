@@ -28,7 +28,7 @@ import { useD3Data } from './useD3Data';
 
 import store from '../Store/Store';
 import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
-import { getNodeColorForId, getNodeShapeForId } from './D3NldUtils';
+import { getNodeColorForNode, getNodeShapeForId } from './D3NldUtils';
 import { getNearNodeThreshold } from './hooks/hoverRadius';
 import { useAdjacency } from './hooks/useAdjacency';
 import { useCanvasDimensions } from './hooks/useCanvasDimensions';
@@ -171,23 +171,24 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       let node = nodeMapRef.current[id];
       if (!node) {
         const saved = savedPositionsRef.current[id];
+        const sources = n.data.sources ?? ['unknown'];
+        const isAClass = n.data.isAClass ?? null;
         node = {
           id,
           label: display,
-          color: getNodeColorForId(id),
+          color: getNodeColorForNode({ sources, isAClass }),
           shape: getNodeShapeForId(id),
-          sources: n.data.sources ?? ['unknown'],
+          sources,
           x: saved?.x,
           y: saved?.y,
           selected: Boolean(n.data.selected),
           violation: Boolean(n.data.violation),
           exemplar: Boolean(n.data.exemplar),
           type: Boolean(n.data.type),
-          isAClass: n.data.isAClass ?? null,
+          isAClass,
         };
       } else {
         node.label = display;
-        node.color = getNodeColorForId(id);
         node.shape = getNodeShapeForId(id);
         node.sources = n.data.sources ?? ['unknown'];
         node.selected = Boolean(n.data.selected);
@@ -195,6 +196,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         node.exemplar = Boolean(n.data.exemplar);
         node.type = Boolean(n.data.type);
         node.isAClass = n.data.isAClass ?? null;
+        node.color = getNodeColorForNode({ sources: node.sources, isAClass: node.isAClass });
       }
       if (originRef.current[id] === undefined) {
         originRef.current[id] = null;
@@ -1069,7 +1071,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           newGhostNodes.push({
             id: nid,
             label: anonymizeLabel(nodeData.data.label ?? nodeData.data.id),
-            color: getNodeColorForId(nid),
+            color: getNodeColorForNode({ sources: nodeData.data.sources ?? ['unknown'], isAClass: nodeData.data.isAClass ?? null }),
             shape: getNodeShapeForId(nid),
             x: closest?.x,
             y: closest?.y,

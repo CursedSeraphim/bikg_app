@@ -2,7 +2,7 @@
 
 import type { NodeShape } from './D3NldUtils';
 
-export type NodeSource = 'ontology' | 'instance' | 'violation' | 'unknown';
+export type NodeSource = 'ontology' | 'instance' | 'violation' | 'unknown' | 'report';
 
 export interface CanvasNode {
   id: string;

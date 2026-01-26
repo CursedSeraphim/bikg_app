@@ -2,7 +2,7 @@ import type { MutableRefObject } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import store from '../../Store/Store';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
-import { getNodeColorForId, getNodeShapeForId } from '../D3NldUtils';
+import { getNodeColorForNode, getNodeShapeForId } from '../D3NldUtils';
 import { updateD3NodesGivenCounts } from './useD3CumulativeCounts';
 
 interface UseGraphConversionParams {
@@ -47,23 +47,24 @@ export function useGraphConversion({
       let node = nodeMapRef.current[id];
       if (!node) {
         const saved = savedPositionsRef.current[id];
+        const sources = n.data.sources ?? ['unknown'];
+        const isAClass = n.data.isAClass ?? null;
         node = {
           id,
           label: display,
-          color: getNodeColorForId(id),
+          color: getNodeColorForNode({ sources, isAClass }),
           shape: getNodeShapeForId(id),
-          sources: n.data.sources ?? ['unknown'],
+          sources,
           x: saved?.x,
           y: saved?.y,
           selected: Boolean(n.data.selected),
           violation: Boolean(n.data.violation),
           exemplar: Boolean(n.data.exemplar),
           type: Boolean(n.data.type),
-          isAClass: n.data.isAClass ?? null,
+          isAClass,
         };
       } else {
         node.label = display;
-        node.color = getNodeColorForId(id);
         node.shape = getNodeShapeForId(id);
         node.sources = n.data.sources ?? ['unknown'];
         node.selected = Boolean(n.data.selected);
@@ -71,6 +72,7 @@ export function useGraphConversion({
         node.exemplar = Boolean(n.data.exemplar);
         node.type = Boolean(n.data.type);
         node.isAClass = n.data.isAClass ?? null;
+        node.color = getNodeColorForNode({ sources: node.sources, isAClass: node.isAClass });
       }
       if (originRef.current[id] === undefined) {
         originRef.current[id] = null;
