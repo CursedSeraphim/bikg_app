@@ -1,4 +1,5 @@
 import { INumberViolationsPerNodeMap, INumberViolationsPerNodeValue } from '../types';
+import store from '../components/Store/Store';
 
 const UUID_SUFFIX_REGEX = /_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
@@ -11,10 +12,16 @@ const EMPTY_COUNTS: INumberViolationsPerNodeValue = {
 
 export const getNormalizedNodeId = (nodeId: string): string => nodeId.replace(UUID_SUFFIX_REGEX, '');
 
-export const getViolationCountsForNode = (
-  nodeId: string,
-  numberViolationsPerNode?: INumberViolationsPerNodeMap,
-): INumberViolationsPerNodeValue => {
+const getNumberViolationsPerNodeMap = (overrideMap?: INumberViolationsPerNodeMap): INumberViolationsPerNodeMap | undefined => {
+  if (overrideMap) {
+    return overrideMap;
+  }
+
+  return store.getState().combined.numberViolationsPerNode;
+};
+
+export const getViolationCountsForNode = (nodeId: string, overrideMap?: INumberViolationsPerNodeMap): INumberViolationsPerNodeValue => {
+  const numberViolationsPerNode = getNumberViolationsPerNodeMap(overrideMap);
   if (!numberViolationsPerNode) {
     return EMPTY_COUNTS;
   }
@@ -23,6 +30,6 @@ export const getViolationCountsForNode = (
   return numberViolationsPerNode[nodeId] ?? numberViolationsPerNode[normalizedId] ?? EMPTY_COUNTS;
 };
 
-export const getTotalViolationsForNode = (nodeId: string, numberViolationsPerNode?: INumberViolationsPerNodeMap): number => {
-  return getViolationCountsForNode(nodeId, numberViolationsPerNode).violations;
+export const getTotalViolationsForNode = (nodeId: string, overrideMap?: INumberViolationsPerNodeMap): number => {
+  return getViolationCountsForNode(nodeId, overrideMap).violations;
 };

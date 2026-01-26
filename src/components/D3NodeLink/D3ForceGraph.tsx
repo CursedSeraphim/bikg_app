@@ -216,7 +216,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       selected: Boolean(e.data.selected),
     }));
 
-    updateD3NodesGivenCounts(nextNodes, store.getState().combined.numberViolationsPerNode);
+    updateD3NodesGivenCounts(nextNodes);
     setD3Nodes(nextNodes);
     setD3Edges(newEdges);
   }, [cyDataNodes, cyDataEdges, isLabelBlacklisted, anonymizeLabel]);
@@ -399,7 +399,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
     // 2) DoI-based branch seeds: nodes that actually have selected violations
     const getSelectedCount = (id: string) => {
-      return getViolationCountsForNode(id, numberViolationsPerNode).cumulativeSelected;
+      return getViolationCountsForNode(id).cumulativeSelected;
     };
 
     const highlightableIds = new Set<string>();

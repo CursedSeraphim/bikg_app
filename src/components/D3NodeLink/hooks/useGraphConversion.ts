@@ -91,7 +91,7 @@ export function useGraphConversion({
       selected: Boolean(e.data.selected),
     }));
 
-    updateD3NodesGivenCounts(nextNodes, store.getState().combined.numberViolationsPerNode);
+    updateD3NodesGivenCounts(nextNodes);
     setD3Nodes(nextNodes);
     setD3Edges(newEdges);
   }, [anonymizeLabel, cyDataEdges, cyDataNodes, hiddenNodesRef, isLabelBlacklisted, nodeMapRef, originRef, savedPositionsRef]);

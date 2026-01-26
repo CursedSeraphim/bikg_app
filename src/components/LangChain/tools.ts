@@ -105,7 +105,7 @@ const useTools = () => {
     const { numberViolationsPerNode } = state.combined;
     let ret = '';
     Object.keys(numberViolationsPerNode).forEach((key) => {
-      ret += `${key}: ${getTotalViolationsForNode(key, numberViolationsPerNode)}\n`;
+      ret += `${key}: ${getTotalViolationsForNode(key)}\n`;
     });
     return ret;
   };
