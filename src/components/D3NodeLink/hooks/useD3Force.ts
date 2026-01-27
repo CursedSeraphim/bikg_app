@@ -16,6 +16,8 @@ import { useLabelTransform } from './useLabelTransform';
  * @param canvasRef   Ref to the <canvas> element to draw into.
  * @param nodes       Array of CanvasNode to layout and render.
  * @param edges       Array of CanvasEdge to layout and render.
+ * @param selectedNodeIdsRef Ref holding the ids of nodes in the current selection.
+ * @param selectedEdgeIdsRef Ref holding the ids of edges in the current selection.
  * @param boundingBox "on" or "off"; when "on", constrain nodes within canvas.
  * @param dimensions  The { width, height } of the canvas (CSS pixels).
  * @param initialCentering When true or a number, applies a temporary centering
@@ -32,6 +34,8 @@ export function useD3Force(
   canvasRef: React.RefObject<HTMLCanvasElement>,
   nodes: CanvasNode[],
   edges: CanvasEdge[],
+  selectedNodeIdsRef: React.MutableRefObject<Set<string>>,
+  selectedEdgeIdsRef: React.MutableRefObject<Set<string>>,
   boundingBox: string,
   dimensions: { width: number; height: number },
   autoRestart: boolean = true,
@@ -315,7 +319,11 @@ export function useD3Force(
   /**
    * Renders all nodes and edges onto the canvas, using the latest transformRef.
    */
-  function drawCanvas(allNodes: CanvasNode[], allEdges: CanvasEdge[]) {
+  function drawCanvas(
+    allNodes: CanvasNode[],
+    allEdges: CanvasEdge[],
+    selectionState: { selectedNodeIds: Set<string>; selectedEdgeIds: Set<string> },
+  ) {
     const canvas = canvasRef.current;
     if (!canvas) {
       return;
@@ -348,7 +356,8 @@ export function useD3Force(
     const labelBoxes = getLabelBoxes(context, allNodes, bundledEdges, t);
     const overlappingLabelTargets = getOverlappingLabelTargets(labelBoxes);
 
-    const hasSelection = allNodes.some((node) => node.selected) || allEdges.some((edge) => edge.selected);
+    const { selectedNodeIds, selectedEdgeIds } = selectionState;
+    const hasSelection = selectedNodeIds.size > 0 || selectedEdgeIds.size > 0;
 
     // Draw edges
     bundledEdges.forEach(({ edge, source, target, control, label }) => {
@@ -356,7 +365,8 @@ export function useD3Force(
       const sy = source.y ?? 0;
       const tx = target.x ?? 0;
       const ty = target.y ?? 0;
-      const dimNonSelected = hasSelection && !edge.selected;
+      const isSelectedEdge = selectedEdgeIds.has(edge.id);
+      const dimNonSelected = hasSelection && !isSelectedEdge;
 
       context.save();
       context.globalAlpha = dimNonSelected ? 0.1 : 1;
@@ -422,7 +432,7 @@ export function useD3Force(
         const screenY = label.y * t.k - edgeLabelOffsetPx;
         context.scale(1 / t.k, 1 / t.k);
         context.font = edgeLabelFont;
-        const dimLabel = overlappingLabelTargets.edges.has(edge) || (hasSelection && !edge.selected);
+        const dimLabel = overlappingLabelTargets.edges.has(edge) || (hasSelection && !isSelectedEdge);
         context.globalAlpha = dimLabel ? 0.1 : 1;
         context.lineWidth = 3;
         context.strokeStyle = '#fff';
@@ -439,7 +449,8 @@ export function useD3Force(
     allNodes.forEach((node) => {
       const count = getViolationCountsForNode(node.id).cumulativeViolations;
       const radius = getNodeRadiusPx(count, node.shape) * semanticScale;
-      const dimNonSelected = hasSelection && !node.selected;
+      const isSelectedNode = selectedNodeIds.has(node.id);
+      const dimNonSelected = hasSelection && !isSelectedNode;
       context.save();
       context.globalAlpha = dimNonSelected ? 0.1 : 1;
       drawNodeShape(context, node, radius);
@@ -463,7 +474,7 @@ export function useD3Force(
       const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
       context.scale(1 / t.k, 1 / t.k);
       context.font = nodeLabelFont;
-      const dimLabel = overlappingLabelTargets.nodes.has(node) || (hasSelection && !node.selected);
+      const dimLabel = overlappingLabelTargets.nodes.has(node) || (hasSelection && !isSelectedNode);
       context.globalAlpha = dimLabel ? 0.1 : 1;
       context.lineWidth = 3;
       context.strokeStyle = '#fff';
@@ -497,7 +508,7 @@ export function useD3Force(
         simulationRef.current.stop();
         simulationRef.current = null;
       }
-      drawCanvas([], []);
+      drawCanvas([], [], { selectedNodeIds: new Set(), selectedEdgeIds: new Set() });
       return;
     }
 
@@ -546,7 +557,11 @@ export function useD3Force(
     );
 
     // Draw only edges that are valid for the current node set
-    drawRef.current = () => drawCanvas(nodes, edgesForSim);
+    drawRef.current = () =>
+      drawCanvas(nodes, edgesForSim, {
+        selectedNodeIds: selectedNodeIdsRef.current,
+        selectedEdgeIds: selectedEdgeIdsRef.current,
+      });
     drawRef.current();
 
     sim.on('tick', () => {
@@ -560,7 +575,10 @@ export function useD3Force(
           node.y = Math.max(nodeRadius, Math.min(height - nodeRadius, node.y ?? 0));
         });
       }
-      drawCanvas(nodes, edgesForSim);
+      drawCanvas(nodes, edgesForSim, {
+        selectedNodeIds: selectedNodeIdsRef.current,
+        selectedEdgeIds: selectedEdgeIdsRef.current,
+      });
     });
 
     if (autoRestart) {
@@ -607,7 +625,10 @@ export function useD3Force(
       .on('zoom', (event) => {
         transformRef.current = event.transform;
         const edgesForDraw = filterEdgesByNodes(nodes, edges);
-        drawCanvas(nodes, edgesForDraw);
+        drawCanvas(nodes, edgesForDraw, {
+          selectedNodeIds: selectedNodeIdsRef.current,
+          selectedEdgeIds: selectedEdgeIdsRef.current,
+        });
       });
 
     zoomBehaviorRef.current = zoomBehavior;

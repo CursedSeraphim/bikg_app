@@ -91,6 +91,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const nodeMapRef = useRef<Record<string, CanvasNode>>({});
   const savedPositionsRef = useRef<Record<string, { x?: number; y?: number }>>({});
   const previousVisibleNodeIdsRef = useRef<Set<string>>(new Set());
+  const selectedNodeIdsRef = useRef<Set<string>>(new Set());
+  const selectedEdgeIdsRef = useRef<Set<string>>(new Set());
 
   // --- Helpers --------------------------------------------------------------
 
@@ -220,6 +222,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     const newEdges: CanvasEdge[] = visibleEdgeData.map((e) => {
       const sourceInfo = nodeInfoMap.get(e.data.source);
       return {
+        id: e.data.id,
         source: e.data.source,
         target: e.data.target,
         label: anonymizeLabel(e.data.label ?? e.data.id), // sanitize
@@ -247,6 +250,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     canvasRef,
     [...d3Nodes, ...ghostNodes],
     [...d3Edges, ...ghostEdges],
+    selectedNodeIdsRef,
+    selectedEdgeIdsRef,
     d3BoundingBox,
     dimensions,
     false,
@@ -474,6 +479,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       }
     });
 
+    selectedNodeIdsRef.current = new Set(highlightIdsWithAncestors);
+    selectedEdgeIdsRef.current = new Set(selectedEdgeIds);
+
     let needsRefresh = false;
 
     // 5) Nodes: decouple show vs highlight
@@ -519,6 +527,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     if (needsRefresh) {
       convertData();
     }
+    redraw();
   }, [
     loading,
     cyDataNodes,
@@ -539,6 +548,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     convertData,
     revAdjRef,
     isIdBlacklisted,
+    redraw,
   ]);
 
   const focusNodeTooltip = useExemplarHoverList(canvasRef, [...d3Nodes, ...ghostNodes], transformRef);
@@ -1065,6 +1075,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
             if (!addedEdgeKeys.has(key)) {
               addedEdgeKeys.add(key);
               newGhostEdges.push({
+                id: edgeData.data.id,
                 source: edgeData.data.source,
                 target: edgeData.data.target,
                 label: anonymizeLabel(edgeData.data.label ?? edgeData.data.id),
@@ -1095,6 +1106,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           if (!addedEdgeKeys.has(key)) {
             addedEdgeKeys.add(key);
             newGhostEdges.push({
+              id: edge.id,
               source: edge.source,
               target: edge.target,
               label: anonymizeLabel(edge.label ?? edge.id),

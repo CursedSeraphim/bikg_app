@@ -95,6 +95,7 @@ export function useGraphConversion({
     const newEdges: CanvasEdge[] = visibleEdgeData.map((e) => {
       const sourceInfo = nodeInfoMap.get(e.data.source);
       return {
+        id: e.data.id,
         source: e.data.source,
         target: e.data.target,
         label: anonymizeLabel(e.data.label ?? e.data.id),

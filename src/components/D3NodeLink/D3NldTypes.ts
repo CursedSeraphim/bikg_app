@@ -30,6 +30,7 @@ export interface CanvasNode {
 }
 
 export interface CanvasEdge {
+  id: string;
   source: string | CanvasNode;
   target: string | CanvasNode;
   label?: string;
