@@ -247,6 +247,72 @@ export function useD3Force(
     context.textBaseline = 'middle';
 
     const bundledEdges = computeBundledEdges(allNodes, allEdges);
+    const overlappingLabels = (() => {
+      const labelBoxes: {
+        key: string;
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+      }[] = [];
+      const t = transformRef.current;
+      const labelPadding = 2;
+
+      context.save();
+
+      bundledEdges.forEach(({ edge, label }) => {
+        if (!edge.label) {
+          return;
+        }
+        const labelText = mapEdgeLabel(edge.label);
+        context.font = edgeLabelFont;
+        const metrics = context.measureText(labelText);
+        const width = metrics.width + labelPadding * 2;
+        const height = D3_FORCE_EDGE_LABEL_FONT_SIZE_PX + labelPadding * 2;
+        const screenX = label.x * t.k;
+        const screenY = label.y * t.k - edgeLabelOffsetPx;
+        labelBoxes.push({
+          key: `edge-${edge.id}`,
+          x: screenX - width / 2,
+          y: screenY - height / 2,
+          width,
+          height,
+        });
+      });
+
+      allNodes.forEach((node) => {
+        const labelText = mapNodeLabel(node.label);
+        context.font = nodeLabelFont;
+        const metrics = context.measureText(labelText);
+        const width = metrics.width + labelPadding * 2;
+        const height = D3_FORCE_LABEL_FONT_SIZE_PX + labelPadding * 2;
+        const screenX = (node.x ?? 0) * t.k;
+        const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
+        labelBoxes.push({
+          key: `node-${node.id}`,
+          x: screenX - width / 2,
+          y: screenY - height / 2,
+          width,
+          height,
+        });
+      });
+
+      context.restore();
+
+      const overlaps = new Set<string>();
+      for (let i = 0; i < labelBoxes.length; i += 1) {
+        const a = labelBoxes[i];
+        for (let j = i + 1; j < labelBoxes.length; j += 1) {
+          const b = labelBoxes[j];
+          const intersects = a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+          if (intersects) {
+            overlaps.add(a.key);
+            overlaps.add(b.key);
+          }
+        }
+      }
+      return overlaps;
+    })();
 
     const hasSelection = allNodes.some((node) => node.selected) || allEdges.some((edge) => edge.selected);
 
@@ -316,10 +382,13 @@ export function useD3Force(
       // Draw edge label (if present)
       if (edge.label) {
         const labelText = mapEdgeLabel(edge.label);
+        const overlapKey = `edge-${edge.id}`;
+        const overlapAlpha = overlappingLabels.has(overlapKey) ? 0.1 : 1;
         context.save();
         const t = transformRef.current;
         const screenX = label.x * t.k;
         const screenY = label.y * t.k - edgeLabelOffsetPx;
+        context.globalAlpha *= overlapAlpha;
         context.scale(1 / t.k, 1 / t.k);
         context.font = edgeLabelFont;
         context.lineWidth = 3;
@@ -356,9 +425,12 @@ export function useD3Force(
 
       context.save();
       const label = mapNodeLabel(node.label);
+      const overlapKey = `node-${node.id}`;
+      const overlapAlpha = overlappingLabels.has(overlapKey) ? 0.1 : 1;
       const t = transformRef.current;
       const screenX = (node.x ?? 0) * t.k;
       const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
+      context.globalAlpha *= overlapAlpha;
       context.scale(1 / t.k, 1 / t.k);
       context.font = nodeLabelFont;
       context.lineWidth = 3;
