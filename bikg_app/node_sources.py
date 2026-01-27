@@ -20,14 +20,6 @@ class NodeSource(str, Enum):
     UNKNOWN = "unknown"
 
 
-_SOURCE_ORDER = {
-    NodeSource.ONTOLOGY: 0,
-    NodeSource.INSTANCE: 1,
-    NodeSource.VIOLATION: 2,
-    NodeSource.UNKNOWN: 3,
-}
-
-
 @dataclass(frozen=True)
 class NodeSourceInfo:
     """The normalized id and its data sources."""
@@ -65,6 +57,14 @@ def _collect_graph_subjects(graph: Graph, namespace_manager) -> set[str]:
     return subjects
 
 
+def _collect_graph_objects(graph: Graph, namespace_manager) -> set[str]:
+    objects: set[str] = set()
+    for obj in graph.objects():
+        if isinstance(obj, URIRef):
+            objects.add(_to_qname(namespace_manager, obj))
+    return objects
+
+
 def _normalize_node_id(namespace_manager, node_id: str) -> str:
     if node_id.startswith(("http://", "https://")):
         return _to_qname(namespace_manager, URIRef(node_id))
@@ -80,20 +80,37 @@ def _normalize_node_id(namespace_manager, node_id: str) -> str:
 class NodeSourceResolver:
     """Resolver for identifying node sources across the original TTL files."""
 
-    def __init__(self, namespace_manager, node_sources: dict[str, set[NodeSource]]):
+    def __init__(
+        self,
+        namespace_manager,
+        ontology_subjects: set[str],
+        instance_subjects: set[str],
+        instance_objects: set[str],
+        violation_objects: set[str],
+    ):
         self._namespace_manager = namespace_manager
-        self._node_sources = node_sources
+        self._ontology_subjects = ontology_subjects
+        self._instance_subjects = instance_subjects
+        self._instance_objects = instance_objects
+        self._violation_objects = violation_objects
 
     def normalize_node_id(self, node_id: str) -> str:
         return _normalize_node_id(self._namespace_manager, node_id)
 
     def get_sources(self, node_id: str) -> NodeSourceInfo:
         normalized_id = self.normalize_node_id(node_id)
-        sources = self._node_sources.get(normalized_id)
-        if not sources:
-            return NodeSourceInfo(normalized_id, [NodeSource.UNKNOWN])
-        ordered = sorted(sources, key=lambda source: _SOURCE_ORDER[source])
-        return NodeSourceInfo(normalized_id, ordered)
+        normalized_lower = normalized_id.lower()
+        if normalized_id in self._ontology_subjects:
+            return NodeSourceInfo(normalized_id, [NodeSource.ONTOLOGY])
+        if normalized_id in self._instance_subjects:
+            return NodeSourceInfo(normalized_id, [NodeSource.INSTANCE])
+        if normalized_id in self._instance_objects:
+            return NodeSourceInfo(normalized_id, [NodeSource.INSTANCE])
+        if normalized_lower.startswith("ex:"):
+            return NodeSourceInfo(normalized_id, [NodeSource.VIOLATION])
+        if normalized_id in self._violation_objects:
+            return NodeSourceInfo(normalized_id, [NodeSource.VIOLATION])
+        return NodeSourceInfo(normalized_id, [NodeSource.UNKNOWN])
 
     def get_sources_for_nodes(self, node_ids: Iterable[str]) -> dict[str, list[NodeSource]]:
         result = {}
@@ -110,15 +127,15 @@ def get_node_source_resolver() -> NodeSourceResolver:
 
     namespace_manager = _build_namespace_manager([ontology_graph, instance_graph, violation_graph])
 
-    node_sources: dict[str, set[NodeSource]] = {}
-    graph_sources = (
-        (NodeSource.ONTOLOGY, ontology_graph),
-        (NodeSource.INSTANCE, instance_graph),
-        (NodeSource.VIOLATION, violation_graph),
+    ontology_subjects = _collect_graph_subjects(ontology_graph, namespace_manager)
+    instance_subjects = _collect_graph_subjects(instance_graph, namespace_manager)
+    instance_objects = _collect_graph_objects(instance_graph, namespace_manager)
+    violation_objects = _collect_graph_objects(violation_graph, namespace_manager)
+
+    return NodeSourceResolver(
+        namespace_manager,
+        ontology_subjects,
+        instance_subjects,
+        instance_objects,
+        violation_objects,
     )
-
-    for source, graph in graph_sources:
-        for node_id in _collect_graph_subjects(graph, namespace_manager):
-            node_sources.setdefault(node_id, set()).add(source)
-
-    return NodeSourceResolver(namespace_manager, node_sources)

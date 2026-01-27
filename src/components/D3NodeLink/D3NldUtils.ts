@@ -20,8 +20,9 @@ export type NodeColorContext = {
 const ONTOLOGY_SHACL_COLOR = '#669900';
 const ONTOLOGY_COLOR = '#007C45';
 const INSTANCE_COLOR = '#3366CC';
-const REPORT_OR_UNKNOWN_COLOR = '#DA5700';
-const DEFAULT_NODE_COLOR = '#999999';
+const REPORT_COLOR = '#DA5700';
+const UNKNOWN_COLOR = '#999999';
+const DEFAULT_NODE_COLOR = UNKNOWN_COLOR;
 
 export const NAMESPACE_SHAPE_MAP: Record<string, NodeShape> = {
   omics: 'circle',
@@ -77,8 +78,12 @@ export function getNodeColorForNode({ sources = [], isAClass }: NodeColorContext
     return INSTANCE_COLOR;
   }
 
-  if (hasSource('report') || hasSource('unknown')) {
-    return REPORT_OR_UNKNOWN_COLOR;
+  if (hasSource('report') || hasSource('violation')) {
+    return REPORT_COLOR;
+  }
+
+  if (hasSource('unknown')) {
+    return UNKNOWN_COLOR;
   }
 
   return DEFAULT_NODE_COLOR;
