@@ -255,24 +255,27 @@ export function useD3Force(
         width: number;
         height: number;
       }[] = [];
+      const edgeLabelKeys = new Map<CanvasEdge, string>();
       const t = transformRef.current;
       const labelPadding = 2;
 
       context.save();
 
-      bundledEdges.forEach(({ edge, label }) => {
+      bundledEdges.forEach(({ edge, label }, index) => {
         if (!edge.label) {
           return;
         }
+        const key = `edge-${index}`;
+        edgeLabelKeys.set(edge, key);
         const labelText = mapEdgeLabel(edge.label);
         context.font = edgeLabelFont;
         const metrics = context.measureText(labelText);
         const width = metrics.width + labelPadding * 2;
         const height = D3_FORCE_EDGE_LABEL_FONT_SIZE_PX + labelPadding * 2;
-        const screenX = label.x * t.k;
-        const screenY = label.y * t.k - edgeLabelOffsetPx;
+        const screenX = t.x + label.x * t.k;
+        const screenY = t.y + label.y * t.k - edgeLabelOffsetPx;
         labelBoxes.push({
-          key: `edge-${edge.id}`,
+          key,
           x: screenX - width / 2,
           y: screenY - height / 2,
           width,
@@ -286,8 +289,8 @@ export function useD3Force(
         const metrics = context.measureText(labelText);
         const width = metrics.width + labelPadding * 2;
         const height = D3_FORCE_LABEL_FONT_SIZE_PX + labelPadding * 2;
-        const screenX = (node.x ?? 0) * t.k;
-        const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
+        const screenX = t.x + (node.x ?? 0) * t.k;
+        const screenY = t.y + (node.y ?? 0) * t.k - nodeLabelOffsetPx;
         labelBoxes.push({
           key: `node-${node.id}`,
           x: screenX - width / 2,
@@ -311,7 +314,7 @@ export function useD3Force(
           }
         }
       }
-      return overlaps;
+      return { overlaps, edgeLabelKeys };
     })();
 
     const hasSelection = allNodes.some((node) => node.selected) || allEdges.some((edge) => edge.selected);
@@ -382,8 +385,8 @@ export function useD3Force(
       // Draw edge label (if present)
       if (edge.label) {
         const labelText = mapEdgeLabel(edge.label);
-        const overlapKey = `edge-${edge.id}`;
-        const overlapAlpha = overlappingLabels.has(overlapKey) ? 0.1 : 1;
+        const overlapKey = overlappingLabels.edgeLabelKeys.get(edge);
+        const overlapAlpha = overlapKey && overlappingLabels.overlaps.has(overlapKey) ? 0.1 : 1;
         context.save();
         const t = transformRef.current;
         const screenX = label.x * t.k;
@@ -426,7 +429,7 @@ export function useD3Force(
       context.save();
       const label = mapNodeLabel(node.label);
       const overlapKey = `node-${node.id}`;
-      const overlapAlpha = overlappingLabels.has(overlapKey) ? 0.1 : 1;
+      const overlapAlpha = overlappingLabels.overlaps.has(overlapKey) ? 0.1 : 1;
       const t = transformRef.current;
       const screenX = (node.x ?? 0) * t.k;
       const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
