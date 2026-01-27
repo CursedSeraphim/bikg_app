@@ -248,25 +248,33 @@ export function useD3Force(
 
     const bundledEdges = computeBundledEdges(allNodes, allEdges);
     const overlappingLabels = (() => {
-      const labelBoxes: {
-        key: string;
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-      }[] = [];
-      const edgeLabelKeys = new Map<CanvasEdge, string>();
+      type LabelBox =
+        | {
+            kind: 'edge';
+            edge: CanvasEdge;
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+          }
+        | {
+            kind: 'node';
+            nodeId: string;
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+          };
+      const labelBoxes: LabelBox[] = [];
       const t = transformRef.current;
       const labelPadding = 2;
 
       context.save();
 
-      bundledEdges.forEach(({ edge, label }, index) => {
+      bundledEdges.forEach(({ edge, label }) => {
         if (!edge.label) {
           return;
         }
-        const key = `edge-${index}`;
-        edgeLabelKeys.set(edge, key);
         const labelText = mapEdgeLabel(edge.label);
         context.font = edgeLabelFont;
         const metrics = context.measureText(labelText);
@@ -275,7 +283,8 @@ export function useD3Force(
         const screenX = t.x + label.x * t.k;
         const screenY = t.y + label.y * t.k - edgeLabelOffsetPx;
         labelBoxes.push({
-          key,
+          kind: 'edge',
+          edge,
           x: screenX - width / 2,
           y: screenY - height / 2,
           width,
@@ -292,7 +301,8 @@ export function useD3Force(
         const screenX = t.x + (node.x ?? 0) * t.k;
         const screenY = t.y + (node.y ?? 0) * t.k - nodeLabelOffsetPx;
         labelBoxes.push({
-          key: `node-${node.id}`,
+          kind: 'node',
+          nodeId: node.id,
           x: screenX - width / 2,
           y: screenY - height / 2,
           width,
@@ -302,19 +312,28 @@ export function useD3Force(
 
       context.restore();
 
-      const overlaps = new Set<string>();
+      const edgeOverlaps = new Set<CanvasEdge>();
+      const nodeOverlaps = new Set<string>();
       for (let i = 0; i < labelBoxes.length; i += 1) {
         const a = labelBoxes[i];
         for (let j = i + 1; j < labelBoxes.length; j += 1) {
           const b = labelBoxes[j];
           const intersects = a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
           if (intersects) {
-            overlaps.add(a.key);
-            overlaps.add(b.key);
+            if (a.kind === 'edge') {
+              edgeOverlaps.add(a.edge);
+            } else {
+              nodeOverlaps.add(a.nodeId);
+            }
+            if (b.kind === 'edge') {
+              edgeOverlaps.add(b.edge);
+            } else {
+              nodeOverlaps.add(b.nodeId);
+            }
           }
         }
       }
-      return { overlaps, edgeLabelKeys };
+      return { edgeOverlaps, nodeOverlaps };
     })();
 
     const hasSelection = allNodes.some((node) => node.selected) || allEdges.some((edge) => edge.selected);
@@ -385,8 +404,7 @@ export function useD3Force(
       // Draw edge label (if present)
       if (edge.label) {
         const labelText = mapEdgeLabel(edge.label);
-        const overlapKey = overlappingLabels.edgeLabelKeys.get(edge);
-        const overlapAlpha = overlapKey && overlappingLabels.overlaps.has(overlapKey) ? 0.1 : 1;
+        const overlapAlpha = overlappingLabels.edgeOverlaps.has(edge) ? 0.1 : 1;
         context.save();
         const t = transformRef.current;
         const screenX = label.x * t.k;
@@ -428,8 +446,7 @@ export function useD3Force(
 
       context.save();
       const label = mapNodeLabel(node.label);
-      const overlapKey = `node-${node.id}`;
-      const overlapAlpha = overlappingLabels.overlaps.has(overlapKey) ? 0.1 : 1;
+      const overlapAlpha = overlappingLabels.nodeOverlaps.has(node.id) ? 0.1 : 1;
       const t = transformRef.current;
       const screenX = (node.x ?? 0) * t.k;
       const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
