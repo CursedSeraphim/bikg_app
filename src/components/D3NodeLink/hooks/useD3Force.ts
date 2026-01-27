@@ -404,13 +404,15 @@ export function useD3Force(
 
     if (!sim) {
       sim = d3.forceSimulation<CanvasNode>(nodes);
-      if (initialCentering !== false) {
-        const delay = typeof initialCentering === 'number' ? initialCentering : 1000;
-        sim.force('center', d3.forceCenter(width / 2, height / 2));
-        centerTimerRef.current = setTimeout(() => {
-          sim.force('center', null);
-          centerTimerRef.current = null;
-        }, delay);
+      sim.force('center', d3.forceCenter(width / 2, height / 2));
+      const GRAVITY_STRENGTH = 0.08; // try 0.02..0.2
+      sim.force('x', d3.forceX(width / 2).strength(GRAVITY_STRENGTH));
+      sim.force('y', d3.forceY(height / 2).strength(GRAVITY_STRENGTH));
+
+      // No timer / removal
+      if (centerTimerRef.current) {
+        clearTimeout(centerTimerRef.current);
+        centerTimerRef.current = null;
       }
       simulationRef.current = sim;
     }
@@ -425,21 +427,33 @@ export function useD3Force(
       linkForce = d3
         .forceLink<CanvasNode, CanvasEdge>(edgesForSim)
         .id((d) => d.id)
-        // .distance(0)
-        .strength(1);
+        .distance(30)
+        .strength(0.25);
       sim.force('link', linkForce);
     } else {
-      linkForce.links(edgesForSim);
+      linkForce.links(edgesForSim).distance(30).strength(0.25);
     }
 
-    sim.force('charge', d3.forceManyBody().strength(-9999).distanceMax(9999));
+    // Mild, local-ish charge (Observable-like)
+    sim.force('charge', d3.forceManyBody<CanvasNode>().strength(-120).distanceMax(400));
+
+    // Gentle collision (avoid “never settles”)
+    const COLLIDE_PADDING = 4; // try 2..10
+    const COLLIDE_STRENGTH = 0.9; // try 0.6..1.0
+    const COLLIDE_ITERATIONS = 2; // try 1..4
+
     sim.force(
       'collision',
-      d3.forceCollide((node) => {
-        const count = getViolationCountsForNode(node.id).cumulativeViolations;
-        return getNodeRadiusPx(count, node.shape) + labelPadding;
-      }),
+      d3
+        .forceCollide<CanvasNode>((node) => {
+          const count = getViolationCountsForNode(node.id).cumulativeViolations;
+          return getNodeRadiusPx(count, node.shape) + COLLIDE_PADDING;
+        })
+        .strength(COLLIDE_STRENGTH)
+        .iterations(COLLIDE_ITERATIONS),
     );
+
+    sim.velocityDecay(0.5);
 
     // Draw only edges that are valid for the current node set
     drawRef.current = () => drawCanvas(nodes, edgesForSim);

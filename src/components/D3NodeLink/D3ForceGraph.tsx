@@ -945,22 +945,39 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     .on('start', (event: any) => {
       const sim = simulationRef.current;
       if (!sim) return;
-      if (!event.active) sim.alphaTarget(0.3).restart();
+
+      if (!event.active) sim.alpha(0.45).restart();
+      sim.alphaTarget(0); // allow cooling while holding
+
       event.subject.fx = event.subject.x;
       event.subject.fy = event.subject.y;
+
+      event.subject.vx = 0;
+      event.subject.vy = 0;
     })
     .on('drag', (event: any) => {
+      const sim = simulationRef.current;
+      if (!sim) return;
+
       const [px, py] = d3.pointer(event, canvasRef.current);
       const [tx, ty] = transformRef.current.invert([px, py]);
+
       event.subject.fx = tx;
       event.subject.fy = ty;
+
+      event.subject.vx = 0;
+      event.subject.vy = 0;
+
+      sim.alpha(Math.max(sim.alpha(), 0.18));
     })
     .on('end', (event: any) => {
       const sim = simulationRef.current;
       if (!sim) return;
-      if (!event.active) sim.alphaTarget(0);
+
       event.subject.fx = null;
       event.subject.fy = null;
+
+      if (!event.active) sim.alphaTarget(0);
     });
 
   const handleDoubleClick = useCallback(
