@@ -6,7 +6,7 @@ from enum import Enum
 from functools import lru_cache
 from typing import Iterable
 
-from rdflib import Graph, URIRef
+from rdflib import Graph, Literal, URIRef
 
 ORIGINAL_ONTOLOGY_FILE_PATH = "bikg_app/ttl/omics_model.ttl"
 ORIGINAL_INSTANCE_DATA_FILE_PATH = "bikg_app/ttl/study.ttl"
@@ -57,15 +57,24 @@ def _collect_graph_subjects(graph: Graph, namespace_manager) -> set[str]:
     return subjects
 
 
+def _normalize_literal_value(value: str) -> str:
+    if len(value) >= 2 and value[0] == value[-1] == '"':
+        return value[1:-1]
+    return value
+
+
 def _collect_graph_objects(graph: Graph, namespace_manager) -> set[str]:
     objects: set[str] = set()
     for obj in graph.objects():
         if isinstance(obj, URIRef):
             objects.add(_to_qname(namespace_manager, obj))
+        elif isinstance(obj, Literal):
+            objects.add(_normalize_literal_value(str(obj)))
     return objects
 
 
 def _normalize_node_id(namespace_manager, node_id: str) -> str:
+    node_id = _normalize_literal_value(node_id)
     if node_id.startswith(("http://", "https://")):
         return _to_qname(namespace_manager, URIRef(node_id))
     if ":" in node_id:
@@ -84,12 +93,14 @@ class NodeSourceResolver:
         self,
         namespace_manager,
         ontology_subjects: set[str],
+        ontology_objects: set[str],
         instance_subjects: set[str],
         instance_objects: set[str],
         violation_objects: set[str],
     ):
         self._namespace_manager = namespace_manager
         self._ontology_subjects = ontology_subjects
+        self._ontology_objects = ontology_objects
         self._instance_subjects = instance_subjects
         self._instance_objects = instance_objects
         self._violation_objects = violation_objects
@@ -104,6 +115,8 @@ class NodeSourceResolver:
             return NodeSourceInfo(normalized_id, [NodeSource.ONTOLOGY])
         if normalized_id in self._instance_subjects:
             return NodeSourceInfo(normalized_id, [NodeSource.INSTANCE])
+        if normalized_id in self._ontology_objects:
+            return NodeSourceInfo(normalized_id, [NodeSource.ONTOLOGY])
         if normalized_id in self._instance_objects:
             return NodeSourceInfo(normalized_id, [NodeSource.INSTANCE])
         if normalized_lower.startswith("ex:"):
@@ -128,6 +141,7 @@ def get_node_source_resolver() -> NodeSourceResolver:
     namespace_manager = _build_namespace_manager([ontology_graph, instance_graph, violation_graph])
 
     ontology_subjects = _collect_graph_subjects(ontology_graph, namespace_manager)
+    ontology_objects = _collect_graph_objects(ontology_graph, namespace_manager)
     instance_subjects = _collect_graph_subjects(instance_graph, namespace_manager)
     instance_objects = _collect_graph_objects(instance_graph, namespace_manager)
     violation_objects = _collect_graph_objects(violation_graph, namespace_manager)
@@ -135,6 +149,7 @@ def get_node_source_resolver() -> NodeSourceResolver:
     return NodeSourceResolver(
         namespace_manager,
         ontology_subjects,
+        ontology_objects,
         instance_subjects,
         instance_objects,
         violation_objects,
