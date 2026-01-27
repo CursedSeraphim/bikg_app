@@ -426,6 +426,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     selectedFocusNodes.forEach((id) => highlightableIds.add(id));
     selectedViolationIds.forEach((id) => highlightableIds.add(id));
     selectedExemplarIds.forEach((id) => highlightableIds.add(id));
+    selectedExemplarIds.forEach((exemplarId) => {
+      const entry = exemplarMap[exemplarId];
+      if (!entry) return;
+      entry.nodes.forEach((nodeId: string) => highlightableIds.add(nodeId));
+    });
 
     // 3) Ancestor expansion, restricted to the current selection scope
     const expandHighlightToAncestors = (sourceIds: Set<string>, allowedScope: Set<string>): Set<string> => {
