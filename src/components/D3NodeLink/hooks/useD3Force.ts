@@ -66,6 +66,140 @@ export function useD3Force(
     label: { x: number; y: number };
   };
 
+  type LabelBox = {
+    key: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    kind: 'node' | 'edge';
+    selected: boolean;
+  };
+
+  // LabelLayout helpers
+  function getLabelScreenPos(x: number, y: number, t: d3.ZoomTransform) {
+    return { x: t.applyX(x), y: t.applyY(y) };
+  }
+
+  function measureLabelWidthPx(context: CanvasRenderingContext2D, font: string, text: string) {
+    context.save();
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.font = font;
+    const width = context.measureText(text).width;
+    context.restore();
+    return width;
+  }
+
+  function getNodeLabelKey(node: CanvasNode) {
+    return `node:${node.id}`;
+  }
+
+  function getEdgeLabelKey(index: number) {
+    return `edge:${index}`;
+  }
+
+  function computeLabelBoxesScreenSpace(
+    context: CanvasRenderingContext2D,
+    allNodes: CanvasNode[],
+    edgeLayouts: EdgeLayout[],
+    t: d3.ZoomTransform,
+    dims: { width: number; height: number },
+  ): LabelBox[] {
+    const boxes: LabelBox[] = [];
+
+    allNodes.forEach((node) => {
+      const labelText = mapNodeLabel(node.label);
+      if (!labelText) {
+        return;
+      }
+      const pos = getLabelScreenPos(node.x ?? 0, node.y ?? 0, t);
+      const x = pos.x;
+      const y = pos.y - nodeLabelOffsetPx;
+      const w = measureLabelWidthPx(context, nodeLabelFont, labelText);
+      const h = D3_FORCE_LABEL_FONT_SIZE_PX;
+      const left = x - w / 2;
+      const right = x + w / 2;
+      const top = y - h / 2;
+      const bottom = y + h / 2;
+      if (right < 0 || left > dims.width || bottom < 0 || top > dims.height) {
+        return;
+      }
+      boxes.push({
+        key: getNodeLabelKey(node),
+        x,
+        y,
+        w,
+        h,
+        kind: 'node',
+        selected: Boolean(node.selected),
+      });
+    });
+
+    edgeLayouts.forEach((layout, index) => {
+      if (!layout.edge.label) {
+        return;
+      }
+      const labelText = mapEdgeLabel(layout.edge.label);
+      if (!labelText) {
+        return;
+      }
+      const pos = getLabelScreenPos(layout.label.x, layout.label.y, t);
+      const x = pos.x;
+      const y = pos.y - edgeLabelOffsetPx;
+      const w = measureLabelWidthPx(context, edgeLabelFont, labelText);
+      const h = D3_FORCE_EDGE_LABEL_FONT_SIZE_PX;
+      const left = x - w / 2;
+      const right = x + w / 2;
+      const top = y - h / 2;
+      const bottom = y + h / 2;
+      if (right < 0 || left > dims.width || bottom < 0 || top > dims.height) {
+        return;
+      }
+      boxes.push({
+        key: getEdgeLabelKey(index),
+        x,
+        y,
+        w,
+        h,
+        kind: 'edge',
+        selected: Boolean(layout.edge.selected),
+      });
+    });
+
+    return boxes;
+  }
+
+  function computeOverlappingKeys(boxes: LabelBox[]) {
+    const overlapping = new Set<string>();
+    for (let i = 0; i < boxes.length; i += 1) {
+      const a = boxes[i];
+      const aLeft = a.x - a.w / 2;
+      const aRight = a.x + a.w / 2;
+      const aTop = a.y - a.h / 2;
+      const aBottom = a.y + a.h / 2;
+      for (let j = i + 1; j < boxes.length; j += 1) {
+        const b = boxes[j];
+        const bLeft = b.x - b.w / 2;
+        const bRight = b.x + b.w / 2;
+        const bTop = b.y - b.h / 2;
+        const bBottom = b.y + b.h / 2;
+        const intersects = aLeft <= bRight && aRight >= bLeft && aTop <= bBottom && aBottom >= bTop;
+        if (intersects) {
+          overlapping.add(a.key);
+          overlapping.add(b.key);
+        }
+      }
+    }
+    return overlapping;
+  }
+
+  function getLabelAlpha({ hasSelection, isSelected, isOverlapping }: { hasSelection: boolean; isSelected: boolean; isOverlapping: boolean }) {
+    if (hasSelection) {
+      return isSelected ? 1 : 0.1;
+    }
+    return isOverlapping ? 0.1 : 1;
+  }
+
   function quadraticPoint(p0: number, p1: number, p2: number, t: number) {
     const oneMinusT = 1 - t;
     return oneMinusT * oneMinusT * p0 + 2 * oneMinusT * t * p1 + t * t * p2;
@@ -249,9 +383,11 @@ export function useD3Force(
     const bundledEdges = computeBundledEdges(allNodes, allEdges);
 
     const hasSelection = allNodes.some((node) => node.selected) || allEdges.some((edge) => edge.selected);
+    const labelBoxes = computeLabelBoxesScreenSpace(context, allNodes, bundledEdges, t, dimensions);
+    const overlappingKeys = computeOverlappingKeys(labelBoxes);
 
     // Draw edges
-    bundledEdges.forEach(({ edge, source, target, control, label }) => {
+    bundledEdges.forEach(({ edge, source, target, control, label }, index) => {
       const sx = source.x ?? 0;
       const sy = source.y ?? 0;
       const tx = target.x ?? 0;
@@ -316,13 +452,19 @@ export function useD3Force(
       // Draw edge label (if present)
       if (edge.label) {
         const labelText = mapEdgeLabel(edge.label);
+        const labelKey = getEdgeLabelKey(index);
+        const labelAlpha = getLabelAlpha({
+          hasSelection,
+          isSelected: Boolean(edge.selected),
+          isOverlapping: overlappingKeys.has(labelKey),
+        });
         context.save();
-        const t = transformRef.current;
-        const screenX = label.x * t.k;
-        const screenY = label.y * t.k - edgeLabelOffsetPx;
+        const screenX = t.applyX(label.x);
+        const screenY = t.applyY(label.y) - edgeLabelOffsetPx;
         context.scale(1 / t.k, 1 / t.k);
         context.font = edgeLabelFont;
         context.lineWidth = 3;
+        context.globalAlpha = labelAlpha;
         context.strokeStyle = '#fff';
         context.strokeText(labelText, screenX, screenY);
         context.fillStyle = '#858585';
@@ -354,14 +496,20 @@ export function useD3Force(
       context.stroke();
       context.lineWidth = 1;
 
-      context.save();
       const label = mapNodeLabel(node.label);
-      const t = transformRef.current;
-      const screenX = (node.x ?? 0) * t.k;
-      const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
+      const labelKey = getNodeLabelKey(node);
+      const labelAlpha = getLabelAlpha({
+        hasSelection,
+        isSelected: Boolean(node.selected),
+        isOverlapping: overlappingKeys.has(labelKey),
+      });
+      context.save();
+      const screenX = t.applyX(node.x ?? 0);
+      const screenY = t.applyY(node.y ?? 0) - nodeLabelOffsetPx;
       context.scale(1 / t.k, 1 / t.k);
       context.font = nodeLabelFont;
       context.lineWidth = 3;
+      context.globalAlpha = labelAlpha;
       context.strokeStyle = '#fff';
       context.strokeText(label, screenX, screenY);
       context.fillStyle = '#000';
