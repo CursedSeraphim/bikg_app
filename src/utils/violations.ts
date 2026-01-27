@@ -32,11 +32,6 @@ const updateMaxCumulativeViolations = (numberViolationsPerNode?: INumberViolatio
   maxCumulativeViolations = computeMaxCumulativeViolations(numberViolationsPerNode);
 };
 
-updateMaxCumulativeViolations(store.getState().combined.numberViolationsPerNode);
-store.subscribe(() => {
-  updateMaxCumulativeViolations(store.getState().combined.numberViolationsPerNode);
-});
-
 export const getNormalizedNodeId = (nodeId: string): string => nodeId.replace(UUID_SUFFIX_REGEX, '');
 
 const getNumberViolationsPerNodeMap = (overrideMap?: INumberViolationsPerNodeMap): INumberViolationsPerNodeMap | undefined => {
