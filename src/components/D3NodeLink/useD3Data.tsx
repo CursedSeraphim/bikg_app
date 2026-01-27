@@ -34,7 +34,7 @@ export function useD3Data({ rdfOntology, violations, types, cumulativeNumberViol
         const { nodes, edges } = await selectCytoData(rdfOntology, fakeColorFn, types, cumulativeNumberViolationsPerType, violations);
 
         let nextNodes = nodes;
-        const nodeIds = Array.from(new Set(nodes.map((node) => node.data.id)));
+        const nodeIds = Array.from(new Set(nodes.map((node) => node.data.sourceId ?? node.data.id)));
         let classMap: Record<string, string | null> = {};
         let sourceMap: Record<string, string[]> = {};
 
@@ -54,8 +54,8 @@ export function useD3Data({ rdfOntology, violations, types, cumulativeNumberViol
           ...node,
           data: {
             ...node.data,
-            isAClass: classMap[node.data.id] ?? null,
-            sources: sourceMap[node.data.id] ?? ['unknown'],
+            isAClass: classMap[node.data.sourceId ?? node.data.id] ?? null,
+            sources: sourceMap[node.data.sourceId ?? node.data.id] ?? ['unknown'],
           },
         }));
 

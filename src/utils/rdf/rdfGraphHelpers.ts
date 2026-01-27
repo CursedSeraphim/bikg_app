@@ -135,7 +135,7 @@ export const extractNamespace = (uri) => {
   return match ? match[1] : '';
 };
 // Helper function to find or add node
-export const findOrAddNode = (id, label, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList) => {
+export const findOrAddNode = (id, label, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList, sourceId = label) => {
   const { cumulativeSelected, cumulativeViolations, violations } = getViolationCountsForNode(id, numberViolationsPerNode);
 
   const hasCounts = cumulativeSelected !== 0 || cumulativeViolations !== 0;
@@ -152,6 +152,7 @@ export const findOrAddNode = (id, label, visible, nodes, types, numberViolations
       data: {
         id,
         label: computedLabel,
+        sourceId,
         visible,
         permanent: visible,
         namespace,
@@ -179,7 +180,7 @@ export const processTriples = (triples, visible, nodes, edges, objectProperties,
     }
 
     const uniqueId = objectProperties.has(t.o) ? t.o : `${t.o}_${uuidv4()}`;
-    findOrAddNode(uniqueId, t.o, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList);
+    findOrAddNode(uniqueId, t.o, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList, t.o);
 
     edges.push({
       data: {
