@@ -95,6 +95,9 @@ def _normalize_node_id(namespace_manager, node_id: str) -> str:
     if node_id.startswith(("http://", "https://")):
         return _to_qname(namespace_manager, URIRef(node_id))
     if ":" in node_id:
+        prefix = node_id.split(":", 1)[0]
+        if namespace_manager.store.namespace(prefix) is None:
+            return node_id
         try:
             expanded = namespace_manager.expand_curie(node_id)
             return _to_qname(namespace_manager, URIRef(str(expanded)))
