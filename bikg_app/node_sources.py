@@ -58,9 +58,12 @@ def _collect_graph_subjects(graph: Graph, namespace_manager) -> set[str]:
 
 
 def _normalize_literal_value(value: str) -> str:
-    if len(value) >= 2 and value[0] == value[-1] == '"':
-        return value[1:-1]
-    return value
+    if not value.startswith('"'):
+        return value
+    closing_quote_index = value.rfind('"')
+    if closing_quote_index <= 0:
+        return value
+    return value[1:closing_quote_index]
 
 
 def _collect_graph_objects(graph: Graph, namespace_manager) -> set[str]:
