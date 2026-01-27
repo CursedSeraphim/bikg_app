@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
+from pathlib import Path
 from typing import Iterable
 
 from rdflib import Graph, Literal, URIRef
@@ -11,6 +12,11 @@ from rdflib import Graph, Literal, URIRef
 ORIGINAL_ONTOLOGY_FILE_PATH = "bikg_app/ttl/omics_model.ttl"
 ORIGINAL_INSTANCE_DATA_FILE_PATH = "bikg_app/ttl/study.ttl"
 ORIGINAL_VIOLATION_REPORT_FILE_PATH = "bikg_app/ttl/violation_report.ttl"
+VIOLATION_TTL_FILE_PATHS = (
+    ORIGINAL_VIOLATION_REPORT_FILE_PATH,
+    "bikg_app/ttl/violations.ttl",
+    "bikg_app/ttl/violations_original.ttl",
+)
 
 
 class NodeSource(str, Enum):
@@ -32,6 +38,14 @@ def _load_graph(path: str) -> Graph:
     graph = Graph()
     graph.parse(path, format="ttl")
     return graph
+
+
+def _load_existing_graphs(paths: Iterable[str]) -> list[Graph]:
+    graphs: list[Graph] = []
+    for path in paths:
+        if Path(path).exists():
+            graphs.append(_load_graph(path))
+    return graphs
 
 
 def _build_namespace_manager(graphs: Iterable[Graph]):
@@ -139,15 +153,17 @@ class NodeSourceResolver:
 def get_node_source_resolver() -> NodeSourceResolver:
     ontology_graph = _load_graph(ORIGINAL_ONTOLOGY_FILE_PATH)
     instance_graph = _load_graph(ORIGINAL_INSTANCE_DATA_FILE_PATH)
-    violation_graph = _load_graph(ORIGINAL_VIOLATION_REPORT_FILE_PATH)
+    violation_graphs = _load_existing_graphs(VIOLATION_TTL_FILE_PATHS)
 
-    namespace_manager = _build_namespace_manager([ontology_graph, instance_graph, violation_graph])
+    namespace_manager = _build_namespace_manager([ontology_graph, instance_graph, *violation_graphs])
 
     ontology_subjects = _collect_graph_subjects(ontology_graph, namespace_manager)
     ontology_objects = _collect_graph_objects(ontology_graph, namespace_manager)
     instance_subjects = _collect_graph_subjects(instance_graph, namespace_manager)
     instance_objects = _collect_graph_objects(instance_graph, namespace_manager)
-    violation_objects = _collect_graph_objects(violation_graph, namespace_manager)
+    violation_objects: set[str] = set()
+    for violation_graph in violation_graphs:
+        violation_objects.update(_collect_graph_objects(violation_graph, namespace_manager))
 
     return NodeSourceResolver(
         namespace_manager,
