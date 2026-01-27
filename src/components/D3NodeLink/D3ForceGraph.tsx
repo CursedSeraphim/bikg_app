@@ -26,7 +26,7 @@ import {
 } from '../Store/CombinedSlice';
 import { useD3Data } from './useD3Data';
 
-import store from '../Store/Store';
+import { getViolationCountsForNode } from '../../utils/violations';
 import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
 import { getNodeColorForNode, getNodeShapeForId } from './D3NldUtils';
 import { getNearNodeThreshold } from './hooks/hoverRadius';
@@ -38,7 +38,6 @@ import { useD3Force } from './hooks/useD3Force';
 import { useD3ResetView } from './hooks/useD3ResetView';
 import useExemplarHoverList from './hooks/useExemplarHoverList';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
-import { getViolationCountsForNode } from '../../utils/violations';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering = true }: D3NLDViewProps) {
@@ -426,6 +425,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     selectedFocusNodes.forEach((id) => highlightableIds.add(id));
     selectedViolationIds.forEach((id) => highlightableIds.add(id));
     selectedExemplarIds.forEach((id) => highlightableIds.add(id));
+    selectedExemplarIds.forEach((exemplarId) => {
+      // children = outgoing edges' targets from the exemplar node
+      const childIds = adjacencyRef.current[exemplarId] || [];
+      childIds.forEach((childId: string) => {
+        if (!isIdBlacklisted(childId)) {
+          highlightableIds.add(childId);
+        }
+      });
+    });
 
     // 3) Ancestor expansion, restricted to the current selection scope
     const expandHighlightToAncestors = (sourceIds: Set<string>, allowedScope: Set<string>): Set<string> => {
