@@ -155,6 +155,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     [cyDataNodes, hiddenLabels, isLabelBlacklisted],
   );
 
+  const edgeKey = useCallback((sourceId: string, targetId: string, label?: string, fallbackId?: string) => {
+    const predicate = label ?? fallbackId ?? '';
+    return `${sourceId}__${predicate}__${targetId}`;
+  }, []);
+
   // -------------------------------------------------------------------------
 
   const convertData = useCallback(() => {
@@ -221,11 +226,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
     const newEdges: CanvasEdge[] = visibleEdgeData.map((e) => {
       const sourceInfo = nodeInfoMap.get(e.data.source);
+      const sanitizedLabel = anonymizeLabel(e.data.label ?? e.data.id);
+      const edgeId = edgeKey(e.data.source, e.data.target, sanitizedLabel, e.data.id);
       return {
-        id: e.data.id,
+        id: edgeId,
         source: e.data.source,
         target: e.data.target,
-        label: anonymizeLabel(e.data.label ?? e.data.id), // sanitize
+        label: sanitizedLabel, // sanitize
         visible: true,
         selected: Boolean(e.data.selected),
         color: getNodeColorForNode({ sources: sourceInfo?.sources ?? ['unknown'], isAClass: sourceInfo?.isAClass ?? null }),
@@ -261,6 +268,37 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   useEffect(() => {
     redraw();
   }, [redraw, d3Nodes, d3Edges, ghostNodes, ghostEdges]);
+
+  useEffect(() => {
+    const visibleNodeIds = new Set(d3Nodes.map((node) => node.id));
+    const toId = (value: string | CanvasNode) => (typeof value === 'object' ? value.id : value);
+    const visibleEdgeKeys = new Set(d3Edges.map((edge) => edgeKey(toId(edge.source), toId(edge.target), edge.label, edge.id)));
+
+    let didChange = false;
+    const nextSelectedNodes = new Set<string>();
+    selectedNodeIdsRef.current.forEach((id) => {
+      if (visibleNodeIds.has(id)) {
+        nextSelectedNodes.add(id);
+      } else {
+        didChange = true;
+      }
+    });
+
+    const nextSelectedEdges = new Set<string>();
+    selectedEdgeIdsRef.current.forEach((id) => {
+      if (visibleEdgeKeys.has(id)) {
+        nextSelectedEdges.add(id);
+      } else {
+        didChange = true;
+      }
+    });
+
+    if (didChange) {
+      selectedNodeIdsRef.current = nextSelectedNodes;
+      selectedEdgeIdsRef.current = nextSelectedEdges;
+      redraw();
+    }
+  }, [d3Nodes, d3Edges, edgeKey, redraw]);
 
   useD3CumulativeCounts(d3Nodes, setD3Nodes, redraw);
 
@@ -467,15 +505,17 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     cyDataEdges.forEach((edge) => {
       const sourceId = edge.data.source;
       const targetId = edge.data.target;
+      const sanitizedLabel = anonymizeLabel(edge.data.label ?? edge.data.id);
+      const edgeId = edgeKey(sourceId, targetId, sanitizedLabel, edge.data.id);
 
       // Visibility: any edge connecting unfolded nodes
       if (idsToSelect.has(sourceId) && idsToSelect.has(targetId)) {
-        visibleEdgeIds.add(edge.data.id);
+        visibleEdgeIds.add(edgeId);
       }
 
       // Highlighting: only edges fully inside the highlighted branch+ancestors
       if (highlightIdsWithAncestors.has(sourceId) && highlightIdsWithAncestors.has(targetId)) {
-        selectedEdgeIds.add(edge.data.id);
+        selectedEdgeIds.add(edgeId);
       }
     });
 
@@ -507,8 +547,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     // 6) Edges: same split
     cyDataEdges.forEach((edge) => {
       const { id } = edge.data;
-      const shouldHighlight = selectedEdgeIds.has(id);
-      const shouldShow = visibleEdgeIds.has(id);
+      const sanitizedLabel = anonymizeLabel(edge.data.label ?? edge.data.id);
+      const edgeId = edgeKey(edge.data.source, edge.data.target, sanitizedLabel, id);
+      const shouldHighlight = selectedEdgeIds.has(edgeId);
+      const shouldShow = visibleEdgeIds.has(edgeId);
 
       if (edge.data.selected !== shouldHighlight) {
         edge.data.selected = shouldHighlight;
@@ -1074,11 +1116,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
             const key = `${edgeData.data.source}->${edgeData.data.target}`;
             if (!addedEdgeKeys.has(key)) {
               addedEdgeKeys.add(key);
+              const previewLabel = anonymizeLabel(edgeData.data.label ?? edgeData.data.id);
+              const previewId = edgeKey(edgeData.data.source, edgeData.data.target, previewLabel, edgeData.data.id);
               newGhostEdges.push({
-                id: edgeData.data.id,
+                id: previewId,
                 source: edgeData.data.source,
                 target: edgeData.data.target,
-                label: anonymizeLabel(edgeData.data.label ?? edgeData.data.id),
+                label: previewLabel,
                 visible: true,
                 color: getEdgeColorForSource(edgeData.data.source),
                 // marks that this preview indicates removal rather than addition
@@ -1105,11 +1149,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           const key = `${edge.source}->${edge.target}`;
           if (!addedEdgeKeys.has(key)) {
             addedEdgeKeys.add(key);
+            const previewLabel = anonymizeLabel(edge.label ?? edge.id);
+            const previewId = edgeKey(edge.source, edge.target, previewLabel, edge.id);
             newGhostEdges.push({
-              id: edge.id,
+              id: previewId,
               source: edge.source,
               target: edge.target,
-              label: anonymizeLabel(edge.label ?? edge.id),
+              label: previewLabel,
               visible: true,
               color: getEdgeColorForSource(edge.source),
               ghost: true as any,

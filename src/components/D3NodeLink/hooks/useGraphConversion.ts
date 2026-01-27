@@ -33,6 +33,11 @@ export function useGraphConversion({
   const [d3Nodes, setD3Nodes] = useState<CanvasNode[]>([]);
   const [d3Edges, setD3Edges] = useState<CanvasEdge[]>([]);
 
+  const edgeKey = useCallback((sourceId: string, targetId: string, label?: string, fallbackId?: string) => {
+    const predicate = label ?? fallbackId ?? '';
+    return `${sourceId}__${predicate}__${targetId}`;
+  }, []);
+
   const convertData = useCallback(() => {
     const visibleNodeData = cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label));
     const visibleIds = new Set(visibleNodeData.map((n) => n.data.id));
@@ -94,11 +99,13 @@ export function useGraphConversion({
 
     const newEdges: CanvasEdge[] = visibleEdgeData.map((e) => {
       const sourceInfo = nodeInfoMap.get(e.data.source);
+      const sanitizedLabel = anonymizeLabel(e.data.label ?? e.data.id);
+      const edgeId = edgeKey(e.data.source, e.data.target, sanitizedLabel, e.data.id);
       return {
-        id: e.data.id,
+        id: edgeId,
         source: e.data.source,
         target: e.data.target,
-        label: anonymizeLabel(e.data.label ?? e.data.id),
+        label: sanitizedLabel,
         visible: true,
         selected: Boolean(e.data.selected),
         color: getNodeColorForNode({ sources: sourceInfo?.sources ?? ['unknown'], isAClass: sourceInfo?.isAClass ?? null }),
@@ -108,7 +115,7 @@ export function useGraphConversion({
     updateD3NodesGivenCounts(nextNodes);
     setD3Nodes(nextNodes);
     setD3Edges(newEdges);
-  }, [anonymizeLabel, cyDataEdges, cyDataNodes, hiddenNodesRef, isLabelBlacklisted, nodeMapRef, originRef, savedPositionsRef]);
+  }, [anonymizeLabel, cyDataEdges, cyDataNodes, edgeKey, hiddenNodesRef, isLabelBlacklisted, nodeMapRef, originRef, savedPositionsRef]);
 
   useEffect(() => {
     if (!loading) {

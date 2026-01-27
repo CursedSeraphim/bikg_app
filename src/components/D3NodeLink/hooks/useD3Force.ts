@@ -357,7 +357,15 @@ export function useD3Force(
     const overlappingLabelTargets = getOverlappingLabelTargets(labelBoxes);
 
     const { selectedNodeIds, selectedEdgeIds } = selectionState;
-    const hasSelection = selectedNodeIds.size > 0 || selectedEdgeIds.size > 0;
+    const edgeKey = (edge: CanvasEdge) => {
+      const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+      const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+      const predicate = edge.label ?? edge.id ?? '';
+      return `${sourceId}__${predicate}__${targetId}`;
+    };
+    const visibleSelectedNodeCount = allNodes.reduce((count, node) => (selectedNodeIds.has(node.id) ? count + 1 : count), 0);
+    const visibleSelectedEdgeCount = allEdges.reduce((count, edge) => (selectedEdgeIds.has(edgeKey(edge)) ? count + 1 : count), 0);
+    const hasVisibleSelection = visibleSelectedNodeCount > 0 || visibleSelectedEdgeCount > 0;
 
     // Draw edges
     bundledEdges.forEach(({ edge, source, target, control, label }) => {
@@ -365,8 +373,8 @@ export function useD3Force(
       const sy = source.y ?? 0;
       const tx = target.x ?? 0;
       const ty = target.y ?? 0;
-      const isSelectedEdge = selectedEdgeIds.has(edge.id);
-      const dimNonSelected = hasSelection && !isSelectedEdge;
+      const isSelectedEdge = selectedEdgeIds.has(edgeKey(edge));
+      const dimNonSelected = hasVisibleSelection && !isSelectedEdge;
 
       context.save();
       context.globalAlpha = dimNonSelected ? 0.1 : 1;
@@ -432,7 +440,7 @@ export function useD3Force(
         const screenY = label.y * t.k - edgeLabelOffsetPx;
         context.scale(1 / t.k, 1 / t.k);
         context.font = edgeLabelFont;
-        const dimLabel = overlappingLabelTargets.edges.has(edge) || (hasSelection && !isSelectedEdge);
+        const dimLabel = overlappingLabelTargets.edges.has(edge) || (hasVisibleSelection && !isSelectedEdge);
         context.globalAlpha = dimLabel ? 0.1 : 1;
         context.lineWidth = 3;
         context.strokeStyle = '#fff';
@@ -450,7 +458,7 @@ export function useD3Force(
       const count = getViolationCountsForNode(node.id).cumulativeViolations;
       const radius = getNodeRadiusPx(count, node.shape) * semanticScale;
       const isSelectedNode = selectedNodeIds.has(node.id);
-      const dimNonSelected = hasSelection && !isSelectedNode;
+      const dimNonSelected = hasVisibleSelection && !isSelectedNode;
       context.save();
       context.globalAlpha = dimNonSelected ? 0.1 : 1;
       drawNodeShape(context, node, radius);
@@ -474,7 +482,7 @@ export function useD3Force(
       const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
       context.scale(1 / t.k, 1 / t.k);
       context.font = nodeLabelFont;
-      const dimLabel = overlappingLabelTargets.nodes.has(node) || (hasSelection && !isSelectedNode);
+      const dimLabel = overlappingLabelTargets.nodes.has(node) || (hasVisibleSelection && !isSelectedNode);
       context.globalAlpha = dimLabel ? 0.1 : 1;
       context.lineWidth = 3;
       context.strokeStyle = '#fff';
