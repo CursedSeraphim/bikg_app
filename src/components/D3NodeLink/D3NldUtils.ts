@@ -1,5 +1,7 @@
 // File: src/components/D3NodeLink/D3NldUtils.ts
 
+import { getMaxCumulativeViolations } from '../../utils/violations';
+
 /**
  * Extracts the namespace prefix from a URI-like string (e.g. "ex:SomeNode" → "ex").
  */
@@ -37,6 +39,7 @@ const DEFAULT_NODE_SHAPE: NodeShape = 'triangle';
 export const D3_FORCE_LABEL_FONT_SIZE_PX = 14;
 export const D3_FORCE_EDGE_LABEL_FONT_SIZE_PX = 12;
 export const D3_NODE_MIN_RADIUS_PX = 4;
+export const D3_NODE_MAX_RADIUS_PX = 50;
 export const D3_NODE_VIOLATION_RADIUS_OFFSET_PX = 3;
 export const D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES = true;
 
@@ -50,7 +53,11 @@ const D3_NODE_SHAPE_RADIUS_MODIFIERS_PX: Record<NodeShape, number> = {
 };
 
 export function getNodeRadiusPx(violationCount: number, shape: NodeShape): number {
-  const baseRadius = D3_NODE_MIN_RADIUS_PX + violationCount + D3_NODE_VIOLATION_RADIUS_OFFSET_PX;
+  const maxViolations = getMaxCumulativeViolations();
+  const minRadius = D3_NODE_MIN_RADIUS_PX + D3_NODE_VIOLATION_RADIUS_OFFSET_PX;
+  const maxRadius = Math.max(D3_NODE_MAX_RADIUS_PX, minRadius);
+  const normalizedViolations = maxViolations > 0 ? Math.min(Math.max(violationCount, 0), maxViolations) / maxViolations : 0;
+  const baseRadius = minRadius + normalizedViolations * (maxRadius - minRadius);
   return baseRadius + (D3_NODE_SHAPE_RADIUS_MODIFIERS_PX[shape] ?? 0);
 }
 
