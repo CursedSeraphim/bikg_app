@@ -35,7 +35,7 @@ export const NAMESPACE_SHAPE_MAP: Record<string, NodeShape> = {
   other: 'hexagon',
 };
 
-const DEFAULT_NODE_SHAPE: NodeShape = 'triangle';
+const DEFAULT_NODE_SHAPE: NodeShape = 'hexagon';
 
 export const D3_FORCE_LABEL_FONT_SIZE_PX = 14;
 export const D3_FORCE_EDGE_LABEL_FONT_SIZE_PX = 12;
