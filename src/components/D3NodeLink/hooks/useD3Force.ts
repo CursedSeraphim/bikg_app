@@ -57,6 +57,7 @@ export function useD3Force(
   const edgeBundlingCompatibilityThreshold = 0.4;
   const edgeBundlingStiffness = 60;
   const edgeBundlingStepSize = 0.2;
+  const labelOverlapPaddingPx = 2;
 
   type EdgeLayout = {
     edge: CanvasEdge;
@@ -65,6 +66,10 @@ export function useD3Force(
     control: { x: number; y: number };
     label: { x: number; y: number };
   };
+
+  function getEdgeLabelKey(edge: CanvasEdge): string {
+    return `edge:${toId(edge.source)}->${toId(edge.target)}:${edge.label ?? ''}`;
+  }
 
   function quadraticPoint(p0: number, p1: number, p2: number, t: number) {
     const oneMinusT = 1 - t;
@@ -170,6 +175,91 @@ export function useD3Force(
     });
   }
 
+  type LabelBox = {
+    key: string;
+    selected: boolean;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+
+  function getLabelBoxes(
+    context: CanvasRenderingContext2D,
+    allNodes: CanvasNode[],
+    bundledEdges: EdgeLayout[],
+    t: d3.ZoomTransform,
+  ): LabelBox[] {
+    const boxes: LabelBox[] = [];
+
+    context.save();
+    context.font = edgeLabelFont;
+    bundledEdges.forEach(({ edge, label }) => {
+      if (!edge.label) {
+        return;
+      }
+      const labelText = mapEdgeLabel(edge.label);
+      if (!labelText) {
+        return;
+      }
+      const metrics = context.measureText(labelText);
+      const width = metrics.width + labelOverlapPaddingPx * 2;
+      const height = D3_FORCE_EDGE_LABEL_FONT_SIZE_PX + labelOverlapPaddingPx * 2;
+      const screenX = label.x * t.k;
+      const screenY = label.y * t.k - edgeLabelOffsetPx;
+      boxes.push({
+        key: getEdgeLabelKey(edge),
+        selected: edge.selected,
+        x: screenX - width / 2,
+        y: screenY - height / 2,
+        width,
+        height,
+      });
+    });
+    context.restore();
+
+    context.save();
+    context.font = nodeLabelFont;
+    allNodes.forEach((node) => {
+      const labelText = mapNodeLabel(node.label);
+      if (!labelText) {
+        return;
+      }
+      const metrics = context.measureText(labelText);
+      const width = metrics.width + labelOverlapPaddingPx * 2;
+      const height = D3_FORCE_LABEL_FONT_SIZE_PX + labelOverlapPaddingPx * 2;
+      const screenX = (node.x ?? 0) * t.k;
+      const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
+      boxes.push({
+        key: `node:${node.id}`,
+        selected: node.selected,
+        x: screenX - width / 2,
+        y: screenY - height / 2,
+        width,
+        height,
+      });
+    });
+    context.restore();
+
+    return boxes;
+  }
+
+  function getOverlappingLabelKeys(labelBoxes: LabelBox[]): Set<string> {
+    const overlaps = new Set<string>();
+    for (let i = 0; i < labelBoxes.length; i += 1) {
+      const a = labelBoxes[i];
+      for (let j = i + 1; j < labelBoxes.length; j += 1) {
+        const b = labelBoxes[j];
+        const intersects = a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+        if (intersects) {
+          overlaps.add(a.key);
+          overlaps.add(b.key);
+        }
+      }
+    }
+    return overlaps;
+  }
+
   function drawPolygon(context: CanvasRenderingContext2D, x: number, y: number, radius: number, sides: number, rotation = -Math.PI / 2) {
     context.beginPath();
     for (let i = 0; i < sides; i += 1) {
@@ -247,6 +337,8 @@ export function useD3Force(
     context.textBaseline = 'middle';
 
     const bundledEdges = computeBundledEdges(allNodes, allEdges);
+    const labelBoxes = getLabelBoxes(context, allNodes, bundledEdges, t);
+    const overlappingLabelKeys = getOverlappingLabelKeys(labelBoxes);
 
     const hasSelection = allNodes.some((node) => node.selected) || allEdges.some((edge) => edge.selected);
 
@@ -322,6 +414,9 @@ export function useD3Force(
         const screenY = label.y * t.k - edgeLabelOffsetPx;
         context.scale(1 / t.k, 1 / t.k);
         context.font = edgeLabelFont;
+        const labelKey = getEdgeLabelKey(edge);
+        const dimLabel = overlappingLabelKeys.has(labelKey) || (hasSelection && !edge.selected);
+        context.globalAlpha = dimLabel ? 0.1 : 1;
         context.lineWidth = 3;
         context.strokeStyle = '#fff';
         context.strokeText(labelText, screenX, screenY);
@@ -361,6 +456,9 @@ export function useD3Force(
       const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
       context.scale(1 / t.k, 1 / t.k);
       context.font = nodeLabelFont;
+      const labelKey = `node:${node.id}`;
+      const dimLabel = overlappingLabelKeys.has(labelKey) || (hasSelection && !node.selected);
+      context.globalAlpha = dimLabel ? 0.1 : 1;
       context.lineWidth = 3;
       context.strokeStyle = '#fff';
       context.strokeText(label, screenX, screenY);
