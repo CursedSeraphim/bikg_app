@@ -57,10 +57,13 @@ def _build_namespace_manager(graphs: Iterable[Graph]):
 
 
 def _to_qname(namespace_manager, uri: URIRef) -> str:
+    uri_str = str(uri)
+    if uri_str.startswith("urn:"):
+        return uri_str
     try:
         return namespace_manager.qname(uri)
     except ValueError:
-        return str(uri)
+        return uri_str
 
 
 def _collect_graph_subjects(graph: Graph, namespace_manager) -> set[str]:
@@ -92,6 +95,8 @@ def _collect_graph_objects(graph: Graph, namespace_manager) -> set[str]:
 
 def _normalize_node_id(namespace_manager, node_id: str) -> str:
     node_id = _normalize_literal_value(node_id)
+    if node_id.startswith("urn:"):
+        return node_id
     if node_id.startswith(("http://", "https://")):
         return _to_qname(namespace_manager, URIRef(node_id))
     if ":" in node_id:
