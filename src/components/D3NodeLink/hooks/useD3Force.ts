@@ -470,6 +470,10 @@ export function useD3Force(
 
     if (!sim) {
       sim = d3.forceSimulation<CanvasNode>(nodes);
+      sim.force('center', d3.forceCenter(width / 2, height / 2));
+      const GRAVITY_STRENGTH = 0.08; // try 0.02..0.2
+      sim.force('x', d3.forceX(width / 2).strength(GRAVITY_STRENGTH));
+      sim.force('y', d3.forceY(height / 2).strength(GRAVITY_STRENGTH));
 
       // No timer / removal
       if (centerTimerRef.current) {
