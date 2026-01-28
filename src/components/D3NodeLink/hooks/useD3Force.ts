@@ -304,7 +304,7 @@ export function useD3Force(
     prevZoomKRef.current = t.k;
 
     // Draw edges
-    bundledEdges.forEach(({ edge, source, target, control, label }) => {
+    bundledEdges.forEach(({ edge, source, target, control }) => {
       const sx = source.x ?? 0;
       const sy = source.y ?? 0;
       const tx = target.x ?? 0;
@@ -366,23 +366,6 @@ export function useD3Force(
         context.fill();
       }
 
-      // Draw edge label (if present)
-      if (edge.label && visibleEdgeIds.has(getEdgeId(edge))) {
-        const labelText = mapEdgeLabel(edge.label);
-        context.save();
-        const t = transformRef.current;
-        const screenX = label.x * t.k;
-        const screenY = label.y * t.k - edgeLabelOffsetPx;
-        context.scale(1 / t.k, 1 / t.k);
-        context.font = edgeLabelFont;
-        context.lineWidth = 3;
-        context.strokeStyle = '#fff';
-        context.strokeText(labelText, screenX, screenY);
-        context.fillStyle = '#858585';
-        context.fillText(labelText, screenX, screenY);
-        context.restore();
-      }
-
       context.restore();
     });
 
@@ -407,22 +390,49 @@ export function useD3Force(
       context.stroke();
       context.lineWidth = 1;
 
-      context.save();
-      const label = mapNodeLabel(node.label);
-      if (visibleNodeIds.has(node.id)) {
-        const t = transformRef.current;
-        const screenX = (node.x ?? 0) * t.k;
-        const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
-        context.scale(1 / t.k, 1 / t.k);
-        context.font = nodeLabelFont;
-        context.lineWidth = 3;
-        context.strokeStyle = '#fff';
-        context.strokeText(label, screenX, screenY);
-        context.fillStyle = '#000';
-        context.fillText(label, screenX, screenY);
-      }
       context.restore();
+    });
 
+    // Draw labels on top of nodes + edges
+    bundledEdges.forEach(({ edge, label }) => {
+      if (!edge.label || !visibleEdgeIds.has(getEdgeId(edge))) {
+        return;
+      }
+      const dimNonSelected = hasSelection && !edge.selected;
+      const labelText = mapEdgeLabel(edge.label);
+      context.save();
+      context.globalAlpha = dimNonSelected ? 0.1 : 1;
+      const t = transformRef.current;
+      const screenX = label.x * t.k;
+      const screenY = label.y * t.k - edgeLabelOffsetPx;
+      context.scale(1 / t.k, 1 / t.k);
+      context.font = edgeLabelFont;
+      context.lineWidth = 3;
+      context.strokeStyle = '#fff';
+      context.strokeText(labelText, screenX, screenY);
+      context.fillStyle = '#858585';
+      context.fillText(labelText, screenX, screenY);
+      context.restore();
+    });
+
+    allNodes.forEach((node) => {
+      if (!visibleNodeIds.has(node.id)) {
+        return;
+      }
+      const dimNonSelected = hasSelection && !node.selected;
+      const label = mapNodeLabel(node.label);
+      context.save();
+      context.globalAlpha = dimNonSelected ? 0.1 : 1;
+      const t = transformRef.current;
+      const screenX = (node.x ?? 0) * t.k;
+      const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
+      context.scale(1 / t.k, 1 / t.k);
+      context.font = nodeLabelFont;
+      context.lineWidth = 3;
+      context.strokeStyle = '#fff';
+      context.strokeText(label, screenX, screenY);
+      context.fillStyle = '#000';
+      context.fillText(label, screenX, screenY);
       context.restore();
     });
 
