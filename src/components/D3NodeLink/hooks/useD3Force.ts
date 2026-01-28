@@ -466,9 +466,7 @@ export function useD3Force(
     const { width, height } = dimensions;
     let sim = simulationRef.current;
     const shouldUpdateCentering =
-      !prevCenteringRef.current ||
-      prevCenteringRef.current.enabled !== centeringEnabled ||
-      prevCenteringRef.current.strength !== centeringStrength;
+      !prevCenteringRef.current || prevCenteringRef.current.enabled !== centeringEnabled || prevCenteringRef.current.strength !== centeringStrength;
 
     if (!sim) {
       sim = d3.forceSimulation<CanvasNode>(nodes);
