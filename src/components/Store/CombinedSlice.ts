@@ -91,6 +91,8 @@ const initialState: ICombinedState = {
   typesViolationMap: {},
   filterType: 'none',
   d3BoundingBox: 'off',
+  d3CenteringEnabled: true,
+  d3CenteringStrength: 0.08,
   missingEdgeOption: 'keep',
   missingEdgeLabel: loadMissingEdgeLabel(),
   edgeCountDict: {},
@@ -660,6 +662,12 @@ const combinedSlice = createSlice({
     setD3BoundingBox: (state, action: PayloadAction<D3BoundingBoxSetting>) => {
       state.d3BoundingBox = action.payload;
     },
+    setD3CenteringEnabled: (state, action: PayloadAction<boolean>) => {
+      state.d3CenteringEnabled = action.payload;
+    },
+    setD3CenteringStrength: (state, action: PayloadAction<number>) => {
+      state.d3CenteringStrength = action.payload;
+    },
     setViolationTypesMap: (state, action) => {
       state.violationTypesMap = action.payload;
     },
@@ -999,6 +1007,8 @@ export const selectMissingEdgeOption = (state: { combined: ICombinedState }) => 
 export const selectMissingEdgeLabel = (state: { combined: ICombinedState }) => state.combined.missingEdgeLabel;
 export const selectFilterType = (state: { combined: ICombinedState }) => state.combined.filterType;
 export const selectD3BoundingBox = (state: { combined: ICombinedState }) => state.combined.d3BoundingBox;
+export const selectD3CenteringEnabled = (state: { combined: ICombinedState }) => state.combined.d3CenteringEnabled;
+export const selectD3CenteringStrength = (state: { combined: ICombinedState }) => state.combined.d3CenteringStrength;
 export const selectViolationsTypeMap = (state: { combined: ICombinedState }) => state.combined.violationTypesMap;
 export const selectSelectedNodes = (state: { combined: ICombinedState }) => state.combined.selectedNodes;
 export const selectSamples = (state: { combined: ICombinedState }) => state.combined.samples;
@@ -1123,6 +1133,8 @@ export const {
   setTypesViolationMap,
   setFilterType,
   setD3BoundingBox,
+  setD3CenteringEnabled,
+  setD3CenteringStrength,
   setMissingEdgeOption,
   setMissingEdgeLabel,
   setEdgeCountDict,

@@ -19,9 +19,8 @@ import { useLabelTransform } from './useLabelTransform';
  * @param edges       Array of CanvasEdge to layout and render.
  * @param boundingBox "on" or "off"; when "on", constrain nodes within canvas.
  * @param dimensions  The { width, height } of the canvas (CSS pixels).
- * @param initialCentering When true or a number, applies a temporary centering
- *                         force on initialization. The force is removed once
- *                         after the given timeout (defaults to ~1000 ms).
+ * @param centeringEnabled Whether the layout should pull nodes toward the center.
+ * @param centeringStrength Strength of the centering force (0..1 is typical).
  *
  * Returns refs that can be shared with the parent component:
  * - simulationRef: reference to the D3 forceSimulation instance.
@@ -35,6 +34,8 @@ export function useD3Force(
   edges: CanvasEdge[],
   boundingBox: string,
   dimensions: { width: number; height: number },
+  centeringEnabled: boolean,
+  centeringStrength: number,
   autoRestart: boolean = true,
 ): {
   simulationRef: React.MutableRefObject<d3.Simulation<CanvasNode, CanvasEdge> | null>;
@@ -47,6 +48,7 @@ export function useD3Force(
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown> | null>(null);
   const drawRef = useRef<() => void>(() => {});
   const centerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevCenteringRef = useRef<{ enabled: boolean; strength: number } | null>(null);
 
   const dpi = window.devicePixelRatio ?? 1;
   const { mapNodeLabel, mapEdgeLabel } = useLabelTransform();
@@ -463,13 +465,11 @@ export function useD3Force(
 
     const { width, height } = dimensions;
     let sim = simulationRef.current;
+    const shouldUpdateCentering =
+      !prevCenteringRef.current || prevCenteringRef.current.enabled !== centeringEnabled || prevCenteringRef.current.strength !== centeringStrength;
 
     if (!sim) {
       sim = d3.forceSimulation<CanvasNode>(nodes);
-      sim.force('center', d3.forceCenter(width / 2, height / 2));
-      const GRAVITY_STRENGTH = 0.08; // try 0.02..0.2
-      sim.force('x', d3.forceX(width / 2).strength(GRAVITY_STRENGTH));
-      sim.force('y', d3.forceY(height / 2).strength(GRAVITY_STRENGTH));
 
       // No timer / removal
       if (centerTimerRef.current) {
@@ -477,6 +477,16 @@ export function useD3Force(
         centerTimerRef.current = null;
       }
       simulationRef.current = sim;
+    }
+
+    if (centeringEnabled) {
+      sim.force('center', d3.forceCenter(width / 2, height / 2));
+      sim.force('x', d3.forceX(width / 2).strength(centeringStrength));
+      sim.force('y', d3.forceY(height / 2).strength(centeringStrength));
+    } else {
+      sim.force('center', null);
+      sim.force('x', null);
+      sim.force('y', null);
     }
 
     sim.nodes(nodes);
@@ -536,10 +546,14 @@ export function useD3Force(
 
     if (autoRestart) {
       sim.alpha(0.5).restart();
+    } else if (shouldUpdateCentering) {
+      sim.alpha(0.4).restart();
     }
 
+    prevCenteringRef.current = { enabled: centeringEnabled, strength: centeringStrength };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges, dimensions.width, dimensions.height, boundingBox]);
+  }, [nodes, edges, dimensions.width, dimensions.height, boundingBox, centeringEnabled, centeringStrength, autoRestart]);
 
   // Stop the simulation when the component unmounts
   useEffect(() => {
