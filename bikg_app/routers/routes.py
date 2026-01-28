@@ -15,7 +15,6 @@ from scipy.stats import chi2_contingency
 
 from bikg_app.node_sources import (
     ORIGINAL_INSTANCE_DATA_FILE_PATH,
-    ORIGINAL_ONTOLOGY_FILE_PATH,
     ORIGINAL_VIOLATION_REPORT_FILE_PATH,
     get_node_source_resolver,
 )
@@ -208,20 +207,19 @@ def build_node_shape_violation_counts(df, graph: Graph) -> dict[str, dict[str, i
         """
     )
 
+    def safe_qname(value) -> str:
+        if isinstance(value, URIRef):
+            try:
+                return str(graph.namespace_manager.qname(value))
+            except ValueError:
+                return str(value)
+        return str(value)
+
     for row in qres:
         node_shape, property_shape, target_class = row  # type: ignore
-        try:
-            node_shape_q = str(graph.namespace_manager.qname(node_shape))
-        except ValueError:
-            node_shape_q = str(node_shape)
-        try:
-            property_shape_q = str(graph.namespace_manager.qname(property_shape))
-        except ValueError:
-            property_shape_q = str(property_shape)
-        try:
-            target_class_q = str(graph.namespace_manager.qname(target_class))
-        except ValueError:
-            target_class_q = str(target_class)
+        node_shape_q = safe_qname(node_shape)
+        property_shape_q = safe_qname(property_shape)
+        target_class_q = safe_qname(target_class)
         node_shape_properties[node_shape_q].add(property_shape_q)
         node_shape_targets[node_shape_q] = target_class_q
 
