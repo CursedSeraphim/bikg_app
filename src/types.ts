@@ -189,6 +189,8 @@ export interface ICombinedState {
   typesViolationMap: { [key: string]: string[] }; // map of owl:Classes to their corresponding sh:PropertyShapes and the sh:NodeShapes in between
   filterType: FilterType;
   d3BoundingBox: D3BoundingBoxSetting;
+  d3CenteringEnabled: boolean;
+  d3CenteringStrength: number;
   missingEdgeOption: MissingEdgeOptionType;
   /** Label shown for edges that are not present in the data */
   missingEdgeLabel: string;
