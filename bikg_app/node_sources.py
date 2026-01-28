@@ -73,7 +73,8 @@ def _try_parse_n3(token: str, namespace_manager) -> Optional[Identifier]:
         return None
     if t.startswith("<") or t.startswith('"') or t.startswith("_:"):
         try:
-            return from_n3(t, namespace_manager)
+            parsed = from_n3(t, namespace_manager)
+            return parsed if isinstance(parsed, Identifier) else None
         except Exception:
             return None
     return None
