@@ -6,6 +6,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   clearAllSelections,
   selectCumulativeNumberViolationsPerNode,
+  selectD3CenteringEnabled,
+  selectD3CenteringStrength,
   selectD3BoundingBox,
   selectExemplarMap,
   selectFocusNodeMap,
@@ -48,6 +50,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const types = useSelector(selectTypes);
   const cumulativeNumberViolationsPerType = useSelector(selectCumulativeNumberViolationsPerNode);
   const d3BoundingBox = useSelector(selectD3BoundingBox);
+  const d3CenteringEnabled = useSelector(selectD3CenteringEnabled);
+  const d3CenteringStrength = useSelector(selectD3CenteringStrength);
   const violationMap = useSelector(selectViolationMap);
   const typeMap = useSelector(selectTypeMap);
   const exemplarMap = useSelector(selectExemplarMap);
@@ -261,6 +265,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     [...d3Edges, ...ghostEdges],
     d3BoundingBox,
     dimensions,
+    d3CenteringEnabled,
+    d3CenteringStrength,
     false,
   );
 
