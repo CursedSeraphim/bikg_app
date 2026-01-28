@@ -34,7 +34,7 @@ import { getNearNodeThreshold } from './hooks/hoverRadius';
 import { useAdjacency } from './hooks/useAdjacency';
 import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3ContextMenu } from './hooks/useD3ContextMenu';
-import useD3CumulativeCounts, { updateD3NodesGivenCounts } from './hooks/useD3CumulativeCounts';
+import { updateD3NodesGivenCounts, useD3CumulativeCounts } from './hooks/useD3CumulativeCounts';
 import { useD3Force } from './hooks/useD3Force';
 import { useD3ResetView } from './hooks/useD3ResetView';
 import useExemplarHoverList from './hooks/useExemplarHoverList';
@@ -361,6 +361,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       alphaTarget: 0.3,
       releaseAfter: 1000,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d3Nodes, loading, runIncrementalLayout]);
 
   useEffect(() => {
@@ -542,6 +543,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     if (needsRefresh) {
       convertData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     loading,
     cyDataNodes,
@@ -596,10 +598,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     const transform = d3.zoomIdentity.translate(dimensions.width / 2 - scale * cx, dimensions.height / 2 - scale * cy).scale(scale);
 
     transformRef.current = transform;
-    d3.select(canvasRef.current)
-      .transition()
-      .duration(300)
-      .call(zoomBehaviorRef.current.transform, transform);
+    d3.select(canvasRef.current).transition().duration(300).call(zoomBehaviorRef.current.transform, transform);
   }, [zoomBehaviorRef, canvasRef, d3Nodes, ghostNodes, dimensions, transformRef]);
 
   const { resetView } = useD3ResetView(cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef, originRef, convertData);
