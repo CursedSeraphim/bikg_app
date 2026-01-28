@@ -207,11 +207,19 @@ def build_node_shape_violation_counts(df, graph: Graph) -> dict[str, dict[str, i
         """
     )
 
+    def safe_qname(value) -> str:
+        if isinstance(value, URIRef):
+            try:
+                return str(graph.namespace_manager.qname(value))
+            except ValueError:
+                return str(value)
+        return str(value)
+
     for row in qres:
         node_shape, property_shape, target_class = row  # type: ignore
-        node_shape_q = str(uri_to_qname(graph, node_shape))
-        property_shape_q = str(uri_to_qname(graph, property_shape))
-        target_class_q = str(uri_to_qname(graph, target_class))
+        node_shape_q = safe_qname(node_shape)
+        property_shape_q = safe_qname(property_shape)
+        target_class_q = safe_qname(target_class)
         node_shape_properties[node_shape_q].add(property_shape_q)
         node_shape_targets[node_shape_q] = target_class_q
 
