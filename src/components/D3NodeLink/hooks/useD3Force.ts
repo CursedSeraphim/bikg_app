@@ -317,7 +317,7 @@ export function useD3Force(
       const dimNonSelected = hasSelection && !edge.selected;
 
       context.save();
-      context.globalAlpha = dimNonSelected ? 0.1 : 1;
+      context.globalAlpha = dimNonSelected ? 0.15 : 1;
 
       // Draw curve
       if (edge.previewRemoval) {
@@ -380,7 +380,7 @@ export function useD3Force(
       const radius = getNodeRadiusPx(count, node.shape) * semanticScale;
       const dimNonSelected = hasSelection && !node.selected;
       context.save();
-      context.globalAlpha = dimNonSelected ? 0.1 : 1;
+      context.globalAlpha = dimNonSelected ? 0.15 : 1;
       drawNodeShape(context, node, radius);
       if (node.ghost) {
         context.fillStyle = 'rgba(0,0,0,0.2)';
@@ -406,7 +406,7 @@ export function useD3Force(
       const dimNonSelected = hasSelection && !edge.selected;
       const labelText = mapEdgeLabel(edge.label);
       context.save();
-      context.globalAlpha = dimNonSelected ? 0.1 : 1;
+      context.globalAlpha = dimNonSelected ? 0.15 : 1;
       const transform = transformRef.current;
       const screenX = label.x * transform.k;
       const screenY = label.y * transform.k - edgeLabelOffsetPx;
@@ -427,7 +427,7 @@ export function useD3Force(
       const dimNonSelected = hasSelection && !node.selected;
       const label = mapNodeLabel(node.label);
       context.save();
-      context.globalAlpha = dimNonSelected ? 0.1 : 1;
+      context.globalAlpha = dimNonSelected ? 0.15 : 1;
       const transform = transformRef.current;
       const screenX = (node.x ?? 0) * transform.k;
       const screenY = (node.y ?? 0) * transform.k - nodeLabelOffsetPx;
