@@ -41,7 +41,7 @@ import useExemplarHoverList from './hooks/useExemplarHoverList';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
-export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering = true }: D3NLDViewProps) {
+export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) {
   const dispatch = useDispatch();
   // Redux selectors
   const violations = useSelector(selectViolations);
@@ -262,7 +262,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     d3BoundingBox,
     dimensions,
     false,
-    initialCentering,
   );
 
   useEffect(() => {
