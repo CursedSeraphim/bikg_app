@@ -209,3 +209,40 @@ export async function fetchEdgeLabelSet() {
   const data = await response.json();
   return data;
 }
+
+export async function fetchNodeClass(nodeId: string) {
+  const endpoint = `/api/bikg/node-class?node_id=${encodeURIComponent(nodeId)}`;
+  const response = await fetch(endpoint);
+  const data = await response.json();
+  return data;
+}
+
+export async function fetchNodeClasses(nodeIds: string[]) {
+  const endpoint = `/api/bikg/node-classes`;
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      node_ids: nodeIds,
+    }),
+  });
+  const data = await response.json();
+  return data?.classes ?? {};
+}
+
+export async function fetchNodeSources(nodeIds: string[]) {
+  const endpoint = `/api/bikg/node-sources`;
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      node_ids: nodeIds,
+    }),
+  });
+  const data = await response.json();
+  return data?.sources ?? {};
+}

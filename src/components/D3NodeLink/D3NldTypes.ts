@@ -1,9 +1,15 @@
 // File: src/components/D3NodeLink/D3NldTypes.ts
 
+import type { NodeShape } from './D3NldUtils';
+
+export type NodeSource = 'ontology' | 'instance' | 'violation' | 'unknown' | 'report';
+
 export interface CanvasNode {
   id: string;
   label: string;
   color: string;
+  shape: NodeShape;
+  sources?: NodeSource[];
   x?: number;
   y?: number;
   fx?: number | null;
@@ -19,13 +25,17 @@ export interface CanvasNode {
   violation?: boolean;
   exemplar?: boolean;
   type?: boolean;
+  /** rdf:type class for the node if known */
+  isAClass?: string | null;
 }
 
 export interface CanvasEdge {
+  id?: string;
   source: string | CanvasNode;
   target: string | CanvasNode;
   label?: string;
   visible: boolean;
+  color?: string;
   /** Preview edges used for ghost nodes */
   ghost?: boolean;
   /** Highlight existing edge that would be removed on confirm */

@@ -3,6 +3,7 @@ import * as N3 from 'n3';
 import { NamedNode, Quad, Store } from 'n3';
 import { v4 as uuidv4 } from 'uuid';
 import { ICombinedState, IRdfState, ITriple } from '../../types';
+import { getViolationCountsForNode } from '../violations';
 
 type PrefixMap = Record<string, string>;
 
@@ -134,9 +135,8 @@ export const extractNamespace = (uri) => {
   return match ? match[1] : '';
 };
 // Helper function to find or add node
-export const findOrAddNode = (id, label, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList) => {
-  const baseId = id.replace(/_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, '');
-  const { cumulativeSelected = 0, cumulativeViolations = 0, violations = 0 } = numberViolationsPerNode[id] || numberViolationsPerNode[baseId] || {};
+export const findOrAddNode = (id, label, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList, sourceId = label) => {
+  const { cumulativeSelected, cumulativeViolations, violations } = getViolationCountsForNode(id, numberViolationsPerNode);
 
   const hasCounts = cumulativeSelected !== 0 || cumulativeViolations !== 0;
   const labelSuffix = hasCounts ? ` (${cumulativeSelected}/${cumulativeViolations})` : '';
@@ -152,6 +152,7 @@ export const findOrAddNode = (id, label, visible, nodes, types, numberViolations
       data: {
         id,
         label: computedLabel,
+        sourceId,
         visible,
         permanent: visible,
         namespace,
@@ -179,7 +180,7 @@ export const processTriples = (triples, visible, nodes, edges, objectProperties,
     }
 
     const uniqueId = objectProperties.has(t.o) ? t.o : `${t.o}_${uuidv4()}`;
-    findOrAddNode(uniqueId, t.o, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList);
+    findOrAddNode(uniqueId, t.o, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList, t.o);
 
     edges.push({
       data: {

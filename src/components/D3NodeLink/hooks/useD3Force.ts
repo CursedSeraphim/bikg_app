@@ -2,7 +2,10 @@
 
 import * as d3 from 'd3';
 import { useEffect, useRef } from 'react';
+import { getViolationCountsForNode } from '../../../utils/violations';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
+import { D3_FORCE_EDGE_LABEL_FONT_SIZE_PX, D3_FORCE_LABEL_FONT_SIZE_PX, D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES, getNodeRadiusPx } from '../D3NldUtils';
+import { selectVisibleLabels, type BundledEdgeLayout } from '../labels/labelDeclutter';
 import { useLabelTransform } from './useLabelTransform';
 
 /**
@@ -33,7 +36,6 @@ export function useD3Force(
   boundingBox: string,
   dimensions: { width: number; height: number },
   autoRestart: boolean = true,
-  initialCentering: boolean | number = 1000,
 ): {
   simulationRef: React.MutableRefObject<d3.Simulation<CanvasNode, CanvasEdge> | null>;
   transformRef: React.MutableRefObject<d3.ZoomTransform>;
@@ -48,10 +50,192 @@ export function useD3Force(
 
   const dpi = window.devicePixelRatio ?? 1;
   const { mapNodeLabel, mapEdgeLabel } = useLabelTransform();
+  const nodeLabelFont = `${D3_FORCE_LABEL_FONT_SIZE_PX}px sans-serif`;
+  const edgeLabelFont = `${D3_FORCE_EDGE_LABEL_FONT_SIZE_PX}px sans-serif`;
+  const nodeLabelOffsetPx = D3_FORCE_LABEL_FONT_SIZE_PX;
+  const edgeLabelOffsetPx = D3_FORCE_EDGE_LABEL_FONT_SIZE_PX / 2;
+  const edgeBundlingCompatibilityThreshold = 0.4;
+  const edgeBundlingStiffness = 60;
+  const edgeBundlingStepSize = 0.2;
+  const labelDeclutterMinZoom = 0.2;
+  const labelDeclutterMaxZoom = 2.5;
+  const labelDeclutterNodeMin = 20;
+  const labelDeclutterNodeMax = 200;
+  const labelDeclutterEdgeMin = 0;
+  const labelDeclutterEdgeMax = 120;
+  const labelDeclutterStabilityBonusNode = 1e9;
+  const labelDeclutterStabilityBonusEdge = 1e6;
+  const labelDeclutterGhostPenalty = 1e5;
+  const labelDeclutterZoomHysteresis = 0.03;
+  const labelDeclutterSmallZoomStabilityBoost = 2;
+  const labelDeclutterCellSizePx = Math.max(D3_FORCE_LABEL_FONT_SIZE_PX, D3_FORCE_EDGE_LABEL_FONT_SIZE_PX) * 2;
+
+  const prevVisibleNodeLabelIdsRef = useRef<Set<string>>(new Set());
+  const prevVisibleEdgeLabelIdsRef = useRef<Set<string>>(new Set());
+  const prevZoomKRef = useRef<number>(1);
+
+  type EdgeLayout = BundledEdgeLayout & {
+    source: CanvasNode;
+    target: CanvasNode;
+    control: { x: number; y: number };
+    label: { x: number; y: number };
+  };
+
+  function quadraticPoint(p0: number, p1: number, p2: number, t: number) {
+    const oneMinusT = 1 - t;
+    return oneMinusT * oneMinusT * p0 + 2 * oneMinusT * t * p1 + t * t * p2;
+  }
+
+  function computeBundledEdges(allNodes: CanvasNode[], allEdges: CanvasEdge[]): EdgeLayout[] {
+    const edgeEntries = allEdges
+      .map((edge) => {
+        const sourceNode =
+          allNodes.find((n) => n.id === (typeof edge.source === 'object' ? edge.source.id : edge.source)) ||
+          (typeof edge.source === 'object' ? edge.source : undefined);
+        const targetNode =
+          allNodes.find((n) => n.id === (typeof edge.target === 'object' ? edge.target.id : edge.target)) ||
+          (typeof edge.target === 'object' ? edge.target : undefined);
+        if (!sourceNode || !targetNode) {
+          return null;
+        }
+        const sx = sourceNode.x ?? 0;
+        const sy = sourceNode.y ?? 0;
+        const tx = targetNode.x ?? 0;
+        const ty = targetNode.y ?? 0;
+        const dx = tx - sx;
+        const dy = ty - sy;
+        const length = Math.hypot(dx, dy);
+        const mid = { x: (sx + tx) / 2, y: (sy + ty) / 2 };
+
+        return {
+          edge,
+          source: sourceNode,
+          target: targetNode,
+          sx,
+          sy,
+          tx,
+          ty,
+          dx,
+          dy,
+          length,
+          mid,
+        };
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+
+    const compatMidpoints: { x: number; y: number }[] = edgeEntries.map((entry) => entry.mid);
+    if (edgeEntries.length <= 1) {
+      return edgeEntries.map((entry) => {
+        const control = entry.mid;
+        const label = {
+          x: quadraticPoint(entry.sx, control.x, entry.tx, 0.5),
+          y: quadraticPoint(entry.sy, control.y, entry.ty, 0.5),
+        };
+        return { edge: entry.edge, source: entry.source, target: entry.target, control, label };
+      });
+    }
+
+    edgeEntries.forEach((entry, index) => {
+      const { length, dx, dy } = entry;
+      if (length === 0) {
+        compatMidpoints[index] = entry.mid;
+        return;
+      }
+      const dirx = dx / length;
+      const diry = dy / length;
+      let sumX = entry.mid.x;
+      let sumY = entry.mid.y;
+      let count = 1;
+
+      edgeEntries.forEach((other, otherIndex) => {
+        if (otherIndex === index) return;
+        if (other.length === 0) return;
+        const otherDirx = other.dx / other.length;
+        const otherDiry = other.dy / other.length;
+        const angleCompatibility = Math.abs(dirx * otherDirx + diry * otherDiry);
+        if (angleCompatibility >= edgeBundlingCompatibilityThreshold) {
+          sumX += other.mid.x;
+          sumY += other.mid.y;
+          count += 1;
+        }
+      });
+
+      const avgMid = { x: sumX / count, y: sumY / count };
+      const vx = avgMid.x - entry.mid.x;
+      const vy = avgMid.y - entry.mid.y;
+      const dot = vx * dirx + vy * diry;
+      const perpX = vx - dot * dirx;
+      const perpY = vy - dot * diry;
+      const scale = edgeBundlingStepSize * (edgeBundlingStiffness / 60);
+      const maxOffset = length * 0.35;
+      const offsetMagnitude = Math.min(maxOffset, Math.hypot(perpX, perpY) * scale);
+      const perpLength = Math.hypot(perpX, perpY) || 1;
+      const offsetX = (perpX / perpLength) * offsetMagnitude;
+      const offsetY = (perpY / perpLength) * offsetMagnitude;
+      compatMidpoints[index] = { x: entry.mid.x + offsetX, y: entry.mid.y + offsetY };
+    });
+
+    return edgeEntries.map((entry, index) => {
+      const control = compatMidpoints[index];
+      const label = {
+        x: quadraticPoint(entry.sx, control.x, entry.tx, 0.5),
+        y: quadraticPoint(entry.sy, control.y, entry.ty, 0.5),
+      };
+      return { edge: entry.edge, source: entry.source, target: entry.target, control, label };
+    });
+  }
+
+  function drawPolygon(context: CanvasRenderingContext2D, x: number, y: number, radius: number, sides: number, rotation = -Math.PI / 2) {
+    context.beginPath();
+    for (let i = 0; i < sides; i += 1) {
+      const angle = rotation + (i * 2 * Math.PI) / sides;
+      const px = x + radius * Math.cos(angle);
+      const py = y + radius * Math.sin(angle);
+      if (i === 0) {
+        context.moveTo(px, py);
+      } else {
+        context.lineTo(px, py);
+      }
+    }
+    context.closePath();
+  }
+
+  function drawNodeShape(context: CanvasRenderingContext2D, node: CanvasNode, radius: number) {
+    const x = node.x ?? 0;
+    const y = node.y ?? 0;
+
+    switch (node.shape) {
+      case 'rectangle':
+        context.beginPath();
+        context.rect(x - radius, y - radius, radius * 2, radius * 2);
+        break;
+      case 'diamond':
+        drawPolygon(context, x, y, radius, 4, Math.PI / 4);
+        break;
+      case 'triangle':
+        drawPolygon(context, x, y, radius, 3);
+        break;
+      case 'pentagon':
+        drawPolygon(context, x, y, radius, 5);
+        break;
+      case 'hexagon':
+        drawPolygon(context, x, y, radius, 6, Math.PI / 6);
+        break;
+      case 'circle':
+      default:
+        context.beginPath();
+        context.arc(x, y, radius, 0, 2 * Math.PI);
+        break;
+    }
+  }
 
   /**
    * Renders all nodes and edges onto the canvas, using the latest transformRef.
    */
+  function toId(v: string | CanvasNode): string {
+    return typeof v === 'object' ? v.id : v;
+  }
+
   function drawCanvas(allNodes: CanvasNode[], allEdges: CanvasEdge[]) {
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -69,6 +253,7 @@ export function useD3Force(
     const t = transformRef.current;
     context.translate(t.x, t.y);
     context.scale(t.k, t.k);
+    const semanticScale = D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES ? 1 / t.k : 1;
 
     // Clear entire viewport (transformed)
     context.clearRect(-t.x / t.k, -t.y / t.k, dimensions.width / t.k, dimensions.height / t.k);
@@ -76,119 +261,185 @@ export function useD3Force(
     // Common styles for edges
     context.strokeStyle = '#AAA';
     context.fillStyle = '#000';
-    context.font = '12px sans-serif';
+    context.font = nodeLabelFont;
     context.textAlign = 'center';
     context.textBaseline = 'middle';
 
+    const bundledEdges = computeBundledEdges(allNodes, allEdges);
+
+    const hasSelection = allNodes.some((node) => node.selected) || allEdges.some((edge) => edge.selected);
+    const zoomDelta = Math.abs(Math.log(t.k / (prevZoomKRef.current || 1)));
+    const zoomStabilityBoost = zoomDelta < labelDeclutterZoomHysteresis ? labelDeclutterSmallZoomStabilityBoost : 1;
+    const zoomRange = Math.max(labelDeclutterMaxZoom - labelDeclutterMinZoom, 0.0001);
+    const clampedZoom = Math.max(labelDeclutterMinZoom, Math.min(labelDeclutterMaxZoom, t.k));
+    const zoomFactor = (clampedZoom - labelDeclutterMinZoom) / zoomRange;
+    const maxNodeLabels = Math.round(labelDeclutterNodeMin + (labelDeclutterNodeMax - labelDeclutterNodeMin) * zoomFactor);
+    const maxEdgeLabels = Math.round(labelDeclutterEdgeMin + (labelDeclutterEdgeMax - labelDeclutterEdgeMin) * zoomFactor);
+    const getEdgeId = (edge: CanvasEdge) => edge.id ?? `${toId(edge.source)}->${toId(edge.target)}`;
+    const { visibleNodeIds, visibleEdgeIds } = selectVisibleLabels({
+      nodes: allNodes,
+      edges: allEdges,
+      bundledEdges,
+      transform: t,
+      dimensions,
+      nodeLabelFont,
+      edgeLabelFont,
+      nodeLabelFontSizePx: D3_FORCE_LABEL_FONT_SIZE_PX,
+      edgeLabelFontSizePx: D3_FORCE_EDGE_LABEL_FONT_SIZE_PX,
+      nodeLabelOffsetPx,
+      edgeLabelOffsetPx,
+      mapNodeLabel,
+      mapEdgeLabel,
+      getNodePriority: (node) => getViolationCountsForNode(node.id).cumulativeViolations,
+      getEdgeId,
+      prevVisibleNodeIds: prevVisibleNodeLabelIdsRef.current,
+      prevVisibleEdgeIds: prevVisibleEdgeLabelIdsRef.current,
+      maxNodeLabels,
+      maxEdgeLabels,
+      stabilityBonusNode: labelDeclutterStabilityBonusNode * zoomStabilityBoost,
+      stabilityBonusEdge: labelDeclutterStabilityBonusEdge * zoomStabilityBoost,
+      ghostPenalty: labelDeclutterGhostPenalty,
+      context,
+      cellSizePx: labelDeclutterCellSizePx,
+    });
+    prevVisibleNodeLabelIdsRef.current = visibleNodeIds;
+    prevVisibleEdgeLabelIdsRef.current = visibleEdgeIds;
+    prevZoomKRef.current = t.k;
+
     // Draw edges
-    allEdges.forEach((edge) => {
-      // Prefer lookup by id to avoid stale object references (e.g. from ghost nodes)
-      const sourceNode =
-        allNodes.find((n) => n.id === (typeof edge.source === 'object' ? edge.source.id : edge.source)) ||
-        (typeof edge.source === 'object' ? edge.source : undefined);
-      const targetNode =
-        allNodes.find((n) => n.id === (typeof edge.target === 'object' ? edge.target.id : edge.target)) ||
-        (typeof edge.target === 'object' ? edge.target : undefined);
+    bundledEdges.forEach(({ edge, source, target, control }) => {
+      const sx = source.x ?? 0;
+      const sy = source.y ?? 0;
+      const tx = target.x ?? 0;
+      const ty = target.y ?? 0;
+      const dimNonSelected = hasSelection && !edge.selected;
 
-      if (!sourceNode || !targetNode) {
-        return;
-      }
+      context.save();
+      context.globalAlpha = dimNonSelected ? 0.1 : 1;
 
-      const sx = sourceNode.x ?? 0;
-      const sy = sourceNode.y ?? 0;
-      const tx = targetNode.x ?? 0;
-      const ty = targetNode.y ?? 0;
-
-      // Draw line
+      // Draw curve
       if (edge.previewRemoval) {
         context.strokeStyle = 'rgba(255,0,0,0.6)';
       } else if (edge.ghost) {
         context.strokeStyle = 'rgba(170,170,170,0.5)';
-      } else if (edge.selected) {
-        context.strokeStyle = '#222';
       } else {
-        context.strokeStyle = '#AAA';
+        context.strokeStyle = edge.color ?? '#AAA';
       }
-      context.lineWidth = edge.selected ? 2 : 1;
+      const baseEdgeWidth = 2;
+      context.lineWidth = baseEdgeWidth * semanticScale;
       context.beginPath();
       context.moveTo(sx, sy);
-      context.lineTo(tx, ty);
+      context.quadraticCurveTo(control.x, control.y, tx, ty);
       context.stroke();
 
       // Draw arrowhead
-      const dx = tx - sx;
-      const dy = ty - sy;
+      const dx = tx - control.x;
+      const dy = ty - control.y;
       const length = Math.sqrt(dx * dx + dy * dy);
-      if (length > 0) {
-        const arrowSize = 8;
-        const arrowWidth = 4;
-        const backx = tx - (arrowSize * dx) / length;
-        const backy = ty - (arrowSize * dy) / length;
+      if (length > 1) {
+        const targetCount = getViolationCountsForNode(target.id).cumulativeViolations;
+        const targetRadius = getNodeRadiusPx(targetCount, target.shape) * semanticScale;
+        const targetOutline = 1.25 * semanticScale;
+        const arrowPadding = 1 * semanticScale;
+        const arrowSize = 10 * semanticScale;
+        const arrowWidth = 5 * semanticScale;
+        const tipOffset = Math.min(targetRadius + targetOutline + arrowPadding, length - 1);
+        const tOffset = Math.min(0.15, tipOffset / length);
+        const tArrow = 1 - tOffset;
+        const tipx = quadraticPoint(sx, control.x, tx, tArrow);
+        const tipy = quadraticPoint(sy, control.y, ty, tArrow);
+        const tangentDx = 2 * (1 - tArrow) * (control.x - sx) + 2 * tArrow * (tx - control.x);
+        const tangentDy = 2 * (1 - tArrow) * (control.y - sy) + 2 * tArrow * (ty - control.y);
+        const tangentLength = Math.hypot(tangentDx, tangentDy) || 1;
+        const backx = tipx - (arrowSize * tangentDx) / tangentLength;
+        const backy = tipy - (arrowSize * tangentDy) / tangentLength;
 
         context.beginPath();
-        context.moveTo(tx, ty);
-        context.lineTo(backx + (arrowWidth * -dy) / length, backy + (arrowWidth * dx) / length);
-        context.lineTo(backx - (arrowWidth * -dy) / length, backy - (arrowWidth * dx) / length);
+        context.moveTo(tipx, tipy);
+        context.lineTo(backx + (arrowWidth * -tangentDy) / tangentLength, backy + (arrowWidth * tangentDx) / tangentLength);
+        context.lineTo(backx - (arrowWidth * -tangentDy) / tangentLength, backy - (arrowWidth * tangentDx) / tangentLength);
         context.closePath();
         if (edge.previewRemoval) {
           context.fillStyle = 'rgba(255,0,0,0.6)';
         } else if (edge.ghost) {
           context.fillStyle = 'rgba(170,170,170,0.5)';
-        } else if (edge.selected) {
-          context.fillStyle = '#222';
         } else {
-          context.fillStyle = '#AAA';
+          context.fillStyle = edge.color ?? '#AAA';
         }
         context.fill();
       }
 
-      // Draw edge label (if present)
-      if (edge.label) {
-        const midX = (sx + tx) / 2;
-        const midY = (sy + ty) / 2 - 5;
-        const label = mapEdgeLabel(edge.label);
-        context.save();
-        context.lineWidth = 3;
-        context.strokeStyle = '#fff';
-        context.strokeText(label, midX, midY);
-        context.fillStyle = '#333';
-        context.fillText(label, midX, midY);
-        context.restore();
-      }
+      context.restore();
     });
 
     // Draw nodes
     allNodes.forEach((node) => {
-      context.beginPath();
-      const radius = node.selected ? 7.5 : 6;
+      const count = getViolationCountsForNode(node.id).cumulativeViolations;
+      const radius = getNodeRadiusPx(count, node.shape) * semanticScale;
+      const dimNonSelected = hasSelection && !node.selected;
+      context.save();
+      context.globalAlpha = dimNonSelected ? 0.1 : 1;
+      drawNodeShape(context, node, radius);
       if (node.ghost) {
         context.fillStyle = 'rgba(0,0,0,0.2)';
       } else {
         context.fillStyle = node.color;
       }
-      context.arc(node.x ?? 0, node.y ?? 0, radius, 0, 2 * Math.PI);
       context.fill();
 
-      context.strokeStyle = node.selected ? '#222' : '#FFF';
-      context.lineWidth = node.selected ? 2.5 : 1;
+      context.strokeStyle = '#FFF';
+      const baseNodeStrokeWidth = 2.5;
+      context.lineWidth = baseNodeStrokeWidth * semanticScale;
       context.stroke();
       context.lineWidth = 1;
 
+      context.restore();
+    });
+
+    // Draw labels on top of nodes + edges
+    bundledEdges.forEach(({ edge, label }) => {
+      if (!edge.label || !visibleEdgeIds.has(getEdgeId(edge))) {
+        return;
+      }
+      const dimNonSelected = hasSelection && !edge.selected;
+      const labelText = mapEdgeLabel(edge.label);
       context.save();
-      const label = mapNodeLabel(node.label);
+      context.globalAlpha = dimNonSelected ? 0.1 : 1;
+      const transform = transformRef.current;
+      const screenX = label.x * transform.k;
+      const screenY = label.y * transform.k - edgeLabelOffsetPx;
+      context.scale(1 / transform.k, 1 / transform.k);
+      context.font = edgeLabelFont;
       context.lineWidth = 3;
       context.strokeStyle = '#fff';
-      context.strokeText(label, node.x ?? 0, (node.y ?? 0) - 12);
+      context.strokeText(labelText, screenX, screenY);
+      context.fillStyle = '#858585';
+      context.fillText(labelText, screenX, screenY);
+      context.restore();
+    });
+
+    allNodes.forEach((node) => {
+      if (!visibleNodeIds.has(node.id)) {
+        return;
+      }
+      const dimNonSelected = hasSelection && !node.selected;
+      const label = mapNodeLabel(node.label);
+      context.save();
+      context.globalAlpha = dimNonSelected ? 0.1 : 1;
+      const transform = transformRef.current;
+      const screenX = (node.x ?? 0) * transform.k;
+      const screenY = (node.y ?? 0) * transform.k - nodeLabelOffsetPx;
+      context.scale(1 / transform.k, 1 / transform.k);
+      context.font = nodeLabelFont;
+      context.lineWidth = 3;
+      context.strokeStyle = '#fff';
+      context.strokeText(label, screenX, screenY);
       context.fillStyle = '#000';
-      context.fillText(label, node.x ?? 0, (node.y ?? 0) - 12);
+      context.fillText(label, screenX, screenY);
       context.restore();
     });
 
     context.restore();
-  }
-
-  function toId(v: string | CanvasNode): string {
-    return typeof v === 'object' ? v.id : v;
   }
 
   function filterEdgesByNodes(n: CanvasNode[], e: CanvasEdge[]): CanvasEdge[] {
@@ -211,20 +462,19 @@ export function useD3Force(
     }
 
     const { width, height } = dimensions;
-    const nodeRadius = 12;
-    const labelPadding = 20;
-
     let sim = simulationRef.current;
 
     if (!sim) {
       sim = d3.forceSimulation<CanvasNode>(nodes);
-      if (initialCentering !== false) {
-        const delay = typeof initialCentering === 'number' ? initialCentering : 1000;
-        sim.force('center', d3.forceCenter(width / 2, height / 2));
-        centerTimerRef.current = setTimeout(() => {
-          sim.force('center', null);
-          centerTimerRef.current = null;
-        }, delay);
+      sim.force('center', d3.forceCenter(width / 2, height / 2));
+      const GRAVITY_STRENGTH = 0.08; // try 0.02..0.2
+      sim.force('x', d3.forceX(width / 2).strength(GRAVITY_STRENGTH));
+      sim.force('y', d3.forceY(height / 2).strength(GRAVITY_STRENGTH));
+
+      // No timer / removal
+      if (centerTimerRef.current) {
+        clearTimeout(centerTimerRef.current);
+        centerTimerRef.current = null;
       }
       simulationRef.current = sim;
     }
@@ -239,15 +489,33 @@ export function useD3Force(
       linkForce = d3
         .forceLink<CanvasNode, CanvasEdge>(edgesForSim)
         .id((d) => d.id)
-        .distance(150)
-        .strength(1);
+        .distance(30)
+        .strength(0.25);
       sim.force('link', linkForce);
     } else {
-      linkForce.links(edgesForSim);
+      linkForce.links(edgesForSim).distance(30).strength(0.25);
     }
 
-    sim.force('charge', d3.forceManyBody().strength(-9999).distanceMax(9999));
-    sim.force('collision', d3.forceCollide(nodeRadius + labelPadding));
+    // Mild, local-ish charge (Observable-like)
+    sim.force('charge', d3.forceManyBody<CanvasNode>().strength(-120).distanceMax(400));
+
+    // Gentle collision (avoid “never settles”)
+    const COLLIDE_PADDING = 4; // try 2..10
+    const COLLIDE_STRENGTH = 0.9; // try 0.6..1.0
+    const COLLIDE_ITERATIONS = 2; // try 1..4
+
+    sim.force(
+      'collision',
+      d3
+        .forceCollide<CanvasNode>((node) => {
+          const count = getViolationCountsForNode(node.id).cumulativeViolations;
+          return getNodeRadiusPx(count, node.shape) + COLLIDE_PADDING;
+        })
+        .strength(COLLIDE_STRENGTH)
+        .iterations(COLLIDE_ITERATIONS),
+    );
+
+    sim.velocityDecay(0.5);
 
     // Draw only edges that are valid for the current node set
     drawRef.current = () => drawCanvas(nodes, edgesForSim);
@@ -255,12 +523,13 @@ export function useD3Force(
 
     sim.on('tick', () => {
       if (boundingBox === 'on') {
-        nodes.forEach((node) => {
-          // eslint-disable-next-line no-param-reassign
+        for (let i = 0; i < nodes.length; i += 1) {
+          const node = nodes[i];
+          const count = getViolationCountsForNode(node.id).cumulativeViolations;
+          const nodeRadius = getNodeRadiusPx(count, node.shape);
           node.x = Math.max(nodeRadius, Math.min(width - nodeRadius, node.x ?? 0));
-          // eslint-disable-next-line no-param-reassign
           node.y = Math.max(nodeRadius, Math.min(height - nodeRadius, node.y ?? 0));
-        });
+        }
       }
       drawCanvas(nodes, edgesForSim);
     });

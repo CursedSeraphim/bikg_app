@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { fetchNodeClasses, fetchNodeSources } from '../../api';
 import { INumberViolationsPerNodeMap } from '../../types';
 import { selectCytoData } from '../Store/CombinedSlice';
 
@@ -32,8 +33,34 @@ export function useD3Data({ rdfOntology, violations, types, cumulativeNumberViol
         const fakeColorFn = () => '#000';
         const { nodes, edges } = await selectCytoData(rdfOntology, fakeColorFn, types, cumulativeNumberViolationsPerType, violations);
 
+        let nextNodes = nodes;
+        const nodeIds = Array.from(new Set(nodes.map((node) => node.data.sourceId ?? node.data.id)));
+        let classMap: Record<string, string | null> = {};
+        let sourceMap: Record<string, string[]> = {};
+
+        try {
+          classMap = await fetchNodeClasses(nodeIds);
+        } catch (classError) {
+          console.error('Failed to fetch node classes:', classError);
+        }
+
+        try {
+          sourceMap = await fetchNodeSources(nodeIds);
+        } catch (sourceError) {
+          console.error('Failed to fetch node sources:', sourceError);
+        }
+
+        nextNodes = nodes.map((node) => ({
+          ...node,
+          data: {
+            ...node.data,
+            isAClass: classMap[node.data.sourceId ?? node.data.id] ?? null,
+            sources: sourceMap[node.data.sourceId ?? node.data.id] ?? ['unknown'],
+          },
+        }));
+
         if (isMounted) {
-          setCyDataNodes(nodes);
+          setCyDataNodes(nextNodes);
           setCyDataEdges(edges);
           setLoading(false);
           if (onLoaded) {

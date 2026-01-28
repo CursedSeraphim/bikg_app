@@ -24,23 +24,24 @@ import {
   setSelectedViolationExemplars,
   setSelectedViolations,
 } from '../Store/CombinedSlice';
+import type { RootState } from '../Store/Store';
 import { useD3Data } from './useD3Data';
 
-import store from '../Store/Store';
+import { getViolationCountsForNode } from '../../utils/violations';
 import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
-import { computeColorForId } from './D3NldUtils';
+import { getNodeColorForNode, getNodeShapeForId } from './D3NldUtils';
 import { getNearNodeThreshold } from './hooks/hoverRadius';
 import { useAdjacency } from './hooks/useAdjacency';
 import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3ContextMenu } from './hooks/useD3ContextMenu';
-import useD3CumulativeCounts, { updateD3NodesGivenCounts } from './hooks/useD3CumulativeCounts';
+import { updateD3NodesGivenCounts, useD3CumulativeCounts } from './hooks/useD3CumulativeCounts';
 import { useD3Force } from './hooks/useD3Force';
 import { useD3ResetView } from './hooks/useD3ResetView';
 import useExemplarHoverList from './hooks/useExemplarHoverList';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
-export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering = true }: D3NLDViewProps) {
+export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) {
   const dispatch = useDispatch();
   // Redux selectors
   const violations = useSelector(selectViolations);
@@ -51,7 +52,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const typeMap = useSelector(selectTypeMap);
   const exemplarMap = useSelector(selectExemplarMap);
   const focusNodeMap = useSelector(selectFocusNodeMap);
-  const numberViolationsPerNode = useSelector((state: any) => state.combined.numberViolationsPerNode);
+  const numberViolationsPerNode = useSelector((state: RootState) => state.combined.numberViolationsPerNode);
   const violationTypesMap = useSelector(selectViolationTypesMap);
   const typesViolationMap = useSelector(selectTypesViolationMap);
   const hiddenLabels = useSelector(selectHiddenLabels);
@@ -99,10 +100,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     return label.replace(/\s*\([^)]*\)\s*$/, '').replace(/\*$/, '');
   }, []);
 
-  const getBaseId = useCallback((id: string) => {
-    return id.replace(/_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, '');
-  }, []);
-
   // for figure purposes: anonymize any occurrence of "boehringer" for display strings
   const anonymizeLabel = useCallback((value: string | undefined): string => {
     if (!value) return '';
@@ -112,7 +109,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   // Figure-only: force anonymization at the canvas API level as a last line of defense.
   // This guarantees that any text drawn anywhere on any canvas will be sanitized.
   useEffect(() => {
-    const proto = CanvasRenderingContext2D.prototype as any;
+    const proto = CanvasRenderingContext2D.prototype as CanvasRenderingContext2D & { __biAnonymizePatched?: boolean };
     if (proto.__biAnonymizePatched) return;
 
     const re = /boehringer/gi;
@@ -122,18 +119,22 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     const origStroke = proto.strokeText;
     const origMeasure = proto.measureText;
 
-    proto.fillText = function (text: any, x: number, y: number, maxWidth?: number) {
+    function fillTextPatched(this: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth?: number) {
       const s = sanitize(text);
       return maxWidth !== undefined ? origFill.call(this, s, x, y, maxWidth) : origFill.call(this, s, x, y);
-    };
-    proto.strokeText = function (text: any, x: number, y: number, maxWidth?: number) {
+    }
+    function strokeTextPatched(this: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth?: number) {
       const s = sanitize(text);
       return maxWidth !== undefined ? origStroke.call(this, s, x, y, maxWidth) : origStroke.call(this, s, x, y);
-    };
-    proto.measureText = function (text: any) {
+    }
+    function measureTextPatched(this: CanvasRenderingContext2D, text: string) {
       const s = sanitize(text);
       return origMeasure.call(this, s);
-    };
+    }
+
+    proto.fillText = fillTextPatched;
+    proto.strokeText = strokeTextPatched;
+    proto.measureText = measureTextPatched;
 
     proto.__biAnonymizePatched = true;
   }, []);
@@ -167,6 +168,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     const visibleEdgeData = cyDataEdges.filter((e) => e.data.visible && visibleIds.has(e.data.source) && visibleIds.has(e.data.target));
 
     const nextNodes: CanvasNode[] = [];
+    const nodeInfoMap = new Map<string, { sources: string[]; isAClass: string | null }>();
 
     visibleNodeData.forEach((n) => {
       const { id } = n.data;
@@ -174,24 +176,34 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       let node = nodeMapRef.current[id];
       if (!node) {
         const saved = savedPositionsRef.current[id];
+        const sources = n.data.sources ?? ['unknown'];
+        const isAClass = n.data.isAClass ?? null;
         node = {
           id,
           label: display,
-          color: computeColorForId(id),
+          color: getNodeColorForNode({ sources, isAClass }),
+          shape: getNodeShapeForId(id),
+          sources,
           x: saved?.x,
           y: saved?.y,
           selected: Boolean(n.data.selected),
           violation: Boolean(n.data.violation),
           exemplar: Boolean(n.data.exemplar),
           type: Boolean(n.data.type),
+          isAClass,
         };
+        nodeInfoMap.set(id, { sources, isAClass });
       } else {
         node.label = display;
-        node.color = computeColorForId(id);
+        node.shape = getNodeShapeForId(id);
+        node.sources = n.data.sources ?? ['unknown'];
         node.selected = Boolean(n.data.selected);
         node.violation = Boolean(n.data.violation);
         node.exemplar = Boolean(n.data.exemplar);
         node.type = Boolean(n.data.type);
+        node.isAClass = n.data.isAClass ?? null;
+        node.color = getNodeColorForNode({ sources: node.sources, isAClass: node.isAClass });
+        nodeInfoMap.set(id, { sources: node.sources ?? ['unknown'], isAClass: node.isAClass ?? null });
       }
       if (originRef.current[id] === undefined) {
         originRef.current[id] = null;
@@ -209,15 +221,21 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       }
     });
 
-    const newEdges: CanvasEdge[] = visibleEdgeData.map((e) => ({
-      source: e.data.source,
-      target: e.data.target,
-      label: anonymizeLabel(e.data.label ?? e.data.id), // sanitize
-      visible: true,
-      selected: Boolean(e.data.selected),
-    }));
+    const newEdges: CanvasEdge[] = visibleEdgeData.map((e) => {
+      const sourceInfo = nodeInfoMap.get(e.data.source);
+      const fallbackId = `${e.data.source}->${e.data.target}`;
+      return {
+        id: e.data.id ?? fallbackId,
+        source: e.data.source,
+        target: e.data.target,
+        label: anonymizeLabel(e.data.label ?? e.data.id), // sanitize
+        visible: true,
+        selected: Boolean(e.data.selected),
+        color: getNodeColorForNode({ sources: sourceInfo?.sources ?? ['unknown'], isAClass: sourceInfo?.isAClass ?? null }),
+      };
+    });
 
-    updateD3NodesGivenCounts(nextNodes, store.getState().combined.numberViolationsPerNode);
+    updateD3NodesGivenCounts(nextNodes);
     setD3Nodes(nextNodes);
     setD3Edges(newEdges);
   }, [cyDataNodes, cyDataEdges, isLabelBlacklisted, anonymizeLabel]);
@@ -225,8 +243,14 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   useEffect(() => {
     if (!loading) {
       // also sanitize the source data in place so any other consumer reads anonymized labels
-      cyDataNodes.forEach((n) => (n.data.label = anonymizeLabel(n.data.label ?? n.data.id)));
-      cyDataEdges.forEach((e) => (e.data.label = anonymizeLabel(e.data.label ?? e.data.id)));
+      cyDataNodes.forEach((node) => {
+        const mutableNode = node;
+        mutableNode.data.label = anonymizeLabel(mutableNode.data.label ?? mutableNode.data.id);
+      });
+      cyDataEdges.forEach((edge) => {
+        const mutableEdge = edge;
+        mutableEdge.data.label = anonymizeLabel(mutableEdge.data.label ?? mutableEdge.data.id);
+      });
       convertData();
     }
   }, [loading, convertData, hiddenLabels, cyDataNodes, cyDataEdges, anonymizeLabel]);
@@ -238,7 +262,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     d3BoundingBox,
     dimensions,
     false,
-    initialCentering,
   );
 
   useEffect(() => {
@@ -258,27 +281,27 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       const allNodes = Object.values(nodeMapRef.current);
 
       allNodes.forEach((node) => {
-        const nAny = node as any;
+        const mutableNode = node;
         const isMovable = movable.size > 0 && movable.has(node.id);
 
         if (pinAllExisting) {
           // Preview mode: pin everything in place
-          nAny.fx = node.x;
-          nAny.fy = node.y;
+          mutableNode.fx = node.x ?? null;
+          mutableNode.fy = node.y ?? null;
         } else if (movable.size > 0) {
           // Incremental layout: pin old nodes, let new ones move
           if (isMovable) {
-            nAny.fx = null;
-            nAny.fy = null;
+            mutableNode.fx = null;
+            mutableNode.fy = null;
           } else {
-            nAny.fx = node.x;
-            nAny.fy = node.y;
+            mutableNode.fx = node.x ?? null;
+            mutableNode.fy = node.y ?? null;
           }
         }
 
         // Reset velocities so the simulation actually reacts
-        nAny.vx = 0;
-        nAny.vy = 0;
+        mutableNode.vx = 0;
+        mutableNode.vy = 0;
       });
 
       sim.alphaTarget(alphaTarget).restart();
@@ -290,9 +313,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           if (!stillSim) return;
 
           Object.values(nodeMapRef.current).forEach((node) => {
-            const nAny = node as any;
-            nAny.fx = null;
-            nAny.fy = null;
+            const mutableNode = node;
+            mutableNode.fx = null;
+            mutableNode.fy = null;
           });
 
           stillSim.alphaTarget(0);
@@ -337,6 +360,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       alphaTarget: 0.3,
       releaseAfter: 1000,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d3Nodes, loading, runIncrementalLayout]);
 
   useEffect(() => {
@@ -400,9 +424,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
     // 2) DoI-based branch seeds: nodes that actually have selected violations
     const getSelectedCount = (id: string) => {
-      const baseId = getBaseId(id);
-      const entry = numberViolationsPerNode[id] ?? numberViolationsPerNode[baseId];
-      return entry?.cumulativeSelected ?? 0;
+      return getViolationCountsForNode(id).cumulativeSelected;
     };
 
     const highlightableIds = new Set<string>();
@@ -416,6 +438,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     selectedFocusNodes.forEach((id) => highlightableIds.add(id));
     selectedViolationIds.forEach((id) => highlightableIds.add(id));
     selectedExemplarIds.forEach((id) => highlightableIds.add(id));
+    selectedExemplarIds.forEach((exemplarId) => {
+      // children = outgoing edges' targets from the exemplar node
+      const childIds = adjacencyRef.current[exemplarId] || [];
+      childIds.forEach((childId: string) => {
+        if (!isIdBlacklisted(childId)) {
+          highlightableIds.add(childId);
+        }
+      });
+    });
 
     // 3) Ancestor expansion, restricted to the current selection scope
     const expandHighlightToAncestors = (sourceIds: Set<string>, allowedScope: Set<string>): Set<string> => {
@@ -468,17 +499,18 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
     // 5) Nodes: decouple show vs highlight
     cyDataNodes.forEach((node) => {
-      const { id } = node.data;
+      const mutableNode = node;
+      const { id } = mutableNode.data;
       const shouldHighlight = highlightIdsWithAncestors.has(id);
       const shouldShow = idsToSelect.has(id);
 
-      if (node.data.selected !== shouldHighlight) {
-        node.data.selected = shouldHighlight;
+      if (mutableNode.data.selected !== shouldHighlight) {
+        mutableNode.data.selected = shouldHighlight;
         needsRefresh = true;
       }
 
-      if (shouldShow && node.data.visible === false) {
-        node.data.visible = true;
+      if (shouldShow && mutableNode.data.visible === false) {
+        mutableNode.data.visible = true;
         needsRefresh = true;
       }
       if (shouldShow) {
@@ -488,17 +520,18 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
     // 6) Edges: same split
     cyDataEdges.forEach((edge) => {
-      const { id } = edge.data;
+      const mutableEdge = edge;
+      const { id } = mutableEdge.data;
       const shouldHighlight = selectedEdgeIds.has(id);
       const shouldShow = visibleEdgeIds.has(id);
 
-      if (edge.data.selected !== shouldHighlight) {
-        edge.data.selected = shouldHighlight;
+      if (mutableEdge.data.selected !== shouldHighlight) {
+        mutableEdge.data.selected = shouldHighlight;
         needsRefresh = true;
       }
 
-      if (shouldShow && edge.data.visible === false) {
-        edge.data.visible = true;
+      if (shouldShow && mutableEdge.data.visible === false) {
+        mutableEdge.data.visible = true;
         needsRefresh = true;
       }
       if (shouldShow) {
@@ -509,6 +542,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     if (needsRefresh) {
       convertData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     loading,
     cyDataNodes,
@@ -524,7 +558,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     violationTypesMap,
     typesViolationMap,
     numberViolationsPerNode,
-    getBaseId,
     hiddenNodesRef,
     hiddenEdgesRef,
     convertData,
@@ -564,10 +597,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     const transform = d3.zoomIdentity.translate(dimensions.width / 2 - scale * cx, dimensions.height / 2 - scale * cy).scale(scale);
 
     transformRef.current = transform;
-    d3.select(canvasRef.current)
-      .transition()
-      .duration(300)
-      .call(zoomBehaviorRef.current.transform, transform as any);
+    d3.select(canvasRef.current).transition().duration(300).call(zoomBehaviorRef.current.transform, transform);
   }, [zoomBehaviorRef, canvasRef, d3Nodes, ghostNodes, dimensions, transformRef]);
 
   const { resetView } = useD3ResetView(cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef, originRef, convertData);
@@ -615,8 +645,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       const allNodes = Object.values(nodeMapRef.current);
       allNodes.forEach((node) => {
         if (otherDuration > 0 || node.id === id) {
-          (node as any).fx = node.x;
-          (node as any).fy = node.y;
+          const mutableNode = node;
+          mutableNode.fx = node.x ?? null;
+          mutableNode.fy = node.y ?? null;
         }
       });
 
@@ -626,8 +657,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
         setTimeout(() => {
           allNodes.forEach((node) => {
             if (node.id !== id) {
-              (node as any).fx = null;
-              (node as any).fy = null;
+              const mutableNode = node;
+              mutableNode.fx = null;
+              mutableNode.fy = null;
             }
           });
         }, otherDuration);
@@ -636,8 +668,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       setTimeout(() => {
         const triggerNode = nodeMapRef.current[id];
         if (triggerNode) {
-          (triggerNode as any).fx = null;
-          (triggerNode as any).fy = null;
+          const mutableNode = triggerNode;
+          mutableNode.fx = null;
+          mutableNode.fy = null;
         }
         sim.alphaTarget(0);
       }, triggerDuration);
@@ -652,17 +685,22 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     setGhostNodes([]);
     setGhostEdges([]);
     setD3Edges((edges) =>
-      edges.map((e) => ({
-        ...e,
-        source: typeof e.source === 'object' ? (e.source as any).id : e.source,
-        target: typeof e.target === 'object' ? (e.target as any).id : e.target,
-      })),
+      edges.map((edge) => {
+        const source = typeof edge.source === 'object' ? edge.source.id : edge.source;
+        const target = typeof edge.target === 'object' ? edge.target.id : edge.target;
+        return {
+          ...edge,
+          source,
+          target,
+        };
+      }),
     );
     Object.values(nodeMapRef.current).forEach((n) => {
-      (n as any).fx = null;
-      (n as any).fy = null;
-      (n as any).vx = 0;
-      (n as any).vy = 0;
+      const mutableNode = n;
+      mutableNode.fx = null;
+      mutableNode.fy = null;
+      mutableNode.vx = 0;
+      mutableNode.vy = 0;
     });
     const sim = simulationRef.current;
     if (sim) {
@@ -744,8 +782,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
     );
 
     cyDataEdges.forEach((edge) => {
-      const hidden = hiddenEdgesRef.current.has(edge.data.id);
-      edge.data.visible = !hidden && visible.has(edge.data.source) && visible.has(edge.data.target);
+      const mutableEdge = edge;
+      const hidden = hiddenEdgesRef.current.has(mutableEdge.data.id);
+      mutableEdge.data.visible = !hidden && visible.has(mutableEdge.data.source) && visible.has(mutableEdge.data.target);
     });
   }, [cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef, isLabelBlacklisted]);
 
@@ -839,12 +878,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       const { allIds, edges } = computeAssociations(nodeId);
 
       cyDataNodes.forEach((node) => {
-        if (allIds.includes(node.data.id) && !isIdBlacklisted(node.data.id)) {
-          if (!node.data.visible && originRef.current[node.data.id] === undefined) {
-            originRef.current[node.data.id] = nodeId;
+        const mutableNode = node;
+        if (allIds.includes(mutableNode.data.id) && !isIdBlacklisted(mutableNode.data.id)) {
+          if (!mutableNode.data.visible && originRef.current[mutableNode.data.id] === undefined) {
+            originRef.current[mutableNode.data.id] = nodeId;
           }
-          node.data.visible = true;
-          hiddenNodesRef.current.delete(node.data.id);
+          mutableNode.data.visible = true;
+          hiddenNodesRef.current.delete(mutableNode.data.id);
         }
       });
 
@@ -870,7 +910,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       });
 
       edges.forEach((edge) => {
-        hiddenEdgesRef.current.add(edge.id);
+        const mutableEdge = edge;
+        hiddenEdgesRef.current.add(mutableEdge.id);
       });
 
       recomputeEdgeVisibility();
@@ -910,40 +951,63 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   const rightDraggingRef = useRef(false);
   const rightMouseDownRef = useRef<{ x: number; y: number } | null>(null);
 
+  type DragEvent = d3.D3DragEvent<HTMLCanvasElement, CanvasNode, CanvasNode>;
+
   // Drag handler now uses Alt + left‐click (button 0 + event.altKey)
   const handleDrag = d3
     .drag<HTMLCanvasElement, CanvasNode>()
     .filter((event) => event.button === 0 && event.altKey)
-    .subject((event) => {
+    .subject((event: DragEvent) => {
       const sim = simulationRef.current;
       if (!sim) return null;
       const [px, py] = d3.pointer(event, canvasRef.current);
       const [tx, ty] = transformRef.current.invert([px, py]);
-      return d3.least([...d3Nodes, ...ghostNodes], (node: CanvasNode) => {
+      const closest = d3.least([...d3Nodes, ...ghostNodes], (node: CanvasNode) => {
         const dx = (node.x ?? 0) - tx;
         const dy = (node.y ?? 0) - ty;
         return dx * dx + dy * dy;
-      }) as any;
+      });
+      return closest ?? null;
     })
-    .on('start', (event: any) => {
+    .on('start', (event: DragEvent) => {
       const sim = simulationRef.current;
       if (!sim) return;
-      if (!event.active) sim.alphaTarget(0.3).restart();
-      event.subject.fx = event.subject.x;
-      event.subject.fy = event.subject.y;
+
+      if (!event.active) sim.alpha(0.45).restart();
+      sim.alphaTarget(0); // allow cooling while holding
+
+      const { subject } = event;
+      subject.fx = subject.x ?? null;
+      subject.fy = subject.y ?? null;
+
+      subject.vx = 0;
+      subject.vy = 0;
     })
-    .on('drag', (event: any) => {
+    .on('drag', (event: DragEvent) => {
+      const sim = simulationRef.current;
+      if (!sim) return;
+
       const [px, py] = d3.pointer(event, canvasRef.current);
       const [tx, ty] = transformRef.current.invert([px, py]);
-      event.subject.fx = tx;
-      event.subject.fy = ty;
+
+      const { subject } = event;
+      subject.fx = tx;
+      subject.fy = ty;
+
+      subject.vx = 0;
+      subject.vy = 0;
+
+      sim.alpha(Math.max(sim.alpha(), 0.18));
     })
-    .on('end', (event: any) => {
+    .on('end', (event: DragEvent) => {
       const sim = simulationRef.current;
       if (!sim) return;
+
+      const { subject } = event;
+      subject.fx = null;
+      subject.fy = null;
+
       if (!event.active) sim.alphaTarget(0);
-      event.subject.fx = null;
-      event.subject.fy = null;
     });
 
   const handleDoubleClick = useCallback(
@@ -1036,6 +1100,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
       const newGhostNodes: CanvasNode[] = [];
       const newGhostEdges: CanvasEdge[] = [];
       const addedEdgeKeys = new Set<string>();
+      const getEdgeColorForSource = (sourceId: string) => {
+        const nodeData = cyDataNodes.find((n) => n.data.id === sourceId);
+        return getNodeColorForNode({ sources: nodeData?.data.sources ?? ['unknown'], isAClass: nodeData?.data.isAClass ?? null });
+      };
 
       if (allVisible) {
         const visibleIds =
@@ -1052,13 +1120,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
             if (!addedEdgeKeys.has(key)) {
               addedEdgeKeys.add(key);
               newGhostEdges.push({
+                id: edgeData.data.id ?? key,
                 source: edgeData.data.source,
                 target: edgeData.data.target,
                 label: anonymizeLabel(edgeData.data.label ?? edgeData.data.id),
                 visible: true,
+                color: getEdgeColorForSource(edgeData.data.source),
                 // marks that this preview indicates removal rather than addition
-                previewRemoval: true as any,
-              } as any);
+                previewRemoval: true,
+              });
             }
           }
         });
@@ -1069,29 +1139,32 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           newGhostNodes.push({
             id: nid,
             label: anonymizeLabel(nodeData.data.label ?? nodeData.data.id),
-            color: computeColorForId(nid),
+            color: getNodeColorForNode({ sources: nodeData.data.sources ?? ['unknown'], isAClass: nodeData.data.isAClass ?? null }),
+            shape: getNodeShapeForId(nid),
             x: closest?.x,
             y: closest?.y,
-            ghost: true as any,
-          } as any);
+            ghost: true,
+          });
         });
         filteredExpansionEdges.forEach((edge) => {
           const key = `${edge.source}->${edge.target}`;
           if (!addedEdgeKeys.has(key)) {
             addedEdgeKeys.add(key);
             newGhostEdges.push({
+              id: edge.id ?? key,
               source: edge.source,
               target: edge.target,
               label: anonymizeLabel(edge.label ?? edge.id),
               visible: true,
-              ghost: true as any,
-            } as any);
+              color: getEdgeColorForSource(edge.source),
+              ghost: true,
+            });
           }
         });
       }
 
-      const hasRemovalEdges = newGhostEdges.some((e: any) => e.previewRemoval);
-      const hasAdditionEdges = newGhostEdges.some((e: any) => !e.previewRemoval);
+      const hasRemovalEdges = newGhostEdges.some((edge) => edge.previewRemoval);
+      const hasAdditionEdges = newGhostEdges.some((edge) => !edge.previewRemoval);
 
       if (newGhostNodes.length > 0 || hasRemovalEdges || hasAdditionEdges) {
         activePreviewRef.current = { mode, nodeId: closest.id };
@@ -1127,16 +1200,18 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      return () => {};
+    }
     const selection = d3.select(canvas);
 
     if (zoomBehaviorRef.current) {
-      selection.call(zoomBehaviorRef.current as any);
+      selection.call(zoomBehaviorRef.current);
     }
     selection.on('dblclick.zoom', null);
 
     // Apply the new drag behavior (Alt+left) here
-    selection.call(handleDrag as any);
+    selection.call(handleDrag);
 
     const onMouseDown = (event: MouseEvent) => {
       if (event.button === 2) {
@@ -1172,7 +1247,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
   }, [handleDrag, handleDoubleClick, zoomBehaviorRef, updateHoverPreview, clearPreview]);
 
   useEffect(() => {
-    if (ghostNodes.length === 0 && ghostEdges.some((e: any) => e.previewRemoval)) {
+    if (ghostNodes.length === 0 && ghostEdges.some((edge) => edge.previewRemoval)) {
       const sim = simulationRef.current;
       if (sim) {
         sim.alpha(0.001);

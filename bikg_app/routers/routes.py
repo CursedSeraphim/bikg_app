@@ -13,6 +13,11 @@ from rdflib.term import URIRef, Literal
 from rdflib.namespace import split_uri
 from scipy.stats import chi2_contingency
 
+from bikg_app.node_sources import (
+    ORIGINAL_INSTANCE_DATA_FILE_PATH,
+    ORIGINAL_VIOLATION_REPORT_FILE_PATH,
+    get_node_source_resolver,
+)
 from bikg_app.routers.utils import (
     load_lists_dict,
     load_nested_counts_dict_json,
@@ -23,13 +28,6 @@ from bikg_app.routers.utils import (
 SH = Namespace("http://www.w3.org/ns/shacl#")
 OWL = Namespace("http://www.w3.org/2002/07/owl#")
 RDFS = Namespace("http://www.w3.org/2000/01/rdf-schema#")
-
-# File paths
-# input files, original RDF for ontology and shacl, instance data, and violation report
-ORIGINAL_ONTOLOGY_FILE_PATH = "bikg_app/ttl/omics_model.ttl"
-ORIGINAL_INSTANCE_DATA_FILE_PATH = "bikg_app/ttl/study.ttl"
-ORIGINAL_VIOLATION_REPORT_FILE_PATH = "bikg_app/ttl/violation_report.ttl"
-
 
 VIOLATIONS_FILE_PATH = os.path.join("bikg_app/json", "violation_list.json")
 STUDY_CSV_FILE_PATH = "bikg_app/csv/study.csv"
@@ -178,6 +176,77 @@ def build_type_violation_dict(df, violations_list):
 
 
 type_violation_dict = build_type_violation_dict(df, violations_list)
+
+
+def build_node_shape_violation_counts(df, graph: Graph) -> dict[str, dict[str, int]]:
+    """
+    Build cumulative violation counts for sh:NodeShape nodes based on their property shapes.
+
+    Each node shape count reflects the number of focus nodes (rows) that violate at least one
+    of its property shapes, scoped to the node shape's sh:targetClass.
+    """
+    if "rdf:type" not in df.columns:
+        print("Warning: 'rdf:type' column not found in the DataFrame. Returning an empty dictionary.")
+        return {}
+
+    df_temp = df.copy()
+    df_temp["rdf:type"] = df_temp["rdf:type"].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+    df_temp["rdf:type"] = df_temp["rdf:type"].apply(lambda x: x if isinstance(x, list) else ([] if pd.isna(x) else [x]))
+
+    node_shape_properties: dict[str, set[str]] = defaultdict(set)
+    node_shape_targets: dict[str, str] = {}
+
+    qres = graph.query(
+        """
+        SELECT ?nodeShape ?propertyShape ?targetClass
+        WHERE {
+            ?nodeShape a sh:NodeShape .
+            ?nodeShape sh:property ?propertyShape .
+            ?nodeShape sh:targetClass ?targetClass .
+        }
+        """
+    )
+
+    def safe_qname(value) -> str:
+        if isinstance(value, URIRef):
+            try:
+                return str(graph.namespace_manager.qname(value))
+            except ValueError:
+                return str(value)
+        return str(value)
+
+    for row in qres:
+        node_shape, property_shape, target_class = row  # type: ignore
+        node_shape_q = safe_qname(node_shape)
+        property_shape_q = safe_qname(property_shape)
+        target_class_q = safe_qname(target_class)
+        node_shape_properties[node_shape_q].add(property_shape_q)
+        node_shape_targets[node_shape_q] = target_class_q
+
+    node_shape_counts: dict[str, dict[str, int]] = {}
+
+    for node_shape_q, property_shapes in node_shape_properties.items():
+        target_class_q = node_shape_targets.get(node_shape_q)
+        if not target_class_q:
+            continue
+
+        available_columns = [column for column in property_shapes if column in df_temp.columns]
+        if not available_columns:
+            violating_focus_nodes = 0
+        else:
+            class_mask = df_temp["rdf:type"].apply(
+                lambda types: target_class_q in types if isinstance(types, list) else False
+            )
+            filtered_df = df_temp.loc[class_mask, available_columns]
+            filtered_df = filtered_df.apply(pd.to_numeric, errors="coerce").fillna(0)
+            violating_focus_nodes = int((filtered_df > 0).any(axis=1).sum())
+
+        node_shape_counts[node_shape_q] = {
+            "count": 0,
+            "cumulative_count": violating_focus_nodes,
+        }
+
+    return node_shape_counts
 
 
 def get_prefixes(graph: Graph):
@@ -696,6 +765,9 @@ def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar
 
     compute_cumulative_counts(not_in_ontology_node)
 
+    node_shape_counts = build_node_shape_violation_counts(df, g)
+    node_count_dict.update(node_shape_counts)
+
     return root, node_count_dict
 
 
@@ -784,6 +856,91 @@ def uri_to_qname(graph, uri):
         return str(uri)
     else:
         return uri
+
+
+def normalize_node_id(graph: Graph, node_id: str) -> str:
+    """
+    Normalize a node identifier to a QName when possible.
+    """
+    if has_namespace(node_id):
+        return str(uri_to_qname(graph, URIRef(node_id)))
+    if ":" in node_id:
+        try:
+            expanded = graph.namespace_manager.expand_curie(node_id)
+            return str(uri_to_qname(graph, URIRef(str(expanded))))
+        except ValueError:
+            return node_id
+    return node_id
+
+
+def build_node_class_map(graph: Graph) -> dict[str, list[str]]:
+    """
+    Build a mapping from node QName to its rdf:type QNames.
+    """
+    node_class_map: dict[str, set[str]] = defaultdict(set)
+    for subject, obj in graph.subject_objects(RDF.type):
+        subject_q = str(uri_to_qname(graph, subject))
+        obj_q = str(uri_to_qname(graph, obj))
+        node_class_map[subject_q].add(obj_q)
+
+    return {key: sorted(values) for key, values in node_class_map.items()}
+
+
+node_class_map = build_node_class_map(g)
+node_source_resolver = get_node_source_resolver()
+
+
+@router.get("/node-class")
+async def get_node_class(node_id: str):
+    """
+    Retrieve rdf:type classes for a node, returning the normalized id and classes.
+    """
+    normalized_id = normalize_node_id(g, node_id)
+    classes = node_class_map.get(normalized_id, [])
+    return {
+        "id": normalized_id,
+        "classes": classes,
+        "class": classes[0] if classes else None,
+    }
+
+
+@router.get("/node-source")
+async def get_node_source(node_id: str):
+    """
+    Retrieve the original TTL source(s) for a node identifier.
+    """
+    source_info = node_source_resolver.get_sources(node_id)
+    return {
+        "id": source_info.node_id,
+        "sources": [source.value for source in source_info.sources],
+    }
+
+
+@router.post("/node-sources")
+async def get_node_sources(request: Request):
+    """
+    Retrieve original TTL source(s) for multiple node identifiers.
+    """
+    payload = await request.json()
+    node_ids = payload.get("node_ids", [])
+    sources_map = node_source_resolver.get_sources_for_nodes(node_ids)
+    return {"sources": {node_id: [source.value for source in sources] for node_id, sources in sources_map.items()}}
+
+
+@router.post("/node-classes")
+async def get_node_classes(request: Request):
+    """
+    Retrieve rdf:type classes for multiple nodes in one request.
+    """
+    payload = await request.json()
+    node_ids = payload.get("node_ids", [])
+    class_map = {}
+    for node_id in node_ids:
+        normalized_id = normalize_node_id(g, node_id)
+        classes = node_class_map.get(normalized_id, [])
+        class_map[node_id] = classes[0] if classes else None
+
+    return {"classes": class_map}
 
 
 @router.get("/violation_path_nodes_dict")
