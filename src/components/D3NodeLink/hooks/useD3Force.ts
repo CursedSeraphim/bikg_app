@@ -36,7 +36,6 @@ export function useD3Force(
   boundingBox: string,
   dimensions: { width: number; height: number },
   autoRestart: boolean = true,
-  initialCentering: boolean | number = 1000,
 ): {
   simulationRef: React.MutableRefObject<d3.Simulation<CanvasNode, CanvasEdge> | null>;
   transformRef: React.MutableRefObject<d3.ZoomTransform>;
@@ -233,6 +232,10 @@ export function useD3Force(
   /**
    * Renders all nodes and edges onto the canvas, using the latest transformRef.
    */
+  function toId(v: string | CanvasNode): string {
+    return typeof v === 'object' ? v.id : v;
+  }
+
   function drawCanvas(allNodes: CanvasNode[], allEdges: CanvasEdge[]) {
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -402,10 +405,10 @@ export function useD3Force(
       const labelText = mapEdgeLabel(edge.label);
       context.save();
       context.globalAlpha = dimNonSelected ? 0.1 : 1;
-      const t = transformRef.current;
-      const screenX = label.x * t.k;
-      const screenY = label.y * t.k - edgeLabelOffsetPx;
-      context.scale(1 / t.k, 1 / t.k);
+      const transform = transformRef.current;
+      const screenX = label.x * transform.k;
+      const screenY = label.y * transform.k - edgeLabelOffsetPx;
+      context.scale(1 / transform.k, 1 / transform.k);
       context.font = edgeLabelFont;
       context.lineWidth = 3;
       context.strokeStyle = '#fff';
@@ -423,10 +426,10 @@ export function useD3Force(
       const label = mapNodeLabel(node.label);
       context.save();
       context.globalAlpha = dimNonSelected ? 0.1 : 1;
-      const t = transformRef.current;
-      const screenX = (node.x ?? 0) * t.k;
-      const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
-      context.scale(1 / t.k, 1 / t.k);
+      const transform = transformRef.current;
+      const screenX = (node.x ?? 0) * transform.k;
+      const screenY = (node.y ?? 0) * transform.k - nodeLabelOffsetPx;
+      context.scale(1 / transform.k, 1 / transform.k);
       context.font = nodeLabelFont;
       context.lineWidth = 3;
       context.strokeStyle = '#fff';
@@ -437,10 +440,6 @@ export function useD3Force(
     });
 
     context.restore();
-  }
-
-  function toId(v: string | CanvasNode): string {
-    return typeof v === 'object' ? v.id : v;
   }
 
   function filterEdgesByNodes(n: CanvasNode[], e: CanvasEdge[]): CanvasEdge[] {
@@ -463,8 +462,6 @@ export function useD3Force(
     }
 
     const { width, height } = dimensions;
-    const labelPadding = 20;
-
     let sim = simulationRef.current;
 
     if (!sim) {
@@ -526,14 +523,13 @@ export function useD3Force(
 
     sim.on('tick', () => {
       if (boundingBox === 'on') {
-        nodes.forEach((node) => {
-          // eslint-disable-next-line no-param-reassign
+        for (let i = 0; i < nodes.length; i += 1) {
+          const node = nodes[i];
           const count = getViolationCountsForNode(node.id).cumulativeViolations;
           const nodeRadius = getNodeRadiusPx(count, node.shape);
           node.x = Math.max(nodeRadius, Math.min(width - nodeRadius, node.x ?? 0));
-          // eslint-disable-next-line no-param-reassign
           node.y = Math.max(nodeRadius, Math.min(height - nodeRadius, node.y ?? 0));
-        });
+        }
       }
       drawCanvas(nodes, edgesForSim);
     });
