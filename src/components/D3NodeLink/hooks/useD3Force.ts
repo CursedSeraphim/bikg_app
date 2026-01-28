@@ -36,7 +36,6 @@ export function useD3Force(
   boundingBox: string,
   dimensions: { width: number; height: number },
   autoRestart: boolean = true,
-  _initialCentering: boolean | number = 1000,
 ): {
   simulationRef: React.MutableRefObject<d3.Simulation<CanvasNode, CanvasEdge> | null>;
   transformRef: React.MutableRefObject<d3.ZoomTransform>;
