@@ -179,6 +179,78 @@ def build_type_violation_dict(df, violations_list):
 type_violation_dict = build_type_violation_dict(df, violations_list)
 
 
+def build_node_shape_violation_counts(df, graph: Graph) -> dict[str, dict[str, int]]:
+    """
+    Build cumulative violation counts for sh:NodeShape nodes based on their property shapes.
+
+    Each node shape count reflects the number of focus nodes (rows) that violate at least one
+    of its property shapes, scoped to the node shape's sh:targetClass.
+    """
+    if "rdf:type" not in df.columns:
+        print("Warning: 'rdf:type' column not found in the DataFrame. Returning an empty dictionary.")
+        return {}
+
+    df_temp = df.copy()
+    df_temp["rdf:type"] = df_temp["rdf:type"].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+    df_temp["rdf:type"] = df_temp["rdf:type"].apply(lambda x: x if isinstance(x, list) else ([] if pd.isna(x) else [x]))
+
+    node_shape_properties: dict[str, set[str]] = defaultdict(set)
+    node_shape_targets: dict[str, str] = {}
+
+    qres = graph.query(
+        """
+        SELECT ?nodeShape ?propertyShape ?targetClass
+        WHERE {
+            ?nodeShape a sh:NodeShape .
+            ?nodeShape sh:property ?propertyShape .
+            ?nodeShape sh:targetClass ?targetClass .
+        }
+        """
+    )
+
+    for row in qres:
+        node_shape, property_shape, target_class = row  # type: ignore
+        try:
+            node_shape_q = str(graph.namespace_manager.qname(node_shape))
+        except ValueError:
+            node_shape_q = str(node_shape)
+        try:
+            property_shape_q = str(graph.namespace_manager.qname(property_shape))
+        except ValueError:
+            property_shape_q = str(property_shape)
+        try:
+            target_class_q = str(graph.namespace_manager.qname(target_class))
+        except ValueError:
+            target_class_q = str(target_class)
+        node_shape_properties[node_shape_q].add(property_shape_q)
+        node_shape_targets[node_shape_q] = target_class_q
+
+    node_shape_counts: dict[str, dict[str, int]] = {}
+
+    for node_shape_q, property_shapes in node_shape_properties.items():
+        target_class_q = node_shape_targets.get(node_shape_q)
+        if not target_class_q:
+            continue
+
+        available_columns = [column for column in property_shapes if column in df_temp.columns]
+        if not available_columns:
+            violating_focus_nodes = 0
+        else:
+            class_mask = df_temp["rdf:type"].apply(
+                lambda types: target_class_q in types if isinstance(types, list) else False
+            )
+            filtered_df = df_temp.loc[class_mask, available_columns]
+            filtered_df = filtered_df.apply(pd.to_numeric, errors="coerce").fillna(0)
+            violating_focus_nodes = int((filtered_df > 0).any(axis=1).sum())
+
+        node_shape_counts[node_shape_q] = {
+            "count": 0,
+            "cumulative_count": violating_focus_nodes,
+        }
+
+    return node_shape_counts
+
+
 def get_prefixes(graph: Graph):
     return {prefix: str(namespace) for prefix, namespace in graph.namespaces()}
 
@@ -694,6 +766,9 @@ def build_ontology_tree(type_violation_dict, type_count_dict, violation_exemplar
     }
 
     compute_cumulative_counts(not_in_ontology_node)
+
+    node_shape_counts = build_node_shape_violation_counts(df, g)
+    node_count_dict.update(node_shape_counts)
 
     return root, node_count_dict
 
