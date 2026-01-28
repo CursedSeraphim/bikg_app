@@ -218,7 +218,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
 
     const newEdges: CanvasEdge[] = visibleEdgeData.map((e) => {
       const sourceInfo = nodeInfoMap.get(e.data.source);
+      const fallbackId = `${e.data.source}->${e.data.target}`;
       return {
+        id: e.data.id ?? fallbackId,
         source: e.data.source,
         target: e.data.target,
         label: anonymizeLabel(e.data.label ?? e.data.id), // sanitize
@@ -1090,6 +1092,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
             if (!addedEdgeKeys.has(key)) {
               addedEdgeKeys.add(key);
               newGhostEdges.push({
+                id: edgeData.data.id ?? key,
                 source: edgeData.data.source,
                 target: edgeData.data.target,
                 label: anonymizeLabel(edgeData.data.label ?? edgeData.data.id),
@@ -1120,6 +1123,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded, initialCentering =
           if (!addedEdgeKeys.has(key)) {
             addedEdgeKeys.add(key);
             newGhostEdges.push({
+              id: edge.id ?? key,
               source: edge.source,
               target: edge.target,
               label: anonymizeLabel(edge.label ?? edge.id),

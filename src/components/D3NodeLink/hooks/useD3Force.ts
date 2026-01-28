@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import { getViolationCountsForNode } from '../../../utils/violations';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
 import { D3_FORCE_EDGE_LABEL_FONT_SIZE_PX, D3_FORCE_LABEL_FONT_SIZE_PX, D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES, getNodeRadiusPx } from '../D3NldUtils';
+import { selectVisibleLabels, type BundledEdgeLayout } from '../labels/labelDeclutter';
 import { useLabelTransform } from './useLabelTransform';
 
 /**
@@ -57,9 +58,24 @@ export function useD3Force(
   const edgeBundlingCompatibilityThreshold = 0.4;
   const edgeBundlingStiffness = 60;
   const edgeBundlingStepSize = 0.2;
+  const labelDeclutterMinZoom = 0.2;
+  const labelDeclutterMaxZoom = 2.5;
+  const labelDeclutterNodeMin = 20;
+  const labelDeclutterNodeMax = 200;
+  const labelDeclutterEdgeMin = 0;
+  const labelDeclutterEdgeMax = 120;
+  const labelDeclutterStabilityBonusNode = 1e9;
+  const labelDeclutterStabilityBonusEdge = 1e6;
+  const labelDeclutterGhostPenalty = 1e5;
+  const labelDeclutterZoomHysteresis = 0.03;
+  const labelDeclutterSmallZoomStabilityBoost = 2;
+  const labelDeclutterCellSizePx = Math.max(D3_FORCE_LABEL_FONT_SIZE_PX, D3_FORCE_EDGE_LABEL_FONT_SIZE_PX) * 2;
 
-  type EdgeLayout = {
-    edge: CanvasEdge;
+  const prevVisibleNodeLabelIdsRef = useRef<Set<string>>(new Set());
+  const prevVisibleEdgeLabelIdsRef = useRef<Set<string>>(new Set());
+  const prevZoomKRef = useRef<number>(1);
+
+  type EdgeLayout = BundledEdgeLayout & {
     source: CanvasNode;
     target: CanvasNode;
     control: { x: number; y: number };
@@ -249,6 +265,43 @@ export function useD3Force(
     const bundledEdges = computeBundledEdges(allNodes, allEdges);
 
     const hasSelection = allNodes.some((node) => node.selected) || allEdges.some((edge) => edge.selected);
+    const zoomDelta = Math.abs(Math.log(t.k / (prevZoomKRef.current || 1)));
+    const zoomStabilityBoost = zoomDelta < labelDeclutterZoomHysteresis ? labelDeclutterSmallZoomStabilityBoost : 1;
+    const zoomRange = Math.max(labelDeclutterMaxZoom - labelDeclutterMinZoom, 0.0001);
+    const clampedZoom = Math.max(labelDeclutterMinZoom, Math.min(labelDeclutterMaxZoom, t.k));
+    const zoomFactor = (clampedZoom - labelDeclutterMinZoom) / zoomRange;
+    const maxNodeLabels = Math.round(labelDeclutterNodeMin + (labelDeclutterNodeMax - labelDeclutterNodeMin) * zoomFactor);
+    const maxEdgeLabels = Math.round(labelDeclutterEdgeMin + (labelDeclutterEdgeMax - labelDeclutterEdgeMin) * zoomFactor);
+    const getEdgeId = (edge: CanvasEdge) => edge.id ?? `${toId(edge.source)}->${toId(edge.target)}`;
+    const { visibleNodeIds, visibleEdgeIds } = selectVisibleLabels({
+      nodes: allNodes,
+      edges: allEdges,
+      bundledEdges,
+      transform: t,
+      dimensions,
+      nodeLabelFont,
+      edgeLabelFont,
+      nodeLabelFontSizePx: D3_FORCE_LABEL_FONT_SIZE_PX,
+      edgeLabelFontSizePx: D3_FORCE_EDGE_LABEL_FONT_SIZE_PX,
+      nodeLabelOffsetPx,
+      edgeLabelOffsetPx,
+      mapNodeLabel,
+      mapEdgeLabel,
+      getNodePriority: (node) => getViolationCountsForNode(node.id).cumulativeViolations,
+      getEdgeId,
+      prevVisibleNodeIds: prevVisibleNodeLabelIdsRef.current,
+      prevVisibleEdgeIds: prevVisibleEdgeLabelIdsRef.current,
+      maxNodeLabels,
+      maxEdgeLabels,
+      stabilityBonusNode: labelDeclutterStabilityBonusNode * zoomStabilityBoost,
+      stabilityBonusEdge: labelDeclutterStabilityBonusEdge * zoomStabilityBoost,
+      ghostPenalty: labelDeclutterGhostPenalty,
+      context,
+      cellSizePx: labelDeclutterCellSizePx,
+    });
+    prevVisibleNodeLabelIdsRef.current = visibleNodeIds;
+    prevVisibleEdgeLabelIdsRef.current = visibleEdgeIds;
+    prevZoomKRef.current = t.k;
 
     // Draw edges
     bundledEdges.forEach(({ edge, source, target, control, label }) => {
@@ -314,7 +367,7 @@ export function useD3Force(
       }
 
       // Draw edge label (if present)
-      if (edge.label) {
+      if (edge.label && visibleEdgeIds.has(getEdgeId(edge))) {
         const labelText = mapEdgeLabel(edge.label);
         context.save();
         const t = transformRef.current;
@@ -356,16 +409,18 @@ export function useD3Force(
 
       context.save();
       const label = mapNodeLabel(node.label);
-      const t = transformRef.current;
-      const screenX = (node.x ?? 0) * t.k;
-      const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
-      context.scale(1 / t.k, 1 / t.k);
-      context.font = nodeLabelFont;
-      context.lineWidth = 3;
-      context.strokeStyle = '#fff';
-      context.strokeText(label, screenX, screenY);
-      context.fillStyle = '#000';
-      context.fillText(label, screenX, screenY);
+      if (visibleNodeIds.has(node.id)) {
+        const t = transformRef.current;
+        const screenX = (node.x ?? 0) * t.k;
+        const screenY = (node.y ?? 0) * t.k - nodeLabelOffsetPx;
+        context.scale(1 / t.k, 1 / t.k);
+        context.font = nodeLabelFont;
+        context.lineWidth = 3;
+        context.strokeStyle = '#fff';
+        context.strokeText(label, screenX, screenY);
+        context.fillStyle = '#000';
+        context.fillText(label, screenX, screenY);
+      }
       context.restore();
 
       context.restore();
