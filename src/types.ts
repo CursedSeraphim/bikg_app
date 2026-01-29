@@ -45,6 +45,7 @@ export interface IGraphNode {
   data: {
     id: string;
     label?: string;
+    sourceId?: string;
     selected?: boolean;
     visible?: boolean;
     permanent?: boolean;

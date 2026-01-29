@@ -322,7 +322,7 @@ const updateSelectedTypes = (state: ICombinedState, valueCounts: Record<string, 
 
 // Helper function to update selected violation exemplars
 const updateSelectedViolationExemplars = (state: ICombinedState) => {
-  const selectedViolationExemplarsSet = new Set();
+  const selectedViolationExemplarsSet = new Set<string>();
   state.selectedNodes.forEach((node) => {
     const exemplars = state.focusNodeExemplarDict[node] || [];
     exemplars.forEach((exemplar) => selectedViolationExemplarsSet.add(exemplar));
