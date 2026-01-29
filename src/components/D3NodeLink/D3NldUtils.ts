@@ -29,7 +29,7 @@ export const NAMESPACE_SHAPE_MAP: Record<string, NodeShape> = {
   lotr: 'circle',
   sh: 'rectangle',
   owl: 'diamond',
-  cns: 'pentagon',
+  cns: 'circle',
   // xsd: 'hexagon',
   ex: 'triangle',
   other: 'hexagon',
