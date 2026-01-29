@@ -51,6 +51,7 @@ export const D3_EDGE_ARROW_MAX_SCALE = 2.5;
 export const D3_EDGE_DASH_LENGTH_PX = 8;
 export const D3_EDGE_DASH_GAP_PX = 6;
 export const D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES = true;
+export const NON_SELECTED_OPACITY = 0.25;
 
 const D3_NODE_SHAPE_RADIUS_MODIFIERS_PX: Record<NodeShape, number> = {
   circle: 0,

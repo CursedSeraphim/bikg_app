@@ -1,4 +1,4 @@
-// src/store/slices/combined.ts
+// src/store/slices/CombinedSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import * as N3 from 'n3';
 import { NamedNode, Store } from 'n3';
@@ -92,7 +92,7 @@ const initialState: ICombinedState = {
   filterType: 'none',
   d3BoundingBox: 'off',
   d3CenteringEnabled: true,
-  d3CenteringStrength: 0.08,
+  d3CenteringStrength: 0.01,
   missingEdgeOption: 'keep',
   missingEdgeLabel: loadMissingEdgeLabel(),
   edgeCountDict: {},

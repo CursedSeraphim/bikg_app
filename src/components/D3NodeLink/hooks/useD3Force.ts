@@ -5,16 +5,17 @@ import { useEffect, useRef } from 'react';
 import { getViolationCountsForNode } from '../../../utils/violations';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
 import {
+  D3_EDGE_ARROW_BASE_SIZE_PX,
+  D3_EDGE_ARROW_BASE_WIDTH_PX,
+  D3_EDGE_DASH_GAP_PX,
+  D3_EDGE_DASH_LENGTH_PX,
   D3_FORCE_EDGE_LABEL_FONT_SIZE_PX,
   D3_FORCE_LABEL_FONT_SIZE_PX,
   D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES,
-  D3_EDGE_DASH_GAP_PX,
-  D3_EDGE_DASH_LENGTH_PX,
-  D3_EDGE_ARROW_BASE_SIZE_PX,
-  D3_EDGE_ARROW_BASE_WIDTH_PX,
   getArrowScaleForLineWidth,
   getLineWidthPx,
   getNodeRadiusPx,
+  NON_SELECTED_OPACITY,
 } from '../D3NldUtils';
 import { selectVisibleLabels, type BundledEdgeLayout } from '../labels/labelDeclutter';
 import { useLabelTransform } from './useLabelTransform';
@@ -160,7 +161,7 @@ export function useD3Force(
           const startY = prev.y + dy * startRatio;
           const endX = prev.x + dx * endRatio;
           const endY = prev.y + dy * endRatio;
-          const tGlobal = ((i - 1) + endRatio) / steps;
+          const tGlobal = (i - 1 + endRatio) / steps;
           const width = startWidth + (endWidth - startWidth) * tGlobal;
 
           if (drawDash) {
@@ -421,7 +422,7 @@ export function useD3Force(
       const dimNonSelected = hasSelection && !edge.selected;
 
       context.save();
-      context.globalAlpha = dimNonSelected ? 0.1 : 1;
+      context.globalAlpha = dimNonSelected ? NON_SELECTED_OPACITY : 1;
 
       // Draw curve
       if (edge.previewRemoval) {
@@ -489,7 +490,7 @@ export function useD3Force(
       const radius = getNodeRadiusPx(count, node.shape) * semanticScale;
       const dimNonSelected = hasSelection && !node.selected;
       context.save();
-      context.globalAlpha = dimNonSelected ? 0.1 : 1;
+      context.globalAlpha = dimNonSelected ? NON_SELECTED_OPACITY : 1;
       drawNodeShape(context, node, radius);
       if (node.ghost) {
         context.fillStyle = 'rgba(0,0,0,0.2)';
@@ -515,7 +516,7 @@ export function useD3Force(
       const dimNonSelected = hasSelection && !edge.selected;
       const labelText = mapEdgeLabel(edge.label);
       context.save();
-      context.globalAlpha = dimNonSelected ? 0.1 : 1;
+      context.globalAlpha = dimNonSelected ? NON_SELECTED_OPACITY : 1;
       const transform = transformRef.current;
       const screenX = label.x * transform.k;
       const screenY = label.y * transform.k - edgeLabelOffsetPx;
@@ -536,7 +537,7 @@ export function useD3Force(
       const dimNonSelected = hasSelection && !node.selected;
       const label = mapNodeLabel(node.label);
       context.save();
-      context.globalAlpha = dimNonSelected ? 0.1 : 1;
+      context.globalAlpha = dimNonSelected ? NON_SELECTED_OPACITY : 1;
       const transform = transformRef.current;
       const screenX = (node.x ?? 0) * transform.k;
       const screenY = (node.y ?? 0) * transform.k - nodeLabelOffsetPx;
