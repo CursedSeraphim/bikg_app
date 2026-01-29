@@ -6,9 +6,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   clearAllSelections,
   selectCumulativeNumberViolationsPerNode,
+  selectD3BoundingBox,
   selectD3CenteringEnabled,
   selectD3CenteringStrength,
-  selectD3BoundingBox,
   selectExemplarMap,
   selectFocusNodeMap,
   selectHiddenLabels,
@@ -39,9 +39,9 @@ import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 import { updateD3NodesGivenCounts, useD3CumulativeCounts } from './hooks/useD3CumulativeCounts';
 import { useD3Force } from './hooks/useD3Force';
-import { useLassoSelection } from './hooks/useLassoSelection';
 import { useD3ResetView } from './hooks/useD3ResetView';
 import useExemplarHoverList from './hooks/useExemplarHoverList';
+import { useLassoSelection } from './hooks/useLassoSelection';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
@@ -167,18 +167,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   // -------------------------------------------------------------------------
 
-  const buildSelectionSignature = useCallback(
-    (focusNodes: string[], typeIds: string[], violationIds: string[], exemplarIds: string[]) => {
-      const normalize = (values: string[]) => Array.from(new Set(values)).sort();
-      return JSON.stringify({
-        focusNodes: normalize(focusNodes),
-        types: normalize(typeIds),
-        violations: normalize(violationIds),
-        exemplars: normalize(exemplarIds),
-      });
-    },
-    [],
-  );
+  const buildSelectionSignature = useCallback((focusNodes: string[], typeIds: string[], violationIds: string[], exemplarIds: string[]) => {
+    const normalize = (values: string[]) => Array.from(new Set(values)).sort();
+    return JSON.stringify({
+      focusNodes: normalize(focusNodes),
+      types: normalize(typeIds),
+      violations: normalize(violationIds),
+      exemplars: normalize(exemplarIds),
+    });
+  }, []);
 
   const convertData = useCallback(() => {
     // filter nodes: must be visible, not in hiddenNodesRef, and not blacklisted
@@ -1177,8 +1174,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   const handleLassoSelection = useCallback(
     (selectedIds: string[]) => {
-      const { selectedFocusNodes: nextFocusNodes, selectedTypes: nextTypes, selectedViolations: nextViolations, selectedExemplars, selectedNodeIds } =
-        buildLassoSelections(selectedIds);
+      const {
+        selectedFocusNodes: nextFocusNodes,
+        selectedTypes: nextTypes,
+        selectedViolations: nextViolations,
+        selectedExemplars,
+        selectedNodeIds,
+      } = buildLassoSelections(selectedIds);
 
       const selectionSignature = buildSelectionSignature(nextFocusNodes, nextTypes, nextViolations, selectedExemplars);
       lassoSelectionRef.current = { nodeIds: selectedNodeIds, signature: selectionSignature };
