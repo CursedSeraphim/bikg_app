@@ -10,6 +10,9 @@ import {
   D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES,
   D3_EDGE_DASH_GAP_PX,
   D3_EDGE_DASH_LENGTH_PX,
+  D3_EDGE_ARROW_BASE_SIZE_PX,
+  D3_EDGE_ARROW_BASE_WIDTH_PX,
+  getArrowScaleForLineWidth,
   getLineWidthPx,
   getNodeRadiusPx,
 } from '../D3NldUtils';
@@ -447,11 +450,13 @@ export function useD3Force(
         const targetRadius = getNodeRadiusPx(targetCount, target.shape) * semanticScale;
         const targetOutline = 1.25 * semanticScale;
         const arrowPadding = 1 * semanticScale;
-        const arrowSize = 10 * semanticScale;
-        const arrowWidth = 5 * semanticScale;
         const tipOffset = Math.min(targetRadius + targetOutline + arrowPadding, length - 1);
         const tOffset = Math.min(0.15, tipOffset / length);
         const tArrow = 1 - tOffset;
+        const lineWidthAtArrow = sourceWidth + (targetWidth - sourceWidth) * tArrow;
+        const arrowScale = getArrowScaleForLineWidth(lineWidthAtArrow);
+        const arrowSize = D3_EDGE_ARROW_BASE_SIZE_PX * arrowScale * semanticScale;
+        const arrowWidth = D3_EDGE_ARROW_BASE_WIDTH_PX * arrowScale * semanticScale;
         const tipx = quadraticPoint(sx, control.x, tx, tArrow);
         const tipy = quadraticPoint(sy, control.y, ty, tArrow);
         const tangentDx = 2 * (1 - tArrow) * (control.x - sx) + 2 * tArrow * (tx - control.x);

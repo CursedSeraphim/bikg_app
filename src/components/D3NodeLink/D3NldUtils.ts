@@ -44,6 +44,10 @@ export const D3_NODE_MAX_RADIUS_PX = 25;
 export const D3_NODE_VIOLATION_RADIUS_OFFSET_PX = 3;
 export const D3_EDGE_MIN_LINE_WIDTH_PX = 2.5;
 export const D3_EDGE_MAX_LINE_WIDTH_PX = 12.5;
+export const D3_EDGE_ARROW_BASE_SIZE_PX = 10;
+export const D3_EDGE_ARROW_BASE_WIDTH_PX = 5;
+export const D3_EDGE_ARROW_MIN_SCALE = 1;
+export const D3_EDGE_ARROW_MAX_SCALE = 5;
 export const D3_EDGE_DASH_LENGTH_PX = 8;
 export const D3_EDGE_DASH_GAP_PX = 6;
 export const D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES = true;
@@ -72,6 +76,14 @@ export function getLineWidthPx(violationCount: number): number {
   const maxWidth = Math.max(D3_EDGE_MAX_LINE_WIDTH_PX, minWidth);
   const normalizedViolations = maxViolations > 0 ? Math.min(Math.max(violationCount, 0), maxViolations) / maxViolations : 0;
   return minWidth + normalizedViolations * (maxWidth - minWidth);
+}
+
+export function getArrowScaleForLineWidth(lineWidthPx: number): number {
+  const minWidth = D3_EDGE_MIN_LINE_WIDTH_PX;
+  const maxWidth = Math.max(D3_EDGE_MAX_LINE_WIDTH_PX, minWidth);
+  const clampedWidth = Math.min(Math.max(lineWidthPx, minWidth), maxWidth);
+  const normalizedWidth = maxWidth > minWidth ? (clampedWidth - minWidth) / (maxWidth - minWidth) : 0;
+  return D3_EDGE_ARROW_MIN_SCALE + normalizedWidth * (D3_EDGE_ARROW_MAX_SCALE - D3_EDGE_ARROW_MIN_SCALE);
 }
 
 /**
