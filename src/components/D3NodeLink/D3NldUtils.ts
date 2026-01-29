@@ -45,6 +45,9 @@ export const D3_NODE_VIOLATION_RADIUS_OFFSET_PX = 3;
 export const D3_EDGE_MIN_LINE_WIDTH_PX = 2.5;
 export const D3_EDGE_MAX_LINE_WIDTH_PX = 12.5;
 export const D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES = true;
+export const D3_EDGE_DASH_LENGTH_PX = 6;
+export const D3_EDGE_DASH_GAP_PX = 6;
+export const VIOLATION_GROUP_EXEMPLAR_NAMESPACE = 'ex';
 
 const D3_NODE_SHAPE_RADIUS_MODIFIERS_PX: Record<NodeShape, number> = {
   circle: 0,
@@ -70,6 +73,14 @@ export function getLineWidthPx(violationCount: number): number {
   const maxWidth = Math.max(D3_EDGE_MAX_LINE_WIDTH_PX, minWidth);
   const normalizedViolations = maxViolations > 0 ? Math.min(Math.max(violationCount, 0), maxViolations) / maxViolations : 0;
   return minWidth + normalizedViolations * (maxWidth - minWidth);
+}
+
+export function isViolationGroupExemplar(nodeId: string): boolean {
+  return extractNamespace(nodeId).toLowerCase() === VIOLATION_GROUP_EXEMPLAR_NAMESPACE;
+}
+
+export function shouldRenderEdgeSolid(targetId: string, targetViolationCount: number): boolean {
+  return targetViolationCount > 0 || isViolationGroupExemplar(targetId);
 }
 
 /**

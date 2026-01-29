@@ -8,8 +8,11 @@ import {
   D3_FORCE_EDGE_LABEL_FONT_SIZE_PX,
   D3_FORCE_LABEL_FONT_SIZE_PX,
   D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES,
+  D3_EDGE_DASH_GAP_PX,
+  D3_EDGE_DASH_LENGTH_PX,
   getLineWidthPx,
   getNodeRadiusPx,
+  shouldRenderEdgeSolid,
 } from '../D3NldUtils';
 import { selectVisibleLabels, type BundledEdgeLayout } from '../labels/labelDeclutter';
 import { useLabelTransform } from './useLabelTransform';
@@ -362,7 +365,10 @@ export function useD3Force(
       const targetCount = getViolationCountsForNode(target.id).cumulativeViolations;
       const sourceWidth = getLineWidthPx(sourceCount);
       const targetWidth = getLineWidthPx(targetCount);
+      const isSolidEdge = shouldRenderEdgeSolid(target.id, targetCount);
+      context.setLineDash(isSolidEdge ? [] : [D3_EDGE_DASH_LENGTH_PX * semanticScale, D3_EDGE_DASH_GAP_PX * semanticScale]);
       drawVariableWidthCurve(context, { x: sx, y: sy }, control, { x: tx, y: ty }, sourceWidth, targetWidth, semanticScale);
+      context.setLineDash([]);
 
       // Draw arrowhead
       const dx = tx - control.x;
