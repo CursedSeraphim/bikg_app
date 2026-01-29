@@ -4,7 +4,13 @@ import * as d3 from 'd3';
 import { useEffect, useRef } from 'react';
 import { getViolationCountsForNode } from '../../../utils/violations';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
-import { D3_FORCE_EDGE_LABEL_FONT_SIZE_PX, D3_FORCE_LABEL_FONT_SIZE_PX, D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES, getNodeRadiusPx } from '../D3NldUtils';
+import {
+  D3_FORCE_EDGE_LABEL_FONT_SIZE_PX,
+  D3_FORCE_LABEL_FONT_SIZE_PX,
+  D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES,
+  getLineWidthPx,
+  getNodeRadiusPx,
+} from '../D3NldUtils';
 import { selectVisibleLabels, type BundledEdgeLayout } from '../labels/labelDeclutter';
 import { useLabelTransform } from './useLabelTransform';
 
@@ -327,7 +333,8 @@ export function useD3Force(
       } else {
         context.strokeStyle = edge.color ?? '#AAA';
       }
-      const baseEdgeWidth = 2;
+      const targetCount = getViolationCountsForNode(target.id).cumulativeViolations;
+      const baseEdgeWidth = getLineWidthPx(targetCount);
       context.lineWidth = baseEdgeWidth * semanticScale;
       context.beginPath();
       context.moveTo(sx, sy);
@@ -339,7 +346,6 @@ export function useD3Force(
       const dy = ty - control.y;
       const length = Math.sqrt(dx * dx + dy * dy);
       if (length > 1) {
-        const targetCount = getViolationCountsForNode(target.id).cumulativeViolations;
         const targetRadius = getNodeRadiusPx(targetCount, target.shape) * semanticScale;
         const targetOutline = 1.25 * semanticScale;
         const arrowPadding = 1 * semanticScale;
