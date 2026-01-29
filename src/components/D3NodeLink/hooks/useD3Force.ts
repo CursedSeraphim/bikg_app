@@ -105,20 +105,33 @@ export function useD3Force(
     startWidth: number,
     endWidth: number,
     semanticScale: number,
+    dashPattern?: number[],
   ) {
     const steps = 24;
     let prev = start;
+    let dashOffset = 0;
+    if (dashPattern && dashPattern.length > 0) {
+      context.setLineDash(dashPattern);
+    }
     for (let i = 1; i <= steps; i += 1) {
       const t = i / steps;
       const x = quadraticPoint(start.x, control.x, end.x, t);
       const y = quadraticPoint(start.y, control.y, end.y, t);
       const width = startWidth + (endWidth - startWidth) * t;
+      if (dashPattern && dashPattern.length > 0) {
+        context.lineDashOffset = -dashOffset;
+      }
       context.lineWidth = width * semanticScale;
       context.beginPath();
       context.moveTo(prev.x, prev.y);
       context.lineTo(x, y);
       context.stroke();
+      dashOffset += Math.hypot(x - prev.x, y - prev.y);
       prev = { x, y };
+    }
+    if (dashPattern && dashPattern.length > 0) {
+      context.setLineDash([]);
+      context.lineDashOffset = 0;
     }
   }
 
@@ -365,10 +378,9 @@ export function useD3Force(
       const targetCount = getViolationCountsForNode(target.id).cumulativeViolations;
       const sourceWidth = getLineWidthPx(sourceCount);
       const targetWidth = getLineWidthPx(targetCount);
-      const isSolidEdge = shouldRenderEdgeSolid(target.id, targetCount);
-      context.setLineDash(isSolidEdge ? [] : [D3_EDGE_DASH_LENGTH_PX * semanticScale, D3_EDGE_DASH_GAP_PX * semanticScale]);
-      drawVariableWidthCurve(context, { x: sx, y: sy }, control, { x: tx, y: ty }, sourceWidth, targetWidth, semanticScale);
-      context.setLineDash([]);
+      const isSolidEdge = shouldRenderEdgeSolid(source.id, target.id, targetCount);
+      const dashPattern = isSolidEdge ? undefined : [D3_EDGE_DASH_LENGTH_PX * semanticScale, D3_EDGE_DASH_GAP_PX * semanticScale];
+      drawVariableWidthCurve(context, { x: sx, y: sy }, control, { x: tx, y: ty }, sourceWidth, targetWidth, semanticScale, dashPattern);
 
       // Draw arrowhead
       const dx = tx - control.x;

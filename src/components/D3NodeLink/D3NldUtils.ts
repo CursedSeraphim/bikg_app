@@ -79,8 +79,10 @@ export function isViolationGroupExemplar(nodeId: string): boolean {
   return extractNamespace(nodeId).toLowerCase() === VIOLATION_GROUP_EXEMPLAR_NAMESPACE;
 }
 
-export function shouldRenderEdgeSolid(targetId: string, targetViolationCount: number): boolean {
-  return targetViolationCount > 0 || isViolationGroupExemplar(targetId);
+export function shouldRenderEdgeSolid(sourceId: string, targetId: string, targetViolationCount: number): boolean {
+  const targetIsViolation = targetViolationCount > 0 || isViolationGroupExemplar(targetId);
+  const sourceIsViolationGroup = isViolationGroupExemplar(sourceId);
+  return targetIsViolation && !sourceIsViolationGroup;
 }
 
 /**
