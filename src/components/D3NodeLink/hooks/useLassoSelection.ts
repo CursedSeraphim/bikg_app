@@ -39,32 +39,29 @@ export function useLassoSelection({ canvasRef, overlayRef, nodes, transformRef, 
     path.attr('d', d);
   }, [overlayRef, lineGenerator]);
 
-  const endLasso = useCallback(
-    () => {
-      if (!lassoActiveRef.current) return;
+  const endLasso = useCallback(() => {
+    if (!lassoActiveRef.current) return;
 
-      lassoActiveRef.current = false;
-      const polygon = pointsRef.current;
-      pointsRef.current = [];
-      clearLassoPath();
+    lassoActiveRef.current = false;
+    const polygon = pointsRef.current;
+    pointsRef.current = [];
+    clearLassoPath();
 
-      if (polygon.length < 3) {
-        onSelection([]);
-        return;
-      }
+    if (polygon.length < 3) {
+      onSelection([]);
+      return;
+    }
 
-      const selectedIds = nodes
-        .filter((node) => node.x !== undefined && node.y !== undefined)
-        .filter((node) => {
-          const [sx, sy] = transformRef.current.apply([node.x ?? 0, node.y ?? 0]);
-          return d3.polygonContains(polygon, [sx, sy]);
-        })
-        .map((node) => node.id);
+    const selectedIds = nodes
+      .filter((node) => node.x !== undefined && node.y !== undefined)
+      .filter((node) => {
+        const [sx, sy] = transformRef.current.apply([node.x ?? 0, node.y ?? 0]);
+        return d3.polygonContains(polygon, [sx, sy]);
+      })
+      .map((node) => node.id);
 
-      onSelection(selectedIds);
-    },
-    [clearLassoPath, nodes, onSelection, transformRef],
-  );
+    onSelection(selectedIds);
+  }, [clearLassoPath, nodes, onSelection, transformRef]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

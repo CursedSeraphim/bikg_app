@@ -6,9 +6,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   clearAllSelections,
   selectCumulativeNumberViolationsPerNode,
+  selectD3BoundingBox,
   selectD3CenteringEnabled,
   selectD3CenteringStrength,
-  selectD3BoundingBox,
   selectExemplarMap,
   selectFocusNodeMap,
   selectHiddenLabels,
@@ -39,9 +39,9 @@ import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 import { updateD3NodesGivenCounts, useD3CumulativeCounts } from './hooks/useD3CumulativeCounts';
 import { useD3Force } from './hooks/useD3Force';
-import { useLassoSelection } from './hooks/useLassoSelection';
 import { useD3ResetView } from './hooks/useD3ResetView';
 import useExemplarHoverList from './hooks/useExemplarHoverList';
+import { useLassoSelection } from './hooks/useLassoSelection';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
@@ -167,104 +167,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   // -------------------------------------------------------------------------
 
-  const buildSelectionSignature = useCallback(
-    (focusNodes: string[], typeIds: string[], violationIds: string[], exemplarIds: string[]) => {
-      const normalize = (values: string[]) => Array.from(new Set(values)).sort();
-      return JSON.stringify({
-        focusNodes: normalize(focusNodes),
-        types: normalize(typeIds),
-        violations: normalize(violationIds),
-        exemplars: normalize(exemplarIds),
-      });
-    },
-    [],
-  );
-
-  const applyDirectSelection = useCallback(
-    (selectedNodeIds: Set<string>) => {
-      const selectedEdgeIds = new Set<string>();
-      cyDataEdges.forEach((edge) => {
-        const sourceId = edge.data.source;
-        const targetId = edge.data.target;
-        if (selectedNodeIds.has(sourceId) && selectedNodeIds.has(targetId)) {
-          selectedEdgeIds.add(edge.data.id);
-        }
-      });
-
-      let needsRefresh = false;
-
-      cyDataNodes.forEach((node) => {
-        const shouldSelect = selectedNodeIds.has(node.data.id);
-        if (node.data.selected !== shouldSelect) {
-          node.data.selected = shouldSelect;
-          needsRefresh = true;
-        }
-      });
-
-      cyDataEdges.forEach((edge) => {
-        const shouldSelect = selectedEdgeIds.has(edge.data.id);
-        if (edge.data.selected !== shouldSelect) {
-          edge.data.selected = shouldSelect;
-          needsRefresh = true;
-        }
-      });
-
-      if (needsRefresh) {
-        convertData();
-      }
-    },
-    [cyDataNodes, cyDataEdges, convertData],
-  );
-
-  const buildLassoSelections = useCallback(
-    (selectedIds: string[]) => {
-      const selectedFocusNodes = new Set<string>();
-      const selectedTypes = new Set<string>();
-      const selectedViolations = new Set<string>();
-      const selectedExemplars = new Set<string>();
-
-      const selectedNodeIds = new Set(selectedIds);
-      selectedIds.forEach((id) => {
-        const node = nodeMapRef.current[id];
-        if (!node) {
-          return;
-        }
-        if (node.type) {
-          selectedTypes.add(id);
-          typeMap[id]?.nodes.forEach((focusId: string) => selectedFocusNodes.add(focusId));
-          return;
-        }
-        if (node.violation) {
-          selectedViolations.add(id);
-          violationMap[id]?.nodes.forEach((focusId: string) => selectedFocusNodes.add(focusId));
-          return;
-        }
-        if (node.exemplar) {
-          selectedExemplars.add(id);
-          exemplarMap[id]?.nodes.forEach((focusId: string) => selectedFocusNodes.add(focusId));
-          return;
-        }
-        selectedFocusNodes.add(id);
-      });
-
-      selectedFocusNodes.forEach((focusId) => {
-        const focusEntry = focusNodeMap[focusId];
-        if (!focusEntry) return;
-        focusEntry.types.forEach((typeId: string) => selectedTypes.add(typeId));
-        focusEntry.violations.forEach((violationId: string) => selectedViolations.add(violationId));
-        focusEntry.exemplars.forEach((exemplarId: string) => selectedExemplars.add(exemplarId));
-      });
-
-      return {
-        selectedFocusNodes: Array.from(selectedFocusNodes),
-        selectedTypes: Array.from(selectedTypes),
-        selectedViolations: Array.from(selectedViolations),
-        selectedExemplars: Array.from(selectedExemplars),
-        selectedNodeIds,
-      };
-    },
-    [exemplarMap, focusNodeMap, typeMap, violationMap],
-  );
+  const buildSelectionSignature = useCallback((focusNodes: string[], typeIds: string[], violationIds: string[], exemplarIds: string[]) => {
+    const normalize = (values: string[]) => Array.from(new Set(values)).sort();
+    return JSON.stringify({
+      focusNodes: normalize(focusNodes),
+      types: normalize(typeIds),
+      violations: normalize(violationIds),
+      exemplars: normalize(exemplarIds),
+    });
+  }, []);
 
   const convertData = useCallback(() => {
     // filter nodes: must be visible, not in hiddenNodesRef, and not blacklisted
@@ -346,6 +257,94 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     setD3Nodes(nextNodes);
     setD3Edges(newEdges);
   }, [cyDataNodes, cyDataEdges, isLabelBlacklisted, anonymizeLabel]);
+
+  const applyDirectSelection = useCallback(
+    (selectedNodeIds: Set<string>) => {
+      const selectedEdgeIds = new Set<string>();
+      cyDataEdges.forEach((edge) => {
+        const sourceId = edge.data.source;
+        const targetId = edge.data.target;
+        if (selectedNodeIds.has(sourceId) && selectedNodeIds.has(targetId)) {
+          selectedEdgeIds.add(edge.data.id);
+        }
+      });
+
+      let needsRefresh = false;
+
+      cyDataNodes.forEach((node) => {
+        const mutableNode = node;
+        const shouldSelect = selectedNodeIds.has(mutableNode.data.id);
+        if (mutableNode.data.selected !== shouldSelect) {
+          mutableNode.data.selected = shouldSelect;
+          needsRefresh = true;
+        }
+      });
+
+      cyDataEdges.forEach((edge) => {
+        const mutableEdge = edge;
+        const shouldSelect = selectedEdgeIds.has(mutableEdge.data.id);
+        if (mutableEdge.data.selected !== shouldSelect) {
+          mutableEdge.data.selected = shouldSelect;
+          needsRefresh = true;
+        }
+      });
+
+      if (needsRefresh) {
+        convertData();
+      }
+    },
+    [cyDataNodes, cyDataEdges, convertData],
+  );
+
+  const buildLassoSelections = useCallback(
+    (selectedIds: string[]) => {
+      const lassoSelectedFocusNodes = new Set<string>();
+      const selectedTypes = new Set<string>();
+      const selectedViolations = new Set<string>();
+      const selectedExemplars = new Set<string>();
+
+      const selectedNodeIds = new Set(selectedIds);
+      selectedIds.forEach((id) => {
+        const node = nodeMapRef.current[id];
+        if (!node) {
+          return;
+        }
+        if (node.type) {
+          selectedTypes.add(id);
+          typeMap[id]?.nodes.forEach((focusId: string) => lassoSelectedFocusNodes.add(focusId));
+          return;
+        }
+        if (node.violation) {
+          selectedViolations.add(id);
+          violationMap[id]?.nodes.forEach((focusId: string) => lassoSelectedFocusNodes.add(focusId));
+          return;
+        }
+        if (node.exemplar) {
+          selectedExemplars.add(id);
+          exemplarMap[id]?.nodes.forEach((focusId: string) => lassoSelectedFocusNodes.add(focusId));
+          return;
+        }
+        lassoSelectedFocusNodes.add(id);
+      });
+
+      lassoSelectedFocusNodes.forEach((focusId) => {
+        const focusEntry = focusNodeMap[focusId];
+        if (!focusEntry) return;
+        focusEntry.types.forEach((typeId: string) => selectedTypes.add(typeId));
+        focusEntry.violations.forEach((violationId: string) => selectedViolations.add(violationId));
+        focusEntry.exemplars.forEach((exemplarId: string) => selectedExemplars.add(exemplarId));
+      });
+
+      return {
+        selectedFocusNodes: Array.from(lassoSelectedFocusNodes),
+        selectedTypes: Array.from(selectedTypes),
+        selectedViolations: Array.from(selectedViolations),
+        selectedExemplars: Array.from(selectedExemplars),
+        selectedNodeIds,
+      };
+    },
+    [exemplarMap, focusNodeMap, typeMap, violationMap],
+  );
 
   useEffect(() => {
     if (!loading) {
@@ -1173,6 +1172,40 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     [d3Nodes, ghostNodes, transformRef, simulationRef, toggleChildren, toggleParents, clearPreview, toggleAssociated, handleSelectConnected],
   );
 
+  const handleLassoSelection = useCallback(
+    (selectedIds: string[]) => {
+      const {
+        selectedFocusNodes: nextFocusNodes,
+        selectedTypes: nextTypes,
+        selectedViolations: nextViolations,
+        selectedExemplars,
+        selectedNodeIds,
+      } = buildLassoSelections(selectedIds);
+
+      const selectionSignature = buildSelectionSignature(nextFocusNodes, nextTypes, nextViolations, selectedExemplars);
+      lassoSelectionRef.current = { nodeIds: selectedNodeIds, signature: selectionSignature };
+
+      applyDirectSelection(selectedNodeIds);
+      dispatch(
+        setCoordinatedSelections({
+          selectedNodes: nextFocusNodes,
+          selectedTypes: nextTypes,
+          selectedViolations: nextViolations,
+          selectedViolationExemplars: selectedExemplars,
+        }),
+      );
+    },
+    [applyDirectSelection, buildLassoSelections, buildSelectionSignature, dispatch],
+  );
+
+  const { lassoActiveRef } = useLassoSelection({
+    canvasRef,
+    overlayRef: lassoOverlayRef,
+    nodes: d3Nodes,
+    transformRef,
+    onSelection: handleLassoSelection,
+  });
+
   const updateHoverPreview = useCallback(
     (event: MouseEvent) => {
       if (lassoActiveRef.current) {
@@ -1311,6 +1344,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       cyDataNodes,
       cyDataEdges,
       hiddenEdgesRef,
+      lassoActiveRef,
       clearPreview,
       computeExpansion,
       computeAssociations,
@@ -1319,35 +1353,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       runIncrementalLayout,
     ],
   );
-
-  const handleLassoSelection = useCallback(
-    (selectedIds: string[]) => {
-      const { selectedFocusNodes: nextFocusNodes, selectedTypes: nextTypes, selectedViolations: nextViolations, selectedExemplars, selectedNodeIds } =
-        buildLassoSelections(selectedIds);
-
-      const selectionSignature = buildSelectionSignature(nextFocusNodes, nextTypes, nextViolations, selectedExemplars);
-      lassoSelectionRef.current = { nodeIds: selectedNodeIds, signature: selectionSignature };
-
-      applyDirectSelection(selectedNodeIds);
-      dispatch(
-        setCoordinatedSelections({
-          selectedNodes: nextFocusNodes,
-          selectedTypes: nextTypes,
-          selectedViolations: nextViolations,
-          selectedViolationExemplars: selectedExemplars,
-        }),
-      );
-    },
-    [applyDirectSelection, buildLassoSelections, buildSelectionSignature, dispatch],
-  );
-
-  const { lassoActiveRef } = useLassoSelection({
-    canvasRef,
-    overlayRef: lassoOverlayRef,
-    nodes: d3Nodes,
-    transformRef,
-    onSelection: handleLassoSelection,
-  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1444,17 +1449,19 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
       cyDataNodes.forEach((node) => {
         if (selectedNodeIds.has(node.data.id)) {
-          node.data.visible = false;
-          node.data.selected = false;
-          hiddenNodesRef.current.add(node.data.id);
+          const mutableNode = node;
+          mutableNode.data.visible = false;
+          mutableNode.data.selected = false;
+          hiddenNodesRef.current.add(mutableNode.data.id);
         }
       });
 
       cyDataEdges.forEach((edge) => {
         if (selectedEdgeIds.has(edge.data.id)) {
-          edge.data.visible = false;
-          edge.data.selected = false;
-          hiddenEdgesRef.current.add(edge.data.id);
+          const mutableEdge = edge;
+          mutableEdge.data.visible = false;
+          mutableEdge.data.selected = false;
+          hiddenEdgesRef.current.add(mutableEdge.data.id);
         }
       });
 
