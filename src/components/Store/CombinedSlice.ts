@@ -14,9 +14,9 @@ import {
   ICombinedState,
   ICsvData,
   IExemplarMap,
+  IFocusNodeMap,
   IGraphEdge,
   IGraphNode,
-  IFocusNodeMap,
   INamespaces,
   INumberViolationsPerNodeMap,
   INumberViolationsPerNodeValue,
@@ -93,7 +93,7 @@ const initialState: ICombinedState = {
   typesViolationMap: {},
   filterType: 'none',
   d3BoundingBox: 'off',
-  d3CenteringEnabled: true,
+  d3CenteringEnabled: false,
   d3CenteringStrength: 0.01,
   missingEdgeOption: 'keep',
   missingEdgeLabel: loadMissingEdgeLabel(),
@@ -450,11 +450,9 @@ const updateViolationCount = (sample: ICsvData, violationCount: Record<string, n
 };
 
 const calculateNewSelectedViolations = (newViolationCount: Record<string, number>): string[] => {
-  return (
-    Object.entries(newViolationCount)
-      .filter(([, value]) => value > 0)
-      .map(([key]) => key)
-  );
+  return Object.entries(newViolationCount)
+    .filter(([, value]) => value > 0)
+    .map(([key]) => key);
 };
 
 // Helper function to ensure the input is treated as an array
