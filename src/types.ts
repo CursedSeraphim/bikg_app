@@ -51,6 +51,7 @@ export interface IGraphNode {
     permanent?: boolean;
     violation?: boolean;
     exemplar?: boolean;
+    type?: boolean;
     namespace: string;
     defaultColor?: string;
     selectedColor?: string;
