@@ -22,6 +22,7 @@ import {
   selectViolationMap,
   selectViolations,
   selectViolationTypesMap,
+  setCoordinatedSelections,
   setSelectedTypes,
   setSelectedViolationExemplars,
   setSelectedViolations,
@@ -38,6 +39,7 @@ import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 import { updateD3NodesGivenCounts, useD3CumulativeCounts } from './hooks/useD3CumulativeCounts';
 import { useD3Force } from './hooks/useD3Force';
+import { useLassoSelection } from './hooks/useLassoSelection';
 import { useD3ResetView } from './hooks/useD3ResetView';
 import useExemplarHoverList from './hooks/useExemplarHoverList';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
@@ -77,6 +79,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const [d3Edges, setD3Edges] = useState<CanvasEdge[]>([]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const lassoOverlayRef = useRef<SVGSVGElement | null>(null);
   const { dimensions } = useCanvasDimensions(canvasRef);
   const dpi = window.devicePixelRatio ?? 1;
 
@@ -95,6 +98,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const nodeMapRef = useRef<Record<string, CanvasNode>>({});
   const savedPositionsRef = useRef<Record<string, { x?: number; y?: number }>>({});
   const previousVisibleNodeIdsRef = useRef<Set<string>>(new Set());
+  const lassoSelectionRef = useRef<{ nodeIds: Set<string>; signature: string } | null>(null);
 
   // --- Helpers --------------------------------------------------------------
 
@@ -162,6 +166,105 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   );
 
   // -------------------------------------------------------------------------
+
+  const buildSelectionSignature = useCallback(
+    (focusNodes: string[], typeIds: string[], violationIds: string[], exemplarIds: string[]) => {
+      const normalize = (values: string[]) => Array.from(new Set(values)).sort();
+      return JSON.stringify({
+        focusNodes: normalize(focusNodes),
+        types: normalize(typeIds),
+        violations: normalize(violationIds),
+        exemplars: normalize(exemplarIds),
+      });
+    },
+    [],
+  );
+
+  const applyDirectSelection = useCallback(
+    (selectedNodeIds: Set<string>) => {
+      const selectedEdgeIds = new Set<string>();
+      cyDataEdges.forEach((edge) => {
+        const sourceId = edge.data.source;
+        const targetId = edge.data.target;
+        if (selectedNodeIds.has(sourceId) && selectedNodeIds.has(targetId)) {
+          selectedEdgeIds.add(edge.data.id);
+        }
+      });
+
+      let needsRefresh = false;
+
+      cyDataNodes.forEach((node) => {
+        const shouldSelect = selectedNodeIds.has(node.data.id);
+        if (node.data.selected !== shouldSelect) {
+          node.data.selected = shouldSelect;
+          needsRefresh = true;
+        }
+      });
+
+      cyDataEdges.forEach((edge) => {
+        const shouldSelect = selectedEdgeIds.has(edge.data.id);
+        if (edge.data.selected !== shouldSelect) {
+          edge.data.selected = shouldSelect;
+          needsRefresh = true;
+        }
+      });
+
+      if (needsRefresh) {
+        convertData();
+      }
+    },
+    [cyDataNodes, cyDataEdges, convertData],
+  );
+
+  const buildLassoSelections = useCallback(
+    (selectedIds: string[]) => {
+      const selectedFocusNodes = new Set<string>();
+      const selectedTypes = new Set<string>();
+      const selectedViolations = new Set<string>();
+      const selectedExemplars = new Set<string>();
+
+      const selectedNodeIds = new Set(selectedIds);
+      selectedIds.forEach((id) => {
+        const node = nodeMapRef.current[id];
+        if (!node) {
+          return;
+        }
+        if (node.type) {
+          selectedTypes.add(id);
+          typeMap[id]?.nodes.forEach((focusId: string) => selectedFocusNodes.add(focusId));
+          return;
+        }
+        if (node.violation) {
+          selectedViolations.add(id);
+          violationMap[id]?.nodes.forEach((focusId: string) => selectedFocusNodes.add(focusId));
+          return;
+        }
+        if (node.exemplar) {
+          selectedExemplars.add(id);
+          exemplarMap[id]?.nodes.forEach((focusId: string) => selectedFocusNodes.add(focusId));
+          return;
+        }
+        selectedFocusNodes.add(id);
+      });
+
+      selectedFocusNodes.forEach((focusId) => {
+        const focusEntry = focusNodeMap[focusId];
+        if (!focusEntry) return;
+        focusEntry.types.forEach((typeId: string) => selectedTypes.add(typeId));
+        focusEntry.violations.forEach((violationId: string) => selectedViolations.add(violationId));
+        focusEntry.exemplars.forEach((exemplarId: string) => selectedExemplars.add(exemplarId));
+      });
+
+      return {
+        selectedFocusNodes: Array.from(selectedFocusNodes),
+        selectedTypes: Array.from(selectedTypes),
+        selectedViolations: Array.from(selectedViolations),
+        selectedExemplars: Array.from(selectedExemplars),
+        selectedNodeIds,
+      };
+    },
+    [exemplarMap, focusNodeMap, typeMap, violationMap],
+  );
 
   const convertData = useCallback(() => {
     // filter nodes: must be visible, not in hiddenNodesRef, and not blacklisted
@@ -374,6 +477,14 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       return;
     }
 
+    const selectionSignature = buildSelectionSignature(selectedFocusNodes, selectedTypeIds, selectedViolationIds, selectedExemplarIds);
+    const lassoSelection = lassoSelectionRef.current;
+    if (lassoSelection && lassoSelection.signature === selectionSignature) {
+      applyDirectSelection(lassoSelection.nodeIds);
+      return;
+    }
+    lassoSelectionRef.current = null;
+
     // 1) Selection scope: everything that should be unfolded / made visible
     const idsToSelect = new Set<string>();
     const addIds = (values?: Iterable<string>) => {
@@ -569,6 +680,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     convertData,
     revAdjRef,
     isIdBlacklisted,
+    applyDirectSelection,
+    buildSelectionSignature,
   ]);
 
   const focusNodeTooltip = useExemplarHoverList(canvasRef, [...d3Nodes, ...ghostNodes], transformRef);
@@ -1062,6 +1175,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   const updateHoverPreview = useCallback(
     (event: MouseEvent) => {
+      if (lassoActiveRef.current) {
+        return;
+      }
       if (!event.ctrlKey && !event.shiftKey) {
         clearPreview();
         return;
@@ -1204,6 +1320,35 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     ],
   );
 
+  const handleLassoSelection = useCallback(
+    (selectedIds: string[]) => {
+      const { selectedFocusNodes: nextFocusNodes, selectedTypes: nextTypes, selectedViolations: nextViolations, selectedExemplars, selectedNodeIds } =
+        buildLassoSelections(selectedIds);
+
+      const selectionSignature = buildSelectionSignature(nextFocusNodes, nextTypes, nextViolations, selectedExemplars);
+      lassoSelectionRef.current = { nodeIds: selectedNodeIds, signature: selectionSignature };
+
+      applyDirectSelection(selectedNodeIds);
+      dispatch(
+        setCoordinatedSelections({
+          selectedNodes: nextFocusNodes,
+          selectedTypes: nextTypes,
+          selectedViolations: nextViolations,
+          selectedViolationExemplars: selectedExemplars,
+        }),
+      );
+    },
+    [applyDirectSelection, buildLassoSelections, buildSelectionSignature, dispatch],
+  );
+
+  const { lassoActiveRef } = useLassoSelection({
+    canvasRef,
+    overlayRef: lassoOverlayRef,
+    nodes: d3Nodes,
+    transformRef,
+    onSelection: handleLassoSelection,
+  });
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -1279,6 +1424,52 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     };
   }, [clearPreview]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Delete' && event.key !== 'Backspace') {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
+      const selectedNodeIds = new Set(cyDataNodes.filter((node) => node.data.selected).map((node) => node.data.id));
+      const selectedEdgeIds = new Set(cyDataEdges.filter((edge) => edge.data.selected).map((edge) => edge.data.id));
+
+      if (selectedNodeIds.size === 0 && selectedEdgeIds.size === 0) {
+        return;
+      }
+
+      cyDataNodes.forEach((node) => {
+        if (selectedNodeIds.has(node.data.id)) {
+          node.data.visible = false;
+          node.data.selected = false;
+          hiddenNodesRef.current.add(node.data.id);
+        }
+      });
+
+      cyDataEdges.forEach((edge) => {
+        if (selectedEdgeIds.has(edge.data.id)) {
+          edge.data.visible = false;
+          edge.data.selected = false;
+          hiddenEdgesRef.current.add(edge.data.id);
+        }
+      });
+
+      recomputeEdgeVisibility();
+      convertData();
+      lassoSelectionRef.current = null;
+      dispatch(clearAllSelections());
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [cyDataNodes, cyDataEdges, dispatch, convertData, recomputeEdgeVisibility]);
+
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <canvas
@@ -1290,6 +1481,16 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
           height: '100%',
           border: '1px solid #ccc',
           display: 'block',
+        }}
+      />
+      <svg
+        ref={lassoOverlayRef}
+        width={dimensions.width}
+        height={dimensions.height}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
         }}
       />
       {contextMenu}
