@@ -94,6 +94,31 @@ export function useD3Force(
     return oneMinusT * oneMinusT * p0 + 2 * oneMinusT * t * p1 + t * t * p2;
   }
 
+  function drawVariableWidthCurve(
+    context: CanvasRenderingContext2D,
+    start: { x: number; y: number },
+    control: { x: number; y: number },
+    end: { x: number; y: number },
+    startWidth: number,
+    endWidth: number,
+    semanticScale: number,
+  ) {
+    const steps = 24;
+    let prev = start;
+    for (let i = 1; i <= steps; i += 1) {
+      const t = i / steps;
+      const x = quadraticPoint(start.x, control.x, end.x, t);
+      const y = quadraticPoint(start.y, control.y, end.y, t);
+      const width = startWidth + (endWidth - startWidth) * t;
+      context.lineWidth = width * semanticScale;
+      context.beginPath();
+      context.moveTo(prev.x, prev.y);
+      context.lineTo(x, y);
+      context.stroke();
+      prev = { x, y };
+    }
+  }
+
   function computeBundledEdges(allNodes: CanvasNode[], allEdges: CanvasEdge[]): EdgeLayout[] {
     const edgeEntries = allEdges
       .map((edge) => {
@@ -333,13 +358,11 @@ export function useD3Force(
       } else {
         context.strokeStyle = edge.color ?? '#AAA';
       }
+      const sourceCount = getViolationCountsForNode(source.id).cumulativeViolations;
       const targetCount = getViolationCountsForNode(target.id).cumulativeViolations;
-      const baseEdgeWidth = getLineWidthPx(targetCount);
-      context.lineWidth = baseEdgeWidth * semanticScale;
-      context.beginPath();
-      context.moveTo(sx, sy);
-      context.quadraticCurveTo(control.x, control.y, tx, ty);
-      context.stroke();
+      const sourceWidth = getLineWidthPx(sourceCount);
+      const targetWidth = getLineWidthPx(targetCount);
+      drawVariableWidthCurve(context, { x: sx, y: sy }, control, { x: tx, y: ty }, sourceWidth, targetWidth, semanticScale);
 
       // Draw arrowhead
       const dx = tx - control.x;
