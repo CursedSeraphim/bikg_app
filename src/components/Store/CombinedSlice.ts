@@ -517,6 +517,34 @@ const combinedSlice = createSlice({
         });
       }
     },
+    setCoordinatedSelection: (
+      state,
+      action: PayloadAction<{
+        selectedNodes: string[];
+        selectedTypes: string[];
+        selectedViolations: string[];
+        selectedViolationExemplars: string[];
+      }>,
+    ) => {
+      const uniqueNodes = Array.from(new Set(action.payload.selectedNodes));
+      const uniqueTypes = Array.from(new Set(action.payload.selectedTypes));
+      const uniqueViolations = Array.from(new Set(action.payload.selectedViolations));
+      const uniqueExemplars = Array.from(new Set(action.payload.selectedViolationExemplars));
+
+      state.selectedNodes = uniqueNodes;
+      state.selectedTypes = uniqueTypes;
+      state.selectedViolations = uniqueViolations;
+      state.selectedViolationExemplars = uniqueExemplars;
+
+      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
+        state.selectedNodes,
+        state.focusNodeMap,
+        state.numberViolationsPerNode,
+        state.ontologyTree,
+        new Set([...state.types, ...state.violations]),
+      );
+      state.numberViolationsPerNode = newNumberViolationsPerNode;
+    },
     addHiddenLabels: (state, action: PayloadAction<string[]>) => {
       const deduplicated = Array.from(new Set([...state.hiddenLabels, ...action.payload]));
       state.hiddenLabels = deduplicated.sort();
@@ -1129,6 +1157,7 @@ export const selectCytoData = async (
 export const {
   clearAllSelections,
   clearHiddenLabels,
+  setCoordinatedSelection,
   setSelectedViolations,
   setViolations,
   setCsvData,

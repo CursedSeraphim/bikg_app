@@ -1,7 +1,7 @@
 // File: src/components/D3NodeLink/D3ForceGraph.tsx
 
 import * as d3 from 'd3';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   clearAllSelections,
@@ -22,6 +22,7 @@ import {
   selectViolationMap,
   selectViolations,
   selectViolationTypesMap,
+  setCoordinatedSelection,
   setSelectedTypes,
   setSelectedViolationExemplars,
   setSelectedViolations,
@@ -38,6 +39,7 @@ import { useCanvasDimensions } from './hooks/useCanvasDimensions';
 import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 import { updateD3NodesGivenCounts, useD3CumulativeCounts } from './hooks/useD3CumulativeCounts';
 import { useD3Force } from './hooks/useD3Force';
+import { useD3Lasso } from './hooks/useD3Lasso';
 import { useD3ResetView } from './hooks/useD3ResetView';
 import useExemplarHoverList from './hooks/useExemplarHoverList';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
@@ -77,6 +79,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const [d3Edges, setD3Edges] = useState<CanvasEdge[]>([]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const { dimensions } = useCanvasDimensions(canvasRef);
   const dpi = window.devicePixelRatio ?? 1;
 
@@ -275,6 +278,76 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   }, [redraw, d3Nodes, d3Edges, ghostNodes, ghostEdges]);
 
   useD3CumulativeCounts(d3Nodes, setD3Nodes, redraw);
+
+  const d3NodeMap = useMemo(() => new Map(d3Nodes.map((node) => [node.id, node])), [d3Nodes]);
+
+  const handleLassoSelection = useCallback(
+    (selectedNodeIds: string[]) => {
+      if (selectedNodeIds.length === 0) {
+        dispatch(clearAllSelections());
+        return;
+      }
+
+      const selectedFocusNodeIds = new Set<string>();
+      const selectedTypeIdsSet = new Set<string>();
+      const selectedViolationIdsSet = new Set<string>();
+      const selectedExemplarIdsSet = new Set<string>();
+
+      selectedNodeIds.forEach((nodeId) => {
+        const node = d3NodeMap.get(nodeId);
+        if (!node) return;
+        if (node.type) selectedTypeIdsSet.add(nodeId);
+        if (node.violation) selectedViolationIdsSet.add(nodeId);
+        if (node.exemplar) selectedExemplarIdsSet.add(nodeId);
+        if (focusNodeMap[nodeId]) selectedFocusNodeIds.add(nodeId);
+      });
+
+      const addFocusNodes = (ids?: string[]) => {
+        ids?.forEach((id) => selectedFocusNodeIds.add(id));
+      };
+      const addTypes = (ids?: string[]) => {
+        ids?.forEach((id) => selectedTypeIdsSet.add(id));
+      };
+      const addViolations = (ids?: string[]) => {
+        ids?.forEach((id) => selectedViolationIdsSet.add(id));
+      };
+      const addExemplars = (ids?: string[]) => {
+        ids?.forEach((id) => selectedExemplarIdsSet.add(id));
+      };
+
+      selectedTypeIdsSet.forEach((typeId) => addFocusNodes(typeMap[typeId]?.nodes));
+      selectedViolationIdsSet.forEach((violationId) => addFocusNodes(violationMap[violationId]?.nodes));
+      selectedExemplarIdsSet.forEach((exemplarId) => addFocusNodes(exemplarMap[exemplarId]?.nodes));
+
+      selectedFocusNodeIds.forEach((focusId) => {
+        const entry = focusNodeMap[focusId];
+        if (!entry) return;
+        addTypes(entry.types);
+        addViolations(entry.violations);
+        addExemplars(entry.exemplars);
+      });
+
+      dispatch(
+        setCoordinatedSelection({
+          selectedNodes: Array.from(selectedFocusNodeIds),
+          selectedTypes: Array.from(selectedTypeIdsSet),
+          selectedViolations: Array.from(selectedViolationIdsSet),
+          selectedViolationExemplars: Array.from(selectedExemplarIdsSet),
+        }),
+      );
+    },
+    [dispatch, d3NodeMap, focusNodeMap, typeMap, violationMap, exemplarMap],
+  );
+
+  const { lassoActiveRef } = useD3Lasso({
+    canvasRef,
+    overlayCanvasRef,
+    nodes: d3Nodes,
+    transformRef,
+    onSelection: handleLassoSelection,
+    enabled: !loading,
+    dpi,
+  });
 
   const runIncrementalLayout = useCallback(
     (options: { movableNodeIds?: string[]; pinAllExisting?: boolean; alphaTarget?: number; releaseAfter?: number | null }) => {
@@ -794,6 +867,42 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     });
   }, [cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef, isLabelBlacklisted]);
 
+  const hideSelectedNodes = useCallback(() => {
+    const idsToHide = new Set<string>([...selectedFocusNodes, ...selectedTypeIds, ...selectedViolationIds, ...selectedExemplarIds]);
+    if (idsToHide.size === 0) return;
+
+    cyDataNodes.forEach((node) => {
+      if (idsToHide.has(node.data.id)) {
+        const mutableNode = node;
+        mutableNode.data.visible = false;
+        hiddenNodesRef.current.add(node.data.id);
+      }
+    });
+
+    cyDataEdges.forEach((edge) => {
+      const { source, target, id } = edge.data;
+      if (idsToHide.has(source) || idsToHide.has(target)) {
+        const mutableEdge = edge;
+        mutableEdge.data.visible = false;
+        hiddenEdgesRef.current.add(id);
+      }
+    });
+
+    recomputeEdgeVisibility();
+    convertData();
+    dispatch(clearAllSelections());
+  }, [
+    selectedFocusNodes,
+    selectedTypeIds,
+    selectedViolationIds,
+    selectedExemplarIds,
+    cyDataNodes,
+    cyDataEdges,
+    recomputeEdgeVisibility,
+    convertData,
+    dispatch,
+  ]);
+
   const computeAssociations = useCallback(
     (nodeId: string) => {
       const assoc = new Set<string>();
@@ -1062,6 +1171,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   const updateHoverPreview = useCallback(
     (event: MouseEvent) => {
+      if (lassoActiveRef.current) {
+        return;
+      }
       if (!event.ctrlKey && !event.shiftKey) {
         clearPreview();
         return;
@@ -1189,6 +1301,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     },
     [
       d3Nodes,
+      lassoActiveRef,
       transformRef,
       adjacencyRef,
       revAdjRef,
@@ -1279,6 +1392,22 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     };
   }, [clearPreview]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Delete' && event.key !== 'Backspace') return;
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      hideSelectedNodes();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [hideSelectedNodes]);
+
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <canvas
@@ -1290,6 +1419,18 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
           height: '100%',
           border: '1px solid #ccc',
           display: 'block',
+        }}
+      />
+      <canvas
+        ref={overlayCanvasRef}
+        width={dimensions.width * dpi}
+        height={dimensions.height * dpi}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
         }}
       />
       {contextMenu}
