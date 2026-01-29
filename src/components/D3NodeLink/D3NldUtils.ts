@@ -42,6 +42,8 @@ export const D3_FORCE_EDGE_LABEL_FONT_SIZE_PX = 12;
 export const D3_NODE_MIN_RADIUS_PX = 4;
 export const D3_NODE_MAX_RADIUS_PX = 25;
 export const D3_NODE_VIOLATION_RADIUS_OFFSET_PX = 3;
+export const D3_EDGE_MIN_LINE_WIDTH_PX = 2.5;
+export const D3_EDGE_MAX_LINE_WIDTH_PX = 12.5;
 export const D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES = true;
 
 const D3_NODE_SHAPE_RADIUS_MODIFIERS_PX: Record<NodeShape, number> = {
@@ -60,6 +62,14 @@ export function getNodeRadiusPx(violationCount: number, shape: NodeShape): numbe
   const normalizedViolations = maxViolations > 0 ? Math.min(Math.max(violationCount, 0), maxViolations) / maxViolations : 0;
   const baseRadius = minRadius + normalizedViolations * (maxRadius - minRadius);
   return baseRadius + (D3_NODE_SHAPE_RADIUS_MODIFIERS_PX[shape] ?? 0);
+}
+
+export function getLineWidthPx(violationCount: number): number {
+  const maxViolations = getMaxCumulativeViolations();
+  const minWidth = D3_EDGE_MIN_LINE_WIDTH_PX;
+  const maxWidth = Math.max(D3_EDGE_MAX_LINE_WIDTH_PX, minWidth);
+  const normalizedViolations = maxViolations > 0 ? Math.min(Math.max(violationCount, 0), maxViolations) / maxViolations : 0;
+  return minWidth + normalizedViolations * (maxWidth - minWidth);
 }
 
 /**

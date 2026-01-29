@@ -4,7 +4,13 @@ import * as d3 from 'd3';
 import { useEffect, useRef } from 'react';
 import { getViolationCountsForNode } from '../../../utils/violations';
 import { CanvasEdge, CanvasNode } from '../D3NldTypes';
-import { D3_FORCE_EDGE_LABEL_FONT_SIZE_PX, D3_FORCE_LABEL_FONT_SIZE_PX, D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES, getNodeRadiusPx } from '../D3NldUtils';
+import {
+  D3_FORCE_EDGE_LABEL_FONT_SIZE_PX,
+  D3_FORCE_LABEL_FONT_SIZE_PX,
+  D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES,
+  getLineWidthPx,
+  getNodeRadiusPx,
+} from '../D3NldUtils';
 import { selectVisibleLabels, type BundledEdgeLayout } from '../labels/labelDeclutter';
 import { useLabelTransform } from './useLabelTransform';
 
@@ -86,6 +92,31 @@ export function useD3Force(
   function quadraticPoint(p0: number, p1: number, p2: number, t: number) {
     const oneMinusT = 1 - t;
     return oneMinusT * oneMinusT * p0 + 2 * oneMinusT * t * p1 + t * t * p2;
+  }
+
+  function drawVariableWidthCurve(
+    context: CanvasRenderingContext2D,
+    start: { x: number; y: number },
+    control: { x: number; y: number },
+    end: { x: number; y: number },
+    startWidth: number,
+    endWidth: number,
+    semanticScale: number,
+  ) {
+    const steps = 24;
+    let prev = start;
+    for (let i = 1; i <= steps; i += 1) {
+      const t = i / steps;
+      const x = quadraticPoint(start.x, control.x, end.x, t);
+      const y = quadraticPoint(start.y, control.y, end.y, t);
+      const width = startWidth + (endWidth - startWidth) * t;
+      context.lineWidth = width * semanticScale;
+      context.beginPath();
+      context.moveTo(prev.x, prev.y);
+      context.lineTo(x, y);
+      context.stroke();
+      prev = { x, y };
+    }
   }
 
   function computeBundledEdges(allNodes: CanvasNode[], allEdges: CanvasEdge[]): EdgeLayout[] {
@@ -327,19 +358,17 @@ export function useD3Force(
       } else {
         context.strokeStyle = edge.color ?? '#AAA';
       }
-      const baseEdgeWidth = 2;
-      context.lineWidth = baseEdgeWidth * semanticScale;
-      context.beginPath();
-      context.moveTo(sx, sy);
-      context.quadraticCurveTo(control.x, control.y, tx, ty);
-      context.stroke();
+      const sourceCount = getViolationCountsForNode(source.id).cumulativeViolations;
+      const targetCount = getViolationCountsForNode(target.id).cumulativeViolations;
+      const sourceWidth = getLineWidthPx(sourceCount);
+      const targetWidth = getLineWidthPx(targetCount);
+      drawVariableWidthCurve(context, { x: sx, y: sy }, control, { x: tx, y: ty }, sourceWidth, targetWidth, semanticScale);
 
       // Draw arrowhead
       const dx = tx - control.x;
       const dy = ty - control.y;
       const length = Math.sqrt(dx * dx + dy * dy);
       if (length > 1) {
-        const targetCount = getViolationCountsForNode(target.id).cumulativeViolations;
         const targetRadius = getNodeRadiusPx(targetCount, target.shape) * semanticScale;
         const targetOutline = 1.25 * semanticScale;
         const arrowPadding = 1 * semanticScale;
