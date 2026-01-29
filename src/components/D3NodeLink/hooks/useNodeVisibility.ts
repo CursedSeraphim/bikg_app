@@ -93,6 +93,7 @@ export function useNodeVisibility(
             originRef.current[node.data.id] = nodeId;
           }
           node.data.visible = true;
+          hiddenNodesRef.current.delete(node.data.id);
         }
       });
 
@@ -163,6 +164,7 @@ export function useNodeVisibility(
             originRef.current[node.data.id] = nodeId;
           }
           node.data.visible = true;
+          hiddenNodesRef.current.delete(node.data.id);
         }
       });
 
