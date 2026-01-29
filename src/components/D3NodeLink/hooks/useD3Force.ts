@@ -97,6 +97,19 @@ export function useD3Force(
     return oneMinusT * oneMinusT * p0 + 2 * oneMinusT * t * p1 + t * t * p2;
   }
 
+  function estimateQuadraticLength(start: { x: number; y: number }, control: { x: number; y: number }, end: { x: number; y: number }, samples = 12) {
+    let length = 0;
+    let prev = start;
+    for (let i = 1; i <= samples; i += 1) {
+      const t = i / samples;
+      const x = quadraticPoint(start.x, control.x, end.x, t);
+      const y = quadraticPoint(start.y, control.y, end.y, t);
+      length += Math.hypot(x - prev.x, y - prev.y);
+      prev = { x, y };
+    }
+    return length;
+  }
+
   function drawVariableWidthCurve(
     context: CanvasRenderingContext2D,
     start: { x: number; y: number },
@@ -107,7 +120,15 @@ export function useD3Force(
     semanticScale: number,
     dashPattern?: number[],
   ) {
-    const steps = 24;
+    const baseSteps = 24;
+    const maxSteps = 160;
+    let steps = baseSteps;
+    if (dashPattern && dashPattern.length > 0) {
+      const dashCycleLength = dashPattern.reduce((sum, value) => sum + value, 0);
+      const targetSegmentLength = Math.max(dashCycleLength / 2, 1);
+      const estimatedLength = estimateQuadraticLength(start, control, end);
+      steps = Math.min(maxSteps, Math.max(baseSteps, Math.ceil(estimatedLength / targetSegmentLength)));
+    }
     let prev = start;
     let dashOffset = 0;
     if (dashPattern && dashPattern.length > 0) {
@@ -378,7 +399,7 @@ export function useD3Force(
       const targetCount = getViolationCountsForNode(target.id).cumulativeViolations;
       const sourceWidth = getLineWidthPx(sourceCount);
       const targetWidth = getLineWidthPx(targetCount);
-      const isSolidEdge = shouldRenderEdgeSolid(source.id, target.id, targetCount);
+      const isSolidEdge = shouldRenderEdgeSolid(source.id, sourceCount, targetCount);
       const dashPattern = isSolidEdge ? undefined : [D3_EDGE_DASH_LENGTH_PX * semanticScale, D3_EDGE_DASH_GAP_PX * semanticScale];
       drawVariableWidthCurve(context, { x: sx, y: sy }, control, { x: tx, y: ty }, sourceWidth, targetWidth, semanticScale, dashPattern);
 
