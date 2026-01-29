@@ -1,5 +1,6 @@
 import { INumberViolationsPerNodeMap, INumberViolationsPerNodeValue } from '../types';
-import store from '../components/Store/Store';
+
+type ViolationStateProvider = () => { combined: { numberViolationsPerNode: INumberViolationsPerNodeMap } };
 
 const UUID_SUFFIX_REGEX = /_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
@@ -22,6 +23,11 @@ const computeMaxCumulativeViolations = (numberViolationsPerNode?: INumberViolati
 
 let cachedNumberViolationsPerNode: INumberViolationsPerNodeMap | undefined;
 let maxCumulativeViolations = 0;
+let violationStateProvider: ViolationStateProvider | null = null;
+
+export const setViolationStateProvider = (provider: ViolationStateProvider): void => {
+  violationStateProvider = provider;
+};
 
 const updateMaxCumulativeViolations = (numberViolationsPerNode?: INumberViolationsPerNodeMap) => {
   if (numberViolationsPerNode === cachedNumberViolationsPerNode) {
@@ -39,7 +45,7 @@ const getNumberViolationsPerNodeMap = (overrideMap?: INumberViolationsPerNodeMap
     return overrideMap;
   }
 
-  return store.getState().combined.numberViolationsPerNode;
+  return violationStateProvider?.().combined.numberViolationsPerNode;
 };
 
 export const getViolationCountsForNode = (nodeId: string, overrideMap?: INumberViolationsPerNodeMap): INumberViolationsPerNodeValue => {
@@ -61,7 +67,10 @@ export const getMaxCumulativeViolations = (overrideMap?: INumberViolationsPerNod
     return computeMaxCumulativeViolations(overrideMap);
   }
 
-  const numberViolationsPerNode = store.getState().combined.numberViolationsPerNode;
+  const numberViolationsPerNode = violationStateProvider?.().combined.numberViolationsPerNode;
+  if (!numberViolationsPerNode) {
+    return 0;
+  }
   updateMaxCumulativeViolations(numberViolationsPerNode);
   return maxCumulativeViolations;
 };

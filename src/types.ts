@@ -45,11 +45,13 @@ export interface IGraphNode {
   data: {
     id: string;
     label?: string;
+    sourceId?: string;
     selected?: boolean;
     visible?: boolean;
     permanent?: boolean;
     violation?: boolean;
     exemplar?: boolean;
+    type?: boolean;
     namespace: string;
     defaultColor?: string;
     selectedColor?: string;

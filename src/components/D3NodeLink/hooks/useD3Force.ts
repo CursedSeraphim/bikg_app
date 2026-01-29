@@ -109,6 +109,7 @@ export function useD3Force(
     endWidth: number,
     semanticScale: number,
   ) {
+    const ctx = context;
     const steps = 24;
     let prev = start;
     for (let i = 1; i <= steps; i += 1) {
@@ -116,11 +117,11 @@ export function useD3Force(
       const x = quadraticPoint(start.x, control.x, end.x, t);
       const y = quadraticPoint(start.y, control.y, end.y, t);
       const width = startWidth + (endWidth - startWidth) * t;
-      context.lineWidth = width * semanticScale;
-      context.beginPath();
-      context.moveTo(prev.x, prev.y);
-      context.lineTo(x, y);
-      context.stroke();
+      ctx.lineWidth = width * semanticScale;
+      ctx.beginPath();
+      ctx.moveTo(prev.x, prev.y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
       prev = { x, y };
     }
   }
@@ -134,6 +135,7 @@ export function useD3Force(
     endWidth: number,
     semanticScale: number,
   ) {
+    const ctx = context;
     const steps = 80;
     const dashLength = D3_EDGE_DASH_LENGTH_PX * semanticScale;
     const gapLength = D3_EDGE_DASH_GAP_PX * semanticScale;
@@ -165,11 +167,11 @@ export function useD3Force(
           const width = startWidth + (endWidth - startWidth) * tGlobal;
 
           if (drawDash) {
-            context.lineWidth = width * semanticScale;
-            context.beginPath();
-            context.moveTo(startX, startY);
-            context.lineTo(endX, endY);
-            context.stroke();
+            ctx.lineWidth = width * semanticScale;
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
           }
 
           segmentProgress += stepLength;

@@ -15,6 +15,8 @@ import {
   ICsvData,
   IExemplarMap,
   IFocusNodeMap,
+  IGraphEdge,
+  IGraphNode,
   INamespaces,
   INumberViolationsPerNodeMap,
   INumberViolationsPerNodeValue,
@@ -91,7 +93,7 @@ const initialState: ICombinedState = {
   typesViolationMap: {},
   filterType: 'none',
   d3BoundingBox: 'off',
-  d3CenteringEnabled: true,
+  d3CenteringEnabled: false,
   d3CenteringStrength: 0.01,
   missingEdgeOption: 'keep',
   missingEdgeLabel: loadMissingEdgeLabel(),
@@ -157,7 +159,7 @@ export function createMaps(
     // Ensure sampleTypes is treated as an array, even if it's a single value
     // Check if sample['rdf:type'] is a string that represents an array
     // TODO this might not have to be checked if we first parse the csv as json
-    let sampleTypes;
+    let sampleTypes: string[];
     if (typeof sample['rdf:type'] === 'string' && sample['rdf:type'].startsWith('[') && sample['rdf:type'].endsWith(']')) {
       try {
         // Attempt to parse the string as an array
@@ -262,8 +264,7 @@ export function createMaps(
 const removeNanEdges = (data: ICsvData[]): ICsvData[] => {
   return data.map((sample: ICsvData): ICsvData => {
     const { Id, ...rest } = sample;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const filteredEntries = Object.entries(rest).filter(([key, value]) => value !== CSV_EDGE_NOT_IN_ONTOLOGY_STRING);
+    const filteredEntries = Object.entries(rest).filter(([, value]) => value !== CSV_EDGE_NOT_IN_ONTOLOGY_STRING);
 
     return { Id, ...Object.fromEntries(filteredEntries) };
   });
@@ -293,7 +294,7 @@ const renameMissingEdges = (data: ICsvData[], label: string): ICsvData[] => {
 //   });
 // };
 
-const updateSelectedViolations = (state, valueCounts) => {
+const updateSelectedViolations = (state: ICombinedState, valueCounts: Record<string, Record<string, number>>) => {
   const selectedViolations = new Set();
 
   state.violations.forEach((violation) => {
@@ -312,18 +313,16 @@ const updateSelectedViolations = (state, valueCounts) => {
 };
 
 // Helper function to update selected types
-const updateSelectedTypes = (state, valueCounts) => {
+const updateSelectedTypes = (state: ICombinedState, valueCounts: Record<string, Record<string, number>>) => {
   const typeCounts = valueCounts['rdf:type'];
   state.selectedTypes = Object.entries(typeCounts)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    .filter(([category, count]) => (count as number) > 1)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    .map(([category, count]) => category);
+    .filter(([, count]) => count > 1)
+    .map(([category]) => category);
 };
 
 // Helper function to update selected violation exemplars
-const updateSelectedViolationExemplars = (state) => {
-  const selectedViolationExemplarsSet = new Set();
+const updateSelectedViolationExemplars = (state: ICombinedState) => {
+  const selectedViolationExemplarsSet = new Set<string>();
   state.selectedNodes.forEach((node) => {
     const exemplars = state.focusNodeExemplarDict[node] || [];
     exemplars.forEach((exemplar) => selectedViolationExemplarsSet.add(exemplar));
@@ -440,7 +439,7 @@ const initializeViolationCount = (violations: string[], initialValue = 0): Recor
 };
 
 // Function to update the count of violations based on action type
-const updateViolationCount = (sample, violationCount, actionType) => {
+const updateViolationCount = (sample: ICsvData, violationCount: Record<string, number>, actionType: ActionTypes) => {
   for (const key in violationCount) {
     if (sample[key]) {
       const increment = actionType === ActionTypes.REMOVE ? -1 : 1;
@@ -451,12 +450,9 @@ const updateViolationCount = (sample, violationCount, actionType) => {
 };
 
 const calculateNewSelectedViolations = (newViolationCount: Record<string, number>): string[] => {
-  return (
-    Object.entries(newViolationCount)
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      .filter(([key_, value]) => value > 0)
-      .map(([key]) => key)
-  );
+  return Object.entries(newViolationCount)
+    .filter(([, value]) => value > 0)
+    .map(([key]) => key);
 };
 
 // Helper function to ensure the input is treated as an array
@@ -465,12 +461,18 @@ function ensureArray<T>(input: T | T[]): T[] {
 }
 
 // Function to calculate new selected nodes and violations
-const calculateSelectedNodesAndViolations = (selectedTypes, violations, samples, actionType, selectedNodes = []) => {
+const calculateSelectedNodesAndViolations = (
+  selectedTypes: string[],
+  violations: string[],
+  samples: ICsvData[],
+  actionType: ActionTypes,
+  selectedNodes: string[] = [],
+): { newSelectedNodes: string[]; newViolationCount: Record<string, number> } => {
   const newSelectedNodes = actionType === ActionTypes.APPEND ? [...selectedNodes] : [];
   const newViolationCount = initializeViolationCount(violations);
 
   samples.forEach((sample) => {
-    const sampleTypes = ensureArray(sample['rdf:type']);
+    const sampleTypes = ensureArray(sample['rdf:type']).map((type) => String(type));
 
     if (sampleTypes.some((type) => selectedTypes.includes(String(type)))) {
       newSelectedNodes.push(sample.focus_node);
@@ -481,7 +483,7 @@ const calculateSelectedNodesAndViolations = (selectedTypes, violations, samples,
   return { newSelectedNodes, newViolationCount };
 };
 
-function updateFocusNodeSampleMap(state) {
+function updateFocusNodeSampleMap(state: ICombinedState) {
   state.samples.forEach((sample) => {
     state.focusNodeSampleMap[sample.focus_node] = sample;
   });
@@ -668,16 +670,16 @@ const combinedSlice = createSlice({
     setD3CenteringStrength: (state, action: PayloadAction<number>) => {
       state.d3CenteringStrength = action.payload;
     },
-    setViolationTypesMap: (state, action) => {
+    setViolationTypesMap: (state, action: PayloadAction<Record<string, string[]>>) => {
       state.violationTypesMap = action.payload;
     },
-    setTypesViolationMap: (state, action) => {
+    setTypesViolationMap: (state, action: PayloadAction<Record<string, string[]>>) => {
       state.typesViolationMap = action.payload;
     },
-    setViolations: (state, action) => {
+    setViolations: (state, action: PayloadAction<string>) => {
       state.violations = JSON.parse(action.payload);
     },
-    setCsvData: (state, action) => {
+    setCsvData: (state, action: PayloadAction<ICsvData[]>) => {
       state.originalSamples = action.payload;
       if (state.missingEdgeOption === 'remove') {
         state.samples = removeNanEdges(action.payload);
@@ -695,7 +697,10 @@ const combinedSlice = createSlice({
       // console.log('state types after set csv data', state.types);
       updateFocusNodeSampleMap(state);
     },
-    setSelectedFocusNodesUsingFeatureCategories: (state, action) => {
+    setSelectedFocusNodesUsingFeatureCategories: (
+      state,
+      action: PayloadAction<{ selectedNodes: string[]; valueCounts: Record<string, Record<string, number>> }>,
+    ) => {
       const { selectedNodes, valueCounts } = action.payload;
       state.selectedNodes = selectedNodes;
 
@@ -710,7 +715,7 @@ const combinedSlice = createSlice({
         new Set([...state.types, ...state.violations]),
       );
     },
-    setSelectedFocusNodes: (state, action) => {
+    setSelectedFocusNodes: (state, action: PayloadAction<string[]>) => {
       const newSelectedNodes = action.payload;
 
       // Convert state.samples into an object for O(1) lookup
@@ -741,7 +746,7 @@ const combinedSlice = createSlice({
         });
 
         // Parse sample['rdf:type'] to correctly handle string representation of an array
-        let sampleTypes;
+        let sampleTypes: string[];
         if (
           typeof correspondingSample['rdf:type'] === 'string' &&
           correspondingSample['rdf:type'].startsWith('[') &&
@@ -749,13 +754,16 @@ const combinedSlice = createSlice({
         ) {
           try {
             // Attempt to parse the string as an array
-            sampleTypes = JSON.parse(correspondingSample['rdf:type'].replace(/'/g, '"'));
+            const parsedTypes = JSON.parse(correspondingSample['rdf:type'].replace(/'/g, '"'));
+            sampleTypes = Array.isArray(parsedTypes) ? parsedTypes.map(String) : [String(parsedTypes)];
           } catch (error) {
             // Fallback if parsing fails
-            sampleTypes = [correspondingSample['rdf:type']];
+            sampleTypes = [String(correspondingSample['rdf:type'])];
           }
         } else {
-          sampleTypes = Array.isArray(correspondingSample['rdf:type']) ? correspondingSample['rdf:type'] : [correspondingSample['rdf:type']];
+          sampleTypes = Array.isArray(correspondingSample['rdf:type'])
+            ? correspondingSample['rdf:type'].map(String)
+            : [String(correspondingSample['rdf:type'])];
         }
 
         // Add all types to the selectedTypes set
@@ -767,10 +775,8 @@ const combinedSlice = createSlice({
 
       // Set state.selectedViolations to the keys of the map with value > 0
       const newSelectedViolations = Array.from(violationMap.entries())
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .filter(([_, value]) => value > 0)
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .map(([key, _]) => key);
+        .filter(([, value]) => value > 0)
+        .map(([key]) => key);
 
       // Now, we assign new values to the state variables.
       state.selectedNodes = newSelectedNodes;
@@ -787,7 +793,7 @@ const combinedSlice = createSlice({
       updateSelectedViolationExemplars(state);
     },
 
-    setSelectedViolations: (state, action) => {
+    setSelectedViolations: (state, action: PayloadAction<string[]>) => {
       // use violations to select all focus nodes with those violations
       // then use nodes to select all types and violations of those nodes and their exemplars
 
@@ -826,7 +832,7 @@ const combinedSlice = createSlice({
       );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
-    setSelectedTypes: (state, action) => {
+    setSelectedTypes: (state, action: PayloadAction<string[]>) => {
       state.selectedTypes = action.payload;
 
       let newSelectedNodes = [];
@@ -855,7 +861,7 @@ const combinedSlice = createSlice({
         new Set([...state.types, ...state.violations]),
       );
     },
-    addSingleSelectedType: (state, action) => {
+    addSingleSelectedType: (state, action: PayloadAction<string>) => {
       const newType = action.payload;
       if (!state.selectedTypes.includes(newType)) {
         state.selectedTypes.push(newType);
@@ -885,7 +891,7 @@ const combinedSlice = createSlice({
       );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
-    removeMultipleSelectedTypes: (state, action) => {
+    removeMultipleSelectedTypes: (state, action: PayloadAction<string[]>) => {
       const typesToRemove = action.payload;
 
       typesToRemove.forEach((typeToRemove) => {
@@ -940,7 +946,7 @@ const combinedSlice = createSlice({
       );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
-    removeSingleSelectedType: (state, action) => {
+    removeSingleSelectedType: (state, action: PayloadAction<string>) => {
       const typeToRemove = action.payload;
       const index = state.selectedTypes.indexOf(typeToRemove);
       if (index > -1) {
@@ -991,13 +997,13 @@ const combinedSlice = createSlice({
       );
       state.numberViolationsPerNode = newNumberViolationsPerNode;
     },
-    setRdfString: (state, action) => {
+    setRdfString: (state, action: PayloadAction<string>) => {
       state.rdfString = action.payload;
     },
-    setOriginalInstanceData: (state, action) => {
+    setOriginalInstanceData: (state, action: PayloadAction<string>) => {
       state.originalInstanceData = action.payload;
     },
-    setOriginalViolationReport: (state, action) => {
+    setOriginalViolationReport: (state, action: PayloadAction<string>) => {
       state.originalViolationReport = action.payload;
     },
   },
@@ -1102,11 +1108,17 @@ export const selectSubClassOrObjectPropertyTuples = async (state: { rdf: IRdfSta
 };
 
 // The main exported function
-export const selectCytoData = async (rdfString, getColorForNamespace, types, numberViolationsPerNode, violationList) => {
+export const selectCytoData = async (
+  rdfString: string,
+  getColorForNamespace: (namespace: string, isSelected: boolean) => string,
+  types: string[],
+  numberViolationsPerNode: INumberViolationsPerNodeMap,
+  violationList: string[],
+): Promise<{ nodes: IGraphNode[]; edges: IGraphEdge[] }> => {
   const { visibleTriples, hiddenTriples } = await selectAllTriples(rdfString);
   const objectProperties = calculateObjectProperties(visibleTriples, hiddenTriples);
-  const nodes = [];
-  const edges = [];
+  const nodes: IGraphNode[] = [];
+  const edges: IGraphEdge[] = [];
 
   processTriples(hiddenTriples, false, nodes, edges, objectProperties, getColorForNamespace, types, numberViolationsPerNode, violationList);
   processTriples(visibleTriples, true, nodes, edges, objectProperties, getColorForNamespace, types, numberViolationsPerNode, violationList);

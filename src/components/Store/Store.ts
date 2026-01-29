@@ -3,6 +3,7 @@ import { configureStore, combineReducers, Action } from '@reduxjs/toolkit';
 import { ThunkAction } from 'redux-thunk';
 import combinedReducer from './CombinedSlice';
 import { ICombinedState } from '../../types';
+import { setViolationStateProvider } from '../../utils/violations';
 
 const rootReducer = combineReducers({
   combined: combinedReducer,
@@ -15,6 +16,8 @@ export interface RootState {
 const store = configureStore<RootState>({
   reducer: rootReducer,
 });
+
+setViolationStateProvider(store.getState);
 
 export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, RootState, unknown, Action<string>>;
 
