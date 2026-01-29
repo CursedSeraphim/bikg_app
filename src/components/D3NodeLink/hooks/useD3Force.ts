@@ -8,6 +8,8 @@ import {
   D3_FORCE_EDGE_LABEL_FONT_SIZE_PX,
   D3_FORCE_LABEL_FONT_SIZE_PX,
   D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES,
+  D3_EDGE_DASH_GAP_PX,
+  D3_EDGE_DASH_LENGTH_PX,
   getLineWidthPx,
   getNodeRadiusPx,
 } from '../D3NldUtils';
@@ -115,6 +117,66 @@ export function useD3Force(
       context.moveTo(prev.x, prev.y);
       context.lineTo(x, y);
       context.stroke();
+      prev = { x, y };
+    }
+  }
+
+  function drawDashedVariableWidthCurve(
+    context: CanvasRenderingContext2D,
+    start: { x: number; y: number },
+    control: { x: number; y: number },
+    end: { x: number; y: number },
+    startWidth: number,
+    endWidth: number,
+    semanticScale: number,
+  ) {
+    const steps = 80;
+    const dashLength = D3_EDGE_DASH_LENGTH_PX * semanticScale;
+    const gapLength = D3_EDGE_DASH_GAP_PX * semanticScale;
+    const safeDashLength = Math.max(dashLength, 0.1);
+    const safeGapLength = Math.max(gapLength, 0.1);
+    let drawDash = true;
+    let remaining = safeDashLength;
+    let prev = start;
+
+    for (let i = 1; i <= steps; i += 1) {
+      const t = i / steps;
+      const x = quadraticPoint(start.x, control.x, end.x, t);
+      const y = quadraticPoint(start.y, control.y, end.y, t);
+      const dx = x - prev.x;
+      const dy = y - prev.y;
+      const segmentLength = Math.hypot(dx, dy);
+
+      if (segmentLength > 0) {
+        let segmentProgress = 0;
+        while (segmentProgress < segmentLength) {
+          const stepLength = Math.min(remaining, segmentLength - segmentProgress);
+          const startRatio = segmentProgress / segmentLength;
+          const endRatio = (segmentProgress + stepLength) / segmentLength;
+          const startX = prev.x + dx * startRatio;
+          const startY = prev.y + dy * startRatio;
+          const endX = prev.x + dx * endRatio;
+          const endY = prev.y + dy * endRatio;
+          const tGlobal = ((i - 1) + endRatio) / steps;
+          const width = startWidth + (endWidth - startWidth) * tGlobal;
+
+          if (drawDash) {
+            context.lineWidth = width * semanticScale;
+            context.beginPath();
+            context.moveTo(startX, startY);
+            context.lineTo(endX, endY);
+            context.stroke();
+          }
+
+          segmentProgress += stepLength;
+          remaining -= stepLength;
+          if (remaining <= 0) {
+            drawDash = !drawDash;
+            remaining = drawDash ? safeDashLength : safeGapLength;
+          }
+        }
+      }
+
       prev = { x, y };
     }
   }
@@ -269,6 +331,14 @@ export function useD3Force(
     return typeof v === 'object' ? v.id : v;
   }
 
+  function isExemplarSource(node: CanvasNode): boolean {
+    return Boolean(node.exemplar && node.id.startsWith('ex:'));
+  }
+
+  function hasViolations(count: number): boolean {
+    return count > 0;
+  }
+
   function drawCanvas(allNodes: CanvasNode[], allEdges: CanvasEdge[]) {
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -362,7 +432,12 @@ export function useD3Force(
       const targetCount = getViolationCountsForNode(target.id).cumulativeViolations;
       const sourceWidth = getLineWidthPx(sourceCount);
       const targetWidth = getLineWidthPx(targetCount);
-      drawVariableWidthCurve(context, { x: sx, y: sy }, control, { x: tx, y: ty }, sourceWidth, targetWidth, semanticScale);
+      const shouldDrawSolid = (hasViolations(sourceCount) && hasViolations(targetCount)) || isExemplarSource(source);
+      if (shouldDrawSolid) {
+        drawVariableWidthCurve(context, { x: sx, y: sy }, control, { x: tx, y: ty }, sourceWidth, targetWidth, semanticScale);
+      } else {
+        drawDashedVariableWidthCurve(context, { x: sx, y: sy }, control, { x: tx, y: ty }, sourceWidth, targetWidth, semanticScale);
+      }
 
       // Draw arrowhead
       const dx = tx - control.x;

@@ -44,6 +44,8 @@ export const D3_NODE_MAX_RADIUS_PX = 25;
 export const D3_NODE_VIOLATION_RADIUS_OFFSET_PX = 3;
 export const D3_EDGE_MIN_LINE_WIDTH_PX = 2.5;
 export const D3_EDGE_MAX_LINE_WIDTH_PX = 12.5;
+export const D3_EDGE_DASH_LENGTH_PX = 8;
+export const D3_EDGE_DASH_GAP_PX = 6;
 export const D3_FORCE_SEMANTIC_ZOOM_NODE_EDGE_SIZES = true;
 
 const D3_NODE_SHAPE_RADIUS_MODIFIERS_PX: Record<NodeShape, number> = {
