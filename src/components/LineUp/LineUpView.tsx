@@ -36,7 +36,7 @@ export default function LineUpView() {
   const hiddenLineupColumns = useSelector(selectHiddenLineupColumns) as string[];
   const hideColumnPrefixes = useSelector(selectHideNamespacePrefixColumns);
   const hideCellPrefixes = useSelector(selectHideNamespacePrefixCells);
-  const initialColumnsRef = useRef<any[] | null>(null);
+  const initialColumnsRef = useRef<LineUpJS.Column[] | null>(null);
 
   // Local state to hold csvData used for rendering in LineUp
   const [csvData, setCsvData] = useState<ICsvData[]>(reduxCsvData);
