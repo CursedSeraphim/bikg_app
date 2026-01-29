@@ -97,3 +97,8 @@ body,
   background-color: var(--mantine-header-color);
   color: #ffffff;
 }
+
+.LineUpParent a,
+.LineUpParent a:visited {
+  color: #000000;
+}
