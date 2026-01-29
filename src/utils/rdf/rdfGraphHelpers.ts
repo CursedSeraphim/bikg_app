@@ -2,7 +2,7 @@
 import * as N3 from 'n3';
 import { NamedNode, Quad, Store } from 'n3';
 import { v4 as uuidv4 } from 'uuid';
-import { ICombinedState, IRdfState, ITriple } from '../../types';
+import { ICombinedState, IGraphEdge, IGraphNode, INumberViolationsPerNodeMap, IRdfState, ITriple } from '../../types';
 import { getViolationCountsForNode } from '../violations';
 
 type PrefixMap = Record<string, string>;
@@ -107,12 +107,12 @@ export const getAllTriples = async (rdfString: string): Promise<{ visibleTriples
 /**
  * Calculate object properties from the visible and hidden triples.
  *
- * @param {Array} visibleTriples - Array of visible triples.
- * @param {Array} hiddenTriples - Array of hidden triples.
- * @returns {Map} objectProperties - Returns a map containing object properties.
+ * @param visibleTriples - Array of visible triples.
+ * @param hiddenTriples - Array of hidden triples.
+ * @returns Returns a map containing object properties.
  */
-export const calculateObjectProperties = (visibleTriples, hiddenTriples) => {
-  const objectProperties = new Map();
+export const calculateObjectProperties = (visibleTriples: ITriple[], hiddenTriples: ITriple[]): Map<string, string | boolean> => {
+  const objectProperties = new Map<string, string | boolean>();
   const typesToInclude = new Set(['owl:ObjectProperty', 'owl:Class', 'sh:PropertyShape', 'owl:Ontology']);
   const predicatesToInclude = new Set(['sh:value']);
 
@@ -130,12 +130,22 @@ export const calculateObjectProperties = (visibleTriples, hiddenTriples) => {
   return objectProperties;
 };
 // Helper function to extract namespace from a URI
-export const extractNamespace = (uri) => {
+export const extractNamespace = (uri: string): string => {
   const match = uri.match(/^([^:]+):/);
   return match ? match[1] : '';
 };
 // Helper function to find or add node
-export const findOrAddNode = (id, label, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList, sourceId = label) => {
+export const findOrAddNode = (
+  id: string,
+  label: string,
+  visible: boolean,
+  nodes: IGraphNode[],
+  types: string[],
+  numberViolationsPerNode: INumberViolationsPerNodeMap,
+  getColorForNamespace: (namespace: string, isSelected: boolean) => string,
+  violationList: string[],
+  sourceId = label,
+): void => {
   const { cumulativeSelected, cumulativeViolations, violations } = getViolationCountsForNode(id, numberViolationsPerNode);
 
   const hasCounts = cumulativeSelected !== 0 || cumulativeViolations !== 0;
@@ -171,7 +181,17 @@ export const findOrAddNode = (id, label, visible, nodes, types, numberViolations
 };
 
 // Main function to process triples
-export const processTriples = (triples, visible, nodes, edges, objectProperties, getColorForNamespace, types, numberViolationsPerNode, violationList) => {
+export const processTriples = (
+  triples: ITriple[],
+  visible: boolean,
+  nodes: IGraphNode[],
+  edges: IGraphEdge[],
+  objectProperties: Map<string, string | boolean>,
+  getColorForNamespace: (namespace: string, isSelected: boolean) => string,
+  types: string[],
+  numberViolationsPerNode: INumberViolationsPerNodeMap,
+  violationList: string[],
+): void => {
   triples.forEach((t) => {
     findOrAddNode(t.s, t.s, visible, nodes, types, numberViolationsPerNode, getColorForNamespace, violationList);
 
