@@ -792,6 +792,30 @@ const combinedSlice = createSlice({
 
       updateSelectedViolationExemplars(state);
     },
+    setCoordinatedSelections: (
+      state,
+      action: PayloadAction<{
+        selectedNodes: string[];
+        selectedTypes: string[];
+        selectedViolations: string[];
+        selectedViolationExemplars: string[];
+      }>,
+    ) => {
+      const { selectedNodes, selectedTypes, selectedViolations, selectedViolationExemplars } = action.payload;
+
+      state.selectedNodes = selectedNodes;
+      state.selectedTypes = selectedTypes;
+      state.selectedViolations = selectedViolations;
+      state.selectedViolationExemplars = selectedViolationExemplars;
+
+      state.numberViolationsPerNode = calculateNewNumberViolationsPerNode(
+        state.selectedNodes,
+        state.focusNodeMap,
+        state.numberViolationsPerNode,
+        state.ontologyTree,
+        new Set([...state.types, ...state.violations]),
+      );
+    },
 
     setSelectedViolations: (state, action: PayloadAction<string[]>) => {
       // use violations to select all focus nodes with those violations
@@ -1134,6 +1158,7 @@ export const {
   setCsvData,
   setSelectedFocusNodesUsingFeatureCategories,
   setSelectedFocusNodes,
+  setCoordinatedSelections,
   setSelectedTypes,
   addSingleSelectedType,
   removeMultipleSelectedTypes,
