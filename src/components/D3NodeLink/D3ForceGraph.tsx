@@ -1,7 +1,7 @@
 // File: src/components/D3NodeLink/D3ForceGraph.tsx
 
 import * as d3 from 'd3';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   clearAllSelections,
@@ -177,9 +177,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     });
   }, []);
 
-  const nodeShapeLookup = useMemo(() => {
-    const typeKeys = new Set(Object.keys(typesViolationMap));
-    const violationKeys = new Set(Object.keys(violationTypesMap));
+  const nodeShapeLookup = useMemo((): { nodeShapeToTypes: Map<string, Set<string>>; nodeShapeToViolations: Map<string, Set<string>> } => {
+    const typedTypesViolationMap = typesViolationMap as Record<string, string[]>;
+    const typedViolationTypesMap = violationTypesMap as Record<string, string[]>;
+    const typeKeys = new Set(Object.keys(typedTypesViolationMap));
+    const violationKeys = new Set(Object.keys(typedViolationTypesMap));
     const nodeShapeToTypes = new Map<string, Set<string>>();
     const nodeShapeToViolations = new Map<string, Set<string>>();
 
@@ -190,7 +192,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       map.get(nodeId)?.add(relatedId);
     };
 
-    Object.entries(typesViolationMap).forEach(([typeId, related]) => {
+    Object.entries(typedTypesViolationMap).forEach(([typeId, related]) => {
       related.forEach((nodeId) => {
         if (!typeKeys.has(nodeId) && !violationKeys.has(nodeId)) {
           addEntry(nodeShapeToTypes, nodeId, typeId);
@@ -198,7 +200,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       });
     });
 
-    Object.entries(violationTypesMap).forEach(([violationId, related]) => {
+    Object.entries(typedViolationTypesMap).forEach(([violationId, related]) => {
       related.forEach((nodeId) => {
         if (!typeKeys.has(nodeId) && !violationKeys.has(nodeId)) {
           addEntry(nodeShapeToViolations, nodeId, violationId);
@@ -215,7 +217,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   );
 
   const getNodeShapeAssociations = useCallback(
-    (nodeId: string) => ({
+    (nodeId: string): { types: string[]; violations: string[] } => ({
       types: Array.from(nodeShapeLookup.nodeShapeToTypes.get(nodeId) ?? []),
       violations: Array.from(nodeShapeLookup.nodeShapeToViolations.get(nodeId) ?? []),
     }),
