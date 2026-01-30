@@ -12,31 +12,40 @@ export function deriveSelectionsFromViolations(
   violationMap: Record<string, { nodes: string[] }>,
   focusNodeMap: Record<string, { types: string[]; exemplars: string[]; violations: string[] }>,
 ): CoordinatedSelections {
-  let newSelectedViolations = [...selectedViolations];
-  let newSelectedNodes: string[] = [];
-  let newSelectedTypes: string[] = [];
-  let newSelectedViolationExemplars: string[] = [];
+  const selectedViolationSet = new Set<string>();
+  const selectedNodeSet = new Set<string>();
+  const selectedTypeSet = new Set<string>();
+  const selectedExemplarSet = new Set<string>();
 
-  newSelectedViolations.forEach((violation) => {
+  const addValues = (target: Set<string>, values?: string[]) => {
+    if (!values) return;
+    values.forEach((value) => {
+      if (value) {
+        target.add(value);
+      }
+    });
+  };
+
+  selectedViolations.forEach((violation) => {
+    if (!violation) return;
+    selectedViolationSet.add(violation);
     const entry = violationMap[violation];
-    if (entry) {
-      newSelectedNodes = [...newSelectedNodes, ...entry.nodes];
-    }
+    addValues(selectedNodeSet, entry?.nodes);
   });
 
-  newSelectedNodes.forEach((node) => {
+  selectedNodeSet.forEach((node) => {
     const entry = focusNodeMap[node];
     if (!entry) return;
-    newSelectedTypes = [...newSelectedTypes, ...entry.types];
-    newSelectedViolationExemplars = [...newSelectedViolationExemplars, ...entry.exemplars];
-    newSelectedViolations = [...newSelectedViolations, ...entry.violations];
+    addValues(selectedTypeSet, entry.types);
+    addValues(selectedExemplarSet, entry.exemplars);
+    addValues(selectedViolationSet, entry.violations);
   });
 
   return {
-    selectedNodes: unique(newSelectedNodes),
-    selectedTypes: unique(newSelectedTypes),
-    selectedViolations: unique(newSelectedViolations),
-    selectedViolationExemplars: unique(newSelectedViolationExemplars),
+    selectedNodes: Array.from(selectedNodeSet),
+    selectedTypes: Array.from(selectedTypeSet),
+    selectedViolations: Array.from(selectedViolationSet),
+    selectedViolationExemplars: Array.from(selectedExemplarSet),
   };
 }
 
