@@ -46,7 +46,7 @@ import { useD3ContextMenu } from './hooks/useD3ContextMenu';
 import { updateD3NodesGivenCounts, useD3CumulativeCounts } from './hooks/useD3CumulativeCounts';
 import { useD3Force } from './hooks/useD3Force';
 import { useD3ResetView } from './hooks/useD3ResetView';
-import useExemplarHoverList from './hooks/useExemplarHoverList';
+// import useExemplarHoverList from './hooks/useExemplarHoverList';
 import { useLassoSelection } from './hooks/useLassoSelection';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 import { computeAssociationTargets } from './utils/associationTargets';
@@ -651,7 +651,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     buildSelectionSignature,
   ]);
 
-  const focusNodeTooltip = useExemplarHoverList(canvasRef, [...d3Nodes, ...ghostNodes], transformRef);
+  // const focusNodeTooltip = useExemplarHoverList(canvasRef, [...d3Nodes, ...ghostNodes], transformRef);
 
   const centerView = useCallback(() => {
     if (!zoomBehaviorRef.current || !canvasRef.current) return;
@@ -1477,7 +1477,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         }}
       />
       {contextMenu}
-      {focusNodeTooltip}
+      {/* {focusNodeTooltip} */}
     </div>
   );
 }
