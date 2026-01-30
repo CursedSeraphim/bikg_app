@@ -1175,12 +1175,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       const { nodeIds, edges: expansionEdges } = isAssociated
         ? (() => {
             const visibleSet = new Set(
-              cyDataNodes
-                .filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label))
-                .map((n) => n.data.id),
+              cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label)).map((n) => n.data.id),
             );
             const selectionIds = associatedSelection ? Array.from(associatedSelection.idsToSelect) : [];
-            const nodeIds = selectionIds.filter((id) => {
+            const associatedNodeIds = selectionIds.filter((id) => {
               if (isIdBlacklisted(id)) return false;
               const nodeData = cyDataNodes.find((n) => n.data.id === id);
               return nodeData && !visibleSet.has(id);
@@ -1193,7 +1191,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
                 target: edge.data.target,
                 label: edge.data.label,
               }));
-            return { nodeIds, edges };
+            return { nodeIds: associatedNodeIds, edges };
           })()
         : computeExpansion(closest.id, mode);
 
@@ -1306,6 +1304,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         clearPreview();
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       d3Nodes,
       transformRef,
@@ -1325,6 +1324,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       violationTypesMap,
       typesViolationMap,
       isIdBlacklisted,
+      isLabelBlacklisted,
       anonymizeLabel,
       runIncrementalLayout,
     ],
