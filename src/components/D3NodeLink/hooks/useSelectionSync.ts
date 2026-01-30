@@ -1,6 +1,7 @@
 import type { MutableRefObject } from 'react';
 import { useEffect } from 'react';
 import { IFocusNodeMap } from '../../../types';
+import { computeSelectionScope } from '../utils/selectionScope';
 
 interface UseSelectionSyncParams {
   loading: boolean;
@@ -44,64 +45,18 @@ export function useSelectionSync({
       return;
     }
 
-    const idsToSelect = new Set<string>();
-    const addIds = (values?: Iterable<string>) => {
-      if (!values) return;
-      for (const value of values) {
-        if (value) {
-          idsToSelect.add(value);
-        }
-      }
-    };
-
-    addIds(selectedFocusNodes);
-    addIds(selectedTypeIds);
-    addIds(selectedViolationIds);
-    addIds(selectedExemplarIds);
-
-    selectedFocusNodes.forEach((focusId) => {
-      const entry = focusNodeMap[focusId];
-      if (!entry) return;
-      addIds(entry.types);
-      addIds(entry.violations);
-      addIds(entry.exemplars);
-    });
-
-    selectedTypeIds.forEach((typeId) => {
-      const entry = typeMap[typeId];
-      if (entry) {
-        addIds(entry.nodes);
-        addIds(entry.violations);
-        addIds(entry.exemplars);
-      }
-      addIds(typesViolationMap[typeId]);
-    });
-
-    selectedViolationIds.forEach((violationId) => {
-      const entry = violationMap[violationId];
-      if (entry) {
-        addIds(entry.nodes);
-        addIds(entry.types);
-        addIds(entry.exemplars);
-      }
-      addIds(violationTypesMap[violationId]);
-    });
-
-    selectedExemplarIds.forEach((exemplarId) => {
-      const entry = exemplarMap[exemplarId];
-      if (!entry) return;
-      addIds(entry.nodes);
-      addIds(entry.types);
-      addIds(entry.violations);
-    });
-
-    const selectedEdgeIds = new Set<string>();
-    cyDataEdges.forEach((edge) => {
-      const sourceId = edge.data.source;
-      const targetId = edge.data.target;
-      if (idsToSelect.has(sourceId) && idsToSelect.has(targetId)) {
-        selectedEdgeIds.add(edge.data.id);
-      }
+    const { idsToSelect, visibleEdgeIds } = computeSelectionScope({
+      selectedFocusNodes,
+      selectedTypeIds,
+      selectedViolationIds,
+      selectedExemplarIds,
+      focusNodeMap,
+      typeMap,
+      violationMap,
+      exemplarMap,
+      violationTypesMap,
+      typesViolationMap,
+      cyDataEdges,
     });
 
     let needsRefresh = false;
@@ -122,7 +77,7 @@ export function useSelectionSync({
     });
 
     cyDataEdges.forEach((edge) => {
-      const shouldSelect = selectedEdgeIds.has(edge.data.id);
+      const shouldSelect = visibleEdgeIds.has(edge.data.id);
       if (edge.data.selected !== shouldSelect) {
         edge.data.selected = shouldSelect;
         needsRefresh = true;
