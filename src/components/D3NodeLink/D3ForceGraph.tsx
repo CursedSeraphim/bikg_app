@@ -43,6 +43,7 @@ import { useD3ResetView } from './hooks/useD3ResetView';
 import useExemplarHoverList from './hooks/useExemplarHoverList';
 import { useLassoSelection } from './hooks/useLassoSelection';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
+import { computeAssociationTargets } from './utils/associationTargets';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) {
@@ -914,85 +915,21 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   const computeAssociations = useCallback(
     (nodeId: string) => {
-      const assoc = new Set<string>();
-
-      if (focusNodeMap[nodeId]) {
-        focusNodeMap[nodeId].types.forEach((t: string) => assoc.add(t));
-        focusNodeMap[nodeId].violations.forEach((v: string) => assoc.add(v));
-        focusNodeMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
-      }
-
-      if (typeMap[nodeId]) {
-        typeMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
-        typeMap[nodeId].violations.forEach((v: string) => assoc.add(v));
-        typeMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
-        const extra = typesViolationMap[nodeId] || [];
-        extra.forEach((n: string) => assoc.add(n));
-      }
-
-      if (violationMap[nodeId]) {
-        violationMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
-        violationMap[nodeId].types.forEach((t: string) => assoc.add(t));
-        violationMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
-      }
-
-      if (exemplarMap[nodeId]) {
-        exemplarMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
-        exemplarMap[nodeId].types.forEach((t: string) => assoc.add(t));
-        exemplarMap[nodeId].violations.forEach((v: string) => assoc.add(v));
-      }
-
-      if (violationTypesMap[nodeId]) {
-        violationTypesMap[nodeId].forEach((n: string) => assoc.add(n));
-      }
-
-      const allIds = new Set<string>([nodeId, ...Array.from(assoc)]);
-
-      // Only treat as visible if not blacklisted as well
-      const visibleSet = new Set(
-        cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label)).map((n) => n.data.id),
-      );
-
-      const nodeIds: string[] = [];
-      allIds.forEach((nid) => {
-        if (isIdBlacklisted(nid)) return;
-        const nodeData = cyDataNodes.find((n) => n.data.id === nid);
-        if (nodeData && !visibleSet.has(nid)) {
-          nodeIds.push(nid);
-        }
+      return computeAssociationTargets({
+        nodeId,
+        focusNodeMap,
+        typeMap,
+        violationMap,
+        exemplarMap,
+        violationTypesMap,
+        typesViolationMap,
+        cyDataNodes,
+        cyDataEdges,
+        hiddenNodes: hiddenNodesRef.current,
+        hiddenEdges: hiddenEdgesRef.current,
+        isLabelBlacklisted,
+        isIdBlacklisted,
       });
-
-      const edges: { id: string; source: string; target: string; label?: string }[] = [];
-      const added = new Set<string>();
-
-      cyDataEdges.forEach((edge) => {
-        const { source, target } = edge.data;
-        if (isIdBlacklisted(source) || isIdBlacklisted(target)) return;
-
-        const sourceIn = allIds.has(source);
-        const targetIn = allIds.has(target);
-        const sourceVisible = visibleSet.has(source);
-        const targetVisible = visibleSet.has(target);
-
-        if (
-          (sourceIn && targetIn) ||
-          (sourceIn && targetVisible) ||
-          (targetIn && sourceVisible) ||
-          (hiddenEdgesRef.current.has(edge.data.id) && (sourceIn || targetIn))
-        ) {
-          const sourceExists = cyDataNodes.some((n) => n.data.id === source);
-          const targetExists = cyDataNodes.some((n) => n.data.id === target);
-          if (sourceExists && targetExists) {
-            const key = `${source}->${target}`;
-            if (!added.has(key)) {
-              added.add(key);
-              edges.push({ id: edge.data.id, source, target, label: edge.data.label });
-            }
-          }
-        }
-      });
-
-      return { nodeIds, allIds: Array.from(allIds), edges };
     },
     [focusNodeMap, typeMap, violationMap, exemplarMap, violationTypesMap, typesViolationMap, cyDataNodes, cyDataEdges, isLabelBlacklisted, isIdBlacklisted],
   );
@@ -1249,7 +1186,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (activePreviewRef.current.mode === mode && activePreviewRef.current.nodeId === closest.id) {
         return;
       }
-      const { nodeIds, edges: expansionEdges } = mode === 'associated' ? computeAssociations(closest.id) : computeExpansion(closest.id, mode);
+      const isAssociated = mode === 'associated';
+      const { nodeIds, edges: expansionEdges } = isAssociated ? computeAssociations(closest.id) : computeExpansion(closest.id, mode);
 
       // apply blacklist to preview targets
       const filteredNodeIds = nodeIds.filter((nid) => !isIdBlacklisted(nid));
@@ -1267,32 +1205,50 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       };
 
       if (allVisible) {
-        const visibleIds =
-          mode === 'children'
-            ? (adjacencyRef.current[closest.id] || []).filter((nid) => !isIdBlacklisted(nid))
-            : (revAdjRef.current[closest.id] || []).filter((nid) => !isIdBlacklisted(nid));
-
-        visibleIds.forEach((nid) => {
-          const edgeData = cyDataEdges.find(
-            (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
-          );
-          if (edgeData && !isIdBlacklisted(edgeData.data.source) && !isIdBlacklisted(edgeData.data.target)) {
-            const key = `${edgeData.data.source}->${edgeData.data.target}`;
+        if (isAssociated) {
+          filteredExpansionEdges.forEach((edge) => {
+            const key = `${edge.source}->${edge.target}`;
             if (!addedEdgeKeys.has(key)) {
               addedEdgeKeys.add(key);
               newGhostEdges.push({
-                id: edgeData.data.id ?? key,
-                source: edgeData.data.source,
-                target: edgeData.data.target,
-                label: anonymizeLabel(edgeData.data.label ?? edgeData.data.id),
+                id: edge.id ?? key,
+                source: edge.source,
+                target: edge.target,
+                label: anonymizeLabel(edge.label ?? edge.id),
                 visible: true,
-                color: getEdgeColorForSource(edgeData.data.source),
-                // marks that this preview indicates removal rather than addition
+                color: getEdgeColorForSource(edge.source),
                 previewRemoval: true,
               });
             }
-          }
-        });
+          });
+        } else {
+          const visibleIds =
+            mode === 'children'
+              ? (adjacencyRef.current[closest.id] || []).filter((nid) => !isIdBlacklisted(nid))
+              : (revAdjRef.current[closest.id] || []).filter((nid) => !isIdBlacklisted(nid));
+
+          visibleIds.forEach((nid) => {
+            const edgeData = cyDataEdges.find(
+              (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
+            );
+            if (edgeData && !isIdBlacklisted(edgeData.data.source) && !isIdBlacklisted(edgeData.data.target)) {
+              const key = `${edgeData.data.source}->${edgeData.data.target}`;
+              if (!addedEdgeKeys.has(key)) {
+                addedEdgeKeys.add(key);
+                newGhostEdges.push({
+                  id: edgeData.data.id ?? key,
+                  source: edgeData.data.source,
+                  target: edgeData.data.target,
+                  label: anonymizeLabel(edgeData.data.label ?? edgeData.data.id),
+                  visible: true,
+                  color: getEdgeColorForSource(edgeData.data.source),
+                  // marks that this preview indicates removal rather than addition
+                  previewRemoval: true,
+                });
+              }
+            }
+          });
+        }
       } else {
         filteredNodeIds.forEach((nid) => {
           const nodeData = cyDataNodes.find((n) => n.data.id === nid);
