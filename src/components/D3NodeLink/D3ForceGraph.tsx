@@ -997,9 +997,25 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     [focusNodeMap, typeMap, violationMap, exemplarMap, violationTypesMap, typesViolationMap, cyDataNodes, cyDataEdges, isLabelBlacklisted, isIdBlacklisted],
   );
 
-  const showAssociated = useCallback(
+  const getAssociatedExpansionState = useCallback(
     (nodeId: string) => {
-      const { allIds, edges } = computeAssociations(nodeId);
+      const expansion = computeAssociations(nodeId);
+      const nodesVisible = expansion.allIds.every((nid) => {
+        if (isIdBlacklisted(nid)) return false;
+        const node = cyDataNodes.find((n) => n.data.id === nid);
+        return node && node.data.visible && !hiddenNodesRef.current.has(nid);
+      });
+
+      const edgesVisible = expansion.edges.every((edge) => !hiddenEdgesRef.current.has(edge.id));
+
+      return { expansion, allVisible: nodesVisible && edgesVisible };
+    },
+    [computeAssociations, cyDataNodes, hiddenNodesRef, hiddenEdgesRef, isIdBlacklisted],
+  );
+
+  const showAssociated = useCallback(
+    (nodeId: string, expansion?: { allIds: string[]; edges: { id: string; source: string; target: string; label?: string }[] }) => {
+      const { allIds, edges } = expansion ?? computeAssociations(nodeId);
 
       cyDataNodes.forEach((node) => {
         const mutableNode = node;
@@ -1025,8 +1041,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   );
 
   const hideAssociated = useCallback(
-    (nodeId: string) => {
-      const { allIds, edges } = computeAssociations(nodeId);
+    (nodeId: string, expansion?: { allIds: string[]; edges: { id: string; source: string; target: string; label?: string }[] }) => {
+      const { allIds, edges } = expansion ?? computeAssociations(nodeId);
       allIds.forEach((nid) => {
         if (nid !== nodeId && originRef.current[nid] === nodeId) {
           hiddenNodesRef.current.add(nid);
@@ -1051,25 +1067,16 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
           savedPositionsRef.current[gn.id] = { x: gn.x, y: gn.y };
         });
       }
-      const { allIds, edges } = computeAssociations(id);
-      const nodesVisible = allIds.every((nid) => {
-        if (isIdBlacklisted(nid)) return false;
-        const node = cyDataNodes.find((n) => n.data.id === nid);
-        return node && node.data.visible && !hiddenNodesRef.current.has(nid);
-      });
-
-      const edgesVisible = edges.every((e) => !hiddenEdgesRef.current.has(e.id));
-
-      const allVisible = nodesVisible && edgesVisible;
+      const { expansion, allVisible } = getAssociatedExpansionState(id);
 
       if (allVisible) {
-        hideAssociated(id);
+        hideAssociated(id, expansion);
       } else {
-        showAssociated(id);
+        showAssociated(id, expansion);
         freezeNode(id, 500, 1000, 0.3);
       }
     },
-    [computeAssociations, showAssociated, hideAssociated, freezeNode, cyDataNodes, ghostNodes, isIdBlacklisted],
+    [getAssociatedExpansionState, showAssociated, hideAssociated, freezeNode, ghostNodes],
   );
 
   const rightDraggingRef = useRef(false);
@@ -1249,14 +1256,19 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (activePreviewRef.current.mode === mode && activePreviewRef.current.nodeId === closest.id) {
         return;
       }
-      const { nodeIds, edges: expansionEdges } = mode === 'associated' ? computeAssociations(closest.id) : computeExpansion(closest.id, mode);
+      const associatedState = mode === 'associated' ? getAssociatedExpansionState(closest.id) : null;
+      const { nodeIds, edges: expansionEdges } =
+        mode === 'associated' ? associatedState?.expansion ?? { nodeIds: [], edges: [] } : computeExpansion(closest.id, mode);
 
       // apply blacklist to preview targets
       const filteredNodeIds = nodeIds.filter((nid) => !isIdBlacklisted(nid));
       const filteredExpansionEdges = expansionEdges.filter((e) => !isIdBlacklisted(e.source) && !isIdBlacklisted(e.target));
 
       const hasHiddenEdges = filteredExpansionEdges.some((e) => hiddenEdgesRef.current.has(e.id));
-      const allVisible = filteredNodeIds.length === 0 && !hasHiddenEdges;
+      const allVisible =
+        mode === 'associated'
+          ? Boolean(associatedState?.allVisible)
+          : filteredNodeIds.length === 0 && !hasHiddenEdges;
 
       const newGhostNodes: CanvasNode[] = [];
       const newGhostEdges: CanvasEdge[] = [];
@@ -1267,32 +1279,50 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       };
 
       if (allVisible) {
-        const visibleIds =
-          mode === 'children'
-            ? (adjacencyRef.current[closest.id] || []).filter((nid) => !isIdBlacklisted(nid))
-            : (revAdjRef.current[closest.id] || []).filter((nid) => !isIdBlacklisted(nid));
-
-        visibleIds.forEach((nid) => {
-          const edgeData = cyDataEdges.find(
-            (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
-          );
-          if (edgeData && !isIdBlacklisted(edgeData.data.source) && !isIdBlacklisted(edgeData.data.target)) {
-            const key = `${edgeData.data.source}->${edgeData.data.target}`;
+        if (mode === 'associated' && associatedState) {
+          filteredExpansionEdges.forEach((edge) => {
+            const key = `${edge.source}->${edge.target}`;
             if (!addedEdgeKeys.has(key)) {
               addedEdgeKeys.add(key);
               newGhostEdges.push({
-                id: edgeData.data.id ?? key,
-                source: edgeData.data.source,
-                target: edgeData.data.target,
-                label: anonymizeLabel(edgeData.data.label ?? edgeData.data.id),
+                id: edge.id ?? key,
+                source: edge.source,
+                target: edge.target,
+                label: anonymizeLabel(edge.label ?? edge.id),
                 visible: true,
-                color: getEdgeColorForSource(edgeData.data.source),
-                // marks that this preview indicates removal rather than addition
+                color: getEdgeColorForSource(edge.source),
                 previewRemoval: true,
               });
             }
-          }
-        });
+          });
+        } else {
+          const visibleIds =
+            mode === 'children'
+              ? (adjacencyRef.current[closest.id] || []).filter((nid) => !isIdBlacklisted(nid))
+              : (revAdjRef.current[closest.id] || []).filter((nid) => !isIdBlacklisted(nid));
+
+          visibleIds.forEach((nid) => {
+            const edgeData = cyDataEdges.find(
+              (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
+            );
+            if (edgeData && !isIdBlacklisted(edgeData.data.source) && !isIdBlacklisted(edgeData.data.target)) {
+              const key = `${edgeData.data.source}->${edgeData.data.target}`;
+              if (!addedEdgeKeys.has(key)) {
+                addedEdgeKeys.add(key);
+                newGhostEdges.push({
+                  id: edgeData.data.id ?? key,
+                  source: edgeData.data.source,
+                  target: edgeData.data.target,
+                  label: anonymizeLabel(edgeData.data.label ?? edgeData.data.id),
+                  visible: true,
+                  color: getEdgeColorForSource(edgeData.data.source),
+                  // marks that this preview indicates removal rather than addition
+                  previewRemoval: true,
+                });
+              }
+            }
+          });
+        }
       } else {
         filteredNodeIds.forEach((nid) => {
           const nodeData = cyDataNodes.find((n) => n.data.id === nid);
@@ -1353,7 +1383,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       lassoActiveRef,
       clearPreview,
       computeExpansion,
-      computeAssociations,
+      getAssociatedExpansionState,
       isIdBlacklisted,
       anonymizeLabel,
       runIncrementalLayout,
