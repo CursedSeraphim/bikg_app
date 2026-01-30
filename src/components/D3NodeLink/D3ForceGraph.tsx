@@ -726,7 +726,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef, centerView, handleResetView, handleSelectConnected);
 
-  const { computeExpansion, showChildren, hideChildren, showParents, hideParents } = useNodeVisibility(
+  const { computeExpansion, showChildren, showParents } = useNodeVisibility(
     cyDataNodes,
     cyDataEdges,
     adjacencyRef,
