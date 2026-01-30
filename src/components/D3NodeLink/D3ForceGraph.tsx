@@ -303,6 +303,12 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       const selectedViolations = new Set<string>();
       const selectedExemplars = new Set<string>();
 
+      const addFocusNode = (focusId: string) => {
+        if (focusNodeMap[focusId]) {
+          lassoSelectedFocusNodes.add(focusId);
+        }
+      };
+
       const selectedNodeIds = new Set(selectedIds);
       selectedIds.forEach((id) => {
         const node = nodeMapRef.current[id];
@@ -311,20 +317,20 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         }
         if (node.type) {
           selectedTypes.add(id);
-          typeMap[id]?.nodes.forEach((focusId: string) => lassoSelectedFocusNodes.add(focusId));
+          typeMap[id]?.nodes.forEach((focusId: string) => addFocusNode(focusId));
           return;
         }
         if (node.violation) {
           selectedViolations.add(id);
-          violationMap[id]?.nodes.forEach((focusId: string) => lassoSelectedFocusNodes.add(focusId));
+          violationMap[id]?.nodes.forEach((focusId: string) => addFocusNode(focusId));
           return;
         }
         if (node.exemplar) {
           selectedExemplars.add(id);
-          exemplarMap[id]?.nodes.forEach((focusId: string) => lassoSelectedFocusNodes.add(focusId));
+          exemplarMap[id]?.nodes.forEach((focusId: string) => addFocusNode(focusId));
           return;
         }
-        lassoSelectedFocusNodes.add(id);
+        addFocusNode(id);
       });
 
       lassoSelectedFocusNodes.forEach((focusId) => {
