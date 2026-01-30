@@ -835,13 +835,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         });
 
       if (allVisible) {
-        hideChildren(id);
-      } else {
-        showChildren(id);
-        freezeNode(id, 500, 1000, 0.3);
+        return;
       }
+
+      showChildren(id);
+      freezeNode(id, 500, 1000, 0.3);
     },
-    [freezeNode, showChildren, hideChildren, cyDataNodes, cyDataEdges, adjacencyRef, ghostNodes, isIdBlacklisted],
+    [freezeNode, showChildren, cyDataNodes, cyDataEdges, adjacencyRef, ghostNodes, isIdBlacklisted],
   );
 
   const toggleParents = useCallback(
@@ -868,13 +868,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         });
 
       if (allVisible) {
-        hideParents(id);
-      } else {
-        showParents(id);
-        freezeNode(id, 500, 1000, 0.3);
+        return;
       }
+
+      showParents(id);
+      freezeNode(id, 500, 1000, 0.3);
     },
-    [freezeNode, showParents, hideParents, cyDataNodes, cyDataEdges, revAdjRef, ghostNodes, isIdBlacklisted],
+    [freezeNode, showParents, cyDataNodes, cyDataEdges, revAdjRef, ghostNodes, isIdBlacklisted],
   );
 
   const recomputeEdgeVisibility = useCallback(() => {
@@ -1234,6 +1234,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
       const hasHiddenEdges = filteredExpansionEdges.some((e) => hiddenEdgesRef.current.has(e.id));
       const allVisible = filteredNodeIds.length === 0 && !hasHiddenEdges;
+      if (allVisible && !isAssociated) {
+        clearPreview();
+        return;
+      }
 
       const newGhostNodes: CanvasNode[] = [];
       const newGhostEdges: CanvasEdge[] = [];
@@ -1243,51 +1247,22 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         return getNodeColorForNode({ sources: nodeData?.data.sources ?? ['unknown'], isAClass: nodeData?.data.isAClass ?? null });
       };
 
-      if (allVisible) {
-        if (isAssociated) {
-          filteredExpansionEdges.forEach((edge) => {
-            const key = `${edge.source}->${edge.target}`;
-            if (!addedEdgeKeys.has(key)) {
-              addedEdgeKeys.add(key);
-              newGhostEdges.push({
-                id: edge.id ?? key,
-                source: edge.source,
-                target: edge.target,
-                label: anonymizeLabel(edge.label ?? edge.id),
-                visible: true,
-                color: getEdgeColorForSource(edge.source),
-                previewRemoval: true,
-              });
-            }
-          });
-        } else {
-          const visibleIds =
-            mode === 'children'
-              ? (adjacencyRef.current[closest.id] || []).filter((nid) => !isIdBlacklisted(nid))
-              : (revAdjRef.current[closest.id] || []).filter((nid) => !isIdBlacklisted(nid));
-
-          visibleIds.forEach((nid) => {
-            const edgeData = cyDataEdges.find(
-              (e) => e.data.source === (mode === 'children' ? closest.id : nid) && e.data.target === (mode === 'children' ? nid : closest.id),
-            );
-            if (edgeData && !isIdBlacklisted(edgeData.data.source) && !isIdBlacklisted(edgeData.data.target)) {
-              const key = `${edgeData.data.source}->${edgeData.data.target}`;
-              if (!addedEdgeKeys.has(key)) {
-                addedEdgeKeys.add(key);
-                newGhostEdges.push({
-                  id: edgeData.data.id ?? key,
-                  source: edgeData.data.source,
-                  target: edgeData.data.target,
-                  label: anonymizeLabel(edgeData.data.label ?? edgeData.data.id),
-                  visible: true,
-                  color: getEdgeColorForSource(edgeData.data.source),
-                  // marks that this preview indicates removal rather than addition
-                  previewRemoval: true,
-                });
-              }
-            }
-          });
-        }
+      if (allVisible && isAssociated) {
+        filteredExpansionEdges.forEach((edge) => {
+          const key = `${edge.source}->${edge.target}`;
+          if (!addedEdgeKeys.has(key)) {
+            addedEdgeKeys.add(key);
+            newGhostEdges.push({
+              id: edge.id ?? key,
+              source: edge.source,
+              target: edge.target,
+              label: anonymizeLabel(edge.label ?? edge.id),
+              visible: true,
+              color: getEdgeColorForSource(edge.source),
+              previewRemoval: true,
+            });
+          }
+        });
       } else {
         filteredNodeIds.forEach((nid) => {
           const nodeData = cyDataNodes.find((n) => n.data.id === nid);
