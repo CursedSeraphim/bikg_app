@@ -1,7 +1,7 @@
 // File: src/components/D3NodeLink/D3ForceGraph.tsx
 
 import * as d3 from 'd3';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   clearAllSelections,
@@ -51,7 +51,7 @@ import { useLassoSelection } from './hooks/useLassoSelection';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 import { computeAssociationTargets } from './utils/associationTargets';
 import { computeSelectionScope } from './utils/selectionScope';
-import { getFocusNodesForNodeShape, isNodeShapeClass } from './utils/nodeShapeAssociations';
+import { buildNodeShapeViolationMap, getFocusNodesForNodeShape, isNodeShapeClass } from './utils/nodeShapeAssociations';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) {
@@ -70,6 +70,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const numberViolationsPerNode = useSelector((state: RootState) => state.combined.numberViolationsPerNode);
   const violationTypesMap = useSelector(selectViolationTypesMap);
   const typesViolationMap = useSelector(selectTypesViolationMap);
+  const nodeShapeViolationMap = useMemo(() => buildNodeShapeViolationMap(violationTypesMap), [violationTypesMap]);
   const hiddenLabels = useSelector(selectHiddenLabels);
   const selectedFocusNodes = useSelector(selectSelectedNodes);
   const selectedViolationIds = useSelector(selectSelectedViolations);
@@ -327,7 +328,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
           return;
         }
         if (isNodeShapeNode(node)) {
-          const { violationIds, focusNodeIds } = getFocusNodesForNodeShape(id, violationTypesMap, violationMap);
+          const { violationIds, focusNodeIds } = getFocusNodesForNodeShape(id, nodeShapeViolationMap, violationMap);
           violationIds.forEach((violationId) => selectedViolations.add(violationId));
           focusNodeIds.forEach((focusId) => addFocusNode(focusId));
           return;
@@ -366,7 +367,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         selectedNodeIds,
       };
     },
-    [exemplarMap, focusNodeMap, typeMap, violationMap, violationTypesMap, isNodeShapeNode],
+    [exemplarMap, focusNodeMap, typeMap, violationMap, nodeShapeViolationMap, isNodeShapeNode],
   );
 
   useEffect(() => {
@@ -710,7 +711,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (node.violation) {
         dispatch(setSelectedViolations([node.id]));
       } else if (isNodeShapeNode(node)) {
-        const { violationIds } = getFocusNodesForNodeShape(node.id, violationTypesMap, violationMap);
+        const { violationIds } = getFocusNodesForNodeShape(node.id, nodeShapeViolationMap, violationMap);
         if (violationIds.length > 0) {
           dispatch(setSelectedViolations(violationIds));
         }
@@ -720,7 +721,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         dispatch(setSelectedTypes([node.id]));
       }
     },
-    [dispatch, isNodeShapeNode, violationTypesMap, violationMap],
+    [dispatch, isNodeShapeNode, nodeShapeViolationMap, violationMap],
   );
 
   const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef, centerView, handleResetView, handleSelectConnected);
@@ -898,6 +899,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         exemplarMap,
         violationTypesMap,
         typesViolationMap,
+        nodeShapeViolationMap,
         cyDataNodes,
         cyDataEdges,
         hiddenNodes: hiddenNodesRef.current,
@@ -906,7 +908,19 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         isIdBlacklisted,
       });
     },
-    [focusNodeMap, typeMap, violationMap, exemplarMap, violationTypesMap, typesViolationMap, cyDataNodes, cyDataEdges, isLabelBlacklisted, isIdBlacklisted],
+    [
+      focusNodeMap,
+      typeMap,
+      violationMap,
+      exemplarMap,
+      violationTypesMap,
+      typesViolationMap,
+      nodeShapeViolationMap,
+      cyDataNodes,
+      cyDataEdges,
+      isLabelBlacklisted,
+      isIdBlacklisted,
+    ],
   );
 
   const showAssociated = useCallback(
@@ -1167,7 +1181,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
           ? deriveSelectionsFromViolations([closest.id], violationMap, focusNodeMap)
           : isNodeShapeNode(closest)
             ? (() => {
-                const { violationIds } = getFocusNodesForNodeShape(closest.id, violationTypesMap, violationMap);
+                const { violationIds } = getFocusNodesForNodeShape(closest.id, nodeShapeViolationMap, violationMap);
                 return deriveSelectionsFromViolations(violationIds, violationMap, focusNodeMap);
               })()
             : closest.type
@@ -1342,6 +1356,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       exemplarMap,
       violationTypesMap,
       typesViolationMap,
+      nodeShapeViolationMap,
       isNodeShapeNode,
       isIdBlacklisted,
       isLabelBlacklisted,

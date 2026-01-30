@@ -1,4 +1,4 @@
-import { getFocusNodesForNodeShape } from '../src/components/D3NodeLink/utils/nodeShapeAssociations';
+import { buildNodeShapeViolationMap, getFocusNodesForNodeShape } from '../src/components/D3NodeLink/utils/nodeShapeAssociations';
 
 describe('getFocusNodesForNodeShape', () => {
   it('collects violating focus nodes for property shapes linked to a node shape', () => {
@@ -13,7 +13,8 @@ describe('getFocusNodesForNodeShape', () => {
       v3: { nodes: ['n4'] },
     };
 
-    const result = getFocusNodesForNodeShape('ns1', violationTypesMap, violationMap);
+    const nodeShapeViolationMap = buildNodeShapeViolationMap(violationTypesMap);
+    const result = getFocusNodesForNodeShape('ns1', nodeShapeViolationMap, violationMap);
 
     expect(result.violationIds.sort()).toEqual(['v1', 'v2'].sort());
     expect(result.focusNodeIds.sort()).toEqual(['n1', 'n2', 'n3'].sort());
