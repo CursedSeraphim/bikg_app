@@ -1,11 +1,12 @@
+import { IExemplarMap, IFocusNodeMap, ITypeMap, IViolationMap } from '../../../types';
 import { getFocusNodesForNodeShape, isNodeShapeClass, NodeShapeViolationMap } from './nodeShapeAssociations';
 
 export interface AssociationTargetInput {
   nodeId: string;
-  focusNodeMap: Record<string, any>;
-  typeMap: Record<string, any>;
-  violationMap: Record<string, any>;
-  exemplarMap: Record<string, any>;
+  focusNodeMap: IFocusNodeMap;
+  typeMap: ITypeMap;
+  violationMap: IViolationMap;
+  exemplarMap: IExemplarMap;
   violationTypesMap: Record<string, string[]>;
   typesViolationMap: Record<string, string[]>;
   nodeShapeViolationMap?: NodeShapeViolationMap;
