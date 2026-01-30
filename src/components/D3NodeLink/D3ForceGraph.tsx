@@ -28,6 +28,12 @@ import {
   setSelectedViolations,
 } from '../Store/CombinedSlice';
 import type { RootState } from '../Store/Store';
+import {
+  deriveSelectionsFromExemplars,
+  deriveSelectionsFromFocusNodes,
+  deriveSelectionsFromTypes,
+  deriveSelectionsFromViolations,
+} from '../Store/selectionUtils';
 import { useD3Data } from './useD3Data';
 
 import { getViolationCountsForNode } from '../../utils/violations';
@@ -44,6 +50,7 @@ import useExemplarHoverList from './hooks/useExemplarHoverList';
 import { useLassoSelection } from './hooks/useLassoSelection';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 import { computeAssociationTargets } from './utils/associationTargets';
+import { computeSelectionScope } from './utils/selectionScope';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) {
@@ -492,57 +499,18 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     lassoSelectionRef.current = null;
 
     // 1) Selection scope: everything that should be unfolded / made visible
-    const idsToSelect = new Set<string>();
-    const addIds = (values?: Iterable<string>) => {
-      if (!values) return;
-      for (const value of values) {
-        if (value) {
-          idsToSelect.add(value);
-        }
-      }
-    };
-
-    // Direct selections
-    addIds(selectedFocusNodes);
-    addIds(selectedTypeIds);
-    addIds(selectedViolationIds);
-    addIds(selectedExemplarIds);
-
-    // Associated selections (same as original code)
-    selectedFocusNodes.forEach((focusId) => {
-      const entry = focusNodeMap[focusId];
-      if (!entry) return;
-      addIds(entry.types);
-      addIds(entry.violations);
-      addIds(entry.exemplars);
-    });
-
-    selectedTypeIds.forEach((typeId) => {
-      const entry = typeMap[typeId];
-      if (entry) {
-        addIds(entry.nodes);
-        addIds(entry.violations);
-        addIds(entry.exemplars);
-      }
-      addIds(typesViolationMap[typeId]);
-    });
-
-    selectedViolationIds.forEach((violationId) => {
-      const entry = violationMap[violationId];
-      if (entry) {
-        addIds(entry.nodes);
-        addIds(entry.types);
-        addIds(entry.exemplars);
-      }
-      addIds(violationTypesMap[violationId]);
-    });
-
-    selectedExemplarIds.forEach((exemplarId) => {
-      const entry = exemplarMap[exemplarId];
-      if (!entry) return;
-      addIds(entry.nodes);
-      addIds(entry.types);
-      addIds(entry.violations);
+    const { idsToSelect, visibleEdgeIds } = computeSelectionScope({
+      selectedFocusNodes,
+      selectedTypeIds,
+      selectedViolationIds,
+      selectedExemplarIds,
+      focusNodeMap,
+      typeMap,
+      violationMap,
+      exemplarMap,
+      violationTypesMap,
+      typesViolationMap,
+      cyDataEdges,
     });
 
     // 2) DoI-based branch seeds: nodes that actually have selected violations
@@ -601,16 +569,9 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
     // 4) Edges: visible vs highlighted
     const selectedEdgeIds = new Set<string>();
-    const visibleEdgeIds = new Set<string>();
-
     cyDataEdges.forEach((edge) => {
       const sourceId = edge.data.source;
       const targetId = edge.data.target;
-
-      // Visibility: any edge connecting unfolded nodes
-      if (idsToSelect.has(sourceId) && idsToSelect.has(targetId)) {
-        visibleEdgeIds.add(edge.data.id);
-      }
 
       // Highlighting: only edges fully inside the highlighted branch+ancestors
       if (highlightIdsWithAncestors.has(sourceId) && highlightIdsWithAncestors.has(targetId)) {
@@ -1187,7 +1148,54 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         return;
       }
       const isAssociated = mode === 'associated';
-      const { nodeIds, edges: expansionEdges } = isAssociated ? computeAssociations(closest.id) : computeExpansion(closest.id, mode);
+      const associatedSelections = isAssociated
+        ? closest.violation
+          ? deriveSelectionsFromViolations([closest.id], violationMap, focusNodeMap)
+          : closest.type
+            ? deriveSelectionsFromTypes([closest.id], typeMap)
+            : closest.exemplar
+              ? deriveSelectionsFromExemplars([closest.id], exemplarMap, focusNodeMap)
+              : deriveSelectionsFromFocusNodes([closest.id], focusNodeMap)
+        : null;
+      const associatedSelection = associatedSelections
+        ? computeSelectionScope({
+            selectedFocusNodes: associatedSelections.selectedNodes,
+            selectedTypeIds: associatedSelections.selectedTypes,
+            selectedViolationIds: associatedSelections.selectedViolations,
+            selectedExemplarIds: associatedSelections.selectedViolationExemplars,
+            focusNodeMap,
+            typeMap,
+            violationMap,
+            exemplarMap,
+            violationTypesMap,
+            typesViolationMap,
+            cyDataEdges,
+          })
+        : null;
+      const { nodeIds, edges: expansionEdges } = isAssociated
+        ? (() => {
+            const visibleSet = new Set(
+              cyDataNodes
+                .filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label))
+                .map((n) => n.data.id),
+            );
+            const selectionIds = associatedSelection ? Array.from(associatedSelection.idsToSelect) : [];
+            const nodeIds = selectionIds.filter((id) => {
+              if (isIdBlacklisted(id)) return false;
+              const nodeData = cyDataNodes.find((n) => n.data.id === id);
+              return nodeData && !visibleSet.has(id);
+            });
+            const edges = cyDataEdges
+              .filter((edge) => associatedSelection?.visibleEdgeIds.has(edge.data.id))
+              .map((edge) => ({
+                id: edge.data.id,
+                source: edge.data.source,
+                target: edge.data.target,
+                label: edge.data.label,
+              }));
+            return { nodeIds, edges };
+          })()
+        : computeExpansion(closest.id, mode);
 
       // apply blacklist to preview targets
       const filteredNodeIds = nodeIds.filter((nid) => !isIdBlacklisted(nid));
@@ -1310,6 +1318,12 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       clearPreview,
       computeExpansion,
       computeAssociations,
+      focusNodeMap,
+      typeMap,
+      violationMap,
+      exemplarMap,
+      violationTypesMap,
+      typesViolationMap,
       isIdBlacklisted,
       anonymizeLabel,
       runIncrementalLayout,
