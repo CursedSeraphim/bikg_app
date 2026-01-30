@@ -177,6 +177,51 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     });
   }, []);
 
+  const nodeShapeLookup = useMemo(() => {
+    const typeKeys = new Set(Object.keys(typesViolationMap));
+    const violationKeys = new Set(Object.keys(violationTypesMap));
+    const nodeShapeToTypes = new Map<string, Set<string>>();
+    const nodeShapeToViolations = new Map<string, Set<string>>();
+
+    const addEntry = (map: Map<string, Set<string>>, nodeId: string, relatedId: string) => {
+      if (!map.has(nodeId)) {
+        map.set(nodeId, new Set());
+      }
+      map.get(nodeId)?.add(relatedId);
+    };
+
+    Object.entries(typesViolationMap).forEach(([typeId, related]) => {
+      related.forEach((nodeId) => {
+        if (!typeKeys.has(nodeId) && !violationKeys.has(nodeId)) {
+          addEntry(nodeShapeToTypes, nodeId, typeId);
+        }
+      });
+    });
+
+    Object.entries(violationTypesMap).forEach(([violationId, related]) => {
+      related.forEach((nodeId) => {
+        if (!typeKeys.has(nodeId) && !violationKeys.has(nodeId)) {
+          addEntry(nodeShapeToViolations, nodeId, violationId);
+        }
+      });
+    });
+
+    return { nodeShapeToTypes, nodeShapeToViolations };
+  }, [typesViolationMap, violationTypesMap]);
+
+  const isNodeShapeId = useCallback(
+    (nodeId: string) => nodeShapeLookup.nodeShapeToTypes.has(nodeId) || nodeShapeLookup.nodeShapeToViolations.has(nodeId),
+    [nodeShapeLookup],
+  );
+
+  const getNodeShapeAssociations = useCallback(
+    (nodeId: string) => ({
+      types: Array.from(nodeShapeLookup.nodeShapeToTypes.get(nodeId) ?? []),
+      violations: Array.from(nodeShapeLookup.nodeShapeToViolations.get(nodeId) ?? []),
+    }),
+    [nodeShapeLookup],
+  );
+
   const convertData = useCallback(() => {
     // filter nodes: must be visible, not in hiddenNodesRef, and not blacklisted
     const visibleNodeData = cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label));
@@ -309,6 +354,20 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         }
       };
 
+      const addNodeShapeSelection = (nodeId: string) => {
+        const { types: relatedTypes, violations: relatedViolations } = getNodeShapeAssociations(nodeId);
+
+        relatedTypes.forEach((typeId) => {
+          selectedTypes.add(typeId);
+          typeMap[typeId]?.nodes.forEach((focusId: string) => addFocusNode(focusId));
+        });
+
+        relatedViolations.forEach((violationId) => {
+          selectedViolations.add(violationId);
+          violationMap[violationId]?.nodes.forEach((focusId: string) => addFocusNode(focusId));
+        });
+      };
+
       const selectedNodeIds = new Set(selectedIds);
       selectedIds.forEach((id) => {
         const node = nodeMapRef.current[id];
@@ -330,6 +389,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
           exemplarMap[id]?.nodes.forEach((focusId: string) => addFocusNode(focusId));
           return;
         }
+        if (isNodeShapeId(id)) {
+          addNodeShapeSelection(id);
+          return;
+        }
         addFocusNode(id);
       });
 
@@ -349,7 +412,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         selectedNodeIds,
       };
     },
-    [exemplarMap, focusNodeMap, typeMap, violationMap],
+    [exemplarMap, focusNodeMap, getNodeShapeAssociations, isNodeShapeId, typeMap, violationMap],
   );
 
   useEffect(() => {
@@ -912,6 +975,36 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     });
   }, [cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef, isLabelBlacklisted]);
 
+  const addTypeAssociations = useCallback(
+    (typeId: string, assoc: Set<string>) => {
+      const entry = typeMap[typeId];
+      if (entry) {
+        entry.nodes.forEach((n: string) => assoc.add(n));
+        entry.violations.forEach((v: string) => assoc.add(v));
+        entry.exemplars.forEach((e: string) => assoc.add(e));
+      }
+
+      const extra = typesViolationMap[typeId] || [];
+      extra.forEach((n: string) => assoc.add(n));
+    },
+    [typeMap, typesViolationMap],
+  );
+
+  const addViolationAssociations = useCallback(
+    (violationId: string, assoc: Set<string>) => {
+      const entry = violationMap[violationId];
+      if (entry) {
+        entry.nodes.forEach((n: string) => assoc.add(n));
+        entry.types.forEach((t: string) => assoc.add(t));
+        entry.exemplars.forEach((e: string) => assoc.add(e));
+      }
+
+      const extra = violationTypesMap[violationId] || [];
+      extra.forEach((n: string) => assoc.add(n));
+    },
+    [violationMap, violationTypesMap],
+  );
+
   const computeAssociations = useCallback(
     (nodeId: string) => {
       const assoc = new Set<string>();
@@ -923,23 +1016,29 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       }
 
       if (typeMap[nodeId]) {
-        typeMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
-        typeMap[nodeId].violations.forEach((v: string) => assoc.add(v));
-        typeMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
-        const extra = typesViolationMap[nodeId] || [];
-        extra.forEach((n: string) => assoc.add(n));
+        addTypeAssociations(nodeId, assoc);
       }
 
       if (violationMap[nodeId]) {
-        violationMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
-        violationMap[nodeId].types.forEach((t: string) => assoc.add(t));
-        violationMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
+        addViolationAssociations(nodeId, assoc);
       }
 
       if (exemplarMap[nodeId]) {
         exemplarMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
         exemplarMap[nodeId].types.forEach((t: string) => assoc.add(t));
         exemplarMap[nodeId].violations.forEach((v: string) => assoc.add(v));
+      }
+
+      if (isNodeShapeId(nodeId)) {
+        const { types: relatedTypes, violations: relatedViolations } = getNodeShapeAssociations(nodeId);
+        relatedTypes.forEach((typeId) => {
+          assoc.add(typeId);
+          addTypeAssociations(typeId, assoc);
+        });
+        relatedViolations.forEach((violationId) => {
+          assoc.add(violationId);
+          addViolationAssociations(violationId, assoc);
+        });
       }
 
       if (violationTypesMap[nodeId]) {
@@ -994,7 +1093,22 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
       return { nodeIds, allIds: Array.from(allIds), edges };
     },
-    [focusNodeMap, typeMap, violationMap, exemplarMap, violationTypesMap, typesViolationMap, cyDataNodes, cyDataEdges, isLabelBlacklisted, isIdBlacklisted],
+    [
+      focusNodeMap,
+      typeMap,
+      violationMap,
+      exemplarMap,
+      violationTypesMap,
+      typesViolationMap,
+      cyDataNodes,
+      cyDataEdges,
+      isLabelBlacklisted,
+      isIdBlacklisted,
+      addTypeAssociations,
+      addViolationAssociations,
+      getNodeShapeAssociations,
+      isNodeShapeId,
+    ],
   );
 
   const showAssociated = useCallback(
