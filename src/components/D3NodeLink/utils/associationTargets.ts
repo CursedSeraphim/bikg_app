@@ -1,12 +1,16 @@
+import { IExemplarMap, IFocusNodeMap, ITypeMap, IViolationMap } from '../../../types';
+import { getFocusNodesForNodeShape, isNodeShapeClass, NodeShapeViolationMap } from './nodeShapeAssociations';
+
 export interface AssociationTargetInput {
   nodeId: string;
-  focusNodeMap: Record<string, any>;
-  typeMap: Record<string, any>;
-  violationMap: Record<string, any>;
-  exemplarMap: Record<string, any>;
+  focusNodeMap: IFocusNodeMap;
+  typeMap: ITypeMap;
+  violationMap: IViolationMap;
+  exemplarMap: IExemplarMap;
   violationTypesMap: Record<string, string[]>;
   typesViolationMap: Record<string, string[]>;
-  cyDataNodes: Array<{ data: { id: string; visible: boolean; label?: string } }>;
+  nodeShapeViolationMap?: NodeShapeViolationMap;
+  cyDataNodes: Array<{ data: { id: string; visible: boolean; label?: string; isAClass?: string | null } }>;
   cyDataEdges: Array<{ data: { id: string; source: string; target: string; label?: string } }>;
   hiddenNodes: Set<string>;
   hiddenEdges: Set<string>;
@@ -28,6 +32,7 @@ export function computeAssociationTargets({
   exemplarMap,
   violationTypesMap,
   typesViolationMap,
+  nodeShapeViolationMap,
   cyDataNodes,
   cyDataEdges,
   hiddenNodes,
@@ -55,6 +60,17 @@ export function computeAssociationTargets({
     violationMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
     violationMap[nodeId].types.forEach((t: string) => assoc.add(t));
     violationMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
+  }
+
+  const nodeMetadata = cyDataNodes.find((node) => node.data.id === nodeId);
+  if (nodeMetadata && isNodeShapeClass(nodeMetadata.data.isAClass)) {
+    const { violationIds, focusNodeIds } = getFocusNodesForNodeShape(nodeId, nodeShapeViolationMap ?? {}, violationMap);
+    violationIds.forEach((violationId) => {
+      assoc.add(violationId);
+      violationMap[violationId]?.types?.forEach((t: string) => assoc.add(t));
+      violationMap[violationId]?.exemplars?.forEach((e: string) => assoc.add(e));
+    });
+    focusNodeIds.forEach((focusId) => assoc.add(focusId));
   }
 
   if (exemplarMap[nodeId]) {
@@ -95,12 +111,7 @@ export function computeAssociationTargets({
     const sourceVisible = visibleSet.has(source);
     const targetVisible = visibleSet.has(target);
 
-    if (
-      (sourceIn && targetIn) ||
-      (sourceIn && targetVisible) ||
-      (targetIn && sourceVisible) ||
-      (hiddenEdges.has(edge.data.id) && (sourceIn || targetIn))
-    ) {
+    if ((sourceIn && targetIn) || (sourceIn && targetVisible) || (targetIn && sourceVisible) || (hiddenEdges.has(edge.data.id) && (sourceIn || targetIn))) {
       const sourceExists = cyDataNodes.some((n) => n.data.id === source);
       const targetExists = cyDataNodes.some((n) => n.data.id === target);
       if (sourceExists && targetExists) {
