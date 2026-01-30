@@ -361,7 +361,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
         relatedTypes.forEach((typeId) => {
           selectedTypes.add(typeId);
-          typeMap[typeId]?.nodes.forEach((focusId: string) => addFocusNode(focusId));
         });
 
         relatedViolations.forEach((violationId) => {
@@ -992,6 +991,14 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     [typeMap, typesViolationMap],
   );
 
+  const addTypePathAssociations = useCallback(
+    (typeId: string, assoc: Set<string>) => {
+      const extra = typesViolationMap[typeId] || [];
+      extra.forEach((n: string) => assoc.add(n));
+    },
+    [typesViolationMap],
+  );
+
   const addViolationAssociations = useCallback(
     (violationId: string, assoc: Set<string>) => {
       const entry = violationMap[violationId];
@@ -1035,7 +1042,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         const { types: relatedTypes, violations: relatedViolations } = getNodeShapeAssociations(nodeId);
         relatedTypes.forEach((typeId) => {
           assoc.add(typeId);
-          addTypeAssociations(typeId, assoc);
+          addTypePathAssociations(typeId, assoc);
         });
         relatedViolations.forEach((violationId) => {
           assoc.add(violationId);
@@ -1107,6 +1114,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       isLabelBlacklisted,
       isIdBlacklisted,
       addTypeAssociations,
+      addTypePathAssociations,
       addViolationAssociations,
       getNodeShapeAssociations,
       isNodeShapeId,
