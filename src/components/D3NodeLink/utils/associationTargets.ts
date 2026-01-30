@@ -111,12 +111,7 @@ export function computeAssociationTargets({
     const sourceVisible = visibleSet.has(source);
     const targetVisible = visibleSet.has(target);
 
-    if (
-      (sourceIn && targetIn) ||
-      (sourceIn && targetVisible) ||
-      (targetIn && sourceVisible) ||
-      (hiddenEdges.has(edge.data.id) && (sourceIn || targetIn))
-    ) {
+    if ((sourceIn && targetIn) || (sourceIn && targetVisible) || (targetIn && sourceVisible) || (hiddenEdges.has(edge.data.id) && (sourceIn || targetIn))) {
       const sourceExists = cyDataNodes.some((n) => n.data.id === source);
       const targetExists = cyDataNodes.some((n) => n.data.id === target);
       if (sourceExists && targetExists) {
