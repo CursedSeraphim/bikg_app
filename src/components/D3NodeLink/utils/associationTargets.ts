@@ -1,3 +1,5 @@
+import { getFocusNodesForNodeShape, isNodeShapeClass } from './nodeShapeAssociations';
+
 export interface AssociationTargetInput {
   nodeId: string;
   focusNodeMap: Record<string, any>;
@@ -6,7 +8,7 @@ export interface AssociationTargetInput {
   exemplarMap: Record<string, any>;
   violationTypesMap: Record<string, string[]>;
   typesViolationMap: Record<string, string[]>;
-  cyDataNodes: Array<{ data: { id: string; visible: boolean; label?: string } }>;
+  cyDataNodes: Array<{ data: { id: string; visible: boolean; label?: string; isAClass?: string | null } }>;
   cyDataEdges: Array<{ data: { id: string; source: string; target: string; label?: string } }>;
   hiddenNodes: Set<string>;
   hiddenEdges: Set<string>;
@@ -55,6 +57,17 @@ export function computeAssociationTargets({
     violationMap[nodeId].nodes.forEach((n: string) => assoc.add(n));
     violationMap[nodeId].types.forEach((t: string) => assoc.add(t));
     violationMap[nodeId].exemplars.forEach((e: string) => assoc.add(e));
+  }
+
+  const nodeMetadata = cyDataNodes.find((node) => node.data.id === nodeId);
+  if (nodeMetadata && isNodeShapeClass(nodeMetadata.data.isAClass)) {
+    const { violationIds, focusNodeIds } = getFocusNodesForNodeShape(nodeId, violationTypesMap, violationMap);
+    violationIds.forEach((violationId) => {
+      assoc.add(violationId);
+      violationMap[violationId]?.types?.forEach((t: string) => assoc.add(t));
+      violationMap[violationId]?.exemplars?.forEach((e: string) => assoc.add(e));
+    });
+    focusNodeIds.forEach((focusId) => assoc.add(focusId));
   }
 
   if (exemplarMap[nodeId]) {
