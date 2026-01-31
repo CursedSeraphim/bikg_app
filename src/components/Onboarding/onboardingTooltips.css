@@ -1,11 +1,11 @@
 .onboarding-tooltip-stack {
-  position: absolute;
-  top: 12px;
+  position: fixed;
+  top: calc(12px + var(--app-header-height, 0px));
   right: 12px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  z-index: 20;
+  z-index: 1000;
   pointer-events: none;
   --onboarding-tooltip-width: 240px;
 }

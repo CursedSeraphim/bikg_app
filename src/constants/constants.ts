@@ -5,6 +5,7 @@ export const APP_NAME = 'SHACLens';
 // Other constants
 export const CSV_EDGE_NOT_IN_ONTOLOGY_SHORTCUT_STRING = '-';
 export const CSV_EDGE_NOT_IN_ONTOLOGY_STRING = 'EdgeNotPresent';
+export const APP_HEADER_HEIGHT_PX = 50;
 export const MANTINE_HEADER_COLOR = '#3B3B3F';
 export const SPINNER_COLOR = MANTINE_HEADER_COLOR;
 export const MISSING_EDGE_COLOR = '#d3d3d3';
