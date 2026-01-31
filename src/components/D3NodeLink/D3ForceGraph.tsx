@@ -716,7 +716,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     [dispatch, isNodeShapeNode, nodeShapeViolationMap, violationMap],
   );
 
-  const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef, centerView, handleResetView, handleSelectConnected);
+  const { menu: contextMenu } = useD3ContextMenu(
+    canvasRef,
+    d3Nodes,
+    transformRef,
+    centerView,
+    handleResetView,
+    handleSelectConnected,
+    () => dispatch(markOnboardingEventComplete(onboardingEventIds.nldContextMenu)),
+  );
 
   const { computeExpansion, showChildren, showParents } = useNodeVisibility(
     cyDataNodes,
@@ -1039,18 +1047,32 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
         if (event.ctrlKey && event.shiftKey) {
           // Same behavior as context menu: expand associated AND select connected
+          dispatch(markOnboardingEventComplete(onboardingEventIds.nldExpandAssociated));
           expandAssociated(cid);
           handleSelectConnected(closest);
         } else if (event.ctrlKey) {
+          dispatch(markOnboardingEventComplete(onboardingEventIds.nldExpandChildren));
           toggleChildren(cid);
         } else if (event.shiftKey) {
+          dispatch(markOnboardingEventComplete(onboardingEventIds.nldExpandParents));
           toggleParents(cid);
         }
 
         clearPreview();
       }
     },
-    [d3Nodes, ghostNodes, transformRef, simulationRef, toggleChildren, toggleParents, clearPreview, expandAssociated, handleSelectConnected],
+    [
+      d3Nodes,
+      ghostNodes,
+      transformRef,
+      simulationRef,
+      toggleChildren,
+      toggleParents,
+      clearPreview,
+      expandAssociated,
+      handleSelectConnected,
+      dispatch,
+    ],
   );
 
   const handleLassoSelection = useCallback(
@@ -1355,6 +1377,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (selectedNodeIds.size === 0 && selectedEdgeIds.size === 0) {
         return;
       }
+
+      dispatch(markOnboardingEventComplete(onboardingEventIds.nldDeleteSelection));
 
       cyDataNodes.forEach((node) => {
         if (selectedNodeIds.has(node.data.id)) {

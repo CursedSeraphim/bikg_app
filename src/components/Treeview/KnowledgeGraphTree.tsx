@@ -6,6 +6,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { BarLoader } from 'react-spinners';
 
 import { addSingleSelectedType, removeMultipleSelectedTypes } from '../Store/CombinedSlice';
+import { onboardingEventIds } from '../Onboarding/onboardingEvents';
+import { markOnboardingEventComplete } from '../Store/OnboardingSlice';
 import { RootState } from '../Store/Store';
 import { KnowledgeGraphNode } from './TreeViewTypes';
 import useTreeData from './useTreeData';
@@ -127,6 +129,7 @@ export default function KnowledgeGraphTree() {
       if (now - lastClickRef.current < DOUBLE_CLICK_TIMEOUT_MS) {
         event.preventDefault();
         dispatchSingleClass(nodeId);
+        dispatch(markOnboardingEventComplete(onboardingEventIds.treeDoubleClickSelectClass));
       } else {
         toggleExpansion(nodeId);
       }

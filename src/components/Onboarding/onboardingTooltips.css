@@ -32,6 +32,7 @@
 .onboarding-tooltip-box {
   background: var(--mantine-header-color);
   color: #ffffff;
+  opacity: 0.7;
   border-radius: 6px;
   padding: 8px 10px;
   font-size: 12px;
