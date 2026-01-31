@@ -1,6 +1,6 @@
 .onboarding-tooltip-stack {
   position: fixed;
-  top: 12px;
+  top: calc(12px + var(--app-header-height, 0px));
   right: 12px;
   display: flex;
   flex-direction: column;

@@ -8,7 +8,7 @@ import { App } from './App';
 import { AppNameElement } from './components/AppName';
 import { PartnerLogosRow } from './components/branding';
 import store from './components/Store/Store';
-import { MANTINE_HEADER_COLOR } from './constants/constants';
+import { APP_HEADER_HEIGHT_PX, MANTINE_HEADER_COLOR } from './constants/constants';
 
 ReactDOM.render(
   // <React.StrictMode> TODO doesn't work with treebeard due to depreacted finddomnode
@@ -20,6 +20,7 @@ ReactDOM.render(
       globalStyles: () => ({
         ':root': {
           '--mantine-header-color': MANTINE_HEADER_COLOR,
+          '--app-header-height': `${APP_HEADER_HEIGHT_PX}px`,
         },
       }),
     }}
@@ -31,6 +32,7 @@ ReactDOM.render(
           header={
             <VisynHeader
               backgroundColor={MANTINE_HEADER_COLOR}
+              height={APP_HEADER_HEIGHT_PX}
               components={{
                 title: (
                   <Title order={3} weight={100} color="white">
