@@ -9,9 +9,10 @@ interface UseLassoSelectionParams {
   nodes: CanvasNode[];
   transformRef: MutableRefObject<d3.ZoomTransform>;
   onSelection: (selectedIds: string[]) => void;
+  onLassoStart?: () => void;
 }
 
-export function useLassoSelection({ canvasRef, overlayRef, nodes, transformRef, onSelection }: UseLassoSelectionParams) {
+export function useLassoSelection({ canvasRef, overlayRef, nodes, transformRef, onSelection, onLassoStart }: UseLassoSelectionParams) {
   const lassoActiveRef = useRef(false);
   const pointsRef = useRef<[number, number][]>([]);
 
@@ -93,6 +94,7 @@ export function useLassoSelection({ canvasRef, overlayRef, nodes, transformRef, 
       const [x, y] = d3.pointer(event, canvas);
       lassoActiveRef.current = true;
       pointsRef.current = [[x, y]];
+      onLassoStart?.();
       updateLassoPath();
     };
 
@@ -118,7 +120,7 @@ export function useLassoSelection({ canvasRef, overlayRef, nodes, transformRef, 
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [canvasRef, overlayRef, updateLassoPath, endLasso]);
+  }, [canvasRef, overlayRef, updateLassoPath, endLasso, onLassoStart]);
 
   return { lassoActiveRef };
 }
