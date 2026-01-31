@@ -1,10 +1,14 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { onboardingTooltipSteps } from './onboardingEvents';
+import { ONBOARDING_ENABLED, onboardingTooltipSteps } from './onboardingEvents';
 import { OnboardingTooltipItem } from './OnboardingTooltipItem';
 import type { IRootState } from '../../types';
 
 export function OnboardingTooltipStack() {
+  if (!ONBOARDING_ENABLED) {
+    return null;
+  }
+
   const events = useSelector((state: IRootState) => state.onboarding.events);
 
   return (

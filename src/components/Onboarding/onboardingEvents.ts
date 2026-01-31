@@ -4,6 +4,8 @@ export const onboardingEventIds = {
   nldAltDrag: 'nldAltDrag',
 } as const;
 
+export const ONBOARDING_ENABLED = true;
+
 export type OnboardingEventId = (typeof onboardingEventIds)[keyof typeof onboardingEventIds];
 
 export const onboardingTooltipSteps: { id: OnboardingEventId; label: string }[] = [
