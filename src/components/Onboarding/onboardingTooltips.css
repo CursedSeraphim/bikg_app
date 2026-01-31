@@ -6,8 +6,56 @@
   flex-direction: column;
   align-items: flex-end;
   z-index: 1000;
-  pointer-events: none;
+  pointer-events: auto;
   --onboarding-tooltip-width: 240px;
+  --onboarding-tooltip-opacity: 0.7;
+  --onboarding-tooltip-button-opacity: 0.7;
+  --onboarding-tooltip-dim-opacity: 0.35;
+}
+
+.onboarding-tooltip-stack.is-dismiss-hovered {
+  --onboarding-tooltip-opacity: var(--onboarding-tooltip-dim-opacity);
+}
+
+.onboarding-tooltip-dismiss {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: var(--mantine-header-color);
+  opacity: 0;
+  pointer-events: none;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.onboarding-tooltip-stack.is-hovered .onboarding-tooltip-dismiss {
+  opacity: var(--onboarding-tooltip-button-opacity);
+  pointer-events: auto;
+}
+
+.onboarding-tooltip-dismiss::before,
+.onboarding-tooltip-dismiss::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 2px;
+  background: #ffffff;
+  transform-origin: center;
+}
+
+.onboarding-tooltip-dismiss::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.onboarding-tooltip-dismiss::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 .onboarding-tooltip-item {
@@ -32,7 +80,7 @@
 .onboarding-tooltip-box {
   background: var(--mantine-header-color);
   color: #ffffff;
-  opacity: 0.7;
+  opacity: var(--onboarding-tooltip-opacity);
   border-radius: 6px;
   padding: 8px 10px;
   font-size: 12px;
