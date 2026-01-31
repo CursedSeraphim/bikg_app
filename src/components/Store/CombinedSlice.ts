@@ -94,7 +94,7 @@ const initialState: ICombinedState = {
   typesViolationMap: {},
   filterType: 'none',
   d3BoundingBox: 'off',
-  d3CenteringEnabled: false,
+  d3CenteringEnabled: true,
   d3CenteringStrength: 0.01,
   missingEdgeOption: 'keep',
   missingEdgeLabel: loadMissingEdgeLabel(),
