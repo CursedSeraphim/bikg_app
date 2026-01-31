@@ -30,11 +30,7 @@ import {
 } from '../../types';
 import { calculateObjectProperties, processTriples, selectAllTriples } from '../../utils/rdf/rdfGraphHelpers';
 import { dataToScatterDataArray } from '../EmbeddingView/csvToScatterData';
-import {
-  deriveSelectionsFromExemplars,
-  deriveSelectionsFromTypes,
-  deriveSelectionsFromViolations,
-} from './selectionUtils';
+import { deriveSelectionsFromExemplars, deriveSelectionsFromTypes, deriveSelectionsFromViolations } from './selectionUtils';
 
 function loadMissingEdgeLabel(): string {
   try {
@@ -356,10 +352,7 @@ function resetCounts(numberViolationsPerNode: INumberViolationsPerNodeMap, selec
   });
 }
 
-const deriveSelectedTypesAndViolations = (
-  selectedNodes: string[],
-  focusNodeMap: IFocusNodeMap,
-): { selectedTypes: string[]; selectedViolations: string[] } => {
+const deriveSelectedTypesAndViolations = (selectedNodes: string[], focusNodeMap: IFocusNodeMap): { selectedTypes: string[]; selectedViolations: string[] } => {
   const selectedTypesSet = new Set<string>();
   const selectedViolationsSet = new Set<string>();
 
