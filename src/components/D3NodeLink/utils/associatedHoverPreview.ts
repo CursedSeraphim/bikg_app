@@ -32,9 +32,7 @@ export function getAssociatedHoverPreviewTargets({
   }
 
   const visibleSet = new Set(
-    cyDataNodes
-      .filter((node) => node.data.visible && !hiddenNodes.has(node.data.id) && !isLabelBlacklisted(node.data.label))
-      .map((node) => node.data.id),
+    cyDataNodes.filter((node) => node.data.visible && !hiddenNodes.has(node.data.id) && !isLabelBlacklisted(node.data.label)).map((node) => node.data.id),
   );
   const nodesById = new Map(cyDataNodes.map((node) => [node.data.id, node]));
 
