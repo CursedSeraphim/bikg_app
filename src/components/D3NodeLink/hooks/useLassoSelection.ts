@@ -12,14 +12,7 @@ interface UseLassoSelectionParams {
   onLassoStart?: () => void;
 }
 
-export function useLassoSelection({
-  canvasRef,
-  overlayRef,
-  nodes,
-  transformRef,
-  onSelection,
-  onLassoStart,
-}: UseLassoSelectionParams) {
+export function useLassoSelection({ canvasRef, overlayRef, nodes, transformRef, onSelection, onLassoStart }: UseLassoSelectionParams) {
   const lassoActiveRef = useRef(false);
   const pointsRef = useRef<[number, number][]>([]);
 
