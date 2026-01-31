@@ -38,8 +38,6 @@ export interface CanvasEdge {
   color?: string;
   /** Preview edges used for ghost nodes */
   ghost?: boolean;
-  /** Highlight existing edge that would be removed on confirm */
-  previewRemoval?: boolean;
   /** Marks edges that connect currently selected nodes */
   selected?: boolean;
 }

@@ -28,12 +28,6 @@ import {
   setSelectedViolations,
 } from '../Store/CombinedSlice';
 import type { RootState } from '../Store/Store';
-import {
-  deriveSelectionsFromExemplars,
-  deriveSelectionsFromFocusNodes,
-  deriveSelectionsFromTypes,
-  deriveSelectionsFromViolations,
-} from '../Store/selectionUtils';
 import { useD3Data } from './useD3Data';
 
 import { getViolationCountsForNode } from '../../utils/violations';
@@ -49,7 +43,6 @@ import { useD3ResetView } from './hooks/useD3ResetView';
 // import useExemplarHoverList from './hooks/useExemplarHoverList';
 import { useLassoSelection } from './hooks/useLassoSelection';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
-import { computeAssociationTargets } from './utils/associationTargets';
 import { computeSelectionScope } from './utils/selectionScope';
 import { buildNodeShapeViolationMap, getFocusNodesForNodeShape, isNodeShapeClass } from './utils/nodeShapeAssociations';
 
@@ -95,7 +88,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   const [ghostNodes, setGhostNodes] = useState<CanvasNode[]>([]);
   const [ghostEdges, setGhostEdges] = useState<CanvasEdge[]>([]);
-  const activePreviewRef = useRef<{ mode: 'children' | 'parents' | 'associated' | null; nodeId: string | null }>({
+  const activePreviewRef = useRef<{ mode: 'children' | 'parents' | null; nodeId: string | null }>({
     mode: null,
     nodeId: null,
   });
@@ -889,115 +882,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     });
   }, [cyDataNodes, cyDataEdges, hiddenNodesRef, hiddenEdgesRef, isLabelBlacklisted]);
 
-  const computeAssociations = useCallback(
-    (nodeId: string) => {
-      return computeAssociationTargets({
-        nodeId,
-        focusNodeMap,
-        typeMap,
-        violationMap,
-        exemplarMap,
-        violationTypesMap,
-        typesViolationMap,
-        nodeShapeViolationMap,
-        cyDataNodes,
-        cyDataEdges,
-        hiddenNodes: hiddenNodesRef.current,
-        hiddenEdges: hiddenEdgesRef.current,
-        isLabelBlacklisted,
-        isIdBlacklisted,
-      });
-    },
-    [
-      focusNodeMap,
-      typeMap,
-      violationMap,
-      exemplarMap,
-      violationTypesMap,
-      typesViolationMap,
-      nodeShapeViolationMap,
-      cyDataNodes,
-      cyDataEdges,
-      isLabelBlacklisted,
-      isIdBlacklisted,
-    ],
-  );
-
-  const showAssociated = useCallback(
-    (nodeId: string) => {
-      const { allIds, edges } = computeAssociations(nodeId);
-
-      cyDataNodes.forEach((node) => {
-        const mutableNode = node;
-        if (allIds.includes(mutableNode.data.id) && !isIdBlacklisted(mutableNode.data.id)) {
-          if (!mutableNode.data.visible && originRef.current[mutableNode.data.id] === undefined) {
-            originRef.current[mutableNode.data.id] = nodeId;
-          }
-          mutableNode.data.visible = true;
-          hiddenNodesRef.current.delete(mutableNode.data.id);
-        }
-      });
-
-      edges.forEach((edge) => {
-        if (!isIdBlacklisted(edge.source) && !isIdBlacklisted(edge.target)) {
-          hiddenEdgesRef.current.delete(edge.id);
-        }
-      });
-
-      recomputeEdgeVisibility();
-      convertData();
-    },
-    [computeAssociations, cyDataNodes, recomputeEdgeVisibility, convertData, isIdBlacklisted],
-  );
-
-  const hideAssociated = useCallback(
-    (nodeId: string) => {
-      const { allIds, edges } = computeAssociations(nodeId);
-      allIds.forEach((nid) => {
-        if (nid !== nodeId && originRef.current[nid] === nodeId) {
-          hiddenNodesRef.current.add(nid);
-        }
-      });
-
-      edges.forEach((edge) => {
-        const mutableEdge = edge;
-        hiddenEdgesRef.current.add(mutableEdge.id);
-      });
-
-      recomputeEdgeVisibility();
-      convertData();
-    },
-    [computeAssociations, recomputeEdgeVisibility, convertData],
-  );
-
-  const toggleAssociated = useCallback(
-    (id: string) => {
-      if (activePreviewRef.current.mode === 'associated' && activePreviewRef.current.nodeId === id) {
-        ghostNodes.forEach((gn) => {
-          savedPositionsRef.current[gn.id] = { x: gn.x, y: gn.y };
-        });
-      }
-      const { allIds, edges } = computeAssociations(id);
-      const nodesVisible = allIds.every((nid) => {
-        if (isIdBlacklisted(nid)) return false;
-        const node = cyDataNodes.find((n) => n.data.id === nid);
-        return node && node.data.visible && !hiddenNodesRef.current.has(nid);
-      });
-
-      const edgesVisible = edges.every((e) => !hiddenEdgesRef.current.has(e.id));
-
-      const allVisible = nodesVisible && edgesVisible;
-
-      if (allVisible) {
-        hideAssociated(id);
-      } else {
-        showAssociated(id);
-        freezeNode(id, 500, 1000, 0.3);
-      }
-    },
-    [computeAssociations, showAssociated, hideAssociated, freezeNode, cyDataNodes, ghostNodes, isIdBlacklisted],
-  );
-
   const rightDraggingRef = useRef(false);
   const rightMouseDownRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -1088,11 +972,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (closest && minDist < NEAR_NODE_DIST_SQ) {
         const cid = closest.id;
 
-        if (event.ctrlKey && event.shiftKey) {
-          // Same behavior as context menu: expand associated AND select connected
-          toggleAssociated(cid);
-          handleSelectConnected(closest);
-        } else if (event.ctrlKey) {
+        if (event.ctrlKey) {
           toggleChildren(cid);
         } else if (event.shiftKey) {
           toggleParents(cid);
@@ -1101,7 +981,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         clearPreview();
       }
     },
-    [d3Nodes, ghostNodes, transformRef, simulationRef, toggleChildren, toggleParents, clearPreview, toggleAssociated, handleSelectConnected],
+    [d3Nodes, ghostNodes, transformRef, simulationRef, toggleChildren, toggleParents, clearPreview],
   );
 
   const handleLassoSelection = useCallback(
@@ -1171,62 +1051,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         return;
       }
 
-      const mode: 'children' | 'parents' | 'associated' = event.ctrlKey && event.shiftKey ? 'associated' : event.ctrlKey ? 'children' : 'parents';
+      const mode: 'children' | 'parents' = event.ctrlKey ? 'children' : 'parents';
       if (activePreviewRef.current.mode === mode && activePreviewRef.current.nodeId === closest.id) {
         return;
       }
-      const isAssociated = mode === 'associated';
-      const associatedSelections = isAssociated
-        ? closest.violation
-          ? deriveSelectionsFromViolations([closest.id], violationMap, focusNodeMap)
-          : isNodeShapeNode(closest)
-            ? (() => {
-                const { violationIds } = getFocusNodesForNodeShape(closest.id, nodeShapeViolationMap, violationMap);
-                return deriveSelectionsFromViolations(violationIds, violationMap, focusNodeMap);
-              })()
-            : closest.type
-              ? deriveSelectionsFromTypes([closest.id], typeMap)
-              : closest.exemplar
-                ? deriveSelectionsFromExemplars([closest.id], exemplarMap, focusNodeMap)
-                : deriveSelectionsFromFocusNodes([closest.id], focusNodeMap)
-        : null;
-      const associatedSelection = associatedSelections
-        ? computeSelectionScope({
-            selectedFocusNodes: associatedSelections.selectedNodes,
-            selectedTypeIds: associatedSelections.selectedTypes,
-            selectedViolationIds: associatedSelections.selectedViolations,
-            selectedExemplarIds: associatedSelections.selectedViolationExemplars,
-            focusNodeMap,
-            typeMap,
-            violationMap,
-            exemplarMap,
-            violationTypesMap,
-            typesViolationMap,
-            cyDataEdges,
-          })
-        : null;
-      const { nodeIds, edges: expansionEdges } = isAssociated
-        ? (() => {
-            const visibleSet = new Set(
-              cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label)).map((n) => n.data.id),
-            );
-            const selectionIds = associatedSelection ? Array.from(associatedSelection.idsToSelect) : [];
-            const associatedNodeIds = selectionIds.filter((id) => {
-              if (isIdBlacklisted(id)) return false;
-              const nodeData = cyDataNodes.find((n) => n.data.id === id);
-              return nodeData && !visibleSet.has(id);
-            });
-            const edges = cyDataEdges
-              .filter((edge) => associatedSelection?.visibleEdgeIds.has(edge.data.id))
-              .map((edge) => ({
-                id: edge.data.id,
-                source: edge.data.source,
-                target: edge.data.target,
-                label: edge.data.label,
-              }));
-            return { nodeIds: associatedNodeIds, edges };
-          })()
-        : computeExpansion(closest.id, mode);
+      const { nodeIds, edges: expansionEdges } = computeExpansion(closest.id, mode);
 
       // apply blacklist to preview targets
       const filteredNodeIds = nodeIds.filter((nid) => !isIdBlacklisted(nid));
@@ -1234,7 +1063,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
       const hasHiddenEdges = filteredExpansionEdges.some((e) => hiddenEdgesRef.current.has(e.id));
       const allVisible = filteredNodeIds.length === 0 && !hasHiddenEdges;
-      if (allVisible && !isAssociated) {
+      if (allVisible) {
         clearPreview();
         return;
       }
@@ -1247,57 +1076,36 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         return getNodeColorForNode({ sources: nodeData?.data.sources ?? ['unknown'], isAClass: nodeData?.data.isAClass ?? null });
       };
 
-      if (allVisible && isAssociated) {
-        filteredExpansionEdges.forEach((edge) => {
-          const key = `${edge.source}->${edge.target}`;
-          if (!addedEdgeKeys.has(key)) {
-            addedEdgeKeys.add(key);
-            newGhostEdges.push({
-              id: edge.id ?? key,
-              source: edge.source,
-              target: edge.target,
-              label: anonymizeLabel(edge.label ?? edge.id),
-              visible: true,
-              color: getEdgeColorForSource(edge.source),
-              previewRemoval: true,
-            });
-          }
+      filteredNodeIds.forEach((nid) => {
+        const nodeData = cyDataNodes.find((n) => n.data.id === nid);
+        if (!nodeData) return;
+        newGhostNodes.push({
+          id: nid,
+          label: anonymizeLabel(nodeData.data.label ?? nodeData.data.id),
+          color: getNodeColorForNode({ sources: nodeData.data.sources ?? ['unknown'], isAClass: nodeData.data.isAClass ?? null }),
+          shape: getNodeShapeForId(nid),
+          x: closest?.x,
+          y: closest?.y,
+          ghost: true,
         });
-      } else {
-        filteredNodeIds.forEach((nid) => {
-          const nodeData = cyDataNodes.find((n) => n.data.id === nid);
-          if (!nodeData) return;
-          newGhostNodes.push({
-            id: nid,
-            label: anonymizeLabel(nodeData.data.label ?? nodeData.data.id),
-            color: getNodeColorForNode({ sources: nodeData.data.sources ?? ['unknown'], isAClass: nodeData.data.isAClass ?? null }),
-            shape: getNodeShapeForId(nid),
-            x: closest?.x,
-            y: closest?.y,
+      });
+      filteredExpansionEdges.forEach((edge) => {
+        const key = `${edge.source}->${edge.target}`;
+        if (!addedEdgeKeys.has(key)) {
+          addedEdgeKeys.add(key);
+          newGhostEdges.push({
+            id: edge.id ?? key,
+            source: edge.source,
+            target: edge.target,
+            label: anonymizeLabel(edge.label ?? edge.id),
+            visible: true,
+            color: getEdgeColorForSource(edge.source),
             ghost: true,
           });
-        });
-        filteredExpansionEdges.forEach((edge) => {
-          const key = `${edge.source}->${edge.target}`;
-          if (!addedEdgeKeys.has(key)) {
-            addedEdgeKeys.add(key);
-            newGhostEdges.push({
-              id: edge.id ?? key,
-              source: edge.source,
-              target: edge.target,
-              label: anonymizeLabel(edge.label ?? edge.id),
-              visible: true,
-              color: getEdgeColorForSource(edge.source),
-              ghost: true,
-            });
-          }
-        });
-      }
+        }
+      });
 
-      const hasRemovalEdges = newGhostEdges.some((edge) => edge.previewRemoval);
-      const hasAdditionEdges = newGhostEdges.some((edge) => !edge.previewRemoval);
-
-      if (newGhostNodes.length > 0 || hasRemovalEdges || hasAdditionEdges) {
+      if (newGhostNodes.length > 0 || newGhostEdges.length > 0) {
         activePreviewRef.current = { mode, nodeId: closest.id };
         setGhostNodes(newGhostNodes);
         setGhostEdges(newGhostEdges);
@@ -1324,15 +1132,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       lassoActiveRef,
       clearPreview,
       computeExpansion,
-      computeAssociations,
-      focusNodeMap,
-      typeMap,
-      violationMap,
-      exemplarMap,
-      violationTypesMap,
-      typesViolationMap,
-      nodeShapeViolationMap,
-      isNodeShapeNode,
       isIdBlacklisted,
       isLabelBlacklisted,
       anonymizeLabel,
@@ -1387,16 +1186,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       canvas.removeEventListener('dblclick', handleDoubleClick);
     };
   }, [handleDrag, handleDoubleClick, zoomBehaviorRef, updateHoverPreview, clearPreview]);
-
-  useEffect(() => {
-    if (ghostNodes.length === 0 && ghostEdges.some((edge) => edge.previewRemoval)) {
-      const sim = simulationRef.current;
-      if (sim) {
-        sim.alpha(0.001);
-        sim.alphaTarget(0).restart();
-      }
-    }
-  }, [ghostNodes.length, ghostEdges, simulationRef]);
 
   useEffect(() => {
     if (ghostNodes.length === 0 && ghostEdges.length === 0) {
