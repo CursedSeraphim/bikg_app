@@ -23,6 +23,7 @@ import {
   selectViolations,
   selectViolationTypesMap,
   setCoordinatedSelections,
+  setD3CenteringEnabled,
   setSelectedTypes,
   setSelectedViolationExemplars,
   setSelectedViolations,
@@ -113,6 +114,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const previousVisibleNodeIdsRef = useRef<Set<string>>(new Set());
   const layoutFreezeTimeoutRef = useRef<DomTimeoutHandle | null>(null);
   const lassoSelectionRef = useRef<{ nodeIds: Set<string>; signature: string } | null>(null);
+  const layoutFreezeHandledRef = useRef(false);
 
   // --- Helpers --------------------------------------------------------------
 
@@ -374,6 +376,16 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     [exemplarMap, focusNodeMap, typeMap, violationMap, nodeShapeViolationMap, isNodeShapeNode],
   );
 
+  const handleLayoutFreeze = useCallback(() => {
+    if (layoutFreezeHandledRef.current) {
+      return;
+    }
+    layoutFreezeHandledRef.current = true;
+    if (d3CenteringEnabled) {
+      dispatch(setD3CenteringEnabled(false));
+    }
+  }, [dispatch, d3CenteringEnabled]);
+
   useEffect(() => {
     if (!loading) {
       // also sanitize the source data in place so any other consumer reads anonymized labels
@@ -427,10 +439,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         },
         onFreeze: () => {
           sim.alphaTarget(0);
+          handleLayoutFreeze();
         },
       });
     },
-    [simulationRef],
+    [simulationRef, handleLayoutFreeze],
   );
 
   useEffect(() => {
@@ -986,6 +999,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         shouldFreeze: () => !dragActiveRef.current,
         onFreeze: () => {
           sim.alphaTarget(0);
+          handleLayoutFreeze();
         },
       });
     });
