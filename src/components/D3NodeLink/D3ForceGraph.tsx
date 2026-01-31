@@ -78,6 +78,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const selectedViolationIds = useSelector(selectSelectedViolations);
   const selectedTypeIds = useSelector(selectSelectedTypes);
   const selectedExemplarIds = useSelector(selectSelectedViolationExemplars);
+  type DomTimeoutHandle = number;
 
   const { loading, cyDataNodes, cyDataEdges } = useD3Data({
     rdfOntology,
@@ -110,7 +111,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const nodeMapRef = useRef<Record<string, CanvasNode>>({});
   const savedPositionsRef = useRef<Record<string, { x?: number; y?: number }>>({});
   const previousVisibleNodeIdsRef = useRef<Set<string>>(new Set());
-  const layoutFreezeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const layoutFreezeTimeoutRef = useRef<DomTimeoutHandle | null>(null);
   const lassoSelectionRef = useRef<{ nodeIds: Set<string>; signature: string } | null>(null);
 
   // --- Helpers --------------------------------------------------------------
@@ -413,7 +414,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       const { movableNodeIds, alphaTarget = 0.3, freezeAfter = 2000, nodesOverride } = options;
 
       if (layoutFreezeTimeoutRef.current) {
-        clearTimeout(layoutFreezeTimeoutRef.current);
+        window.clearTimeout(layoutFreezeTimeoutRef.current);
         layoutFreezeTimeoutRef.current = null;
       }
 
@@ -903,7 +904,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   const rightDraggingRef = useRef(false);
   const rightMouseDownRef = useRef<{ x: number; y: number } | null>(null);
-  const dragFreezeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragFreezeTimeoutRef = useRef<DomTimeoutHandle | null>(null);
   const dragActiveRef = useRef(false);
 
   type DragEvent = d3.D3DragEvent<HTMLCanvasElement, CanvasNode, CanvasNode>;
@@ -931,11 +932,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       dragActiveRef.current = true;
 
       if (dragFreezeTimeoutRef.current) {
-        clearTimeout(dragFreezeTimeoutRef.current);
+        window.clearTimeout(dragFreezeTimeoutRef.current);
         dragFreezeTimeoutRef.current = null;
       }
       if (layoutFreezeTimeoutRef.current) {
-        clearTimeout(layoutFreezeTimeoutRef.current);
+        window.clearTimeout(layoutFreezeTimeoutRef.current);
         layoutFreezeTimeoutRef.current = null;
       }
 
@@ -1304,11 +1305,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   useEffect(() => {
     return () => {
       if (dragFreezeTimeoutRef.current) {
-        clearTimeout(dragFreezeTimeoutRef.current);
+        window.clearTimeout(dragFreezeTimeoutRef.current);
         dragFreezeTimeoutRef.current = null;
       }
       if (layoutFreezeTimeoutRef.current) {
-        clearTimeout(layoutFreezeTimeoutRef.current);
+        window.clearTimeout(layoutFreezeTimeoutRef.current);
         layoutFreezeTimeoutRef.current = null;
       }
     };

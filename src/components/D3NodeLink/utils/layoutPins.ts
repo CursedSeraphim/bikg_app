@@ -4,7 +4,7 @@ export type LayoutPinOptions = {
   movableNodeIds?: Iterable<string>;
 };
 
-type TimeoutHandle = ReturnType<typeof globalThis.setTimeout>;
+type TimeoutHandle = number;
 type ScheduleFn = (handler: () => void, timeout: number) => TimeoutHandle;
 
 export type LayoutCycleOptions = {
@@ -39,8 +39,8 @@ export function applyLayoutPins(nodes: CanvasNode[], options: LayoutPinOptions =
   nodes.forEach((node) => {
     const isMovable = hasMovable && movableIds.has(node.id);
     updateNodeState(node, {
-      fx: isMovable ? null : node.x ?? null,
-      fy: isMovable ? null : node.y ?? null,
+      fx: isMovable ? null : (node.x ?? null),
+      fy: isMovable ? null : (node.y ?? null),
     });
   });
 }
@@ -55,16 +55,14 @@ export function releaseNodes(nodes: CanvasNode[]): void {
   });
 }
 
-export function scheduleFreezeNodes(
-  options: {
-    getNodes: () => CanvasNode[];
-    delayMs?: number;
-    schedule?: ScheduleFn;
-    onFreeze?: () => void;
-    shouldFreeze?: () => boolean;
-  },
-): TimeoutHandle | null {
-  const { getNodes, delayMs = 1000, schedule = globalThis.setTimeout, onFreeze, shouldFreeze } = options;
+export function scheduleFreezeNodes(options: {
+  getNodes: () => CanvasNode[];
+  delayMs?: number;
+  schedule?: ScheduleFn;
+  onFreeze?: () => void;
+  shouldFreeze?: () => boolean;
+}): TimeoutHandle | null {
+  const { getNodes, delayMs = 1000, schedule = window.setTimeout, onFreeze, shouldFreeze } = options;
 
   if (!delayMs || delayMs <= 0) {
     if (!shouldFreeze || shouldFreeze()) {
@@ -83,8 +81,7 @@ export function scheduleFreezeNodes(
 }
 
 export function runLayoutCycle(options: LayoutCycleOptions): TimeoutHandle | null {
-  const { getNodes, movableNodeIds, freezeAfterMs = 1000, onStart, onFreeze, schedule = globalThis.setTimeout } =
-    options;
+  const { getNodes, movableNodeIds, freezeAfterMs = 1000, onStart, onFreeze, schedule = window.setTimeout } = options;
 
   applyLayoutPins(getNodes(), { movableNodeIds });
   onStart?.();
@@ -95,5 +92,6 @@ export function runLayoutCycle(options: LayoutCycleOptions): TimeoutHandle | nul
       onFreeze?.();
     }, freezeAfterMs);
   }
+
   return null;
 }
