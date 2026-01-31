@@ -6,15 +6,28 @@
   flex-direction: column;
   align-items: flex-end;
   z-index: 1000;
-  pointer-events: none;
+  pointer-events: auto;
+
   --onboarding-tooltip-width: 240px;
+  --onboarding-tooltip-opacity: 0.7;
+  --onboarding-tooltip-button-opacity: 1;
+  --onboarding-tooltip-dim-opacity: 0.35;
+}
+
+.onboarding-tooltip-stack.is-dismiss-hovered {
+  --onboarding-tooltip-opacity: var(--onboarding-tooltip-dim-opacity);
 }
 
 .onboarding-tooltip-item {
+  position: relative;
   max-height: 120px;
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.3s ease, transform 0.3s ease, max-height 0.3s ease, margin-top 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    max-height 0.3s ease,
+    margin-top 0.3s ease;
   overflow: hidden;
 }
 
@@ -29,10 +42,68 @@
   margin-top: 0;
 }
 
+.onboarding-tooltip-dismiss {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  top: -16px;
+  right: -16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 2;
+}
+
+.onboarding-tooltip-dismiss::before,
+.onboarding-tooltip-dismiss::after {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.onboarding-tooltip-dismiss::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  background: var(--mantine-header-color);
+  border: 1px solid #ffffff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+}
+
+.onboarding-tooltip-dismiss::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  background:
+    linear-gradient(#ffffff, #ffffff) center / 12px 2px no-repeat,
+    linear-gradient(#ffffff, #ffffff) center / 2px 12px no-repeat;
+}
+
+.onboarding-tooltip-stack.is-hovered .onboarding-tooltip-dismiss::before,
+.onboarding-tooltip-stack.is-hovered .onboarding-tooltip-dismiss::after,
+.onboarding-tooltip-dismiss:hover::before,
+.onboarding-tooltip-dismiss:hover::after,
+.onboarding-tooltip-dismiss:focus-visible::before,
+.onboarding-tooltip-dismiss:focus-visible::after {
+  opacity: 1;
+}
+
 .onboarding-tooltip-box {
   background: var(--mantine-header-color);
   color: #ffffff;
-  opacity: 0.7;
+  opacity: var(--onboarding-tooltip-opacity);
+  transition: opacity 0.3s ease;
   border-radius: 6px;
   padding: 8px 10px;
   font-size: 12px;
@@ -42,3 +113,4 @@
   white-space: normal;
   word-break: break-word;
 }
+

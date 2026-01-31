@@ -33,9 +33,15 @@ const onboardingSlice = createSlice({
         state.events[key as OnboardingEventId] = false;
       });
     },
+    completeAllOnboardingEvents: (state) => {
+      Object.keys(state.events).forEach((key) => {
+        state.events[key as OnboardingEventId] = true;
+      });
+    },
   },
 });
 
-export const { markOnboardingEventComplete, resetOnboardingEvents } = onboardingSlice.actions;
+export const { markOnboardingEventComplete, resetOnboardingEvents, completeAllOnboardingEvents } =
+  onboardingSlice.actions;
 
 export default onboardingSlice.reducer;
