@@ -18,31 +18,31 @@ export type OnboardingEventId = (typeof onboardingEventIds)[keyof typeof onboard
 export const onboardingTooltipSteps: { id: OnboardingEventId; label: string }[] = [
   {
     id: onboardingEventIds.nldLassoSelect,
-    label: 'Ctrl-LMB to drag a lasso around nodes to select them.',
-  },
-  {
-    id: onboardingEventIds.nldPan,
-    label: 'LMB to drag and pan in the NLD.',
-  },
-  {
-    id: onboardingEventIds.nldAltDrag,
-    label: 'Alt-LMB to drag a node in the NLD and to run the force-directed layout.',
+    label: 'Ctrl-click to drag a lasso around nodes to select them.',
   },
   {
     id: onboardingEventIds.nldDeleteSelection,
     label: 'Press delete to hide selected parts of the NLD.',
   },
   {
+    id: onboardingEventIds.nldPan,
+    label: 'Click to drag and pan in the NLD.',
+  },
+  {
+    id: onboardingEventIds.nldAltDrag,
+    label: 'Alt-click to drag a node in the NLD and to run the force-directed layout.',
+  },
+  {
     id: onboardingEventIds.nldExpandChildren,
-    label: 'Ctrl-click a node to expand its children.',
+    label: 'Ctrl-doubleclick a node to expand its children.',
   },
   {
     id: onboardingEventIds.nldExpandParents,
-    label: 'Shift-click a node to expand its parents.',
+    label: 'Shift-doubleclick a node to expand its parents.',
   },
   {
     id: onboardingEventIds.nldExpandAssociated,
-    label: 'Ctrl-Shift-click a node to expand the paths associated to its violating focus nodes.',
+    label: 'Ctrl-Shift-doubleclick a node to expand the paths associated to its violating focus nodes.',
   },
   {
     id: onboardingEventIds.nldContextMenu,
