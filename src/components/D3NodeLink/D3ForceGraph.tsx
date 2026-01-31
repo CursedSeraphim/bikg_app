@@ -110,6 +110,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const nodeMapRef = useRef<Record<string, CanvasNode>>({});
   const savedPositionsRef = useRef<Record<string, { x?: number; y?: number }>>({});
   const previousVisibleNodeIdsRef = useRef<Set<string>>(new Set());
+  const layoutFreezeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lassoSelectionRef = useRef<{ nodeIds: Set<string>; signature: string } | null>(null);
 
   // --- Helpers --------------------------------------------------------------
@@ -904,7 +905,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const rightMouseDownRef = useRef<{ x: number; y: number } | null>(null);
   const dragFreezeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragActiveRef = useRef(false);
-  const layoutFreezeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   type DragEvent = d3.D3DragEvent<HTMLCanvasElement, CanvasNode, CanvasNode>;
 
