@@ -49,11 +49,11 @@ import { useD3ResetView } from './hooks/useD3ResetView';
 // import useExemplarHoverList from './hooks/useExemplarHoverList';
 import { useLassoSelection } from './hooks/useLassoSelection';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
-import { computeAssociationTargets } from './utils/associationTargets';
 import { getAssociatedHoverPreviewTargets } from './utils/associatedHoverPreview';
+import { computeAssociationTargets } from './utils/associationTargets';
 import { freezeNodes, releaseNodes, runLayoutCycle, scheduleFreezeNodes } from './utils/layoutPins';
-import { computeSelectionScope } from './utils/selectionScope';
 import { buildNodeShapeViolationMap, getFocusNodesForNodeShape, isNodeShapeClass } from './utils/nodeShapeAssociations';
+import { computeSelectionScope } from './utils/selectionScope';
 
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) {
@@ -410,7 +410,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       const sim = simulationRef.current;
       if (!sim) return;
 
-      const { movableNodeIds, alphaTarget = 0.3, freezeAfter = 1000, nodesOverride } = options;
+      const { movableNodeIds, alphaTarget = 0.3, freezeAfter = 2000, nodesOverride } = options;
 
       if (layoutFreezeTimeoutRef.current) {
         clearTimeout(layoutFreezeTimeoutRef.current);
@@ -464,7 +464,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     runTargetedLayout({
       movableNodeIds: newNodeIds,
       alphaTarget: 0.3,
-      freezeAfter: 1000,
+      freezeAfter: 2000,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d3Nodes, loading, runTargetedLayout]);
@@ -981,7 +981,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
       dragFreezeTimeoutRef.current = scheduleFreezeNodes({
         getNodes: () => Object.values(nodeMapRef.current),
-        delayMs: 1000,
+        delayMs: 2000,
         shouldFreeze: () => !dragActiveRef.current,
         onFreeze: () => {
           sim.alphaTarget(0);
