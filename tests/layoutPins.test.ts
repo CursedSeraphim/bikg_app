@@ -81,4 +81,24 @@ describe('layout pinning behavior', () => {
     expect(onFreeze).toHaveBeenCalledTimes(1);
     jest.useRealTimers();
   });
+
+  it('does not freeze nodes when a drag is still active', () => {
+    jest.useFakeTimers();
+    const nodes = [createNode('a', 5, 15), createNode('b', 25, 35)];
+
+    applyLayoutPins(nodes);
+    releaseNodes(nodes);
+
+    scheduleFreezeNodes({
+      getNodes: () => nodes,
+      delayMs: 500,
+      shouldFreeze: () => false,
+    });
+
+    jest.advanceTimersByTime(500);
+
+    expect(nodes[0].fx).toBeNull();
+    expect(nodes[1].fx).toBeNull();
+    jest.useRealTimers();
+  });
 });

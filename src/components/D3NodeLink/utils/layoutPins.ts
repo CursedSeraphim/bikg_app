@@ -50,19 +50,24 @@ export function scheduleFreezeNodes(
     delayMs?: number;
     schedule?: (handler: () => void, timeout: number) => ReturnType<typeof setTimeout>;
     onFreeze?: () => void;
+    shouldFreeze?: () => boolean;
   },
 ): ReturnType<typeof setTimeout> | null {
-  const { getNodes, delayMs = 1000, schedule = setTimeout, onFreeze } = options;
+  const { getNodes, delayMs = 1000, schedule = setTimeout, onFreeze, shouldFreeze } = options;
 
   if (!delayMs || delayMs <= 0) {
-    freezeNodes(getNodes());
-    onFreeze?.();
+    if (!shouldFreeze || shouldFreeze()) {
+      freezeNodes(getNodes());
+      onFreeze?.();
+    }
     return null;
   }
 
   return schedule(() => {
-    freezeNodes(getNodes());
-    onFreeze?.();
+    if (!shouldFreeze || shouldFreeze()) {
+      freezeNodes(getNodes());
+      onFreeze?.();
+    }
   }, delayMs);
 }
 

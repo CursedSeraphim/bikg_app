@@ -898,6 +898,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const rightDraggingRef = useRef(false);
   const rightMouseDownRef = useRef<{ x: number; y: number } | null>(null);
   const dragFreezeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragActiveRef = useRef(false);
 
   type DragEvent = d3.D3DragEvent<HTMLCanvasElement, CanvasNode, CanvasNode>;
 
@@ -920,6 +921,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     .on('start', (event: DragEvent) => {
       const sim = simulationRef.current;
       if (!sim) return;
+
+      dragActiveRef.current = true;
 
       if (dragFreezeTimeoutRef.current) {
         clearTimeout(dragFreezeTimeoutRef.current);
@@ -958,6 +961,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       const sim = simulationRef.current;
       if (!sim) return;
 
+      dragActiveRef.current = false;
+
       const { subject } = event;
       subject.fx = null;
       subject.fy = null;
@@ -967,6 +972,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       dragFreezeTimeoutRef.current = scheduleFreezeNodes({
         getNodes: () => Object.values(nodeMapRef.current),
         delayMs: 1000,
+        shouldFreeze: () => !dragActiveRef.current,
         onFreeze: () => {
           sim.alphaTarget(0);
         },
