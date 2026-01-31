@@ -61,6 +61,7 @@ export function useD3Force(
   const drawRef = useRef<() => void>(() => {});
   const centerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevCenteringRef = useRef<{ enabled: boolean; strength: number } | null>(null);
+  const initializedTransformRef = useRef(false);
 
   const dpi = window.devicePixelRatio ?? 1;
   const { mapNodeLabel, mapEdgeLabel } = useLabelTransform();
@@ -94,6 +95,10 @@ export function useD3Force(
     control: { x: number; y: number };
     label: { x: number; y: number };
   };
+
+  function getCenteredTransform(width: number, height: number) {
+    return d3.zoomIdentity.translate(width / 2, height / 2);
+  }
 
   function quadraticPoint(p0: number, p1: number, p2: number, t: number) {
     const oneMinusT = 1 - t;
@@ -710,6 +715,13 @@ export function useD3Force(
     zoomBehaviorRef.current = zoomBehavior;
     selection.call(zoomBehavior);
     selection.on('dblclick.zoom', null); // disable default double‐click zoom
+
+    if (!initializedTransformRef.current && dimensions.width > 0 && dimensions.height > 0) {
+      const transform = getCenteredTransform(dimensions.width, dimensions.height);
+      initializedTransformRef.current = true;
+      transformRef.current = transform;
+      selection.call(zoomBehavior.transform, transform);
+    }
 
     return () => {
       selection.on('.zoom', null);
