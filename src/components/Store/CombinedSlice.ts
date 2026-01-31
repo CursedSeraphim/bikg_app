@@ -344,17 +344,9 @@ export function constructViolationsPerNodeValueObject(): INumberViolationsPerNod
   };
 }
 
-/**
- * Helper function to increment the value for a given key in a map.
- * Initializes the key with 0 if it's not already in the map.
- */
-const incrementMapValue = (map: Map<string, number>, key: string) => {
-  map.set(key, (map.get(key) || 0) + 1);
-};
-
-function resetCounts(numberViolationsPerNode: INumberViolationsPerNodeMap, selectionMaps: Map<string, number>[]): void {
+function resetCounts(numberViolationsPerNode: INumberViolationsPerNodeMap, selectionSets: Set<string>[]): void {
   Object.keys(numberViolationsPerNode).forEach((key) => {
-    const isSelected = selectionMaps.some((m) => m.has(key));
+    const isSelected = selectionSets.some((m) => m.has(key));
     if (!isSelected) {
       // eslint-disable-next-line no-param-reassign
       numberViolationsPerNode[key].cumulativeSelected = 0;
@@ -397,9 +389,9 @@ function calculateNewNumberViolationsPerNode(
   ontologyTree: IServerTreeNode,
   knownTypes: Set<string>,
 ) {
-  const newSelectedTypesMap = new Map<string, number>();
-  const newSelectedViolationsMap = new Map<string, number>();
-  const newSelectedExemplarsMap = new Map<string, number>();
+  const newSelectedTypesSet = new Set<string>();
+  const newSelectedViolationsSet = new Set<string>();
+  const newSelectedExemplarsSet = new Set<string>();
 
   const selectedNodeSets = new Map<string, Set<string>>();
 
@@ -413,15 +405,15 @@ function calculateNewNumberViolationsPerNode(
   newSelectedNodes.forEach((node) => {
     const { types, violations, exemplars } = focusNodeMap[node];
     types.forEach((type: string) => {
-      incrementMapValue(newSelectedTypesMap, type);
+      newSelectedTypesSet.add(type);
       addToSet(selectedNodeSets, type, node);
     });
     violations.forEach((violation: string) => {
-      incrementMapValue(newSelectedViolationsMap, violation);
+      newSelectedViolationsSet.add(violation);
       addToSet(selectedNodeSets, violation, node);
     });
     exemplars.forEach((exemplar: string) => {
-      incrementMapValue(newSelectedExemplarsMap, exemplar);
+      newSelectedExemplarsSet.add(exemplar);
       addToSet(selectedNodeSets, exemplar, node);
     });
   });
@@ -436,7 +428,7 @@ function calculateNewNumberViolationsPerNode(
     }
   });
 
-  resetCounts(numberViolationsPerNode, [newSelectedTypesMap, newSelectedViolationsMap, newSelectedExemplarsMap]);
+  resetCounts(numberViolationsPerNode, [newSelectedTypesSet, newSelectedViolationsSet, newSelectedExemplarsSet]);
 
   const accumulateSets = (node: IServerTreeNode): Set<string> => {
     const currentSet = new Set<string>(selectedNodeSets.get(node.id) ?? []);
@@ -455,6 +447,33 @@ function calculateNewNumberViolationsPerNode(
 
   return numberViolationsPerNode;
 }
+
+const knownTypeCache = {
+  types: [] as string[],
+  violations: [] as string[],
+  knownTypes: new Set<string>(),
+};
+
+const getKnownTypesSet = (state: ICombinedState): Set<string> => {
+  if (knownTypeCache.types === state.types && knownTypeCache.violations === state.violations) {
+    return knownTypeCache.knownTypes;
+  }
+  const nextKnownTypes = new Set<string>([...state.types, ...state.violations]);
+  knownTypeCache.types = state.types;
+  knownTypeCache.violations = state.violations;
+  knownTypeCache.knownTypes = nextKnownTypes;
+  return nextKnownTypes;
+};
+
+const updateNumberViolationsPerNode = (state: ICombinedState): void => {
+  state.numberViolationsPerNode = calculateNewNumberViolationsPerNode(
+    state.selectedNodes,
+    state.focusNodeMap,
+    state.numberViolationsPerNode,
+    state.ontologyTree,
+    getKnownTypesSet(state),
+  );
+};
 
 enum ActionTypes {
   OVERWRITE = 'overwrite',
@@ -529,13 +548,7 @@ const combinedSlice = createSlice({
       state.selectedViolationExemplars = [];
 
       if (state.ontologyTree) {
-        state.numberViolationsPerNode = calculateNewNumberViolationsPerNode(
-          state.selectedNodes,
-          state.focusNodeMap,
-          state.numberViolationsPerNode,
-          state.ontologyTree,
-          new Set([...state.types, ...state.violations]),
-        );
+        updateNumberViolationsPerNode(state);
       } else {
         Object.values(state.numberViolationsPerNode).forEach((entry) => {
           // eslint-disable-next-line no-param-reassign
@@ -631,14 +644,7 @@ const combinedSlice = createSlice({
       state.selectedViolations = selections.selectedViolations;
       state.selectedViolationExemplars = selections.selectedViolationExemplars;
 
-      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
-        state.selectedNodes,
-        state.focusNodeMap,
-        state.numberViolationsPerNode,
-        state.ontologyTree,
-        new Set([...state.types, ...state.violations]),
-      );
-      state.numberViolationsPerNode = newNumberViolationsPerNode;
+      updateNumberViolationsPerNode(state);
     },
     setEdgeCountDict: (state, action: PayloadAction<EdgeCountDict>) => {
       state.edgeCountDict = action.payload;
@@ -715,13 +721,7 @@ const combinedSlice = createSlice({
       updateSelectedViolations(state, valueCounts);
       updateSelectedTypes(state, valueCounts);
       updateSelectedViolationExemplars(state);
-      state.numberViolationsPerNode = calculateNewNumberViolationsPerNode(
-        state.selectedNodes,
-        state.focusNodeMap,
-        state.numberViolationsPerNode,
-        state.ontologyTree,
-        new Set([...state.types, ...state.violations]),
-      );
+      updateNumberViolationsPerNode(state);
     },
     setSelectedFocusNodes: (state, action: PayloadAction<string[]>) => {
       const newSelectedNodes = action.payload;
@@ -734,13 +734,7 @@ const combinedSlice = createSlice({
       state.selectedNodes = newSelectedNodes;
       state.selectedTypes = newSelectedTypes;
       state.selectedViolations = newSelectedViolations;
-      state.numberViolationsPerNode = calculateNewNumberViolationsPerNode(
-        state.selectedNodes,
-        state.focusNodeMap,
-        state.numberViolationsPerNode,
-        state.ontologyTree,
-        new Set([...state.types, ...state.violations]),
-      );
+      updateNumberViolationsPerNode(state);
 
       updateSelectedViolationExemplars(state);
     },
@@ -760,13 +754,7 @@ const combinedSlice = createSlice({
       state.selectedViolations = selectedViolations;
       state.selectedViolationExemplars = selectedViolationExemplars;
 
-      state.numberViolationsPerNode = calculateNewNumberViolationsPerNode(
-        state.selectedNodes,
-        state.focusNodeMap,
-        state.numberViolationsPerNode,
-        state.ontologyTree,
-        new Set([...state.types, ...state.violations]),
-      );
+      updateNumberViolationsPerNode(state);
     },
 
     setSelectedViolations: (state, action: PayloadAction<string[]>) => {
@@ -779,14 +767,7 @@ const combinedSlice = createSlice({
       state.selectedViolationExemplars = selections.selectedViolationExemplars;
       state.selectedViolations = selections.selectedViolations;
 
-      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
-        state.selectedNodes,
-        state.focusNodeMap,
-        state.numberViolationsPerNode,
-        state.ontologyTree,
-        new Set([...state.types, ...state.violations]),
-      );
-      state.numberViolationsPerNode = newNumberViolationsPerNode;
+      updateNumberViolationsPerNode(state);
     },
     setSelectedTypes: (state, action: PayloadAction<string[]>) => {
       const selections = deriveSelectionsFromTypes(action.payload, state.typeMap);
@@ -794,13 +775,7 @@ const combinedSlice = createSlice({
       state.selectedNodes = selections.selectedNodes;
       state.selectedViolations = selections.selectedViolations;
       state.selectedViolationExemplars = selections.selectedViolationExemplars;
-      state.numberViolationsPerNode = calculateNewNumberViolationsPerNode(
-        state.selectedNodes,
-        state.focusNodeMap,
-        state.numberViolationsPerNode,
-        state.ontologyTree,
-        new Set([...state.types, ...state.violations]),
-      );
+      updateNumberViolationsPerNode(state);
     },
     addSingleSelectedType: (state, action: PayloadAction<string>) => {
       const newType = action.payload;
@@ -823,14 +798,7 @@ const combinedSlice = createSlice({
 
       updateSelectedViolationExemplars(state);
 
-      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
-        state.selectedNodes,
-        state.focusNodeMap,
-        state.numberViolationsPerNode,
-        state.ontologyTree,
-        new Set([...state.types, ...state.violations]),
-      );
-      state.numberViolationsPerNode = newNumberViolationsPerNode;
+      updateNumberViolationsPerNode(state);
     },
     removeMultipleSelectedTypes: (state, action: PayloadAction<string[]>) => {
       const typesToRemove = action.payload;
@@ -878,14 +846,7 @@ const combinedSlice = createSlice({
       state.selectedViolations = newSelectedViolations;
 
       updateSelectedViolationExemplars(state);
-      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
-        state.selectedNodes,
-        state.focusNodeMap,
-        state.numberViolationsPerNode,
-        state.ontologyTree,
-        new Set([...state.types, ...state.violations]),
-      );
-      state.numberViolationsPerNode = newNumberViolationsPerNode;
+      updateNumberViolationsPerNode(state);
     },
     removeSingleSelectedType: (state, action: PayloadAction<string>) => {
       const typeToRemove = action.payload;
@@ -929,14 +890,7 @@ const combinedSlice = createSlice({
 
       updateSelectedViolationExemplars(state);
 
-      const newNumberViolationsPerNode = calculateNewNumberViolationsPerNode(
-        state.selectedNodes,
-        state.focusNodeMap,
-        state.numberViolationsPerNode,
-        state.ontologyTree,
-        new Set([...state.types, ...state.violations]),
-      );
-      state.numberViolationsPerNode = newNumberViolationsPerNode;
+      updateNumberViolationsPerNode(state);
     },
     setRdfString: (state, action: PayloadAction<string>) => {
       state.rdfString = action.payload;
