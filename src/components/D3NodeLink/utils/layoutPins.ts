@@ -4,7 +4,7 @@ export type LayoutPinOptions = {
   movableNodeIds?: Iterable<string>;
 };
 
-type TimeoutHandle = ReturnType<typeof setTimeout>;
+type TimeoutHandle = ReturnType<typeof globalThis.setTimeout>;
 type ScheduleFn = (handler: () => void, timeout: number) => TimeoutHandle;
 
 export type LayoutCycleOptions = {
@@ -64,7 +64,7 @@ export function scheduleFreezeNodes(
     shouldFreeze?: () => boolean;
   },
 ): TimeoutHandle | null {
-  const { getNodes, delayMs = 1000, schedule = setTimeout, onFreeze, shouldFreeze } = options;
+  const { getNodes, delayMs = 1000, schedule = globalThis.setTimeout, onFreeze, shouldFreeze } = options;
 
   if (!delayMs || delayMs <= 0) {
     if (!shouldFreeze || shouldFreeze()) {
@@ -83,7 +83,8 @@ export function scheduleFreezeNodes(
 }
 
 export function runLayoutCycle(options: LayoutCycleOptions): TimeoutHandle | null {
-  const { getNodes, movableNodeIds, freezeAfterMs = 1000, onStart, onFreeze, schedule = setTimeout } = options;
+  const { getNodes, movableNodeIds, freezeAfterMs = 1000, onStart, onFreeze, schedule = globalThis.setTimeout } =
+    options;
 
   applyLayoutPins(getNodes(), { movableNodeIds });
   onStart?.();
