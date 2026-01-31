@@ -9,7 +9,7 @@ const baseMaps = {
 };
 
 describe('computeAssociationTargets', () => {
-  it('returns edges for visible associated nodes so hover removal can mirror expansion', () => {
+  it('returns edges for visible associated nodes so expansion can include relationships', () => {
     const cyDataNodes = [
       { data: { id: 'v1', visible: true, label: 'Violation' } },
       { data: { id: 'n1', visible: true, label: 'Node' } },
