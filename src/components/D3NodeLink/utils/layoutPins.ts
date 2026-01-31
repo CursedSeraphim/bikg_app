@@ -35,6 +35,37 @@ export function freezeNodes(nodes: CanvasNode[]): void {
   applyLayoutPins(nodes);
 }
 
+export function releaseNodes(nodes: CanvasNode[]): void {
+  nodes.forEach((node) => {
+    node.fx = null;
+    node.fy = null;
+    node.vx = 0;
+    node.vy = 0;
+  });
+}
+
+export function scheduleFreezeNodes(
+  options: {
+    getNodes: () => CanvasNode[];
+    delayMs?: number;
+    schedule?: (handler: () => void, timeout: number) => ReturnType<typeof setTimeout>;
+    onFreeze?: () => void;
+  },
+): ReturnType<typeof setTimeout> | null {
+  const { getNodes, delayMs = 1000, schedule = setTimeout, onFreeze } = options;
+
+  if (!delayMs || delayMs <= 0) {
+    freezeNodes(getNodes());
+    onFreeze?.();
+    return null;
+  }
+
+  return schedule(() => {
+    freezeNodes(getNodes());
+    onFreeze?.();
+  }, delayMs);
+}
+
 export function runLayoutCycle(options: LayoutCycleOptions): void {
   const { getNodes, movableNodeIds, freezeAfterMs = 1000, onStart, onFreeze, schedule = setTimeout } = options;
 

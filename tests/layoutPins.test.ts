@@ -1,5 +1,5 @@
 import type { CanvasNode } from '../src/components/D3NodeLink/D3NldTypes';
-import { applyLayoutPins, runLayoutCycle } from '../src/components/D3NodeLink/utils/layoutPins';
+import { applyLayoutPins, releaseNodes, runLayoutCycle, scheduleFreezeNodes } from '../src/components/D3NodeLink/utils/layoutPins';
 
 const createNode = (id: string, x: number, y: number): CanvasNode => ({
   id,
@@ -55,5 +55,30 @@ describe('layout pinning behavior', () => {
     expect(nodes[0].fy).toBe(2);
     expect(nodes[1].fx).toBe(3);
     expect(nodes[1].fy).toBe(4);
+  });
+
+  it('releases all nodes during drag and freezes them again after the delay', () => {
+    jest.useFakeTimers();
+    const nodes = [createNode('a', 10, 20), createNode('b', 30, 40)];
+
+    applyLayoutPins(nodes);
+    releaseNodes(nodes);
+
+    expect(nodes[0].fx).toBeNull();
+    expect(nodes[1].fx).toBeNull();
+
+    const onFreeze = jest.fn();
+    scheduleFreezeNodes({
+      getNodes: () => nodes,
+      delayMs: 1000,
+      onFreeze,
+    });
+
+    jest.advanceTimersByTime(1000);
+
+    expect(nodes[0].fx).toBe(10);
+    expect(nodes[1].fx).toBe(30);
+    expect(onFreeze).toHaveBeenCalledTimes(1);
+    jest.useRealTimers();
   });
 });

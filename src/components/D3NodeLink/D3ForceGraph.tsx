@@ -51,7 +51,7 @@ import { useLassoSelection } from './hooks/useLassoSelection';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 import { computeAssociationTargets } from './utils/associationTargets';
 import { getAssociatedHoverPreviewTargets } from './utils/associatedHoverPreview';
-import { freezeNodes, runLayoutCycle } from './utils/layoutPins';
+import { freezeNodes, releaseNodes, runLayoutCycle, scheduleFreezeNodes } from './utils/layoutPins';
 import { computeSelectionScope } from './utils/selectionScope';
 import { buildNodeShapeViolationMap, getFocusNodesForNodeShape, isNodeShapeClass } from './utils/nodeShapeAssociations';
 
@@ -897,6 +897,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   const rightDraggingRef = useRef(false);
   const rightMouseDownRef = useRef<{ x: number; y: number } | null>(null);
+  const dragFreezeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   type DragEvent = d3.D3DragEvent<HTMLCanvasElement, CanvasNode, CanvasNode>;
 
@@ -919,6 +920,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     .on('start', (event: DragEvent) => {
       const sim = simulationRef.current;
       if (!sim) return;
+
+      if (dragFreezeTimeoutRef.current) {
+        clearTimeout(dragFreezeTimeoutRef.current);
+        dragFreezeTimeoutRef.current = null;
+      }
+
+      releaseNodes(Object.values(nodeMapRef.current));
 
       if (!event.active) sim.alpha(0.45).restart();
       sim.alphaTarget(0); // allow cooling while holding
@@ -955,6 +963,14 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       subject.fy = null;
 
       if (!event.active) sim.alphaTarget(0);
+
+      dragFreezeTimeoutRef.current = scheduleFreezeNodes({
+        getNodes: () => Object.values(nodeMapRef.current),
+        delayMs: 1000,
+        onFreeze: () => {
+          sim.alphaTarget(0);
+        },
+      });
     });
 
   const handleDoubleClick = useCallback(
@@ -1268,6 +1284,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       window.removeEventListener('keyup', clearPreview);
     };
   }, [clearPreview]);
+
+  useEffect(() => {
+    return () => {
+      if (dragFreezeTimeoutRef.current) {
+        clearTimeout(dragFreezeTimeoutRef.current);
+        dragFreezeTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
