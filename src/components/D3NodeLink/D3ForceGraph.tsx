@@ -1216,36 +1216,34 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         return getNodeColorForNode({ sources: nodeData?.data.sources ?? ['unknown'], isAClass: nodeData?.data.isAClass ?? null });
       };
 
-      {
-        filteredNodeIds.forEach((nid) => {
-          const nodeData = cyDataNodes.find((n) => n.data.id === nid);
-          if (!nodeData) return;
-          newGhostNodes.push({
-            id: nid,
-            label: anonymizeLabel(nodeData.data.label ?? nodeData.data.id),
-            color: getNodeColorForNode({ sources: nodeData.data.sources ?? ['unknown'], isAClass: nodeData.data.isAClass ?? null }),
-            shape: getNodeShapeForId(nid),
-            x: closest?.x,
-            y: closest?.y,
+      filteredNodeIds.forEach((nid) => {
+        const nodeData = cyDataNodes.find((n) => n.data.id === nid);
+        if (!nodeData) return;
+        newGhostNodes.push({
+          id: nid,
+          label: anonymizeLabel(nodeData.data.label ?? nodeData.data.id),
+          color: getNodeColorForNode({ sources: nodeData.data.sources ?? ['unknown'], isAClass: nodeData.data.isAClass ?? null }),
+          shape: getNodeShapeForId(nid),
+          x: closest?.x,
+          y: closest?.y,
+          ghost: true,
+        });
+      });
+      filteredExpansionEdges.forEach((edge) => {
+        const key = `${edge.source}->${edge.target}`;
+        if (!addedEdgeKeys.has(key)) {
+          addedEdgeKeys.add(key);
+          newGhostEdges.push({
+            id: edge.id ?? key,
+            source: edge.source,
+            target: edge.target,
+            label: anonymizeLabel(edge.label ?? edge.id),
+            visible: true,
+            color: getEdgeColorForSource(edge.source),
             ghost: true,
           });
-        });
-        filteredExpansionEdges.forEach((edge) => {
-          const key = `${edge.source}->${edge.target}`;
-          if (!addedEdgeKeys.has(key)) {
-            addedEdgeKeys.add(key);
-            newGhostEdges.push({
-              id: edge.id ?? key,
-              source: edge.source,
-              target: edge.target,
-              label: anonymizeLabel(edge.label ?? edge.id),
-              visible: true,
-              color: getEdgeColorForSource(edge.source),
-              ghost: true,
-            });
-          }
-        });
-      }
+        }
+      });
 
       if (newGhostNodes.length > 0 || newGhostEdges.length > 0) {
         activePreviewRef.current = { mode, nodeId: closest.id };
