@@ -1,0 +1,17 @@
+import React from 'react';
+import { useSelector } from 'react-redux';
+import { onboardingTooltipSteps } from './onboardingEvents';
+import { OnboardingTooltipItem } from './OnboardingTooltipItem';
+import type { IRootState } from '../../types';
+
+export function OnboardingTooltipStack() {
+  const events = useSelector((state: IRootState) => state.onboarding.events);
+
+  return (
+    <div className="onboarding-tooltip-stack" role="status" aria-live="polite">
+      {onboardingTooltipSteps.map((step) => (
+        <OnboardingTooltipItem key={step.id} label={step.label} isComplete={Boolean(events[step.id])} />
+      ))}
+    </div>
+  );
+}

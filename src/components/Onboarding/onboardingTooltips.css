@@ -1,0 +1,39 @@
+.onboarding-tooltip-stack {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.onboarding-tooltip-item {
+  max-height: 120px;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease, max-height 0.3s ease, margin-top 0.3s ease;
+  overflow: hidden;
+}
+
+.onboarding-tooltip-item + .onboarding-tooltip-item {
+  margin-top: 6px;
+}
+
+.onboarding-tooltip-item.is-complete {
+  opacity: 0;
+  transform: translateY(-6px);
+  max-height: 0;
+  margin-top: 0;
+}
+
+.onboarding-tooltip-box {
+  background: #6b6b6b;
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.3;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}

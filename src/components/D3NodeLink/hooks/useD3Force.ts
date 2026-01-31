@@ -49,6 +49,7 @@ export function useD3Force(
   centeringEnabled: boolean,
   centeringStrength: number,
   autoRestart: boolean = true,
+  onPanStart?: () => void,
 ): {
   simulationRef: React.MutableRefObject<d3.Simulation<CanvasNode, CanvasEdge> | null>;
   transformRef: React.MutableRefObject<d3.ZoomTransform>;
@@ -701,6 +702,19 @@ export function useD3Force(
         return event.type === 'wheel' || (event.type === 'mousedown' && event.button === 0 && !event.ctrlKey && !event.altKey);
       })
       .scaleExtent([0.1, 10])
+      .on('start', (event) => {
+        const sourceEvent = event.sourceEvent as MouseEvent | WheelEvent | undefined;
+        if (
+          sourceEvent &&
+          sourceEvent.type === 'mousedown' &&
+          'button' in sourceEvent &&
+          sourceEvent.button === 0 &&
+          !sourceEvent.ctrlKey &&
+          !sourceEvent.altKey
+        ) {
+          onPanStart?.();
+        }
+      })
       .on('zoom', (event) => {
         transformRef.current = event.transform;
         const edgesForDraw = filterEdgesByNodes(nodes, edges);
@@ -715,7 +729,7 @@ export function useD3Force(
       selection.on('.zoom', null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges, dimensions.width, dimensions.height]);
+  }, [nodes, edges, dimensions.width, dimensions.height, onPanStart]);
 
   return {
     simulationRef,

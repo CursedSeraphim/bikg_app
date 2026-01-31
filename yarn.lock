@@ -11323,11 +11323,6 @@ __metadata:
     colorbrewer: ^1.5.3
     csv-parse: ^5.3.6
     cypress: ^12.0.1
-    cytoscape: ^3.23.0
-    cytoscape-context-menus: ^4.1.0
-    cytoscape-cose-bilkent: ^4.1.0
-    cytoscape-lasso: ^1.1.4
-    cytoscape-view-utilities: ^6.0.0
     d3: ^7.8.2
     jsonld-streaming-parser: ^3.2.0
     langchain: ^0.0.153
@@ -12416,15 +12411,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cose-base@npm:^1.0.0":
-  version: 1.0.3
-  resolution: "cose-base@npm:1.0.3"
-  dependencies:
-    layout-base: ^1.0.0
-  checksum: 3f3d592316df74adb215ca91e430f1c22b6e890bc0025b32ae1f6464c73fdb9614816cb40a8d38b40c6a3e9e7b8c64eda90d53fb9a4a6948abec17dad496f30b
-  languageName: node
-  linkType: hard
-
 "cosmiconfig@npm:^6.0.0":
   version: 6.0.0
   resolution: "cosmiconfig@npm:6.0.0"
@@ -12865,55 +12851,6 @@ __metadata:
   bin:
     cypress: bin/cypress
   checksum: c9c79f5493b23e9c8cfb92d45d50ea9d0fae54210dde203bfa794a79436faf60108d826fe9007a7d67fddf7919802ad8f006b7ae56c5c198c75d5bc85bbc851b
-  languageName: node
-  linkType: hard
-
-"cytoscape-context-menus@npm:^4.1.0":
-  version: 4.2.1
-  resolution: "cytoscape-context-menus@npm:4.2.1"
-  peerDependencies:
-    cytoscape: ^2.7.0 || ^3.0.0
-  checksum: 6447d8567269fffa841626f82da0dd77f6a39edc9fd4f5c76659ed85a0450b3cfca7dc9d5f3e24c43197828d0311bf4bf86248ab52f7c75d2e2fa206ac7a84d4
-  languageName: node
-  linkType: hard
-
-"cytoscape-cose-bilkent@npm:^4.1.0":
-  version: 4.1.0
-  resolution: "cytoscape-cose-bilkent@npm:4.1.0"
-  dependencies:
-    cose-base: ^1.0.0
-  peerDependencies:
-    cytoscape: ^3.2.0
-  checksum: bea6aa139e21bf4135b01b99f8778eed061e074d1a1689771597e8164a999d66f4075d46be584b0a88a5447f9321f38c90c8821df6a9322faaf5afebf4848d97
-  languageName: node
-  linkType: hard
-
-"cytoscape-lasso@npm:^1.1.4":
-  version: 1.1.4
-  resolution: "cytoscape-lasso@npm:1.1.4"
-  dependencies:
-    point-in-polygon: ^1.0.1
-  peerDependencies:
-    cytoscape: ^3.15.2
-  checksum: 1a86424175c30f6c28566b32563312d9da6560f2eb3afcbe46a83d63419e75110b92de93ef9d124cb07876efe13043c252600de0309adc6f8177d327a88582c1
-  languageName: node
-  linkType: hard
-
-"cytoscape-view-utilities@npm:^6.0.0":
-  version: 6.0.0
-  resolution: "cytoscape-view-utilities@npm:6.0.0"
-  dependencies:
-    geometric: ^2.2.3
-  peerDependencies:
-    cytoscape: ^3.2.0
-  checksum: f01c31333c49b296108b7351479fb7408ccfa81931200b31c1d935bc94c206d9302dd98c03fcbda4fa726928ffe7097e52a68e61dfa2f324a9da053c76c4c102
-  languageName: node
-  linkType: hard
-
-"cytoscape@npm:^3.23.0":
-  version: 3.32.0
-  resolution: "cytoscape@npm:3.32.0"
-  checksum: 60da8ac39cdd6f1afaa527ee7c3d15dd65f61cd9e32cb4615c94933a045bea7cb38bd177a1df92a6882e08c85066b66123fb799091abf21dc4af52b63ad28ace
   languageName: node
   linkType: hard
 
@@ -15758,13 +15695,6 @@ __metadata:
   version: 1.0.0-beta.2
   resolution: "gensync@npm:1.0.0-beta.2"
   checksum: a7437e58c6be12aa6c90f7730eac7fa9833dc78872b4ad2963d2031b00a3367a93f98aec75f9aaac7220848e4026d67a8655e870b24f20a543d103c0d65952ec
-  languageName: node
-  linkType: hard
-
-"geometric@npm:^2.2.3":
-  version: 2.5.5
-  resolution: "geometric@npm:2.5.5"
-  checksum: 479e507c643a6befe34f8a9dc7e7cb3ec82e85beeb7e21cd0bcce2b62556dc0d65ef6711b8e3ba1c54843c9e89527f03aa868014425c1237d20cf4d370ea4139
   languageName: node
   linkType: hard
 
@@ -19069,13 +18999,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"layout-base@npm:^1.0.0":
-  version: 1.0.2
-  resolution: "layout-base@npm:1.0.2"
-  checksum: e4c312765ac4fa13b49c940e701461309c7a0aa07f784f81d31f626b945dced90a8abf83222388a5af16b7074271f745501a90ef5a3af676abb2e7eb16d55b2e
-  languageName: node
-  linkType: hard
-
 "lazy-ass@npm:^1.6.0":
   version: 1.6.0
   resolution: "lazy-ass@npm:1.6.0"
@@ -21082,13 +21005,6 @@ __metadata:
   version: 2.35.3
   resolution: "plotly.js-dist@npm:2.35.3"
   checksum: e2592b9df0994332175d1c6f82cbbfd8ea0f7acf6032ea2f756ef09e446a38255f1794360cd51be27039c57a2cc81954cf865a84a570ef7b543a02438cd80391
-  languageName: node
-  linkType: hard
-
-"point-in-polygon@npm:^1.0.1":
-  version: 1.1.0
-  resolution: "point-in-polygon@npm:1.1.0"
-  checksum: 67a6374f0b79bc872bde8e375d7d5ea011a1419c5f4320dfb7705801cd3a8fcaee8bff385465e075b2ce863bbc86ccd74c63345d9f326981cd0807642bc5199c
   languageName: node
   linkType: hard
 

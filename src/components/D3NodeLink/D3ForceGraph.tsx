@@ -37,6 +37,9 @@ import {
 } from '../Store/selectionUtils';
 import { useD3Data } from './useD3Data';
 
+import { OnboardingTooltipStack } from '../Onboarding/OnboardingTooltipStack';
+import { onboardingEventIds } from '../Onboarding/onboardingEvents';
+import { markOnboardingEventComplete } from '../Store/OnboardingSlice';
 import { getViolationCountsForNode } from '../../utils/violations';
 import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
 import { getNodeColorForNode, getNodeShapeForId } from './D3NldUtils';
@@ -410,6 +413,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     d3CenteringEnabled,
     d3CenteringStrength,
     false,
+    () => dispatch(markOnboardingEventComplete(onboardingEventIds.nldPan)),
   );
 
   useEffect(() => {
@@ -943,6 +947,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (!sim) return;
 
       dragActiveRef.current = true;
+      dispatch(markOnboardingEventComplete(onboardingEventIds.nldAltDrag));
 
       if (dragFreezeTimeoutRef.current) {
         window.clearTimeout(dragFreezeTimeoutRef.current);
@@ -1080,6 +1085,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     nodes: d3Nodes,
     transformRef,
     onSelection: handleLassoSelection,
+    onLassoStart: () => dispatch(markOnboardingEventComplete(onboardingEventIds.nldLassoSelect)),
   });
 
   const updateHoverPreview = useCallback(
@@ -1400,6 +1406,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
           pointerEvents: 'none',
         }}
       />
+      <OnboardingTooltipStack />
       {contextMenu}
       {/* {focusNodeTooltip} */}
     </div>

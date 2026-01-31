@@ -124,6 +124,7 @@ export interface UseShapeHandlerReturnType {
 
 export interface IRootState {
   combined: ICombinedState;
+  onboarding: IOnboardingState;
 }
 
 export interface AIChatMessage {
@@ -219,6 +220,10 @@ export interface ICombinedState {
   hideNamespacePrefixColumns: boolean;
   /** Hide namespace prefixes from cell values */
   hideNamespacePrefixCells: boolean;
+}
+
+export interface IOnboardingState {
+  events: Record<string, boolean>;
 }
 
 export interface ITriple {
