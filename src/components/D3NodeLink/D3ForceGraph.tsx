@@ -411,7 +411,12 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
       const { movableNodeIds, alphaTarget = 0.3, freezeAfter = 1000, nodesOverride } = options;
 
-      runLayoutCycle({
+      if (layoutFreezeTimeoutRef.current) {
+        clearTimeout(layoutFreezeTimeoutRef.current);
+        layoutFreezeTimeoutRef.current = null;
+      }
+
+      layoutFreezeTimeoutRef.current = runLayoutCycle({
         getNodes: () => nodesOverride ?? Object.values(nodeMapRef.current),
         movableNodeIds,
         freezeAfterMs: freezeAfter,
@@ -899,6 +904,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const rightMouseDownRef = useRef<{ x: number; y: number } | null>(null);
   const dragFreezeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragActiveRef = useRef(false);
+  const layoutFreezeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   type DragEvent = d3.D3DragEvent<HTMLCanvasElement, CanvasNode, CanvasNode>;
 
@@ -927,6 +933,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (dragFreezeTimeoutRef.current) {
         clearTimeout(dragFreezeTimeoutRef.current);
         dragFreezeTimeoutRef.current = null;
+      }
+      if (layoutFreezeTimeoutRef.current) {
+        clearTimeout(layoutFreezeTimeoutRef.current);
+        layoutFreezeTimeoutRef.current = null;
       }
 
       releaseNodes(Object.values(nodeMapRef.current));
@@ -1296,6 +1306,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       if (dragFreezeTimeoutRef.current) {
         clearTimeout(dragFreezeTimeoutRef.current);
         dragFreezeTimeoutRef.current = null;
+      }
+      if (layoutFreezeTimeoutRef.current) {
+        clearTimeout(layoutFreezeTimeoutRef.current);
+        layoutFreezeTimeoutRef.current = null;
       }
     };
   }, []);

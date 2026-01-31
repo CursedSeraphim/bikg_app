@@ -101,4 +101,28 @@ describe('layout pinning behavior', () => {
     expect(nodes[1].fx).toBeNull();
     jest.useRealTimers();
   });
+
+  it('cancels a scheduled layout freeze when the timeout is cleared', () => {
+    jest.useFakeTimers();
+    const nodes = [createNode('a', 8, 18), createNode('b', 28, 38)];
+    const onFreeze = jest.fn();
+
+    const timeoutId = runLayoutCycle({
+      getNodes: () => nodes,
+      movableNodeIds: ['b'],
+      freezeAfterMs: 500,
+      onFreeze,
+    });
+
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
+    jest.advanceTimersByTime(500);
+
+    expect(onFreeze).not.toHaveBeenCalled();
+    expect(nodes[1].fx).toBeNull();
+    expect(nodes[1].fy).toBeNull();
+    jest.useRealTimers();
+  });
 });

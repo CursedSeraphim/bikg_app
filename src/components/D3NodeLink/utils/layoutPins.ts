@@ -71,16 +71,17 @@ export function scheduleFreezeNodes(
   }, delayMs);
 }
 
-export function runLayoutCycle(options: LayoutCycleOptions): void {
+export function runLayoutCycle(options: LayoutCycleOptions): ReturnType<typeof setTimeout> | null {
   const { getNodes, movableNodeIds, freezeAfterMs = 1000, onStart, onFreeze, schedule = setTimeout } = options;
 
   applyLayoutPins(getNodes(), { movableNodeIds });
   onStart?.();
 
   if (freezeAfterMs && freezeAfterMs > 0) {
-    schedule(() => {
+    return schedule(() => {
       freezeNodes(getNodes());
       onFreeze?.();
     }, freezeAfterMs);
   }
+  return null;
 }
