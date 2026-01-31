@@ -51,6 +51,7 @@ import { useLassoSelection } from './hooks/useLassoSelection';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 import { computeAssociationTargets } from './utils/associationTargets';
 import { getAssociatedHoverPreviewTargets } from './utils/associatedHoverPreview';
+import { freezeNodes, releaseNodes, runLayoutCycle, scheduleFreezeNodes } from './utils/layoutPins';
 import { computeSelectionScope } from './utils/selectionScope';
 import { buildNodeShapeViolationMap, getFocusNodesForNodeShape, isNodeShapeClass } from './utils/nodeShapeAssociations';
 
@@ -403,57 +404,29 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   useD3CumulativeCounts(d3Nodes, setD3Nodes, redraw);
 
-  const runIncrementalLayout = useCallback(
-    (options: { movableNodeIds?: string[]; pinAllExisting?: boolean; alphaTarget?: number; releaseAfter?: number | null }) => {
+  const runTargetedLayout = useCallback(
+    (options: { movableNodeIds?: string[]; alphaTarget?: number; freezeAfter?: number | null; nodesOverride?: CanvasNode[] }) => {
       const sim = simulationRef.current;
       if (!sim) return;
 
-      const { movableNodeIds, pinAllExisting = false, alphaTarget = 0.3, releaseAfter = 1000 } = options;
+      const { movableNodeIds, alphaTarget = 0.3, freezeAfter = 1000, nodesOverride } = options;
 
-      const movable = new Set(movableNodeIds ?? []);
-      const allNodes = Object.values(nodeMapRef.current);
-
-      allNodes.forEach((node) => {
-        const mutableNode = node;
-        const isMovable = movable.size > 0 && movable.has(node.id);
-
-        if (pinAllExisting) {
-          // Preview mode: pin everything in place
-          mutableNode.fx = node.x ?? null;
-          mutableNode.fy = node.y ?? null;
-        } else if (movable.size > 0) {
-          // Incremental layout: pin old nodes, let new ones move
-          if (isMovable) {
-            mutableNode.fx = null;
-            mutableNode.fy = null;
-          } else {
-            mutableNode.fx = node.x ?? null;
-            mutableNode.fy = node.y ?? null;
-          }
-        }
-
-        // Reset velocities so the simulation actually reacts
-        mutableNode.vx = 0;
-        mutableNode.vy = 0;
-      });
-
-      sim.alphaTarget(alphaTarget).restart();
-
-      // For “incremental layout” we want to eventually unpin everything again.
-      if (releaseAfter && releaseAfter > 0) {
-        setTimeout(() => {
-          const stillSim = simulationRef.current;
-          if (!stillSim) return;
-
-          Object.values(nodeMapRef.current).forEach((node) => {
-            const mutableNode = node;
-            mutableNode.fx = null;
-            mutableNode.fy = null;
-          });
-
-          stillSim.alphaTarget(0);
-        }, releaseAfter);
+      if (layoutFreezeTimeoutRef.current) {
+        clearTimeout(layoutFreezeTimeoutRef.current);
+        layoutFreezeTimeoutRef.current = null;
       }
+
+      layoutFreezeTimeoutRef.current = runLayoutCycle({
+        getNodes: () => nodesOverride ?? Object.values(nodeMapRef.current),
+        movableNodeIds,
+        freezeAfterMs: freezeAfter,
+        onStart: () => {
+          sim.alphaTarget(alphaTarget).restart();
+        },
+        onFreeze: () => {
+          sim.alphaTarget(0);
+        },
+      });
     },
     [simulationRef],
   );
@@ -487,14 +460,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     }
 
     // Incremental layout: freeze existing nodes, relax only the new ones
-    runIncrementalLayout({
+    runTargetedLayout({
       movableNodeIds: newNodeIds,
-      pinAllExisting: false,
       alphaTarget: 0.3,
-      releaseAfter: 1000,
+      freezeAfter: 1000,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [d3Nodes, loading, runIncrementalLayout]);
+  }, [d3Nodes, loading, runTargetedLayout]);
 
   useEffect(() => {
     if (loading || cyDataNodes.length === 0) {
@@ -738,48 +710,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     convertData,
   );
 
-  // Freeze nodes for a short period…
-  const freezeNode = useCallback(
-    (id: string, otherDuration = 500, triggerDuration = 1000, alphaTarget = 0.1) => {
-      const sim = simulationRef.current;
-      if (!sim) return;
-
-      const allNodes = Object.values(nodeMapRef.current);
-      allNodes.forEach((node) => {
-        if (otherDuration > 0 || node.id === id) {
-          const mutableNode = node;
-          mutableNode.fx = node.x ?? null;
-          mutableNode.fy = node.y ?? null;
-        }
-      });
-
-      sim.alphaTarget(alphaTarget).restart();
-
-      if (otherDuration > 0) {
-        setTimeout(() => {
-          allNodes.forEach((node) => {
-            if (node.id !== id) {
-              const mutableNode = node;
-              mutableNode.fx = null;
-              mutableNode.fy = null;
-            }
-          });
-        }, otherDuration);
-      }
-
-      setTimeout(() => {
-        const triggerNode = nodeMapRef.current[id];
-        if (triggerNode) {
-          const mutableNode = triggerNode;
-          mutableNode.fx = null;
-          mutableNode.fy = null;
-        }
-        sim.alphaTarget(0);
-      }, triggerDuration);
-    },
-    [simulationRef],
-  );
-
   const clearPreview = useCallback(() => {
     if (activePreviewRef.current.nodeId === null) {
       return;
@@ -797,13 +727,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         };
       }),
     );
-    Object.values(nodeMapRef.current).forEach((n) => {
-      const mutableNode = n;
-      mutableNode.fx = null;
-      mutableNode.fy = null;
-      mutableNode.vx = 0;
-      mutableNode.vy = 0;
-    });
+    freezeNodes(Object.values(nodeMapRef.current));
     const sim = simulationRef.current;
     if (sim) {
       sim.alpha(0);
@@ -840,9 +764,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       }
 
       showChildren(id);
-      freezeNode(id, 500, 1000, 0.3);
     },
-    [freezeNode, showChildren, cyDataNodes, cyDataEdges, adjacencyRef, ghostNodes, isIdBlacklisted],
+    [showChildren, cyDataNodes, cyDataEdges, adjacencyRef, ghostNodes, isIdBlacklisted],
   );
 
   const toggleParents = useCallback(
@@ -873,9 +796,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       }
 
       showParents(id);
-      freezeNode(id, 500, 1000, 0.3);
     },
-    [freezeNode, showParents, cyDataNodes, cyDataEdges, revAdjRef, ghostNodes, isIdBlacklisted],
+    [showParents, cyDataNodes, cyDataEdges, revAdjRef, ghostNodes, isIdBlacklisted],
   );
 
   const recomputeEdgeVisibility = useCallback(() => {
@@ -974,13 +896,15 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       }
 
       showAssociated(id);
-      freezeNode(id, 500, 1000, 0.3);
     },
-    [computeAssociations, showAssociated, freezeNode, cyDataNodes, ghostNodes, isIdBlacklisted],
+    [computeAssociations, showAssociated, cyDataNodes, ghostNodes, isIdBlacklisted],
   );
 
   const rightDraggingRef = useRef(false);
   const rightMouseDownRef = useRef<{ x: number; y: number } | null>(null);
+  const dragFreezeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragActiveRef = useRef(false);
+  const layoutFreezeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   type DragEvent = d3.D3DragEvent<HTMLCanvasElement, CanvasNode, CanvasNode>;
 
@@ -1003,6 +927,19 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     .on('start', (event: DragEvent) => {
       const sim = simulationRef.current;
       if (!sim) return;
+
+      dragActiveRef.current = true;
+
+      if (dragFreezeTimeoutRef.current) {
+        clearTimeout(dragFreezeTimeoutRef.current);
+        dragFreezeTimeoutRef.current = null;
+      }
+      if (layoutFreezeTimeoutRef.current) {
+        clearTimeout(layoutFreezeTimeoutRef.current);
+        layoutFreezeTimeoutRef.current = null;
+      }
+
+      releaseNodes(Object.values(nodeMapRef.current));
 
       if (!event.active) sim.alpha(0.45).restart();
       sim.alphaTarget(0); // allow cooling while holding
@@ -1034,11 +971,22 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       const sim = simulationRef.current;
       if (!sim) return;
 
+      dragActiveRef.current = false;
+
       const { subject } = event;
       subject.fx = null;
       subject.fy = null;
 
       if (!event.active) sim.alphaTarget(0);
+
+      dragFreezeTimeoutRef.current = scheduleFreezeNodes({
+        getNodes: () => Object.values(nodeMapRef.current),
+        delayMs: 1000,
+        shouldFreeze: () => !dragActiveRef.current,
+        onFreeze: () => {
+          sim.alphaTarget(0);
+        },
+      });
     });
 
   const handleDoubleClick = useCallback(
@@ -1251,10 +1199,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         setGhostEdges(newGhostEdges);
 
         // Preview: pin all existing nodes and run a short simulation
-        runIncrementalLayout({
-          pinAllExisting: true,
+        runTargetedLayout({
+          movableNodeIds: newGhostNodes.map((node) => node.id),
+          nodesOverride: [...d3Nodes, ...newGhostNodes],
           alphaTarget: 0.3,
-          releaseAfter: null, // unpinned explicitly in clearPreview
+          freezeAfter: null,
         });
       } else {
         clearPreview();
@@ -1283,7 +1232,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       isIdBlacklisted,
       isLabelBlacklisted,
       anonymizeLabel,
-      runIncrementalLayout,
+      runTargetedLayout,
     ],
   );
 
@@ -1351,6 +1300,19 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       window.removeEventListener('keyup', clearPreview);
     };
   }, [clearPreview]);
+
+  useEffect(() => {
+    return () => {
+      if (dragFreezeTimeoutRef.current) {
+        clearTimeout(dragFreezeTimeoutRef.current);
+        dragFreezeTimeoutRef.current = null;
+      }
+      if (layoutFreezeTimeoutRef.current) {
+        clearTimeout(layoutFreezeTimeoutRef.current);
+        layoutFreezeTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
