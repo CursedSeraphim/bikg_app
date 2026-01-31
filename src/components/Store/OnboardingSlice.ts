@@ -7,6 +7,13 @@ const initialState: IOnboardingState = {
     [onboardingEventIds.nldLassoSelect]: false,
     [onboardingEventIds.nldPan]: false,
     [onboardingEventIds.nldAltDrag]: false,
+    [onboardingEventIds.nldDeleteSelection]: false,
+    [onboardingEventIds.nldExpandChildren]: false,
+    [onboardingEventIds.nldExpandParents]: false,
+    [onboardingEventIds.nldExpandAssociated]: false,
+    [onboardingEventIds.nldContextMenu]: false,
+    [onboardingEventIds.treeDoubleClickSelectClass]: false,
+    [onboardingEventIds.projectionBrushSelect]: false,
   },
 };
 

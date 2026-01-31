@@ -2,7 +2,9 @@ import * as d3 from 'd3';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSelector, useStore } from 'react-redux';
 import { IRootState } from '../../types';
+import { onboardingEventIds } from '../Onboarding/onboardingEvents';
 import { setSelectedFocusNodes } from '../Store/CombinedSlice';
+import { markOnboardingEventComplete } from '../Store/OnboardingSlice';
 import { useOnSelectionCleared } from './hooks/useOnSelectionCleared';
 import { useSelectionResetEffects } from './hooks/useSelectionResetEffects';
 
@@ -463,6 +465,10 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
           })
           .map((p) => p.node.text);
 
+        if (newlySelected.length > 0) {
+          dispatch(markOnboardingEventComplete(onboardingEventIds.projectionBrushSelect));
+        }
+
         setScatterSelection(newlySelected);
       });
 
@@ -474,7 +480,7 @@ function InteractiveScatterPlot({ data }: IScatterPlotProps) {
       brushRef.current = null;
       brushG.remove();
     };
-  }, [dimensions, margins, setScatterSelection]);
+  }, [dimensions, margins, setScatterSelection, dispatch]);
 
   // Zoom: clear brush (screen-space) and rAF redraw
   useEffect(() => {
