@@ -1063,6 +1063,10 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         selectedNodeIds,
       } = buildLassoSelections(selectedIds);
 
+      if (selectedNodeIds.size > 0) {
+        dispatch(markOnboardingEventComplete(onboardingEventIds.nldLassoSelect));
+      }
+
       const selectionSignature = buildSelectionSignature(nextFocusNodes, nextTypes, nextViolations, selectedExemplars);
       lassoSelectionRef.current = { nodeIds: selectedNodeIds, signature: selectionSignature };
 
@@ -1085,7 +1089,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     nodes: d3Nodes,
     transformRef,
     onSelection: handleLassoSelection,
-    onLassoStart: () => dispatch(markOnboardingEventComplete(onboardingEventIds.nldLassoSelect)),
   });
 
   const updateHoverPreview = useCallback(
