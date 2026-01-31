@@ -61,6 +61,7 @@ export function useD3Force(
   const drawRef = useRef<() => void>(() => {});
   const centerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevCenteringRef = useRef<{ enabled: boolean; strength: number } | null>(null);
+  const prevDimensionsRef = useRef<{ width: number; height: number } | null>(null);
 
   const dpi = window.devicePixelRatio ?? 1;
   const { mapNodeLabel, mapEdgeLabel } = useLabelTransform();
@@ -573,8 +574,13 @@ export function useD3Force(
 
     const { width, height } = dimensions;
     let sim = simulationRef.current;
+    const dimensionsChanged =
+      !prevDimensionsRef.current || prevDimensionsRef.current.width !== width || prevDimensionsRef.current.height !== height;
     const shouldUpdateCentering =
-      !prevCenteringRef.current || prevCenteringRef.current.enabled !== centeringEnabled || prevCenteringRef.current.strength !== centeringStrength;
+      dimensionsChanged ||
+      !prevCenteringRef.current ||
+      prevCenteringRef.current.enabled !== centeringEnabled ||
+      prevCenteringRef.current.strength !== centeringStrength;
 
     if (!sim) {
       sim = d3.forceSimulation<CanvasNode>(nodes);
@@ -663,6 +669,7 @@ export function useD3Force(
     }
 
     prevCenteringRef.current = { enabled: centeringEnabled, strength: centeringStrength };
+    prevDimensionsRef.current = { width, height };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges, dimensions.width, dimensions.height, boundingBox, centeringEnabled, centeringStrength, autoRestart]);
