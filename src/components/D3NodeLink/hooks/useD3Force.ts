@@ -427,9 +427,7 @@ export function useD3Force(
       context.globalAlpha = dimNonSelected ? NON_SELECTED_OPACITY : 1;
 
       // Draw curve
-      if (edge.previewRemoval) {
-        context.strokeStyle = 'rgba(255,0,0,0.6)';
-      } else if (edge.ghost) {
+      if (edge.ghost) {
         context.strokeStyle = 'rgba(170,170,170,0.5)';
       } else {
         context.strokeStyle = edge.color ?? '#AAA';
@@ -473,9 +471,7 @@ export function useD3Force(
         context.lineTo(backx + (arrowWidth * -tangentDy) / tangentLength, backy + (arrowWidth * tangentDx) / tangentLength);
         context.lineTo(backx - (arrowWidth * -tangentDy) / tangentLength, backy - (arrowWidth * tangentDx) / tangentLength);
         context.closePath();
-        if (edge.previewRemoval) {
-          context.fillStyle = 'rgba(255,0,0,0.6)';
-        } else if (edge.ghost) {
+        if (edge.ghost) {
           context.fillStyle = 'rgba(170,170,170,0.5)';
         } else {
           context.fillStyle = edge.color ?? '#AAA';

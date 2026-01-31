@@ -50,6 +50,7 @@ import { useD3ResetView } from './hooks/useD3ResetView';
 import { useLassoSelection } from './hooks/useLassoSelection';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 import { computeAssociationTargets } from './utils/associationTargets';
+import { getAssociatedHoverPreviewTargets } from './utils/associatedHoverPreview';
 import { computeSelectionScope } from './utils/selectionScope';
 import { buildNodeShapeViolationMap, getFocusNodesForNodeShape, isNodeShapeClass } from './utils/nodeShapeAssociations';
 
@@ -950,27 +951,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     [computeAssociations, cyDataNodes, recomputeEdgeVisibility, convertData, isIdBlacklisted],
   );
 
-  const hideAssociated = useCallback(
-    (nodeId: string) => {
-      const { allIds, edges } = computeAssociations(nodeId);
-      allIds.forEach((nid) => {
-        if (nid !== nodeId && originRef.current[nid] === nodeId) {
-          hiddenNodesRef.current.add(nid);
-        }
-      });
-
-      edges.forEach((edge) => {
-        const mutableEdge = edge;
-        hiddenEdgesRef.current.add(mutableEdge.id);
-      });
-
-      recomputeEdgeVisibility();
-      convertData();
-    },
-    [computeAssociations, recomputeEdgeVisibility, convertData],
-  );
-
-  const toggleAssociated = useCallback(
+  const expandAssociated = useCallback(
     (id: string) => {
       if (activePreviewRef.current.mode === 'associated' && activePreviewRef.current.nodeId === id) {
         ghostNodes.forEach((gn) => {
@@ -989,13 +970,13 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       const allVisible = nodesVisible && edgesVisible;
 
       if (allVisible) {
-        hideAssociated(id);
-      } else {
-        showAssociated(id);
-        freezeNode(id, 500, 1000, 0.3);
+        return;
       }
+
+      showAssociated(id);
+      freezeNode(id, 500, 1000, 0.3);
     },
-    [computeAssociations, showAssociated, hideAssociated, freezeNode, cyDataNodes, ghostNodes, isIdBlacklisted],
+    [computeAssociations, showAssociated, freezeNode, cyDataNodes, ghostNodes, isIdBlacklisted],
   );
 
   const rightDraggingRef = useRef(false);
@@ -1090,7 +1071,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
         if (event.ctrlKey && event.shiftKey) {
           // Same behavior as context menu: expand associated AND select connected
-          toggleAssociated(cid);
+          expandAssociated(cid);
           handleSelectConnected(closest);
         } else if (event.ctrlKey) {
           toggleChildren(cid);
@@ -1101,7 +1082,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         clearPreview();
       }
     },
-    [d3Nodes, ghostNodes, transformRef, simulationRef, toggleChildren, toggleParents, clearPreview, toggleAssociated, handleSelectConnected],
+    [d3Nodes, ghostNodes, transformRef, simulationRef, toggleChildren, toggleParents, clearPreview, expandAssociated, handleSelectConnected],
   );
 
   const handleLassoSelection = useCallback(
@@ -1206,26 +1187,14 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
           })
         : null;
       const { nodeIds, edges: expansionEdges } = isAssociated
-        ? (() => {
-            const visibleSet = new Set(
-              cyDataNodes.filter((n) => n.data.visible && !hiddenNodesRef.current.has(n.data.id) && !isLabelBlacklisted(n.data.label)).map((n) => n.data.id),
-            );
-            const selectionIds = associatedSelection ? Array.from(associatedSelection.idsToSelect) : [];
-            const associatedNodeIds = selectionIds.filter((id) => {
-              if (isIdBlacklisted(id)) return false;
-              const nodeData = cyDataNodes.find((n) => n.data.id === id);
-              return nodeData && !visibleSet.has(id);
-            });
-            const edges = cyDataEdges
-              .filter((edge) => associatedSelection?.visibleEdgeIds.has(edge.data.id))
-              .map((edge) => ({
-                id: edge.data.id,
-                source: edge.data.source,
-                target: edge.data.target,
-                label: edge.data.label,
-              }));
-            return { nodeIds: associatedNodeIds, edges };
-          })()
+        ? getAssociatedHoverPreviewTargets({
+            selectionScope: associatedSelection,
+            cyDataNodes,
+            cyDataEdges,
+            hiddenNodes: hiddenNodesRef.current,
+            isLabelBlacklisted,
+            isIdBlacklisted,
+          })
         : computeExpansion(closest.id, mode);
 
       // apply blacklist to preview targets
@@ -1234,7 +1203,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
       const hasHiddenEdges = filteredExpansionEdges.some((e) => hiddenEdgesRef.current.has(e.id));
       const allVisible = filteredNodeIds.length === 0 && !hasHiddenEdges;
-      if (allVisible && !isAssociated) {
+      if (allVisible) {
         clearPreview();
         return;
       }
@@ -1247,23 +1216,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         return getNodeColorForNode({ sources: nodeData?.data.sources ?? ['unknown'], isAClass: nodeData?.data.isAClass ?? null });
       };
 
-      if (allVisible && isAssociated) {
-        filteredExpansionEdges.forEach((edge) => {
-          const key = `${edge.source}->${edge.target}`;
-          if (!addedEdgeKeys.has(key)) {
-            addedEdgeKeys.add(key);
-            newGhostEdges.push({
-              id: edge.id ?? key,
-              source: edge.source,
-              target: edge.target,
-              label: anonymizeLabel(edge.label ?? edge.id),
-              visible: true,
-              color: getEdgeColorForSource(edge.source),
-              previewRemoval: true,
-            });
-          }
-        });
-      } else {
+      {
         filteredNodeIds.forEach((nid) => {
           const nodeData = cyDataNodes.find((n) => n.data.id === nid);
           if (!nodeData) return;
@@ -1294,10 +1247,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         });
       }
 
-      const hasRemovalEdges = newGhostEdges.some((edge) => edge.previewRemoval);
-      const hasAdditionEdges = newGhostEdges.some((edge) => !edge.previewRemoval);
-
-      if (newGhostNodes.length > 0 || hasRemovalEdges || hasAdditionEdges) {
+      if (newGhostNodes.length > 0 || newGhostEdges.length > 0) {
         activePreviewRef.current = { mode, nodeId: closest.id };
         setGhostNodes(newGhostNodes);
         setGhostEdges(newGhostEdges);
@@ -1324,7 +1274,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       lassoActiveRef,
       clearPreview,
       computeExpansion,
-      computeAssociations,
       focusNodeMap,
       typeMap,
       violationMap,
@@ -1387,16 +1336,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       canvas.removeEventListener('dblclick', handleDoubleClick);
     };
   }, [handleDrag, handleDoubleClick, zoomBehaviorRef, updateHoverPreview, clearPreview]);
-
-  useEffect(() => {
-    if (ghostNodes.length === 0 && ghostEdges.some((edge) => edge.previewRemoval)) {
-      const sim = simulationRef.current;
-      if (sim) {
-        sim.alpha(0.001);
-        sim.alphaTarget(0).restart();
-      }
-    }
-  }, [ghostNodes.length, ghostEdges, simulationRef]);
 
   useEffect(() => {
     if (ghostNodes.length === 0 && ghostEdges.length === 0) {
