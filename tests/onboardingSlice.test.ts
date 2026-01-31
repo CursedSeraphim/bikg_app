@@ -1,4 +1,8 @@
-import onboardingReducer, { markOnboardingEventComplete, resetOnboardingEvents } from '../src/components/Store/OnboardingSlice';
+import onboardingReducer, {
+  completeAllOnboardingEvents,
+  markOnboardingEventComplete,
+  resetOnboardingEvents,
+} from '../src/components/Store/OnboardingSlice';
 import { onboardingEventIds } from '../src/components/Onboarding/onboardingEvents';
 
 describe('onboardingSlice', () => {
@@ -8,6 +12,13 @@ describe('onboardingSlice', () => {
     expect(state.events[onboardingEventIds.nldLassoSelect]).toBe(false);
     expect(state.events[onboardingEventIds.nldPan]).toBe(false);
     expect(state.events[onboardingEventIds.nldAltDrag]).toBe(false);
+    expect(state.events[onboardingEventIds.nldDeleteSelection]).toBe(false);
+    expect(state.events[onboardingEventIds.nldExpandChildren]).toBe(false);
+    expect(state.events[onboardingEventIds.nldExpandParents]).toBe(false);
+    expect(state.events[onboardingEventIds.nldExpandAssociated]).toBe(false);
+    expect(state.events[onboardingEventIds.nldContextMenu]).toBe(false);
+    expect(state.events[onboardingEventIds.treeDoubleClickSelectClass]).toBe(false);
+    expect(state.events[onboardingEventIds.projectionBrushSelect]).toBe(false);
   });
 
   it('marks onboarding events as complete and keeps other events untouched', () => {
@@ -17,6 +28,13 @@ describe('onboardingSlice', () => {
     expect(nextState.events[onboardingEventIds.nldPan]).toBe(true);
     expect(nextState.events[onboardingEventIds.nldLassoSelect]).toBe(false);
     expect(nextState.events[onboardingEventIds.nldAltDrag]).toBe(false);
+    expect(nextState.events[onboardingEventIds.nldDeleteSelection]).toBe(false);
+    expect(nextState.events[onboardingEventIds.nldExpandChildren]).toBe(false);
+    expect(nextState.events[onboardingEventIds.nldExpandParents]).toBe(false);
+    expect(nextState.events[onboardingEventIds.nldExpandAssociated]).toBe(false);
+    expect(nextState.events[onboardingEventIds.nldContextMenu]).toBe(false);
+    expect(nextState.events[onboardingEventIds.treeDoubleClickSelectClass]).toBe(false);
+    expect(nextState.events[onboardingEventIds.projectionBrushSelect]).toBe(false);
   });
 
   it('does not update state when marking an already completed event', () => {
@@ -31,5 +49,21 @@ describe('onboardingSlice', () => {
     const nextState = onboardingReducer(state, resetOnboardingEvents());
 
     expect(nextState.events[onboardingEventIds.nldAltDrag]).toBe(false);
+  });
+
+  it('marks all onboarding events as complete', () => {
+    const state = onboardingReducer(undefined, { type: 'init' });
+    const nextState = onboardingReducer(state, completeAllOnboardingEvents());
+
+    expect(nextState.events[onboardingEventIds.nldLassoSelect]).toBe(true);
+    expect(nextState.events[onboardingEventIds.nldPan]).toBe(true);
+    expect(nextState.events[onboardingEventIds.nldAltDrag]).toBe(true);
+    expect(nextState.events[onboardingEventIds.nldDeleteSelection]).toBe(true);
+    expect(nextState.events[onboardingEventIds.nldExpandChildren]).toBe(true);
+    expect(nextState.events[onboardingEventIds.nldExpandParents]).toBe(true);
+    expect(nextState.events[onboardingEventIds.nldExpandAssociated]).toBe(true);
+    expect(nextState.events[onboardingEventIds.nldContextMenu]).toBe(true);
+    expect(nextState.events[onboardingEventIds.treeDoubleClickSelectClass]).toBe(true);
+    expect(nextState.events[onboardingEventIds.projectionBrushSelect]).toBe(true);
   });
 });

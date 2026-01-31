@@ -17,6 +17,7 @@ export function useD3ContextMenu(
   centerView: () => void,
   resetView: () => void,
   onSelectConnected: (node: CanvasNode | null) => void,
+  onMenuOpen?: () => void,
 ) {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [state, setState] = useState<ContextMenuState>({
@@ -31,6 +32,7 @@ export function useD3ContextMenu(
   const handleContextMenu = useCallback(
     (event: MouseEvent) => {
       event.preventDefault();
+      onMenuOpen?.();
       const [pxRaw, pyRaw] = d3.pointer(event, canvasRef.current);
       const transform = transformRef.current;
       const [px, py] = transform.invert([pxRaw, pyRaw]);
@@ -58,7 +60,7 @@ export function useD3ContextMenu(
         targetNode: target,
       });
     },
-    [canvasRef, nodes, transformRef],
+    [canvasRef, nodes, transformRef, onMenuOpen],
   );
 
   useEffect(() => {

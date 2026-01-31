@@ -7,6 +7,13 @@ const initialState: IOnboardingState = {
     [onboardingEventIds.nldLassoSelect]: false,
     [onboardingEventIds.nldPan]: false,
     [onboardingEventIds.nldAltDrag]: false,
+    [onboardingEventIds.nldDeleteSelection]: false,
+    [onboardingEventIds.nldExpandChildren]: false,
+    [onboardingEventIds.nldExpandParents]: false,
+    [onboardingEventIds.nldExpandAssociated]: false,
+    [onboardingEventIds.nldContextMenu]: false,
+    [onboardingEventIds.treeDoubleClickSelectClass]: false,
+    [onboardingEventIds.projectionBrushSelect]: false,
   },
 };
 
@@ -26,9 +33,14 @@ const onboardingSlice = createSlice({
         state.events[key as OnboardingEventId] = false;
       });
     },
+    completeAllOnboardingEvents: (state) => {
+      Object.keys(state.events).forEach((key) => {
+        state.events[key as OnboardingEventId] = true;
+      });
+    },
   },
 });
 
-export const { markOnboardingEventComplete, resetOnboardingEvents } = onboardingSlice.actions;
+export const { markOnboardingEventComplete, resetOnboardingEvents, completeAllOnboardingEvents } = onboardingSlice.actions;
 
 export default onboardingSlice.reducer;
