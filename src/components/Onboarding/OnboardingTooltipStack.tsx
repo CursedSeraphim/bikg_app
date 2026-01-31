@@ -8,15 +8,15 @@ import { completeAllOnboardingEvents } from '../Store/OnboardingSlice';
 import type { IRootState } from '../../types';
 
 export function OnboardingTooltipStack() {
-  if (!ONBOARDING_ENABLED) {
-    return null;
-  }
-
   const dispatch = useDispatch();
   const events = useSelector((state: IRootState) => state.onboarding.events);
   const [isHovered, setIsHovered] = React.useState(false);
   const [isDismissHovered, setIsDismissHovered] = React.useState(false);
   const hasOpenTooltips = onboardingTooltipSteps.some((step) => !events[step.id]);
+
+  if (!ONBOARDING_ENABLED) {
+    return null;
+  }
 
   const stack = (
     <div
