@@ -37,10 +37,10 @@ import {
 } from '../Store/selectionUtils';
 import { useD3Data } from './useD3Data';
 
+import { getViolationCountsForNode } from '../../utils/violations';
 import { OnboardingTooltipStack } from '../Onboarding/OnboardingTooltipStack';
 import { onboardingEventIds } from '../Onboarding/onboardingEvents';
 import { markOnboardingEventComplete } from '../Store/OnboardingSlice';
-import { getViolationCountsForNode } from '../../utils/violations';
 import { CanvasEdge, CanvasNode, D3NLDViewProps } from './D3NldTypes';
 import { getNodeColorForNode, getNodeShapeForId } from './D3NldUtils';
 import { getNearNodeThreshold } from './hooks/hoverRadius';
@@ -55,7 +55,7 @@ import { useLassoSelection } from './hooks/useLassoSelection';
 import { useNodeVisibility } from './hooks/useNodeVisibility';
 import { getAssociatedHoverPreviewTargets } from './utils/associatedHoverPreview';
 import { computeAssociationTargets } from './utils/associationTargets';
-import { freezeNodes, releaseNodes, runLayoutCycle, scheduleFreezeNodes } from './utils/layoutPins';
+import { freezeNodes, releaseNodes, runLayoutCycle, scheduleFreezeNodes, type LayoutFreezeHandle } from './utils/layoutPins';
 import { buildNodeShapeViolationMap, getFocusNodesForNodeShape, isNodeShapeClass } from './utils/nodeShapeAssociations';
 import { computeSelectionScope } from './utils/selectionScope';
 
@@ -115,7 +115,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const nodeMapRef = useRef<Record<string, CanvasNode>>({});
   const savedPositionsRef = useRef<Record<string, { x?: number; y?: number }>>({});
   const previousVisibleNodeIdsRef = useRef<Set<string>>(new Set());
-  const layoutFreezeTimeoutRef = useRef<DomTimeoutHandle | null>(null);
+  const layoutFreezeTimeoutRef = useRef<LayoutFreezeHandle | null>(null);
   const lassoSelectionRef = useRef<{ nodeIds: Set<string>; signature: string } | null>(null);
   const layoutFreezeHandledRef = useRef(false);
 
@@ -423,23 +423,24 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   useD3CumulativeCounts(d3Nodes, setD3Nodes, redraw);
 
   const runTargetedLayout = useCallback(
-    (options: { movableNodeIds?: string[]; alphaTarget?: number; freezeAfter?: number | null; nodesOverride?: CanvasNode[] }) => {
+    (options: { movableNodeIds?: string[]; alphaTarget?: number; maxWaitMs?: number | null; nodesOverride?: CanvasNode[] }) => {
       const sim = simulationRef.current;
       if (!sim) return;
 
-      const { movableNodeIds, alphaTarget = 0.3, freezeAfter = 2000, nodesOverride } = options;
+      const { movableNodeIds, alphaTarget = 0.3, maxWaitMs = 5000, nodesOverride } = options;
 
-      if (layoutFreezeTimeoutRef.current) {
-        window.clearTimeout(layoutFreezeTimeoutRef.current);
-        layoutFreezeTimeoutRef.current = null;
-      }
+      layoutFreezeTimeoutRef.current?.cancel();
+      layoutFreezeTimeoutRef.current = null;
 
       layoutFreezeTimeoutRef.current = runLayoutCycle({
         getNodes: () => nodesOverride ?? Object.values(nodeMapRef.current),
         movableNodeIds,
-        freezeAfterMs: freezeAfter,
+        maxWaitMs,
+        simulation: sim,
         onStart: () => {
-          sim.alphaTarget(alphaTarget).restart();
+          // Kick energy, but keep alphaTarget at 0 so it can actually converge.
+          sim.alpha(Math.max(sim.alpha(), alphaTarget)).restart();
+          sim.alphaTarget(0);
         },
         onFreeze: () => {
           sim.alphaTarget(0);
@@ -482,7 +483,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     runTargetedLayout({
       movableNodeIds: newNodeIds,
       alphaTarget: 0.3,
-      freezeAfter: 2000,
+      maxWaitMs: 5000,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d3Nodes, loading, runTargetedLayout]);
@@ -716,14 +717,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     [dispatch, isNodeShapeNode, nodeShapeViolationMap, violationMap],
   );
 
-  const { menu: contextMenu } = useD3ContextMenu(
-    canvasRef,
-    d3Nodes,
-    transformRef,
-    centerView,
-    handleResetView,
-    handleSelectConnected,
-    () => dispatch(markOnboardingEventComplete(onboardingEventIds.nldContextMenu)),
+  const { menu: contextMenu } = useD3ContextMenu(canvasRef, d3Nodes, transformRef, centerView, handleResetView, handleSelectConnected, () =>
+    dispatch(markOnboardingEventComplete(onboardingEventIds.nldContextMenu)),
   );
 
   const { computeExpansion, showChildren, showParents } = useNodeVisibility(
@@ -929,7 +924,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   const rightDraggingRef = useRef(false);
   const rightMouseDownRef = useRef<{ x: number; y: number } | null>(null);
-  const dragFreezeTimeoutRef = useRef<DomTimeoutHandle | null>(null);
+  const dragFreezeTimeoutRef = useRef<LayoutFreezeHandle | null>(null);
   const dragActiveRef = useRef(false);
 
   type DragEvent = d3.D3DragEvent<HTMLCanvasElement, CanvasNode, CanvasNode>;
@@ -957,14 +952,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       dragActiveRef.current = true;
       dispatch(markOnboardingEventComplete(onboardingEventIds.nldAltDrag));
 
-      if (dragFreezeTimeoutRef.current) {
-        window.clearTimeout(dragFreezeTimeoutRef.current);
-        dragFreezeTimeoutRef.current = null;
-      }
-      if (layoutFreezeTimeoutRef.current) {
-        window.clearTimeout(layoutFreezeTimeoutRef.current);
-        layoutFreezeTimeoutRef.current = null;
-      }
+      dragFreezeTimeoutRef.current?.cancel();
+      dragFreezeTimeoutRef.current = null;
+
+      layoutFreezeTimeoutRef.current?.cancel();
+      layoutFreezeTimeoutRef.current = null;
 
       releaseNodes(Object.values(nodeMapRef.current));
 
@@ -1008,7 +1000,8 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
       dragFreezeTimeoutRef.current = scheduleFreezeNodes({
         getNodes: () => Object.values(nodeMapRef.current),
-        delayMs: 2000,
+        simulation: sim,
+        maxWaitMs: 5000,
         shouldFreeze: () => !dragActiveRef.current,
         onFreeze: () => {
           sim.alphaTarget(0);
@@ -1061,18 +1054,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
         clearPreview();
       }
     },
-    [
-      d3Nodes,
-      ghostNodes,
-      transformRef,
-      simulationRef,
-      toggleChildren,
-      toggleParents,
-      clearPreview,
-      expandAssociated,
-      handleSelectConnected,
-      dispatch,
-    ],
+    [d3Nodes, ghostNodes, transformRef, simulationRef, toggleChildren, toggleParents, clearPreview, expandAssociated, handleSelectConnected, dispatch],
   );
 
   const handleLassoSelection = useCallback(
@@ -1349,14 +1331,11 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
 
   useEffect(() => {
     return () => {
-      if (dragFreezeTimeoutRef.current) {
-        window.clearTimeout(dragFreezeTimeoutRef.current);
-        dragFreezeTimeoutRef.current = null;
-      }
-      if (layoutFreezeTimeoutRef.current) {
-        window.clearTimeout(layoutFreezeTimeoutRef.current);
-        layoutFreezeTimeoutRef.current = null;
-      }
+      dragFreezeTimeoutRef.current?.cancel();
+      dragFreezeTimeoutRef.current = null;
+
+      layoutFreezeTimeoutRef.current?.cancel();
+      layoutFreezeTimeoutRef.current = null;
     };
   }, []);
 

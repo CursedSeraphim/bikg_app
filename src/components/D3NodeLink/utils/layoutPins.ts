@@ -4,16 +4,27 @@ export type LayoutPinOptions = {
   movableNodeIds?: Iterable<string>;
 };
 
-type TimeoutHandle = number;
+type TimeoutHandle = ReturnType<typeof window.setTimeout>;
 type ScheduleFn = (handler: () => void, timeout: number) => TimeoutHandle;
+
+export type LayoutFreezeHandle = { cancel: () => void };
+
+type SimulationLike = {
+  alpha: () => number;
+};
 
 export type LayoutCycleOptions = {
   getNodes: () => CanvasNode[];
   movableNodeIds?: Iterable<string>;
-  freezeAfterMs?: number | null;
+  /**
+   * Freeze when layout converges; if convergence takes too long, freeze after this max wait.
+   * Defaults to 5000ms (per requirement).
+   */
+  maxWaitMs?: number | null;
   onStart?: () => void;
   onFreeze?: () => void;
   schedule?: ScheduleFn;
+  simulation?: SimulationLike | null;
 };
 
 const updateNodeState = (
@@ -57,41 +68,116 @@ export function releaseNodes(nodes: CanvasNode[]): void {
 
 export function scheduleFreezeNodes(options: {
   getNodes: () => CanvasNode[];
+  /**
+   * Backward-compatible alias (previous behavior). If provided, treated as maxWaitMs.
+   * Prefer maxWaitMs going forward.
+   */
   delayMs?: number;
+  maxWaitMs?: number;
   schedule?: ScheduleFn;
   onFreeze?: () => void;
   shouldFreeze?: () => boolean;
-}): TimeoutHandle | null {
-  const { getNodes, delayMs = 1000, schedule = window.setTimeout, onFreeze, shouldFreeze } = options;
+  simulation?: SimulationLike | null;
+  checkIntervalMs?: number;
+  alphaThreshold?: number;
+  stableChecks?: number;
+}): LayoutFreezeHandle | null {
+  const {
+    getNodes,
+    schedule = window.setTimeout,
+    onFreeze,
+    shouldFreeze,
+    simulation = null,
+    checkIntervalMs = DEFAULT_CHECK_INTERVAL_MS,
+    alphaThreshold = DEFAULT_ALPHA_THRESHOLD,
+    stableChecks = DEFAULT_STABLE_CHECKS,
+  } = options;
 
-  if (!delayMs || delayMs <= 0) {
-    if (!shouldFreeze || shouldFreeze()) {
-      freezeNodes(getNodes());
-      onFreeze?.();
-    }
+  const maxWaitMs = options.maxWaitMs ?? options.delayMs ?? DEFAULT_MAX_WAIT_MS;
+
+  let cancelled = false;
+  let checkHandle: TimeoutHandle | null = null;
+  let maxWaitHandle: TimeoutHandle | null = null;
+
+  let stableBelow = 0;
+
+  const doFreeze = () => {
+    if (cancelled) return;
+    if (shouldFreeze && !shouldFreeze()) return;
+
+    cancelled = true;
+    if (checkHandle) window.clearTimeout(checkHandle);
+    if (maxWaitHandle) window.clearTimeout(maxWaitHandle);
+
+    freezeNodes(getNodes());
+    onFreeze?.();
+  };
+
+  if (!maxWaitMs || maxWaitMs <= 0) {
+    // immediate (still gate via shouldFreeze)
+    doFreeze();
     return null;
   }
 
-  return schedule(() => {
-    if (!shouldFreeze || shouldFreeze()) {
-      freezeNodes(getNodes());
-      onFreeze?.();
+  // Hard fallback: freeze after maxWaitMs regardless of convergence.
+  maxWaitHandle = schedule(doFreeze, maxWaitMs);
+
+  const check = () => {
+    if (cancelled) return;
+
+    if (shouldFreeze && !shouldFreeze()) {
+      stableBelow = 0;
+      checkHandle = schedule(check, checkIntervalMs);
+      return;
     }
-  }, delayMs);
+
+    if (!simulation) {
+      // No simulation to observe; rely on maxWait fallback.
+      checkHandle = schedule(check, checkIntervalMs);
+      return;
+    }
+
+    const a = simulation.alpha();
+    if (a <= alphaThreshold) {
+      stableBelow += 1;
+      if (stableBelow >= stableChecks) {
+        doFreeze();
+        return;
+      }
+    } else {
+      stableBelow = 0;
+    }
+
+    checkHandle = schedule(check, checkIntervalMs);
+  };
+
+  checkHandle = schedule(check, checkIntervalMs);
+
+  return {
+    cancel: () => {
+      cancelled = true;
+      if (checkHandle) window.clearTimeout(checkHandle);
+      if (maxWaitHandle) window.clearTimeout(maxWaitHandle);
+    },
+  };
 }
 
-export function runLayoutCycle(options: LayoutCycleOptions): TimeoutHandle | null {
-  const { getNodes, movableNodeIds, freezeAfterMs = 1000, onStart, onFreeze, schedule = window.setTimeout } = options;
+export function runLayoutCycle(options: LayoutCycleOptions): LayoutFreezeHandle | null {
+  const { getNodes, movableNodeIds, maxWaitMs = DEFAULT_MAX_WAIT_MS, onStart, onFreeze, schedule = window.setTimeout, simulation = null } = options;
 
   applyLayoutPins(getNodes(), { movableNodeIds });
   onStart?.();
 
-  if (freezeAfterMs && freezeAfterMs > 0) {
-    return schedule(() => {
-      freezeNodes(getNodes());
-      onFreeze?.();
-    }, freezeAfterMs);
-  }
-
-  return null;
+  return scheduleFreezeNodes({
+    getNodes,
+    maxWaitMs: maxWaitMs ?? DEFAULT_MAX_WAIT_MS,
+    schedule,
+    onFreeze,
+    simulation,
+  });
 }
+
+const DEFAULT_MAX_WAIT_MS = 5000;
+const DEFAULT_CHECK_INTERVAL_MS = 100;
+const DEFAULT_ALPHA_THRESHOLD = 0.02;
+const DEFAULT_STABLE_CHECKS = 3;
