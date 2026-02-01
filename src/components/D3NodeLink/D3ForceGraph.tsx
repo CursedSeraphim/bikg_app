@@ -59,6 +59,8 @@ import { freezeNodes, releaseNodes, runLayoutCycle, scheduleFreezeNodes, type La
 import { buildNodeShapeViolationMap, getFocusNodesForNodeShape, isNodeShapeClass } from './utils/nodeShapeAssociations';
 import { computeSelectionScope } from './utils/selectionScope';
 
+const LAYOUT_MAX_WAIT_MS = 5000;
+
 /** Force‐directed graph view for the D3 based node‐link diagram. */
 export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) {
   const dispatch = useDispatch();
@@ -82,8 +84,6 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
   const selectedViolationIds = useSelector(selectSelectedViolations);
   const selectedTypeIds = useSelector(selectSelectedTypes);
   const selectedExemplarIds = useSelector(selectSelectedViolationExemplars);
-  type DomTimeoutHandle = number;
-
   const { loading, cyDataNodes, cyDataEdges } = useD3Data({
     rdfOntology,
     violations,
@@ -427,7 +427,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       const sim = simulationRef.current;
       if (!sim) return;
 
-      const { movableNodeIds, alphaTarget = 0.3, maxWaitMs = 5000, nodesOverride } = options;
+      const { movableNodeIds, alphaTarget = 0.3, maxWaitMs = LAYOUT_MAX_WAIT_MS, nodesOverride } = options;
 
       layoutFreezeTimeoutRef.current?.cancel();
       layoutFreezeTimeoutRef.current = null;
@@ -483,7 +483,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
     runTargetedLayout({
       movableNodeIds: newNodeIds,
       alphaTarget: 0.3,
-      maxWaitMs: 5000,
+      maxWaitMs: LAYOUT_MAX_WAIT_MS,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d3Nodes, loading, runTargetedLayout]);
@@ -1001,7 +1001,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
       dragFreezeTimeoutRef.current = scheduleFreezeNodes({
         getNodes: () => Object.values(nodeMapRef.current),
         simulation: sim,
-        maxWaitMs: 5000,
+        maxWaitMs: LAYOUT_MAX_WAIT_MS,
         shouldFreeze: () => !dragActiveRef.current,
         onFreeze: () => {
           sim.alphaTarget(0);
@@ -1231,7 +1231,7 @@ export default function D3ForceGraph({ rdfOntology, onLoaded }: D3NLDViewProps) 
           movableNodeIds: newGhostNodes.map((node) => node.id),
           nodesOverride: [...d3Nodes, ...newGhostNodes],
           alphaTarget: 0.3,
-          freezeAfter: null,
+          maxWaitMs: LAYOUT_MAX_WAIT_MS,
         });
       } else {
         clearPreview();
