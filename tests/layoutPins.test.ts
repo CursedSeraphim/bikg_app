@@ -13,18 +13,22 @@ const createNode = (id: string, x: number, y: number): CanvasNode => ({
 });
 
 describe('layout pinning behavior', () => {
-  it('pins non-movable nodes and keeps them pinned after the layout cycle', () => {
+  it('pins non-movable nodes and keeps them pinned after the layout converges', () => {
     jest.useFakeTimers();
     const nodes = [createNode('a', 10, 20), createNode('b', 30, 40), createNode('c', 50, 60)];
     const onStart = jest.fn();
     const onFreeze = jest.fn();
+    const simulation = {
+      alpha: jest.fn().mockReturnValue(0.01),
+    };
 
     runLayoutCycle({
       getNodes: () => nodes,
       movableNodeIds: ['b'],
-      freezeAfterMs: 250,
+      maxWaitMs: 1000,
       onStart,
       onFreeze,
+      simulation,
     });
 
     expect(nodes[0].fx).toBe(10);
@@ -36,7 +40,7 @@ describe('layout pinning behavior', () => {
     expect(nodes[0].vx).toBe(0);
     expect(nodes[0].vy).toBe(0);
 
-    jest.advanceTimersByTime(250);
+    jest.advanceTimersByTime(300);
 
     expect(nodes[0].fx).toBe(10);
     expect(nodes[1].fx).toBe(30);
@@ -57,9 +61,12 @@ describe('layout pinning behavior', () => {
     expect(nodes[1].fy).toBe(4);
   });
 
-  it('releases all nodes during drag and freezes them again after the delay', () => {
+  it('releases all nodes during drag and freezes them after the convergence fallback', () => {
     jest.useFakeTimers();
     const nodes = [createNode('a', 10, 20), createNode('b', 30, 40)];
+    const simulation = {
+      alpha: jest.fn().mockReturnValue(0.01),
+    };
 
     applyLayoutPins(nodes);
     releaseNodes(nodes);
@@ -70,11 +77,12 @@ describe('layout pinning behavior', () => {
     const onFreeze = jest.fn();
     scheduleFreezeNodes({
       getNodes: () => nodes,
-      delayMs: 1000,
+      maxWaitMs: 1000,
       onFreeze,
+      simulation,
     });
 
-    jest.advanceTimersByTime(1000);
+    jest.advanceTimersByTime(300);
 
     expect(nodes[0].fx).toBe(10);
     expect(nodes[1].fx).toBe(30);
@@ -91,7 +99,7 @@ describe('layout pinning behavior', () => {
 
     scheduleFreezeNodes({
       getNodes: () => nodes,
-      delayMs: 500,
+      maxWaitMs: 500,
       shouldFreeze: () => false,
     });
 
@@ -107,15 +115,15 @@ describe('layout pinning behavior', () => {
     const nodes = [createNode('a', 8, 18), createNode('b', 28, 38)];
     const onFreeze = jest.fn();
 
-    const timeoutId = runLayoutCycle({
+    const layoutHandle = runLayoutCycle({
       getNodes: () => nodes,
       movableNodeIds: ['b'],
-      freezeAfterMs: 500,
+      maxWaitMs: 500,
       onFreeze,
     });
 
-    if (timeoutId) {
-      clearTimeout(timeoutId);
+    if (layoutHandle) {
+      layoutHandle.cancel();
     }
 
     jest.advanceTimersByTime(500);
