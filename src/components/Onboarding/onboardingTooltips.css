@@ -12,10 +12,20 @@
   --onboarding-tooltip-opacity: 0.7;
   --onboarding-tooltip-button-opacity: 1;
   --onboarding-tooltip-dim-opacity: 0.35;
+  --onboarding-tooltip-dismiss-duration: 300ms;
+  transition:
+    opacity var(--onboarding-tooltip-dismiss-duration) ease,
+    transform var(--onboarding-tooltip-dismiss-duration) ease;
 }
 
 .onboarding-tooltip-stack.is-dismiss-hovered {
   --onboarding-tooltip-opacity: var(--onboarding-tooltip-dim-opacity);
+}
+
+.onboarding-tooltip-stack.is-dismissing {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
 }
 
 /* --- Minimized state: fold up the items, show a thin bar --- */
@@ -252,4 +262,3 @@
   padding-right: 76px; /* keep text clear of the two buttons */
   width: var(--onboarding-tooltip-width);
 }
-
