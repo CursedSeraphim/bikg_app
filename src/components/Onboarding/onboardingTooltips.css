@@ -19,12 +19,28 @@
 }
 
 /* --- Minimized state: fold up the items, show a thin bar --- */
+/* NOTE: The base `.onboarding-tooltip-box` rule appears later and would override simple
+   `.onboarding-tooltip-minimized-label` rules. Use higher specificity below. */
+/* Animate instead of display:none/block so previews can transition (0.3s). */
 .onboarding-tooltip-minimized-label {
-  display: none;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  overflow: hidden;
+  padding: 0 10px;
+  padding-right: 76px; /* keep text clear of the two buttons */
+  margin-top: 0;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    max-height 0.3s ease,
+    padding 0.3s ease;
 }
 
 .onboarding-tooltip-stack.is-minimized .onboarding-tooltip-minimized-label {
-  display: block;
+  max-height: 48px;
+  opacity: var(--onboarding-tooltip-opacity); /* default 0.7 */
+  transform: translateY(0);
   padding: 6px 10px;
   padding-right: 76px; /* keep text clear of the two buttons */
   width: var(--onboarding-tooltip-width);
@@ -72,7 +88,7 @@
   width: 34px;
   height: 34px;
   top: -16px;
-  right: 24px; /* left of dismiss (dismiss is at -16px) */
+  right: 12px; /* was 24px; closer to dismiss (dismiss is at -16px) */
   padding: 0;
   border: none;
   background: transparent;
@@ -144,6 +160,12 @@
   z-index: 2;
 }
 
+.onboarding-tooltip-dismiss::before,
+.onboarding-tooltip-dismiss::after {
+  opacity: 0; /* hidden by default */
+  transition: opacity 0.3s ease;
+}
+
 .onboarding-tooltip-dismiss::before {
   content: '';
   position: absolute;
@@ -205,5 +227,29 @@
   width: var(--onboarding-tooltip-width);
   white-space: normal;
   word-break: break-word;
+}
+
+/* Minimized label: animate in/out and fully hide when not minimized (0.3s). */
+.onboarding-tooltip-box.onboarding-tooltip-minimized-label {
+  max-height: 0;
+  opacity: 0; /* must override .onboarding-tooltip-box opacity */
+  transform: translateY(-6px);
+  overflow: hidden;
+  padding: 0; /* must override .onboarding-tooltip-box padding */
+  margin: 0;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    max-height 0.3s ease,
+    padding 0.3s ease;
+}
+
+.onboarding-tooltip-stack.is-minimized .onboarding-tooltip-box.onboarding-tooltip-minimized-label {
+  max-height: 48px;
+  opacity: var(--onboarding-tooltip-opacity); /* default 0.7 */
+  transform: translateY(0);
+  padding: 6px 10px;
+  padding-right: 76px; /* keep text clear of the two buttons */
+  width: var(--onboarding-tooltip-width);
 }
 

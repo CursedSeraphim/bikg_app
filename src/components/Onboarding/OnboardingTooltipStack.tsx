@@ -14,18 +14,30 @@ export function OnboardingTooltipStack() {
   const [isDismissHovered, setIsDismissHovered] = React.useState(false);
   const [isMinimized, setIsMinimized] = React.useState(false);
 
+  // Hover previews should only trigger after an actual mouse-enter on the toggle button.
+  // This prevents "instant opposite preview" when the icon/class flips under the cursor after clicking.
+  const [isToggleHovered, setIsToggleHovered] = React.useState(false);
+  const [isTogglePreviewArmed, setIsTogglePreviewArmed] = React.useState(false);
+
   const hasOpenTooltips = onboardingTooltipSteps.some((step) => !events[step.id]);
 
-  if (!ONBOARDING_ENABLED) {
+  if (!ONBOARDING_ENABLED || !hasOpenTooltips) {
     return null;
   }
+
+  const isPreviewingMinimize = isToggleHovered && isTogglePreviewArmed && !isMinimized;
+  const isPreviewingMaximize = isToggleHovered && isTogglePreviewArmed && isMinimized;
+
+  // Visual state includes hover preview. This keeps the class stable when clicking during preview,
+  // so the 0.3s transition does not restart from the beginning.
+  const isMinimizedVisual = isPreviewingMaximize ? false : isMinimized || isPreviewingMinimize;
 
   const stack = (
     <div
       className={clsx('onboarding-tooltip-stack', {
         'is-hovered': isHovered,
         'is-dismiss-hovered': isDismissHovered,
-        'is-minimized': isMinimized,
+        'is-minimized': isMinimizedVisual,
       })}
       role="status"
       aria-live="polite"
@@ -33,6 +45,10 @@ export function OnboardingTooltipStack() {
       onMouseLeave={() => {
         setIsHovered(false);
         setIsDismissHovered(false);
+
+        // Leaving the stack also cancels any pending preview arming.
+        setIsToggleHovered(false);
+        setIsTogglePreviewArmed(false);
       }}
     >
       <button
@@ -42,7 +58,20 @@ export function OnboardingTooltipStack() {
           'is-minimize': !isMinimized,
         })}
         aria-label={isMinimized ? 'Maximize onboarding tips' : 'Minimize onboarding tips'}
-        onClick={() => setIsMinimized((v) => !v)}
+        onMouseEnter={() => {
+          setIsToggleHovered(true);
+          setIsTogglePreviewArmed(true);
+        }}
+        onMouseLeave={() => {
+          setIsToggleHovered(false);
+          setIsTogglePreviewArmed(false);
+        }}
+        onClick={() => {
+          // Disarm so swapping the icon under the cursor does NOT immediately trigger the opposite preview
+          // until the mouse exits and re-enters the toggle button.
+          setIsTogglePreviewArmed(false);
+          setIsMinimized((v) => !v);
+        }}
       />
 
       {hasOpenTooltips ? (
@@ -52,7 +81,13 @@ export function OnboardingTooltipStack() {
           aria-label="Dismiss all onboarding tips"
           onMouseEnter={() => setIsDismissHovered(true)}
           onMouseLeave={() => setIsDismissHovered(false)}
-          onClick={() => dispatch(completeAllOnboardingEvents())}
+          onClick={() => {
+            dispatch(completeAllOnboardingEvents());
+            setIsMinimized(false);
+            setIsDismissHovered(false);
+            setIsToggleHovered(false);
+            setIsTogglePreviewArmed(false);
+          }}
         />
       ) : null}
 
