@@ -1,17 +1,19 @@
+import clsx from 'clsx';
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import clsx from 'clsx';
+import type { IRootState } from '../../types';
+import { completeAllOnboardingEvents } from '../Store/OnboardingSlice';
 import { ONBOARDING_ENABLED, onboardingTooltipSteps } from './onboardingEvents';
 import { OnboardingTooltipItem } from './OnboardingTooltipItem';
-import { completeAllOnboardingEvents } from '../Store/OnboardingSlice';
-import type { IRootState } from '../../types';
 
 export function OnboardingTooltipStack() {
   const dispatch = useDispatch();
   const events = useSelector((state: IRootState) => state.onboarding.events);
   const [isHovered, setIsHovered] = React.useState(false);
   const [isDismissHovered, setIsDismissHovered] = React.useState(false);
+  const [isMinimized, setIsMinimized] = React.useState(false);
+
   const hasOpenTooltips = onboardingTooltipSteps.some((step) => !events[step.id]);
 
   if (!ONBOARDING_ENABLED) {
@@ -23,6 +25,7 @@ export function OnboardingTooltipStack() {
       className={clsx('onboarding-tooltip-stack', {
         'is-hovered': isHovered,
         'is-dismiss-hovered': isDismissHovered,
+        'is-minimized': isMinimized,
       })}
       role="status"
       aria-live="polite"
@@ -32,6 +35,16 @@ export function OnboardingTooltipStack() {
         setIsDismissHovered(false);
       }}
     >
+      <button
+        type="button"
+        className={clsx('onboarding-tooltip-toggle', {
+          'is-maximize': isMinimized,
+          'is-minimize': !isMinimized,
+        })}
+        aria-label={isMinimized ? 'Maximize onboarding tips' : 'Minimize onboarding tips'}
+        onClick={() => setIsMinimized((v) => !v)}
+      />
+
       {hasOpenTooltips ? (
         <button
           type="button"
@@ -42,6 +55,9 @@ export function OnboardingTooltipStack() {
           onClick={() => dispatch(completeAllOnboardingEvents())}
         />
       ) : null}
+
+      <div className="onboarding-tooltip-box onboarding-tooltip-minimized-label">Onboarding Tips</div>
+
       {onboardingTooltipSteps.map((step) => (
         <OnboardingTooltipItem key={step.id} label={step.label} isComplete={Boolean(events[step.id])} />
       ))}
