@@ -99,7 +99,6 @@ export function OnboardingTooltipStack() {
               return;
             }
             setIsDismissing(true);
-            setIsMinimized(false);
             setIsDismissHovered(false);
             setIsToggleHovered(false);
             setIsTogglePreviewArmed(false);
