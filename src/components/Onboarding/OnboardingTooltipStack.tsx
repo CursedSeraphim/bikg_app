@@ -13,6 +13,7 @@ export function OnboardingTooltipStack() {
   const [isHovered, setIsHovered] = React.useState(false);
   const [isDismissHovered, setIsDismissHovered] = React.useState(false);
   const [isMinimized, setIsMinimized] = React.useState(false);
+  const [isDismissing, setIsDismissing] = React.useState(false);
 
   // Hover previews should only trigger after an actual mouse-enter on the toggle button.
   // This prevents "instant opposite preview" when the icon/class flips under the cursor after clicking.
@@ -20,6 +21,16 @@ export function OnboardingTooltipStack() {
   const [isTogglePreviewArmed, setIsTogglePreviewArmed] = React.useState(false);
 
   const hasOpenTooltips = onboardingTooltipSteps.some((step) => !events[step.id]);
+  const dismissTimeoutRef = React.useRef<number | null>(null);
+  const DISMISS_TRANSITION_MS = 300;
+
+  React.useEffect(() => {
+    return () => {
+      if (dismissTimeoutRef.current !== null) {
+        window.clearTimeout(dismissTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (!ONBOARDING_ENABLED || !hasOpenTooltips) {
     return null;
@@ -38,7 +49,9 @@ export function OnboardingTooltipStack() {
         'is-hovered': isHovered,
         'is-dismiss-hovered': isDismissHovered,
         'is-minimized': isMinimizedVisual,
+        'is-dismissing': isDismissing,
       })}
+      style={{ '--onboarding-tooltip-dismiss-duration': `${DISMISS_TRANSITION_MS}ms` } as React.CSSProperties}
       role="status"
       aria-live="polite"
       onMouseEnter={() => setIsHovered(true)}
@@ -82,11 +95,16 @@ export function OnboardingTooltipStack() {
           onMouseEnter={() => setIsDismissHovered(true)}
           onMouseLeave={() => setIsDismissHovered(false)}
           onClick={() => {
-            dispatch(completeAllOnboardingEvents());
-            setIsMinimized(false);
+            if (isDismissing) {
+              return;
+            }
+            setIsDismissing(true);
             setIsDismissHovered(false);
             setIsToggleHovered(false);
             setIsTogglePreviewArmed(false);
+            dismissTimeoutRef.current = window.setTimeout(() => {
+              dispatch(completeAllOnboardingEvents());
+            }, DISMISS_TRANSITION_MS);
           }}
         />
       ) : null}
