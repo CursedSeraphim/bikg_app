@@ -9,7 +9,7 @@ const DEFAULT_CHECK_INTERVAL_MS = 100;
 const DEFAULT_ALPHA_THRESHOLD = 0.02;
 const DEFAULT_STABLE_CHECKS = 3;
 
-type TimeoutHandle = ReturnType<typeof setTimeout>;
+type TimeoutHandle = ReturnType<typeof setTimeout> | number;
 type ScheduleFn = (handler: () => void, timeout: number) => TimeoutHandle;
 
 export type LayoutFreezeHandle = { cancel: () => void };
@@ -89,7 +89,7 @@ export function scheduleFreezeNodes(options: {
 }): LayoutFreezeHandle | null {
   const {
     getNodes,
-    schedule = setTimeout,
+    schedule = globalThis.setTimeout,
     onFreeze,
     shouldFreeze,
     simulation = null,
@@ -111,8 +111,8 @@ export function scheduleFreezeNodes(options: {
     if (shouldFreeze && !shouldFreeze()) return;
 
     cancelled = true;
-    if (checkHandle) clearTimeout(checkHandle);
-    if (maxWaitHandle) clearTimeout(maxWaitHandle);
+    if (checkHandle) globalThis.clearTimeout(checkHandle);
+    if (maxWaitHandle) globalThis.clearTimeout(maxWaitHandle);
 
     freezeNodes(getNodes());
     onFreeze?.();
@@ -161,14 +161,14 @@ export function scheduleFreezeNodes(options: {
   return {
     cancel: () => {
       cancelled = true;
-      if (checkHandle) clearTimeout(checkHandle);
-      if (maxWaitHandle) clearTimeout(maxWaitHandle);
+      if (checkHandle) globalThis.clearTimeout(checkHandle);
+      if (maxWaitHandle) globalThis.clearTimeout(maxWaitHandle);
     },
   };
 }
 
 export function runLayoutCycle(options: LayoutCycleOptions): LayoutFreezeHandle | null {
-  const { getNodes, movableNodeIds, maxWaitMs = DEFAULT_MAX_WAIT_MS, onStart, onFreeze, schedule = setTimeout, simulation = null } = options;
+  const { getNodes, movableNodeIds, maxWaitMs = DEFAULT_MAX_WAIT_MS, onStart, onFreeze, schedule = globalThis.setTimeout, simulation = null } = options;
 
   applyLayoutPins(getNodes(), { movableNodeIds });
   onStart?.();
