@@ -18,6 +18,46 @@
   --onboarding-tooltip-opacity: var(--onboarding-tooltip-dim-opacity);
 }
 
+/* --- Minimized state: fold up the items, show a thin bar --- */
+/* NOTE: The base `.onboarding-tooltip-box` rule appears later and would override simple
+   `.onboarding-tooltip-minimized-label` rules. Use higher specificity below. */
+/* Animate instead of display:none/block so previews can transition (0.3s). */
+.onboarding-tooltip-minimized-label {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  overflow: hidden;
+  padding: 0 10px;
+  padding-right: 76px; /* keep text clear of the two buttons */
+  margin-top: 0;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    max-height 0.3s ease,
+    padding 0.3s ease;
+}
+
+.onboarding-tooltip-stack.is-minimized .onboarding-tooltip-minimized-label {
+  max-height: 48px;
+  opacity: var(--onboarding-tooltip-opacity); /* default 0.7 */
+  transform: translateY(0);
+  padding: 6px 10px;
+  padding-right: 76px; /* keep text clear of the two buttons */
+  width: var(--onboarding-tooltip-width);
+}
+
+.onboarding-tooltip-stack.is-minimized .onboarding-tooltip-item {
+  opacity: 0;
+  transform: translateY(-6px);
+  max-height: 0;
+  margin-top: 0;
+}
+
+.onboarding-tooltip-stack.is-minimized .onboarding-tooltip-item + .onboarding-tooltip-item {
+  margin-top: 0;
+}
+
+/* --- Existing item rules remain unchanged --- */
 .onboarding-tooltip-item {
   position: relative;
   max-height: 120px;
@@ -42,6 +82,69 @@
   margin-top: 0;
 }
 
+/* --- Toggle (minimize/maximize) button, positioned left of dismiss --- */
+.onboarding-tooltip-toggle {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  top: -16px;
+  right: 12px; /* was 24px; closer to dismiss (dismiss is at -16px) */
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 2;
+}
+
+.onboarding-tooltip-toggle::before,
+.onboarding-tooltip-toggle::after {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.onboarding-tooltip-toggle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  background: var(--mantine-header-color);
+  border: 1px solid #ffffff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+}
+
+/* Minimize icon: horizontal bar */
+.onboarding-tooltip-toggle.is-minimize::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 2px;
+  background: #ffffff;
+  transform: translate(-50%, -50%);
+}
+
+/* Maximize icon: square (no window/cross) */
+.onboarding-tooltip-toggle.is-maximize::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #ffffff;
+  background: transparent;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+}
+
+/* --- Existing dismiss button remains, unchanged base --- */
 .onboarding-tooltip-dismiss {
   position: absolute;
   width: 34px;
@@ -59,7 +162,7 @@
 
 .onboarding-tooltip-dismiss::before,
 .onboarding-tooltip-dismiss::after {
-  opacity: 0;
+  opacity: 0; /* hidden by default */
   transition: opacity 0.3s ease;
 }
 
@@ -77,6 +180,7 @@
   box-sizing: border-box;
 }
 
+/* RESTORE: the "X" icon for dismiss */
 .onboarding-tooltip-dismiss::after {
   content: '';
   position: absolute;
@@ -90,12 +194,23 @@
     linear-gradient(#ffffff, #ffffff) center / 2px 12px no-repeat;
 }
 
+/* --- Visibility rules (hover OR minimized forces visibility) --- */
 .onboarding-tooltip-stack.is-hovered .onboarding-tooltip-dismiss::before,
 .onboarding-tooltip-stack.is-hovered .onboarding-tooltip-dismiss::after,
 .onboarding-tooltip-dismiss:hover::before,
 .onboarding-tooltip-dismiss:hover::after,
 .onboarding-tooltip-dismiss:focus-visible::before,
-.onboarding-tooltip-dismiss:focus-visible::after {
+.onboarding-tooltip-dismiss:focus-visible::after,
+.onboarding-tooltip-stack.is-hovered .onboarding-tooltip-toggle::before,
+.onboarding-tooltip-stack.is-hovered .onboarding-tooltip-toggle::after,
+.onboarding-tooltip-toggle:hover::before,
+.onboarding-tooltip-toggle:hover::after,
+.onboarding-tooltip-toggle:focus-visible::before,
+.onboarding-tooltip-toggle:focus-visible::after,
+.onboarding-tooltip-stack.is-minimized .onboarding-tooltip-dismiss::before,
+.onboarding-tooltip-stack.is-minimized .onboarding-tooltip-dismiss::after,
+.onboarding-tooltip-stack.is-minimized .onboarding-tooltip-toggle::before,
+.onboarding-tooltip-stack.is-minimized .onboarding-tooltip-toggle::after {
   opacity: 1;
 }
 
@@ -112,5 +227,29 @@
   width: var(--onboarding-tooltip-width);
   white-space: normal;
   word-break: break-word;
+}
+
+/* Minimized label: animate in/out and fully hide when not minimized (0.3s). */
+.onboarding-tooltip-box.onboarding-tooltip-minimized-label {
+  max-height: 0;
+  opacity: 0; /* must override .onboarding-tooltip-box opacity */
+  transform: translateY(-6px);
+  overflow: hidden;
+  padding: 0; /* must override .onboarding-tooltip-box padding */
+  margin: 0;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    max-height 0.3s ease,
+    padding 0.3s ease;
+}
+
+.onboarding-tooltip-stack.is-minimized .onboarding-tooltip-box.onboarding-tooltip-minimized-label {
+  max-height: 48px;
+  opacity: var(--onboarding-tooltip-opacity); /* default 0.7 */
+  transform: translateY(0);
+  padding: 6px 10px;
+  padding-right: 76px; /* keep text clear of the two buttons */
+  width: var(--onboarding-tooltip-width);
 }
 
